@@ -7,8 +7,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.VariableValueRecord;
 
-import java.math.BigDecimal;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
@@ -62,7 +60,7 @@ public class VariableValue extends TableImpl<VariableValueRecord> {
     /**
      * The column <code>data.variable_value.value</code>.
      */
-    public final TableField<VariableValueRecord, BigDecimal> VALUE = createField(DSL.name("value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<VariableValueRecord, Double> VALUE = createField(DSL.name("value"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.variable_value.grid_cell_id</code>.
@@ -138,7 +136,7 @@ public class VariableValue extends TableImpl<VariableValueRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, Integer, Integer, BigDecimal, Integer> fieldsRow() {
+    public Row5<Integer, Integer, Integer, Double, Integer> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

@@ -6,8 +6,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables.records;
 
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunction;
 
-import java.math.BigDecimal;
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 
@@ -303,15 +301,15 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Setter for <code>data.health_impact_function.beta</code>.
      */
-    public void setBeta(BigDecimal value) {
+    public void setBeta(Double value) {
         set(20, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.beta</code>.
      */
-    public BigDecimal getBeta() {
-        return (BigDecimal) get(20);
+    public Double getBeta() {
+        return (Double) get(20);
     }
 
     /**
@@ -331,43 +329,43 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Setter for <code>data.health_impact_function.p1_beta</code>.
      */
-    public void setP1Beta(BigDecimal value) {
+    public void setP1Beta(Double value) {
         set(22, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.p1_beta</code>.
      */
-    public BigDecimal getP1Beta() {
-        return (BigDecimal) get(22);
+    public Double getP1Beta() {
+        return (Double) get(22);
     }
 
     /**
      * Setter for <code>data.health_impact_function.p2_beta</code>.
      */
-    public void setP2Beta(BigDecimal value) {
+    public void setP2Beta(Double value) {
         set(23, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.p2_beta</code>.
      */
-    public BigDecimal getP2Beta() {
-        return (BigDecimal) get(23);
+    public Double getP2Beta() {
+        return (Double) get(23);
     }
 
     /**
      * Setter for <code>data.health_impact_function.val_a</code>.
      */
-    public void setValA(BigDecimal value) {
+    public void setValA(Double value) {
         set(24, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.val_a</code>.
      */
-    public BigDecimal getValA() {
-        return (BigDecimal) get(24);
+    public Double getValA() {
+        return (Double) get(24);
     }
 
     /**
@@ -387,15 +385,15 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Setter for <code>data.health_impact_function.val_b</code>.
      */
-    public void setValB(BigDecimal value) {
+    public void setValB(Double value) {
         set(26, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.val_b</code>.
      */
-    public BigDecimal getValB() {
-        return (BigDecimal) get(26);
+    public Double getValB() {
+        return (Double) get(26);
     }
 
     /**
@@ -415,15 +413,15 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Setter for <code>data.health_impact_function.val_c</code>.
      */
-    public void setValC(BigDecimal value) {
+    public void setValC(Double value) {
         set(28, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.val_c</code>.
      */
-    public BigDecimal getValC() {
-        return (BigDecimal) get(28);
+    public Double getValC() {
+        return (Double) get(28);
     }
 
     /**
@@ -547,7 +545,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Create a detached, initialised HealthImpactFunctionRecord
      */
-    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Integer incidenceDatasetId, Integer prevalenceDatasetId, Integer variableDatasetId, BigDecimal beta, String distBeta, BigDecimal p1Beta, BigDecimal p2Beta, BigDecimal valA, String nameA, BigDecimal valB, String nameB, BigDecimal valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay) {
+    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Integer incidenceDatasetId, Integer prevalenceDatasetId, Integer variableDatasetId, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay) {
         super(HealthImpactFunction.HEALTH_IMPACT_FUNCTION);
 
         setId(id);

@@ -7,8 +7,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
 
-import java.math.BigDecimal;
-
 import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.Row10;
@@ -65,32 +63,32 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
     /**
      * The column <code>data.get_valuation_results.point_estimate</code>.
      */
-    public final TableField<GetValuationResultsRecord, BigDecimal> POINT_ESTIMATE = createField(DSL.name("point_estimate"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetValuationResultsRecord, Double> POINT_ESTIMATE = createField(DSL.name("point_estimate"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_valuation_results.mean</code>.
      */
-    public final TableField<GetValuationResultsRecord, BigDecimal> MEAN = createField(DSL.name("mean"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetValuationResultsRecord, Double> MEAN = createField(DSL.name("mean"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_valuation_results.standard_dev</code>.
      */
-    public final TableField<GetValuationResultsRecord, BigDecimal> STANDARD_DEV = createField(DSL.name("standard_dev"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetValuationResultsRecord, Double> STANDARD_DEV = createField(DSL.name("standard_dev"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_valuation_results.variance</code>.
      */
-    public final TableField<GetValuationResultsRecord, BigDecimal> VARIANCE = createField(DSL.name("variance"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetValuationResultsRecord, Double> VARIANCE = createField(DSL.name("variance"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_valuation_results.pct_2_5</code>.
      */
-    public final TableField<GetValuationResultsRecord, BigDecimal> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetValuationResultsRecord, Double> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_valuation_results.pct_97_5</code>.
      */
-    public final TableField<GetValuationResultsRecord, BigDecimal> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetValuationResultsRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
     private GetValuationResults(Name alias, Table<GetValuationResultsRecord> aliased) {
         this(alias, aliased, new Field[4]);
@@ -157,7 +155,7 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row10<Integer, Integer, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal> fieldsRow() {
+    public Row10<Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double> fieldsRow() {
         return (Row10) super.fieldsRow();
     }
 

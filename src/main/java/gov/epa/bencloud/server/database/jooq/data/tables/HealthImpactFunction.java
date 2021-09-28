@@ -8,7 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -151,7 +150,7 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     /**
      * The column <code>data.health_impact_function.beta</code>.
      */
-    public final TableField<HealthImpactFunctionRecord, BigDecimal> BETA = createField(DSL.name("beta"), SQLDataType.NUMERIC, this, "");
+    public final TableField<HealthImpactFunctionRecord, Double> BETA = createField(DSL.name("beta"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.health_impact_function.dist_beta</code>.
@@ -161,17 +160,17 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     /**
      * The column <code>data.health_impact_function.p1_beta</code>.
      */
-    public final TableField<HealthImpactFunctionRecord, BigDecimal> P1_BETA = createField(DSL.name("p1_beta"), SQLDataType.NUMERIC, this, "");
+    public final TableField<HealthImpactFunctionRecord, Double> P1_BETA = createField(DSL.name("p1_beta"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.health_impact_function.p2_beta</code>.
      */
-    public final TableField<HealthImpactFunctionRecord, BigDecimal> P2_BETA = createField(DSL.name("p2_beta"), SQLDataType.NUMERIC, this, "");
+    public final TableField<HealthImpactFunctionRecord, Double> P2_BETA = createField(DSL.name("p2_beta"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.health_impact_function.val_a</code>.
      */
-    public final TableField<HealthImpactFunctionRecord, BigDecimal> VAL_A = createField(DSL.name("val_a"), SQLDataType.NUMERIC, this, "");
+    public final TableField<HealthImpactFunctionRecord, Double> VAL_A = createField(DSL.name("val_a"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.health_impact_function.name_a</code>.
@@ -181,7 +180,7 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     /**
      * The column <code>data.health_impact_function.val_b</code>.
      */
-    public final TableField<HealthImpactFunctionRecord, BigDecimal> VAL_B = createField(DSL.name("val_b"), SQLDataType.NUMERIC, this, "");
+    public final TableField<HealthImpactFunctionRecord, Double> VAL_B = createField(DSL.name("val_b"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.health_impact_function.name_b</code>.
@@ -191,7 +190,7 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     /**
      * The column <code>data.health_impact_function.val_c</code>.
      */
-    public final TableField<HealthImpactFunctionRecord, BigDecimal> VAL_C = createField(DSL.name("val_c"), SQLDataType.NUMERIC, this, "");
+    public final TableField<HealthImpactFunctionRecord, Double> VAL_C = createField(DSL.name("val_c"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.health_impact_function.name_c</code>.

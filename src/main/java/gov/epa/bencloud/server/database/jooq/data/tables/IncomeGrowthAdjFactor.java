@@ -8,7 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncomeGrowthAdjFactorRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -67,7 +66,7 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
     /**
      * The column <code>data.income_growth_adj_factor.mean_value</code>.
      */
-    public final TableField<IncomeGrowthAdjFactorRecord, BigDecimal> MEAN_VALUE = createField(DSL.name("mean_value"), SQLDataType.NUMERIC.nullable(false), this, "");
+    public final TableField<IncomeGrowthAdjFactorRecord, Double> MEAN_VALUE = createField(DSL.name("mean_value"), SQLDataType.DOUBLE.nullable(false), this, "");
 
     /**
      * The column <code>data.income_growth_adj_factor.endpoint_group_id</code>.
@@ -180,7 +179,7 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, Short, Short, BigDecimal, Short> fieldsRow() {
+    public Row5<Integer, Short, Short, Double, Short> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

@@ -7,8 +7,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
 
-import java.math.BigDecimal;
-
 import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.Row6;
@@ -70,7 +68,7 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
     /**
      * The column <code>data.get_population.pop_value</code>.
      */
-    public final TableField<GetPopulationRecord, BigDecimal> POP_VALUE = createField(DSL.name("pop_value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetPopulationRecord, Double> POP_VALUE = createField(DSL.name("pop_value"), SQLDataType.DOUBLE, this, "");
 
     private GetPopulation(Name alias, Table<GetPopulationRecord> aliased) {
         this(alias, aliased, new Field[11]);
@@ -137,7 +135,7 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Integer, Integer, Integer, Integer, Integer, BigDecimal> fieldsRow() {
+    public Row6<Integer, Integer, Integer, Integer, Integer, Double> fieldsRow() {
         return (Row6) super.fieldsRow();
     }
 

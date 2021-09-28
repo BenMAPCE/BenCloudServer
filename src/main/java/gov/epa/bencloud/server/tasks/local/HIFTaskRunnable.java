@@ -219,8 +219,9 @@ public class HIFTaskRunnable implements Runnable {
 					double totalPop = 0.0;
 					double hifFunctionEstimate = 0.0;
 					double hifBaselineEstimate = 0.0;
-					double[] resultPercentiles = new double[20];
-
+					Double[] resultPercentiles = new Double[20];
+					Arrays.fill(resultPercentiles, 0.0);
+					
 					for (GetPopulationRecord popCategory : populationCell) {
 						// <gridCellId, race, gender, ethnicity, agerange, pop>
 						Integer popAgeRange = popCategory.getAgeRangeId();
@@ -255,26 +256,22 @@ public class HIFTaskRunnable implements Runnable {
 						rec.setGridCol(baselineCell.getGridCol());
 						rec.setGridRow(baselineCell.getGridRow());
 						rec.setHifId(hifConfig.hifId);
-						rec.setPopulation(new BigDecimal(totalPop));
-						rec.setDelta(BigDecimal.valueOf(deltaQ));
-						rec.setResult(BigDecimal.valueOf(hifFunctionEstimate));
-						rec.setPct_2_5(BigDecimal.valueOf(resultPercentiles[0]));
-						rec.setPct_97_5(BigDecimal.valueOf(resultPercentiles[19]));
+						rec.setPopulation(totalPop);
+						rec.setDelta(deltaQ);
+						rec.setResult(hifFunctionEstimate);
+						rec.setPct_2_5(resultPercentiles[0]);
+						rec.setPct_97_5(resultPercentiles[19]);
 
-						BigDecimal[] tmp = new BigDecimal[resultPercentiles.length];
-						for (int i = 0; i < resultPercentiles.length; i++) {
-							tmp[i] = BigDecimal.valueOf(resultPercentiles[i]);
-						}
-						rec.setPercentiles(tmp);
+						rec.setPercentiles(resultPercentiles);
 
 						DescriptiveStatistics stats = new DescriptiveStatistics();
 						for (int i = 0; i < resultPercentiles.length; i++) {
 							stats.addValue(resultPercentiles[i]);
 						}
-						rec.setStandardDev(BigDecimal.valueOf(stats.getStandardDeviation()));
-						rec.setResultMean(BigDecimal.valueOf(stats.getMean()));
-						rec.setResultVariance(BigDecimal.valueOf(stats.getVariance()));
-						rec.setBaseline(BigDecimal.valueOf(hifBaselineEstimate));
+						rec.setStandardDev(stats.getStandardDeviation());
+						rec.setResultMean(stats.getMean());
+						rec.setResultVariance(stats.getVariance());
+						rec.setBaseline(hifBaselineEstimate);
 
 						hifResults.add(rec);
 						

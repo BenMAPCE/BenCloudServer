@@ -7,8 +7,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 
-import java.math.BigDecimal;
-
 import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.Row12;
@@ -60,47 +58,47 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     /**
      * The column <code>data.get_hif_results.point_estimate</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> POINT_ESTIMATE = createField(DSL.name("point_estimate"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> POINT_ESTIMATE = createField(DSL.name("point_estimate"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.population</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> POPULATION = createField(DSL.name("population"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> POPULATION = createField(DSL.name("population"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.delta</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> DELTA = createField(DSL.name("delta"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> DELTA = createField(DSL.name("delta"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.mean</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> MEAN = createField(DSL.name("mean"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> MEAN = createField(DSL.name("mean"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.baseline</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> BASELINE = createField(DSL.name("baseline"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> BASELINE = createField(DSL.name("baseline"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.standard_dev</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> STANDARD_DEV = createField(DSL.name("standard_dev"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> STANDARD_DEV = createField(DSL.name("standard_dev"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.variance</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> VARIANCE = createField(DSL.name("variance"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> VARIANCE = createField(DSL.name("variance"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.pct_2_5</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.pct_97_5</code>.
      */
-    public final TableField<GetHifResultsRecord, BigDecimal> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetHifResultsRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
     private GetHifResults(Name alias, Table<GetHifResultsRecord> aliased) {
         this(alias, aliased, new Field[3]);
@@ -167,7 +165,7 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<Integer, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal> fieldsRow() {
+    public Row12<Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double> fieldsRow() {
         return (Row12) super.fieldsRow();
     }
 

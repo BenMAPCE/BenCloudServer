@@ -8,7 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -81,42 +80,42 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     /**
      * The column <code>data.valuation_result.population</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal> POPULATION = createField(DSL.name("population"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationResultRecord, Double> POPULATION = createField(DSL.name("population"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_result.result</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal> RESULT = createField(DSL.name("result"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationResultRecord, Double> RESULT = createField(DSL.name("result"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_result.result_mean</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal> RESULT_MEAN = createField(DSL.name("result_mean"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationResultRecord, Double> RESULT_MEAN = createField(DSL.name("result_mean"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_result.standard_dev</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal> STANDARD_DEV = createField(DSL.name("standard_dev"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationResultRecord, Double> STANDARD_DEV = createField(DSL.name("standard_dev"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_result.result_variance</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal> RESULT_VARIANCE = createField(DSL.name("result_variance"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationResultRecord, Double> RESULT_VARIANCE = createField(DSL.name("result_variance"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_result.pct_2_5</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationResultRecord, Double> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_result.pct_97_5</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationResultRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_result.percentiles</code>.
      */
-    public final TableField<ValuationResultRecord, BigDecimal[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.NUMERIC.getArrayDataType(), this, "");
+    public final TableField<ValuationResultRecord, Double[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.FLOAT.getArrayDataType(), this, "");
 
     private ValuationResult(Name alias, Table<ValuationResultRecord> aliased) {
         this(alias, aliased, null);
@@ -192,7 +191,7 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Integer, Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal[]> fieldsRow() {
+    public Row14<Integer, Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
         return (Row14) super.fieldsRow();
     }
 }

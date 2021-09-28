@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,8 +73,6 @@ public class HIFApi {
 		
 		List<Integer> hifIds = hifIdsParam == null ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		
-		BigDecimal tmpZero = new BigDecimal(0);
-		
 		if(gridId == 0) {
 			gridId = HIFApi.getBaselineGridForHifResults(id).intValue();
 		}
@@ -90,7 +87,7 @@ public class HIFApi {
 				.asTable("hif_result_records");
 		
 
-		Cursor<Record18<Integer, Integer, String, String, Integer, String, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal>> hifRecords = create.select(
+		Cursor<Record18<Integer, Integer, String, String, Integer, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double>> hifRecords = create.select(
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
 				ENDPOINT.NAME.as("endpoint"),
@@ -104,7 +101,7 @@ public class HIFApi {
 				hifResultRecords.field(GET_HIF_RESULTS.DELTA),
 				hifResultRecords.field(GET_HIF_RESULTS.MEAN),
 				hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
-				DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(tmpZero), tmpZero)
+				DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
 					.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE))).as("percent_of_baseline"),
 				hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
 				hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
@@ -190,14 +187,13 @@ public class HIFApi {
 	
 	public static void getHifResultDetails(Request request, Response response) {
 		String uuid = request.params("uuid");
-		BigDecimal tmpZero = new BigDecimal(0);
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
 		Record1<Integer> id = create.select(HIF_RESULT_DATASET.ID).from(HIF_RESULT_DATASET)
 				.where(HIF_RESULT_DATASET.TASK_UUID.eq(uuid)).fetchOne();
 
-		Cursor<Record18<Integer, Integer, String, String, Integer, String, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal>> hifRecords = create.select(
+		Cursor<Record18<Integer, Integer, String, String, Integer, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double>> hifRecords = create.select(
 				HIF_RESULT.GRID_COL.as("column"),
 				HIF_RESULT.GRID_ROW.as("row"),
 				ENDPOINT.NAME.as("endpoint"),
@@ -211,7 +207,7 @@ public class HIFApi {
 				HIF_RESULT.DELTA,
 				HIF_RESULT.RESULT_MEAN.as("mean"),
 				HIF_RESULT.BASELINE,
-				DSL.when(HIF_RESULT.BASELINE.eq(tmpZero), tmpZero).otherwise(HIF_RESULT.RESULT_MEAN.div(HIF_RESULT.BASELINE)).as("percent_of_baseline"),
+				DSL.when(HIF_RESULT.BASELINE.eq(0.0), 0.0).otherwise(HIF_RESULT.RESULT_MEAN.div(HIF_RESULT.BASELINE)).as("percent_of_baseline"),
 				HIF_RESULT.STANDARD_DEV.as("standard_deviation"),
 				HIF_RESULT.RESULT_VARIANCE.as("variance"),
 				HIF_RESULT.PCT_2_5,
@@ -262,9 +258,9 @@ public class HIFApi {
 		}
 	}
 
-	public static Result<Record7<Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]>> getHifResultsForValuation(Integer id, Integer hifId) {
+	public static Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		Result<Record7<Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]>> hifRecords = create.select(
+		Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
 				HIF_RESULT.GRID_CELL_ID,
 				HIF_RESULT.GRID_COL,
 				HIF_RESULT.GRID_ROW,

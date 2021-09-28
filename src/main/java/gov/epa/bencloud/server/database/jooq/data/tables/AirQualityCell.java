@@ -8,7 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -85,7 +84,7 @@ public class AirQualityCell extends TableImpl<AirQualityCellRecord> {
     /**
      * The column <code>data.air_quality_cell.value</code>.
      */
-    public final TableField<AirQualityCellRecord, BigDecimal> VALUE = createField(DSL.name("value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<AirQualityCellRecord, Double> VALUE = createField(DSL.name("value"), SQLDataType.DOUBLE, this, "");
 
     private AirQualityCell(Name alias, Table<AirQualityCellRecord> aliased) {
         this(alias, aliased, null);
@@ -186,7 +185,7 @@ public class AirQualityCell extends TableImpl<AirQualityCellRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, Integer, Integer, Integer, Integer, Integer, String, BigDecimal> fieldsRow() {
+    public Row8<Integer, Integer, Integer, Integer, Integer, Integer, String, Double> fieldsRow() {
         return (Row8) super.fieldsRow();
     }
 }

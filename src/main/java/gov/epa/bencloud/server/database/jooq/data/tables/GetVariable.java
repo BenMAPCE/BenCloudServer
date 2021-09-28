@@ -7,8 +7,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 
-import java.math.BigDecimal;
-
 import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.Row3;
@@ -55,7 +53,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     /**
      * The column <code>data.get_variable.value</code>.
      */
-    public final TableField<GetVariableRecord, BigDecimal> VALUE = createField(DSL.name("value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetVariableRecord, Double> VALUE = createField(DSL.name("value"), SQLDataType.DOUBLE, this, "");
 
     private GetVariable(Name alias, Table<GetVariableRecord> aliased) {
         this(alias, aliased, new Field[3]);
@@ -122,7 +120,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<String, Integer, BigDecimal> fieldsRow() {
+    public Row3<String, Integer, Double> fieldsRow() {
         return (Row3) super.fieldsRow();
     }
 

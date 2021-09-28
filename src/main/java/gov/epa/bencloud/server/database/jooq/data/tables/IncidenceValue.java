@@ -9,7 +9,6 @@ import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceValueRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -72,7 +71,7 @@ public class IncidenceValue extends TableImpl<IncidenceValueRecord> {
     /**
      * The column <code>data.incidence_value.value</code>.
      */
-    public final TableField<IncidenceValueRecord, BigDecimal> VALUE = createField(DSL.name("value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<IncidenceValueRecord, Double> VALUE = createField(DSL.name("value"), SQLDataType.DOUBLE, this, "");
 
     private IncidenceValue(Name alias, Table<IncidenceValueRecord> aliased) {
         this(alias, aliased, null);
@@ -162,7 +161,7 @@ public class IncidenceValue extends TableImpl<IncidenceValueRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, Integer, Integer, Integer, BigDecimal> fieldsRow() {
+    public Row5<Integer, Integer, Integer, Integer, Double> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

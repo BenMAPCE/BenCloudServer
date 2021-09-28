@@ -7,8 +7,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
 
-import java.math.BigDecimal;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
@@ -57,17 +55,17 @@ public class InflationEntry extends TableImpl<InflationEntryRecord> {
     /**
      * The column <code>data.inflation_entry.all_goods_index</code>.
      */
-    public final TableField<InflationEntryRecord, BigDecimal> ALL_GOODS_INDEX = createField(DSL.name("all_goods_index"), SQLDataType.NUMERIC, this, "");
+    public final TableField<InflationEntryRecord, Double> ALL_GOODS_INDEX = createField(DSL.name("all_goods_index"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.inflation_entry.medical_cost_index</code>.
      */
-    public final TableField<InflationEntryRecord, BigDecimal> MEDICAL_COST_INDEX = createField(DSL.name("medical_cost_index"), SQLDataType.NUMERIC, this, "");
+    public final TableField<InflationEntryRecord, Double> MEDICAL_COST_INDEX = createField(DSL.name("medical_cost_index"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.inflation_entry.wage_index</code>.
      */
-    public final TableField<InflationEntryRecord, BigDecimal> WAGE_INDEX = createField(DSL.name("wage_index"), SQLDataType.NUMERIC, this, "");
+    public final TableField<InflationEntryRecord, Double> WAGE_INDEX = createField(DSL.name("wage_index"), SQLDataType.DOUBLE, this, "");
 
     private InflationEntry(Name alias, Table<InflationEntryRecord> aliased) {
         this(alias, aliased, null);
@@ -138,7 +136,7 @@ public class InflationEntry extends TableImpl<InflationEntryRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, Integer, BigDecimal, BigDecimal, BigDecimal> fieldsRow() {
+    public Row5<Integer, Integer, Double, Double, Double> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

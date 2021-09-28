@@ -8,7 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -77,27 +76,27 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     /**
      * The column <code>data.air_quality_layer.min_value</code>.
      */
-    public final TableField<AirQualityLayerRecord, BigDecimal> MIN_VALUE = createField(DSL.name("min_value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<AirQualityLayerRecord, Double> MIN_VALUE = createField(DSL.name("min_value"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.air_quality_layer.max_value</code>.
      */
-    public final TableField<AirQualityLayerRecord, BigDecimal> MAX_VALUE = createField(DSL.name("max_value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<AirQualityLayerRecord, Double> MAX_VALUE = createField(DSL.name("max_value"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.air_quality_layer.mean_value</code>.
      */
-    public final TableField<AirQualityLayerRecord, BigDecimal> MEAN_VALUE = createField(DSL.name("mean_value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<AirQualityLayerRecord, Double> MEAN_VALUE = createField(DSL.name("mean_value"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.air_quality_layer.pct_2_5</code>.
      */
-    public final TableField<AirQualityLayerRecord, BigDecimal> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<AirQualityLayerRecord, Double> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.air_quality_layer.pct_97_5</code>.
      */
-    public final TableField<AirQualityLayerRecord, BigDecimal> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.NUMERIC, this, "");
+    public final TableField<AirQualityLayerRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.air_quality_layer.locked</code>.
@@ -210,7 +209,7 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row11<Integer, String, Integer, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Boolean> fieldsRow() {
+    public Row11<Integer, String, Integer, Integer, Integer, Double, Double, Double, Double, Double, Boolean> fieldsRow() {
         return (Row11) super.fieldsRow();
     }
 }

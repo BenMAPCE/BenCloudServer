@@ -2,7 +2,6 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -18,13 +17,9 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record12;
-import org.jooq.Record18;
 import org.jooq.Record2;
 import org.jooq.impl.DSL;
-import org.jooq.tools.json.JSONObject;
-
 import gov.epa.bencloud.server.database.JooqUtil;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.util.ApplicationUtil;
@@ -79,7 +74,7 @@ public class ValuationApi {
 				.asTable("vf_result_records");
 		
 
-		Cursor<Record12<Integer, Integer, String, String, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal>> vfRecords = create.select(
+		Cursor<Record12<Integer, Integer, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords = create.select(
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
 				ENDPOINT.NAME.as("endpoint"),
@@ -155,7 +150,7 @@ public class ValuationApi {
 				.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(uuid)).fetchOne();
 
 
-		Cursor<Record12<Integer, Integer, String, String, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal>> valuationRecords = create.select(
+		Cursor<Record12<Integer, Integer, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> valuationRecords = create.select(
 				VALUATION_RESULT.GRID_COL.as("column"),
 				VALUATION_RESULT.GRID_ROW.as("row"),
 				ENDPOINT.NAME.as("endpoint"),

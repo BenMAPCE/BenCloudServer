@@ -8,7 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.CrosswalkEntryRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -86,7 +85,7 @@ public class CrosswalkEntry extends TableImpl<CrosswalkEntryRecord> {
     /**
      * The column <code>data.crosswalk_entry.percentage</code>.
      */
-    public final TableField<CrosswalkEntryRecord, BigDecimal> PERCENTAGE = createField(DSL.name("percentage"), SQLDataType.NUMERIC, this, "");
+    public final TableField<CrosswalkEntryRecord, Double> PERCENTAGE = createField(DSL.name("percentage"), SQLDataType.DOUBLE, this, "");
 
     private CrosswalkEntry(Name alias, Table<CrosswalkEntryRecord> aliased) {
         this(alias, aliased, null);
@@ -162,7 +161,7 @@ public class CrosswalkEntry extends TableImpl<CrosswalkEntryRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, BigDecimal> fieldsRow() {
+    public Row8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Double> fieldsRow() {
         return (Row8) super.fieldsRow();
     }
 }

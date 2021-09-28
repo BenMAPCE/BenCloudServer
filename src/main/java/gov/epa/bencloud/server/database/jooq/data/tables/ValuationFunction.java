@@ -8,7 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -97,7 +96,7 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     /**
      * The column <code>data.valuation_function.val_a</code>.
      */
-    public final TableField<ValuationFunctionRecord, BigDecimal> VAL_A = createField(DSL.name("val_a"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationFunctionRecord, Double> VAL_A = createField(DSL.name("val_a"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_function.name_a</code>.
@@ -112,17 +111,17 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     /**
      * The column <code>data.valuation_function.p1a</code>.
      */
-    public final TableField<ValuationFunctionRecord, BigDecimal> P1A = createField(DSL.name("p1a"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationFunctionRecord, Double> P1A = createField(DSL.name("p1a"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_function.p2a</code>.
      */
-    public final TableField<ValuationFunctionRecord, BigDecimal> P2A = createField(DSL.name("p2a"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationFunctionRecord, Double> P2A = createField(DSL.name("p2a"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_function.val_b</code>.
      */
-    public final TableField<ValuationFunctionRecord, BigDecimal> VAL_B = createField(DSL.name("val_b"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationFunctionRecord, Double> VAL_B = createField(DSL.name("val_b"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_function.name_b</code>.
@@ -132,7 +131,7 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     /**
      * The column <code>data.valuation_function.val_c</code>.
      */
-    public final TableField<ValuationFunctionRecord, BigDecimal> VAL_C = createField(DSL.name("val_c"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationFunctionRecord, Double> VAL_C = createField(DSL.name("val_c"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_function.name_c</code>.
@@ -142,7 +141,7 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     /**
      * The column <code>data.valuation_function.val_d</code>.
      */
-    public final TableField<ValuationFunctionRecord, BigDecimal> VAL_D = createField(DSL.name("val_d"), SQLDataType.NUMERIC, this, "");
+    public final TableField<ValuationFunctionRecord, Double> VAL_D = createField(DSL.name("val_d"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.valuation_function.name_d</code>.
@@ -233,7 +232,7 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row20<Integer, Integer, Integer, Integer, String, String, Integer, Integer, String, BigDecimal, String, String, BigDecimal, BigDecimal, BigDecimal, String, BigDecimal, String, BigDecimal, String> fieldsRow() {
+    public Row20<Integer, Integer, Integer, Integer, String, String, Integer, Integer, String, Double, String, String, Double, Double, Double, String, Double, String, Double, String> fieldsRow() {
         return (Row20) super.fieldsRow();
     }
 }

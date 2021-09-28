@@ -1,9 +1,9 @@
 package gov.epa.bencloud.api.util;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.jooq.Record;
 import org.jooq.Record2;
 import org.jooq.Result;
@@ -59,9 +59,9 @@ public class ApiUtil {
 		return inflationIndices;
 	}
 
-	public static Map<Short, Record2<Short, BigDecimal>> getIncomeGrowthFactors(int id, Integer popYear) {
+	public static Map<Short, Record2<Short, Double>> getIncomeGrowthFactors(int id, Integer popYear) {
 
-		Map<Short, Record2<Short, BigDecimal>> incomeGrowthFactorRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Map<Short, Record2<Short, Double>> incomeGrowthFactorRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(INCOME_GROWTH_ADJ_FACTOR.ENDPOINT_GROUP_ID,
 						INCOME_GROWTH_ADJ_FACTOR.MEAN_VALUE)
 				.from(INCOME_GROWTH_ADJ_FACTOR)

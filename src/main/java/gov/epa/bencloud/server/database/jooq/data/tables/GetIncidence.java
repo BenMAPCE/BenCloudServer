@@ -7,8 +7,6 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 
-import java.math.BigDecimal;
-
 import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.Row7;
@@ -75,7 +73,7 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
     /**
      * The column <code>data.get_incidence.value</code>.
      */
-    public final TableField<GetIncidenceRecord, BigDecimal> VALUE = createField(DSL.name("value"), SQLDataType.NUMERIC, this, "");
+    public final TableField<GetIncidenceRecord, Double> VALUE = createField(DSL.name("value"), SQLDataType.DOUBLE, this, "");
 
     private GetIncidence(Name alias, Table<GetIncidenceRecord> aliased) {
         this(alias, aliased, new Field[13]);
@@ -142,7 +140,7 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Integer, Integer, Integer, Integer, Short, Short, BigDecimal> fieldsRow() {
+    public Row7<Integer, Integer, Integer, Integer, Short, Short, Double> fieldsRow() {
         return (Row7) super.fieldsRow();
     }
 

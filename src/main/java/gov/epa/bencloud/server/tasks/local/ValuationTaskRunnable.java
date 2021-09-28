@@ -134,12 +134,12 @@ public class ValuationTaskRunnable implements Runnable {
 
 			int inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;
 			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, inflationYear);
-			Map<Short, Record2<Short, BigDecimal>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, hifTaskConfig.popYear);
+			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, hifTaskConfig.popYear);
 			
 			//<variableName, <gridCellId, value>>
 			Map<String, Map<Integer, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
 			
-			Result<Record7<Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
+			Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
 
 			ArrayList<ValuationResultRecord> valuationResults = new ArrayList<ValuationResultRecord>(maxRowsInMemory);
 			mXparser.setToOverrideBuiltinTokens();
@@ -160,7 +160,7 @@ public class ValuationTaskRunnable implements Runnable {
 				/*
 				 * FOR EACH ROW IN THE HIF RESULTS
 				 */
-				for (Record7<Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]> hifResult : hifResults) {
+				for (Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]> hifResult : hifResults) {
 					
 					// updating task percentage
 					int currentPct = Math.round(currentCell * 100 / totalCells);
@@ -179,7 +179,7 @@ public class ValuationTaskRunnable implements Runnable {
 
 						ValuationConfig vfConfig = valuationTaskConfig.valuationFunctions.get(vfIdx);
 						if (vfConfig.hifId.equals(hifResult.get(HIF_RESULT.HIF_ID))) {
-							Record2<Short, BigDecimal> tmp = incomeGrowthFactors.getOrDefault(hifResult.get(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID).shortValue(), null);
+							Record2<Short, Double> tmp = incomeGrowthFactors.getOrDefault(hifResult.get(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID).shortValue(), null);
 							double incomeGrowthFactor = tmp == null ? 1.0 : tmp.value2().doubleValue();
 							
 							double hifEstimate = hifResult.get(HIF_RESULT.RESULT).doubleValue();
@@ -203,7 +203,7 @@ public class ValuationTaskRunnable implements Runnable {
 							valuationFunctionEstimate = valuationFunctionEstimate * incomeGrowthFactor * hifEstimate;
 							
 							DescriptiveStatistics distStats = new DescriptiveStatistics();
-							BigDecimal[] hifPercentiles = hifResult.get(HIF_RESULT.PERCENTILES);
+							Double[] hifPercentiles = hifResult.get(HIF_RESULT.PERCENTILES);
 							
 							for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
 								for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
@@ -224,7 +224,7 @@ public class ValuationTaskRunnable implements Runnable {
 							rec.setHifId(vfConfig.hifId);
 							rec.setVfId(vfConfig.vfId);
 
-							rec.setResult(BigDecimal.valueOf(valuationFunctionEstimate));
+							rec.setResult(valuationFunctionEstimate);
 							try {
 
 								if (valuationFunctionEstimate == 0.0) {
@@ -232,7 +232,7 @@ public class ValuationTaskRunnable implements Runnable {
 								} else {
 
 									double[] percentiles = new double[100];
-									BigDecimal[] percentiles20 = new BigDecimal[20];
+									Double[] percentiles20 = new Double[20];
 									double[] distValues = distStats.getSortedValues();
 									int idxMedian = distValues.length / percentiles.length / 2; // the median of the first segment
 									int idxMedian20 = distValues.length / percentiles20.length / 2; // the median of the first segment
@@ -245,23 +245,23 @@ public class ValuationTaskRunnable implements Runnable {
 									}
 									for (int i = 0; i < percentiles20.length; i++) {
 										// Grab the median from each of the 20 slices of distStats
-										percentiles20[i] = BigDecimal.valueOf((distValues[idxMedian20] + distValues[idxMedian20 - 1]) / 2.0);
+										percentiles20[i] = (distValues[idxMedian20] + distValues[idxMedian20 - 1]) / 2.0;
 										//statsPercentiles.addValue(percentiles[i]);
 										idxMedian20 += distValues.length / percentiles20.length;
 									}
-									rec.setPct_2_5(BigDecimal.valueOf((percentiles[1] + percentiles[2]) / 2.0));
-									rec.setPct_97_5(BigDecimal.valueOf((percentiles[96] + percentiles[97]) / 2.0));
+									rec.setPct_2_5((percentiles[1] + percentiles[2]) / 2.0);
+									rec.setPct_97_5((percentiles[96] + percentiles[97]) / 2.0);
 									rec.setPercentiles(percentiles20);
-									rec.setStandardDev(BigDecimal.valueOf(statsPercentiles.getStandardDeviation()));
-									rec.setResultMean(BigDecimal.valueOf(statsPercentiles.getMean()));
-									rec.setResultVariance(BigDecimal.valueOf(statsPercentiles.getVariance()));
+									rec.setStandardDev(statsPercentiles.getStandardDeviation());
+									rec.setResultMean(statsPercentiles.getMean());
+									rec.setResultVariance(statsPercentiles.getVariance());
 								}
 							} catch (Exception e) {
-								rec.setPct_2_5(BigDecimal.valueOf(0.0));
-								rec.setPct_97_5(BigDecimal.valueOf(0.0));
-								rec.setStandardDev(BigDecimal.valueOf(0.0));
-								rec.setResultMean(BigDecimal.valueOf(0.0));
-								rec.setResultVariance(BigDecimal.valueOf(0.0));
+								rec.setPct_2_5(0.0);
+								rec.setPct_97_5(0.0);
+								rec.setStandardDev(0.0);
+								rec.setResultMean(0.0);
+								rec.setResultVariance(0.0);
 								e.printStackTrace();
 							}
 
