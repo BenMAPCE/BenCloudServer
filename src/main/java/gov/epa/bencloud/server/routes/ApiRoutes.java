@@ -1,103 +1,153 @@
 package gov.epa.bencloud.server.routes;
 
-import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
-
 import java.util.UUID;
 
 import javax.servlet.MultipartConfigElement;
 
-import org.jooq.Record;
-import org.jooq.Record14;
-import org.jooq.Record6;
-import org.jooq.Result;
-import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import freemarker.template.Configuration;
 import gov.epa.bencloud.api.*;
 import gov.epa.bencloud.api.util.ApiUtil;
-import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
-import io.vavr.control.Validation;
+import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Service;
 
 public class ApiRoutes extends RoutesBase {
 
 	private static final Logger log = LoggerFactory.getLogger(ApiRoutes.class);
 	private Service service = null;
-
+	private final String apiPrefix = "/api";
 	public ApiRoutes(Service service, Configuration freeMarkerConfiguration){
 		this.service = service;
-		addRoutes(freeMarkerConfiguration);
+		addRoutes();
 	}
 
-	private void addRoutes(Configuration freeMarkerConfiguration) {
 
-		// GET	
-		service.get("/api/grid-definitions", (request, response) -> {
+	private void addRoutes() {
+
+		/*
+		 * GET array of all grid definitions
+		 */
+		service.get(apiPrefix + "/grid-definitions", (request, response) -> {
 			return GridDefinitionApi.getAllGridDefinitions(response);
 		});
 		
-		service.get("/api/pollutants", (request, response) -> {
+		/*
+		 * GET array of all pollutant definitions
+		 */
+		service.get(apiPrefix + "/pollutants", (request, response) -> {
 			return PollutantApi.getAllPollutantDefinitions(response);
 		});
-		
-		//Supports optional ?pollutantId=:id query string parameter
-		service.get("/api/air-quality-data", (request, response) -> {
+
+		/*
+		 * GET array of air quality surface definitions
+		 * PARAMETERS:
+		 *  pollutantId= (optional)
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 */
+		service.get(apiPrefix + "/air-quality-data", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDefinitions(request, response);
 		});
 
-		service.get("/api/air-quality-data/:id/definition", (request, response) -> {
+		/*
+		 * GET a single air quality surface definition
+		 */
+		service.get(apiPrefix + "/air-quality-data/:id/definition", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDefinition(request, response);
 		});
 
-		service.get("/api/air-quality-data/:id/details", (request, response) -> {
+		/*
+		 * GET the contents of a single air quality surface
+		 * PARAMETERS:
+		 *  :id
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 *  
+		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
+		 *  else, application/json response
+		 */
+		service.get(apiPrefix + "/air-quality-data/:id/details", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDetails(request, response);
 		});
 
-		service.get("/api/population", (request, response) -> {
+		/*
+		 * GET array of all population dataset definitions
+		 */
+		service.get(apiPrefix + "/population", (request, response) -> {
 			return PopulationApi.getAllPopulationDatasets(response);
 		});
 		
-		service.get("/api/health-impact-functions", (request, response) -> {
+		/*
+		 * GET array of all health impact function definitions
+		 */
+		service.get(apiPrefix + "/health-impact-functions", (request, response) -> {
 			return HIFApi.getAllHealthImpactFunctions(request, response);
 		});
 
-		service.get("/api/health-impact-function/:id", (request, response) -> {
+		/*
+		 * GET a health impact function definition
+		 */
+		service.get(apiPrefix + "/health-impact-function/:id", (request, response) -> {
 			return HIFApi.getHealthImpactFunction(request, response);
 		});
 		
-		//Supports optional ?pollutantId=:id query string parameter		
-		service.get("/api/health-impact-function-groups", (request, response) -> {
+		/*
+		 * GET array of health impact function groups
+		 * PARAMETERS:
+		 *  pollutantId=
+		 *  
+		 *  Response will include array of function ids within each group
+		 */	
+		service.get(apiPrefix + "/health-impact-function-groups", (request, response) -> {
 			return HIFApi.getAllHifGroups(request, response);
 		});
-			
-		service.get("/api/health-impact-function-groups/:ids", (request, response) -> {
+		
+		/*
+		 * GET definition of one or more health impact function groups
+		 * PARAMETERS:
+		 *  :ids (comma separated list of health impact function group ids
+		 *  popYear=
+		 *  incidencePrevalenceDataset=
+		 *  pollutantId=
+		 *  baselineId=
+		 *  scenarioId=
+		 *  
+		 *  Parameters are used to filter the list of functions to only those relevant to the current analysis
+		 *  
+		 *  Response will include array of complete function definitions within each group
+		 */	
+		service.get(apiPrefix + "/health-impact-function-groups/:ids", (request, response) -> {
 			return HIFApi.getSelectedHifGroups(request, response);
 		});
 		
-		service.get("/api/incidence", (request, response) -> {
+		service.get(apiPrefix + "/incidence", (request, response) -> {
 			return IncidenceApi.getAllIncidenceDatasets(response);
 		});
 		
-		service.get("/api/prevalence", (request, response) -> {
+		service.get(apiPrefix + "/prevalence", (request, response) -> {
 			return IncidenceApi.getAllPrevalenceDatasets(response);
 		});
 
-		service.get("/api/valuation-functions", (request, response) -> {
+		service.get(apiPrefix + "/valuation-functions", (request, response) -> {
 			return ValuationApi.getAllValuationFunctions(request, response);
 		});
 
-		// POST
-		service.post("/api/air-quality-data", (request, response) -> {
+		service.post(apiPrefix + "/air-quality-data", (request, response) -> {
 			
 			request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 			String layerName = getPostParameterValue(request, "name");
@@ -108,7 +158,7 @@ public class ApiRoutes extends RoutesBase {
 			return AirQualityApi.postAirQualityLayer(request, layerName, pollutantId, gridId, layerType, response);
 		});
 
-		service.delete("/api/air-quality-data/:id", (request, response) -> {
+		service.delete(apiPrefix + "/air-quality-data/:id", (request, response) -> {
 
 			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response)) {
 				response.status(204);
@@ -118,330 +168,106 @@ public class ApiRoutes extends RoutesBase {
 			
 			return "";
 		});
-		
-		//TODO: Revise UI to use /api/air-quality-data and then remove this method
-		service.get("/api/load-air-quality-options", (request, response) -> {
+
+		/*
+		 * GET array of all health impact function result datasets
+		 */	
+		service.get(apiPrefix + "/results/hif", (req, res) -> {
 			
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			String pollutantParam = request.raw().getParameter("pollutant");
-			Integer pollutant= -999;
-			if(pollutantParam != null) {
-				pollutant = Integer.valueOf(pollutantParam);
-			}
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(AIR_QUALITY_LAYER.asterisk())
-					.from(AIR_QUALITY_LAYER)
-					.where(pollutant==-999 ? DSL.noCondition() : AIR_QUALITY_LAYER.POLLUTANT_ID.eq(pollutant))
-					.orderBy(AIR_QUALITY_LAYER.NAME)
-					.fetch();
-			for (Record r : result) {
-				option = mapper.createObjectNode();
-				option.put("id", r.getValue(AIR_QUALITY_LAYER.ID));
-				option.put("text", 
-						r.getValue(AIR_QUALITY_LAYER.NAME)
-					);
+			return HIFApi.getHifResultDatasets(req, res);
 
-				options.add(option);
-			}
-						
-			return options;
-		});	
-		
-		//TODO: Revise UI to use /api/pollutants and then remove this method
-		service.get("/api/load-pollutant-options", (request, response) -> {
-			
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(POLLUTANT.asterisk())
-					.from(POLLUTANT)
-					.orderBy(POLLUTANT.NAME)
-					.fetch();
-			for (Record r : result) {
-				option = mapper.createObjectNode();
-				option.put("id", r.getValue(POLLUTANT.ID));
-				option.put("text", 
-						r.getValue(POLLUTANT.NAME)
-					);
-
-				options.add(option);
-			}
-						
-			return options;
-			
 		});
 		
-		//TODO: Revise UI to use /api/grid-definitions and then remove this method
-		service.get("/api/load-grid-options", (request, response) -> {
+		/*
+		 * GET array of all health impact function definitions that are part of a hif result dataset
+		 */	
+		service.get(apiPrefix + "/results/hif/:id/functions", (req, res) -> {
 			
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(GRID_DEFINITION.asterisk())
-					.from(GRID_DEFINITION)
-					.orderBy(GRID_DEFINITION.NAME)
-					.fetch();
-			for (Record r : result) {
-				option = mapper.createObjectNode();
-				option.put("id", r.getValue(GRID_DEFINITION.ID));
-				option.put("text", 
-						r.getValue(GRID_DEFINITION.NAME)
-					);
-
-				options.add(option);
-			}
-						
-			return options;
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
+			return HIFApi.getHifResultDatasetFunctions(req, res);
+
 		});
 		
-		//TODO: Change to /api/population
-		service.get("/api/load-population-options", (request, response) -> {
+		/*
+		 * GET health impact function results from an analysis
+		 * PARAMETERS:
+		 *  :id (health impact function results dataset id)
+		 *  gridId= (aggregate the results to another grid definition)
+		 *  hifId= (filter results to those from one or more functions via comma delimited list)
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 *  
+		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
+		 *  else, application/json response
+		 */	
+		service.get(apiPrefix + "/results/hif/:id/details", (req, res) -> {
 			
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(POPULATION_DATASET.asterisk())
-					.from(POPULATION_DATASET)
-					.orderBy(POPULATION_DATASET.NAME)
-					.fetch();
-			for (Record r : result) {
-				option = mapper.createObjectNode();
-				option.put("id", r.getValue(POPULATION_DATASET.ID));
-				option.put("text", 
-						r.getValue(POPULATION_DATASET.NAME)
-					);
-
-				options.add(option);
-			}
-						
-			return options;
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
+			//TODO: Implement a new version of this that supports filtering, etc
+			HIFApi.getHifResultDetails2(req, res);
+			
+			return null;
+
 		});
-
-		service.get("/api/load-hif-result-dataset-options", (request, response) -> {
-			
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			option = mapper.createObjectNode();
-			option.put("id", "0");
-			option.put("text", "Select HIF Result Dataset");
-			options.add(option);
-			
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(HIF_RESULT_DATASET.asterisk())
-					.from(HIF_RESULT_DATASET)
-					.orderBy(HIF_RESULT_DATASET.NAME)
-					.fetch();
-			for (Record r : result) {
-				option = mapper.createObjectNode();
-				option.put("id", r.getValue(HIF_RESULT_DATASET.ID));
-				option.put("text", 
-						r.getValue(HIF_RESULT_DATASET.NAME)
-					);
-
-				options.add(option);
-			}
-						
-			return options;
-			
-		});	
-
-		service.get("/api/load-hif-result-functions", (request, response) -> {
-			
-			String resultsetIdParameter = request.raw().getParameter("resultsetId");
-
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			Integer resultsetId;
-			try {
-				resultsetId = Integer.parseInt(resultsetIdParameter);
-
-				Result<Record14<Integer, Integer, Integer, Integer, String, String, Integer, String, Integer, Integer, String, String, String, String>> result = DSL.using(JooqUtil.getJooqConfiguration())
-						.select(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID, 
-								HIF_RESULT_FUNCTION_CONFIG.HIF_ID,
-								HEALTH_IMPACT_FUNCTION.ENDPOINT_ID,
-								HEALTH_IMPACT_FUNCTION.ID,
-								HIF_RESULT_DATASET.NAME,
-								ENDPOINT.NAME,
-								HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID,
-								HEALTH_IMPACT_FUNCTION.AUTHOR,
-								HEALTH_IMPACT_FUNCTION.START_AGE,
-								HEALTH_IMPACT_FUNCTION.END_AGE,
-								RACE.NAME,
-								GENDER.NAME,
-								ETHNICITY.NAME,
-								HEALTH_IMPACT_FUNCTION.QUALIFIER
-								)
-						.from(HIF_RESULT_FUNCTION_CONFIG)
-						.join(HIF_RESULT_DATASET).on(HIF_RESULT_DATASET.ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID))
-						.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID))
-						.join(ENDPOINT).on(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
-						.join(RACE).on(HEALTH_IMPACT_FUNCTION.RACE_ID.eq(RACE.ID))
-						.join(GENDER).on(HEALTH_IMPACT_FUNCTION.GENDER_ID.eq(GENDER.ID))
-						.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
-						.where(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(resultsetId))
-						.fetch();
-				
-				for (Record r : result) {
-					option = mapper.createObjectNode();
-					option.put("hif_result_dataset_id", r.getValue(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID));
-					option.put("hif_result_dataset_name", r.getValue(HIF_RESULT_DATASET.NAME));
-					option.put("hif_id", r.getValue(HEALTH_IMPACT_FUNCTION.ID));
-					option.put("hif_endpoint_id", r.getValue(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID));
-					option.put("hif_endpoint_group_id", r.getValue(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID));
-					String hif_options = 
-						r.getValue(ENDPOINT.NAME) + " | " + 
-						r.getValue(HEALTH_IMPACT_FUNCTION.AUTHOR) + " | " + 
-						r.getValue(HEALTH_IMPACT_FUNCTION.START_AGE) + "-" + 
-						r.getValue(HEALTH_IMPACT_FUNCTION.END_AGE) + " | " + 
-						r.getValue(RACE.NAME) + " | " + 
-						r.getValue(GENDER.NAME) + " | " + 
-						r.getValue(ETHNICITY.NAME) + 
-						  " | " + r.getValue(HEALTH_IMPACT_FUNCTION.QUALIFIER);
-					option.put("hif_options", hif_options);
-
-					options.add(option);
-				}
-			
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-						
-			return options;
-			
-		});	
-
-		service.get("/api/load-valuation-functions", (request, response) -> {
-
-			String endpointGroupIdParamater = request.raw().getParameter("endpointGroupId");
-
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			Integer endpointGroupId;
-
-			try {
-				endpointGroupId = Integer.parseInt(endpointGroupIdParamater);
-
-				Result<Record6<Integer, Integer, Integer, String, String, String>> result = DSL.using(JooqUtil.getJooqConfiguration())
-						.select(VALUATION_FUNCTION.ID, 
-								VALUATION_FUNCTION.START_AGE, 
-								VALUATION_FUNCTION.END_AGE, 
-								VALUATION_FUNCTION.FUNCTION_TEXT, 
-								VALUATION_FUNCTION.QUALIFIER,  
-								ENDPOINT.NAME)
-						.from(VALUATION_FUNCTION)
-						.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
-						.where(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(endpointGroupId))
-						.orderBy(ENDPOINT.NAME, 
-								VALUATION_FUNCTION.START_AGE,
-								VALUATION_FUNCTION.END_AGE,
-								VALUATION_FUNCTION.FUNCTION_TEXT,
-								VALUATION_FUNCTION.QUALIFIER)
-						.fetch();
-				
-				for (Record r : result) {
-					option = mapper.createObjectNode();
-					option.put("id", r.getValue(VALUATION_FUNCTION.ID));
-					
-					
-					String vf_options = 
-							r.getValue(ENDPOINT.NAME) + " | " + 
-							r.getValue(VALUATION_FUNCTION.START_AGE) + "-" + 
-							r.getValue(VALUATION_FUNCTION.END_AGE) + " | " + 
-							r.getValue(VALUATION_FUNCTION.FUNCTION_TEXT) + " | " + 
-							r.getValue(VALUATION_FUNCTION.QUALIFIER);
-					
-					option.put("text", vf_options);
-
-					options.add(option);
-				}
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-						
-			return options;
-			
-		});	
 		
-		service.get("/api/load-functions", (request, response) -> {
+		/*
+		 * GET array of all health impact function result datasets
+		 */	
+		service.get(apiPrefix + "/results/valuation", (req, res) -> {
 			
-			ObjectMapper mapper = new ObjectMapper();
-
-			ArrayNode options = mapper.createArrayNode();
-			ObjectNode option = mapper.createObjectNode();
-
-			String pollutantParam = request.raw().getParameter("pollutant");
-			Integer pollutant= -999;
-			if(pollutantParam != null) {
-				pollutant = Integer.valueOf(pollutantParam);
-			}
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(HEALTH_IMPACT_FUNCTION.asterisk(), ENDPOINT.NAME, RACE.NAME, GENDER.NAME, ETHNICITY.NAME)
-					.from(HEALTH_IMPACT_FUNCTION)
-					.join(ENDPOINT).on(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
-					.join(RACE).on(HEALTH_IMPACT_FUNCTION.RACE_ID.eq(RACE.ID))
-					.join(GENDER).on(HEALTH_IMPACT_FUNCTION.GENDER_ID.eq(GENDER.ID))
-					.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
-					.where(pollutant==-999 ? DSL.noCondition() : HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutant))
-					.orderBy(ENDPOINT.NAME, HEALTH_IMPACT_FUNCTION.AUTHOR, 
-							HEALTH_IMPACT_FUNCTION.START_AGE, HEALTH_IMPACT_FUNCTION.END_AGE)
-					.fetch();
-			for (Record r : result) {
-				option = mapper.createObjectNode();
-				option.put("id", r.getValue(HEALTH_IMPACT_FUNCTION.ID));
-				option.put("text", 
-						r.getValue(ENDPOINT.NAME) + " | " + 
-						r.getValue(HEALTH_IMPACT_FUNCTION.AUTHOR) + " | " + 
-						r.getValue(HEALTH_IMPACT_FUNCTION.START_AGE) + "-" + 
-						r.getValue(HEALTH_IMPACT_FUNCTION.END_AGE) + " | " + 
-						r.getValue(RACE.NAME) + " | " + 
-						r.getValue(GENDER.NAME) + " | " + 
-						r.getValue(ETHNICITY.NAME) + 
-				
-						(null == r.getValue(HEALTH_IMPACT_FUNCTION.QUALIFIER) 
-							? "" : " | " + r.getValue(HEALTH_IMPACT_FUNCTION.QUALIFIER)
-							) + 
-						
-						(null == r.getValue(HEALTH_IMPACT_FUNCTION.LOCATION) 
-							? "" : " | " + r.getValue(HEALTH_IMPACT_FUNCTION.LOCATION)
-						)
-					);
+			return ValuationApi.getValuationResultDatasets(req, res);
 
-				options.add(option);
-			}
-						
-			return options;
 		});
+		
+		/*
+		 * GET array of all health impact function definitions that are part of a hif result dataset
+		 */	
+		service.get(apiPrefix + "/results/valuation/:id/functions", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			return ValuationApi.getValuationResultDatasetFunctions(req, res);
 
-		service.get("/api/tasks/:uuid/results", (req, res) -> {
+		});
+		
+		
+		/*
+		 * GET valuation results from an analysis
+		 * PARAMETERS:
+		 *  :id (valuation results dataset id)
+		 *  gridId= (aggregate the results to another grid definition)
+		 *  hifId= (filter results to those from one or more functions via comma delimited list)
+		 *  vfId= (filter results to those from one or more functions via comma delimited list)
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 *  
+		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
+		 *  else, application/json response
+		 */	
+		service.get(apiPrefix + "/results/valuation/:id/details", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			//TODO: Implement a new version of this that supports filtering, etc
+			ValuationApi.getValuationResultDetails2(req, res);
+			
+			return null;
+
+		});
+		
+		service.get(apiPrefix + "/tasks/:uuid/results", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -451,7 +277,7 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 
-		service.get("/api/tasks/:uuid/results/delete", (req, res) -> {
+		service.delete(apiPrefix + "/tasks/:uuid/results", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -459,7 +285,7 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		service.get("/api/tasks/pending", (req, res) -> {
+		service.get(apiPrefix + "/tasks/pending", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -469,7 +295,7 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		service.get("/api/tasks/completed", (req, res) -> {
+		service.get(apiPrefix + "/tasks/completed", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -479,8 +305,7 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		// Submit a new task
-		service.post("/api/tasks", (req, res) -> {
+		service.post(apiPrefix + "/tasks", (req, res) -> {
 
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			String body = req.body();

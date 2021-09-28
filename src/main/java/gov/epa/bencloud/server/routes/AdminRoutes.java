@@ -26,20 +26,6 @@ public class AdminRoutes extends RoutesBase {
 
 	private void addRoutes(Configuration freeMarkerConfiguration) {
 
-		service.get("/db", (req, res) -> {
-			
-			Map<String, Object> attributes = new HashMap<>();
-			
-			attributes.put("database_status", "Got a database connection");
-							
-			String sql = "SELECT CURRENT_DATE";
-
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).fetch(sql);
-			attributes.put("result", result.get(0).get(0));
-			
-			return FreeMarkerRenderUtil.render(freeMarkerConfiguration, attributes, "db.ftl");
-		});
-
 		service.get("/exit", (req, res) -> {
 			service.stop();
 			System.exit(0);

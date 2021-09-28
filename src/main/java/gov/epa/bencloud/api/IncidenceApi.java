@@ -25,9 +25,9 @@ import spark.Response;
 
 public class IncidenceApi {
 
-	public static boolean addIncidenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, HealthImpactFunctionRecord hifRecord, ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists, Map<String, Integer> incidenceCacheMap) {
+	public static boolean addIncidenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, HealthImpactFunctionRecord hifRecord, ArrayList<Map<Integer, Map<Integer, Double>>> incidenceLists, Map<String, Integer> incidenceCacheMap) {
 
-		Map<Long, Map<Integer, Double>> incidenceMap = new HashMap<Long, Map<Integer, Double>>();
+		Map<Integer, Map<Integer, Double>> incidenceMap = new HashMap<Integer, Map<Integer, Double>>();
 		
 		//Some functions don't use incidence or prevalence. Just return an empty map for those.
 		if((hifConfig.incidence == null || hifConfig.incidence == 0) && (hifConfig.prevalence == null || hifConfig.prevalence == 0)) {
@@ -54,7 +54,7 @@ public class IncidenceApi {
 		//Return an average incidence for each population age range for a given hif
 		//TODO: Need to add in handling for race, ethnicity, gender
 		
-		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
+		Map<Integer, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
 				hifRecord.getEndpointId(), 
@@ -76,7 +76,7 @@ public class IncidenceApi {
 		// Build a nested map like <grid_cell_id, <age_group_id, incidence_value>>
 		
 		// FOR EACH GRID CELL
-		for (Entry<Long, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
+		for (Entry<Integer, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
 			HashMap<Integer, Double> incidenceCellMap = new HashMap<Integer, Double>();
 
 			// FOR EACH POPULATION AGE RANGE

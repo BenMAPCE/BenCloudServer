@@ -5,11 +5,14 @@ package gov.epa.bencloud.server.database.jooq.data;
 
 
 import gov.epa.bencloud.server.database.jooq.data.tables.CrosswalkEntry;
+import gov.epa.bencloud.server.database.jooq.data.tables.HifResult;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationEntry;
+import gov.epa.bencloud.server.database.jooq.data.tables.PopulationValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
+import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResult;
 
 import org.jooq.Index;
 import org.jooq.OrderField;
@@ -28,8 +31,10 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     public static final Index CROSSWALK_ENTRY_CROSSWALK_ID_IDX = Internal.createIndex(DSL.name("crosswalk_entry_crosswalk_id_idx"), CrosswalkEntry.CROSSWALK_ENTRY, new OrderField[] { CrosswalkEntry.CROSSWALK_ENTRY.CROSSWALK_ID, CrosswalkEntry.CROSSWALK_ENTRY.SOURCE_GRID_CELL_ID, CrosswalkEntry.CROSSWALK_ENTRY.TARGET_GRID_CELL_ID, CrosswalkEntry.CROSSWALK_ENTRY.PERCENTAGE }, false);
+    public static final Index HIF_RESULT_HIF_RESULT_DATASET_ID_IDX = Internal.createIndex(DSL.name("hif_result_hif_result_dataset_id_idx"), HifResult.HIF_RESULT, new OrderField[] { HifResult.HIF_RESULT.HIF_RESULT_DATASET_ID, HifResult.HIF_RESULT.HIF_ID, HifResult.HIF_RESULT.GRID_COL, HifResult.HIF_RESULT.GRID_ROW, HifResult.HIF_RESULT.GRID_CELL_ID, HifResult.HIF_RESULT.POPULATION, HifResult.HIF_RESULT.DELTA, HifResult.HIF_RESULT.RESULT, HifResult.HIF_RESULT.BASELINE, HifResult.HIF_RESULT.RESULT_MEAN, HifResult.HIF_RESULT.STANDARD_DEV, HifResult.HIF_RESULT.RESULT_VARIANCE, HifResult.HIF_RESULT.PCT_2_5, HifResult.HIF_RESULT.PCT_97_5 }, false);
     public static final Index INCIDENCE_VALUE_INCIDENCE_ENTRY_ID_IDX = Internal.createIndex(DSL.name("incidence_value_incidence_entry_id_idx"), IncidenceValue.INCIDENCE_VALUE, new OrderField[] { IncidenceValue.INCIDENCE_VALUE.INCIDENCE_ENTRY_ID, IncidenceValue.INCIDENCE_VALUE.GRID_CELL_ID, IncidenceValue.INCIDENCE_VALUE.VALUE }, false);
-    public static final Index POPULATION_ENTRY_POP_DATASET_ID_IDX = Internal.createIndex(DSL.name("population_entry_pop_dataset_id_idx"), PopulationEntry.POPULATION_ENTRY, new OrderField[] { PopulationEntry.POPULATION_ENTRY.POP_DATASET_ID, PopulationEntry.POPULATION_ENTRY.GRID_CELL_ID, PopulationEntry.POPULATION_ENTRY.RACE_ID, PopulationEntry.POPULATION_ENTRY.ETHNICITY_ID, PopulationEntry.POPULATION_ENTRY.GENDER_ID, PopulationEntry.POPULATION_ENTRY.AGE_RANGE_ID, PopulationEntry.POPULATION_ENTRY.POP_YEAR, PopulationEntry.POPULATION_ENTRY.POP_VALUE }, false);
+    public static final Index POPULATION_ENTRY_ID_IDX = Internal.createIndex(DSL.name("population_entry_id_idx"), PopulationEntry.POPULATION_ENTRY, new OrderField[] { PopulationEntry.POPULATION_ENTRY.ID, PopulationEntry.POPULATION_ENTRY.POP_DATASET_ID, PopulationEntry.POPULATION_ENTRY.RACE_ID, PopulationEntry.POPULATION_ENTRY.ETHNICITY_ID, PopulationEntry.POPULATION_ENTRY.GENDER_ID, PopulationEntry.POPULATION_ENTRY.AGE_RANGE_ID, PopulationEntry.POPULATION_ENTRY.POP_YEAR }, false);
+    public static final Index POPULATION_VALUE_POP_ENTRY_ID_IDX = Internal.createIndex(DSL.name("population_value_pop_entry_id_idx"), PopulationValue.POPULATION_VALUE, new OrderField[] { PopulationValue.POPULATION_VALUE.POP_ENTRY_ID, PopulationValue.POPULATION_VALUE.GRID_CELL_ID, PopulationValue.POPULATION_VALUE.POP_VALUE }, false);
     public static final Index TASK_COMPLETE_ON_DATE = Internal.createIndex(DSL.name("task_complete_on_date"), TaskComplete.TASK_COMPLETE, new OrderField[] { TaskComplete.TASK_COMPLETE.TASK_COMPLETED_DATE }, false);
     public static final Index TASK_COMPLETE_ON_UUID = Internal.createIndex(DSL.name("task_complete_on_uuid"), TaskComplete.TASK_COMPLETE, new OrderField[] { TaskComplete.TASK_COMPLETE.TASK_UUID }, false);
     public static final Index TASK_QUEUE_ON_DATE = Internal.createIndex(DSL.name("task_queue_on_date"), TaskQueue.TASK_QUEUE, new OrderField[] { TaskQueue.TASK_QUEUE.TASK_SUBMITTED_DATE }, false);
@@ -37,4 +42,5 @@ public class Indexes {
     public static final Index TASK_QUEUE_ON_UUID = Internal.createIndex(DSL.name("task_queue_on_uuid"), TaskQueue.TASK_QUEUE, new OrderField[] { TaskQueue.TASK_QUEUE.TASK_UUID }, false);
     public static final Index TASK_WORKER_ON_TASK_UUID = Internal.createIndex(DSL.name("task_worker_on_task_uuid"), TaskWorker.TASK_WORKER, new OrderField[] { TaskWorker.TASK_WORKER.TASK_UUID }, false);
     public static final Index TASK_WORKER_ON_UUID = Internal.createIndex(DSL.name("task_worker_on_uuid"), TaskWorker.TASK_WORKER, new OrderField[] { TaskWorker.TASK_WORKER.TASK_WORKER_UUID }, false);
+    public static final Index VALUATION_RESULT_VALUATION_RESULT_DATASET_ID_IDX = Internal.createIndex(DSL.name("valuation_result_valuation_result_dataset_id_idx"), ValuationResult.VALUATION_RESULT, new OrderField[] { ValuationResult.VALUATION_RESULT.VALUATION_RESULT_DATASET_ID, ValuationResult.VALUATION_RESULT.VF_ID, ValuationResult.VALUATION_RESULT.HIF_ID, ValuationResult.VALUATION_RESULT.GRID_COL, ValuationResult.VALUATION_RESULT.GRID_ROW, ValuationResult.VALUATION_RESULT.GRID_CELL_ID, ValuationResult.VALUATION_RESULT.POPULATION, ValuationResult.VALUATION_RESULT.RESULT, ValuationResult.VALUATION_RESULT.RESULT_MEAN, ValuationResult.VALUATION_RESULT.STANDARD_DEV, ValuationResult.VALUATION_RESULT.RESULT_VARIANCE, ValuationResult.VALUATION_RESULT.PCT_2_5, ValuationResult.VALUATION_RESULT.PCT_97_5 }, false);
 }

@@ -79,7 +79,7 @@ public class ValuationTaskRunnable implements Runnable {
 				// Check again every 10 seconds. Keep the heartbeat updated so the worker doesn't look dead.
 				while(hifTaskStatus.equals("pending")) {
 					Thread.sleep(10000);
-					System.out.println("Valuation task waiting for: " + valuationTaskConfig.name);
+					//System.out.println("Valuation task waiting for: " + valuationTaskConfig.name);
 					TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 					hifTaskStatus = HIFApi.getHIFTaskStatus(valuationTaskConfig.hifTaskUuid);
 				}
@@ -91,6 +91,7 @@ public class ValuationTaskRunnable implements Runnable {
 				return;
 			}
 
+			
 			// If we get here, the HIF task isn't pending or failed, so it must have succeeded
 			TaskQueue.updateTaskPercentage(taskUuid, 1, "Preparing datasets for valuation");
 			
@@ -136,9 +137,9 @@ public class ValuationTaskRunnable implements Runnable {
 			Map<Short, Record2<Short, BigDecimal>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, hifTaskConfig.popYear);
 			
 			//<variableName, <gridCellId, value>>
-			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
+			Map<String, Map<Integer, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
 			
-			Result<Record7<Long, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
+			Result<Record7<Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
 
 			ArrayList<ValuationResultRecord> valuationResults = new ArrayList<ValuationResultRecord>(maxRowsInMemory);
 			mXparser.setToOverrideBuiltinTokens();
@@ -159,7 +160,7 @@ public class ValuationTaskRunnable implements Runnable {
 				/*
 				 * FOR EACH ROW IN THE HIF RESULTS
 				 */
-				for (Record7<Long, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]> hifResult : hifResults) {
+				for (Record7<Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal[]> hifResult : hifResults) {
 					
 					// updating task percentage
 					int currentPct = Math.round(currentCell * 100 / totalCells);
@@ -189,7 +190,7 @@ public class ValuationTaskRunnable implements Runnable {
 							double[] betaDist = vfBetaDistributionLists.get(vfIdx);
 
 							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
-							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
+							for(Entry<String, Map<Integer, Double>> variable  : variables.entrySet()) {
 								if(valuationFunctionExpression.getArgument(variable.getKey()) != null) {
 									valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(HIF_RESULT.GRID_CELL_ID), 0.0));		
 								}
@@ -231,9 +232,10 @@ public class ValuationTaskRunnable implements Runnable {
 								} else {
 
 									double[] percentiles = new double[100];
-
+									BigDecimal[] percentiles20 = new BigDecimal[20];
 									double[] distValues = distStats.getSortedValues();
 									int idxMedian = distValues.length / percentiles.length / 2; // the median of the first segment
+									int idxMedian20 = distValues.length / percentiles20.length / 2; // the median of the first segment
 									DescriptiveStatistics statsPercentiles = new DescriptiveStatistics();
 									for (int i = 0; i < percentiles.length; i++) {
 										// Grab the median from each of the 100 slices of distStats
@@ -241,8 +243,15 @@ public class ValuationTaskRunnable implements Runnable {
 										statsPercentiles.addValue(percentiles[i]);
 										idxMedian += distValues.length / percentiles.length;
 									}
-									rec.setPct_2_5(  BigDecimal.valueOf((percentiles[1] + percentiles[2]) / 2.0));
+									for (int i = 0; i < percentiles20.length; i++) {
+										// Grab the median from each of the 20 slices of distStats
+										percentiles20[i] = BigDecimal.valueOf((distValues[idxMedian20] + distValues[idxMedian20 - 1]) / 2.0);
+										//statsPercentiles.addValue(percentiles[i]);
+										idxMedian20 += distValues.length / percentiles20.length;
+									}
+									rec.setPct_2_5(BigDecimal.valueOf((percentiles[1] + percentiles[2]) / 2.0));
 									rec.setPct_97_5(BigDecimal.valueOf((percentiles[96] + percentiles[97]) / 2.0));
+									rec.setPercentiles(percentiles20);
 									rec.setStandardDev(BigDecimal.valueOf(statsPercentiles.getStandardDeviation()));
 									rec.setResultMean(BigDecimal.valueOf(statsPercentiles.getMean()));
 									rec.setResultVariance(BigDecimal.valueOf(statsPercentiles.getVariance()));

@@ -71,9 +71,11 @@ public class ValuationUtil {
 		ValuationResultDatasetRecord valuationResultDatasetRecord = create.insertInto(VALUATION_RESULT_DATASET
 				, VALUATION_RESULT_DATASET.TASK_UUID
 				, VALUATION_RESULT_DATASET.NAME
+				, VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID
 				, VALUATION_RESULT_DATASET.VARIABLE_DATASET_ID)
 		.values(task.getUuid()
 				,task.getName()
+				,valuationTaskConfig.hifResultDatasetId
 				,valuationTaskConfig.variableDatasetId)
 		.returning(VALUATION_RESULT_DATASET.ID)
 		.fetchOne();

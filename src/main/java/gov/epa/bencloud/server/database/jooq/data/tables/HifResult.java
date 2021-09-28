@@ -5,12 +5,16 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 
 
 import gov.epa.bencloud.server.database.jooq.data.Data;
+import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultRecord;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row15;
@@ -67,7 +71,7 @@ public class HifResult extends TableImpl<HifResultRecord> {
     /**
      * The column <code>data.hif_result.grid_cell_id</code>.
      */
-    public final TableField<HifResultRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
+    public final TableField<HifResultRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.hif_result.population</code>.
@@ -158,6 +162,11 @@ public class HifResult extends TableImpl<HifResultRecord> {
     }
 
     @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.HIF_RESULT_HIF_RESULT_DATASET_ID_IDX);
+    }
+
+    @Override
     public HifResult as(String alias) {
         return new HifResult(DSL.name(alias), this);
     }
@@ -188,7 +197,7 @@ public class HifResult extends TableImpl<HifResultRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row15<Integer, Integer, Integer, Integer, Long, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal[]> fieldsRow() {
+    public Row15<Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal[]> fieldsRow() {
         return (Row15) super.fieldsRow();
     }
 }

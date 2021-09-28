@@ -5,12 +5,16 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 
 
 import gov.epa.bencloud.server.database.jooq.data.Data;
+import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultRecord;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row14;
@@ -72,7 +76,7 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     /**
      * The column <code>data.valuation_result.grid_cell_id</code>.
      */
-    public final TableField<ValuationResultRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
+    public final TableField<ValuationResultRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.valuation_result.population</code>.
@@ -153,6 +157,11 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     }
 
     @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.VALUATION_RESULT_VALUATION_RESULT_DATASET_ID_IDX);
+    }
+
+    @Override
     public ValuationResult as(String alias) {
         return new ValuationResult(DSL.name(alias), this);
     }
@@ -183,7 +192,7 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Integer, Integer, Integer, Integer, Integer, Long, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal[]> fieldsRow() {
+    public Row14<Integer, Integer, Integer, Integer, Integer, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal[]> fieldsRow() {
         return (Row14) super.fieldsRow();
     }
 }

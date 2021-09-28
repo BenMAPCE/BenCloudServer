@@ -14,8 +14,10 @@ import gov.epa.bencloud.server.database.jooq.data.tables.Endpoint;
 import gov.epa.bencloud.server.database.jooq.data.tables.EndpointGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.Ethnicity;
 import gov.epa.bencloud.server.database.jooq.data.tables.Gender;
+import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation;
+import gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetVariable;
 import gov.epa.bencloud.server.database.jooq.data.tables.GridDefinition;
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunction;
@@ -40,7 +42,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.PopConfigGender;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopConfigRace;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationEntry;
-import gov.epa.bencloud.server.database.jooq.data.tables.PopulationYear;
+import gov.epa.bencloud.server.database.jooq.data.tables.PopulationValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.Race;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
@@ -55,8 +57,10 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunction
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableValue;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 
 import java.util.Arrays;
@@ -128,6 +132,57 @@ public class Data extends SchemaImpl {
      * The table <code>data.gender</code>.
      */
     public final Gender GENDER = Gender.GENDER;
+
+    /**
+     * The table <code>data.get_hif_results</code>.
+     */
+    public final GetHifResults GET_HIF_RESULTS = GetHifResults.GET_HIF_RESULTS;
+
+    /**
+     * Call <code>data.get_hif_results</code>.
+     */
+    public static Result<GetHifResultsRecord> GET_HIF_RESULTS(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer[] _HifId
+        , Integer _OutputGridDefinitionId
+    ) {
+        return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
+              _DatasetId
+            , _HifId
+            , _OutputGridDefinitionId
+        )).fetch();
+    }
+
+    /**
+     * Get <code>data.get_hif_results</code> as a table.
+     */
+    public static GetHifResults GET_HIF_RESULTS(
+          Integer _DatasetId
+        , Integer[] _HifId
+        , Integer _OutputGridDefinitionId
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
+              _DatasetId
+            , _HifId
+            , _OutputGridDefinitionId
+        );
+    }
+
+    /**
+     * Get <code>data.get_hif_results</code> as a table.
+     */
+    public static GetHifResults GET_HIF_RESULTS(
+          Field<Integer> _DatasetId
+        , Field<Integer[]> _HifId
+        , Field<Integer> _OutputGridDefinitionId
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
+              _DatasetId
+            , _HifId
+            , _OutputGridDefinitionId
+        );
+    }
 
     /**
      * The table <code>data.get_incidence</code>.
@@ -340,6 +395,63 @@ public class Data extends SchemaImpl {
     }
 
     /**
+     * The table <code>data.get_valuation_results</code>.
+     */
+    public final GetValuationResults GET_VALUATION_RESULTS = GetValuationResults.GET_VALUATION_RESULTS;
+
+    /**
+     * Call <code>data.get_valuation_results</code>.
+     */
+    public static Result<GetValuationResultsRecord> GET_VALUATION_RESULTS(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer[] _HifId
+        , Integer[] _VfId
+        , Integer _OutputGridDefinitionId
+    ) {
+        return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
+              _DatasetId
+            , _HifId
+            , _VfId
+            , _OutputGridDefinitionId
+        )).fetch();
+    }
+
+    /**
+     * Get <code>data.get_valuation_results</code> as a table.
+     */
+    public static GetValuationResults GET_VALUATION_RESULTS(
+          Integer _DatasetId
+        , Integer[] _HifId
+        , Integer[] _VfId
+        , Integer _OutputGridDefinitionId
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
+              _DatasetId
+            , _HifId
+            , _VfId
+            , _OutputGridDefinitionId
+        );
+    }
+
+    /**
+     * Get <code>data.get_valuation_results</code> as a table.
+     */
+    public static GetValuationResults GET_VALUATION_RESULTS(
+          Field<Integer> _DatasetId
+        , Field<Integer[]> _HifId
+        , Field<Integer[]> _VfId
+        , Field<Integer> _OutputGridDefinitionId
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
+              _DatasetId
+            , _HifId
+            , _VfId
+            , _OutputGridDefinitionId
+        );
+    }
+
+    /**
      * The table <code>data.get_variable</code>.
      */
     public final GetVariable GET_VARIABLE = GetVariable.GET_VARIABLE;
@@ -506,9 +618,9 @@ public class Data extends SchemaImpl {
     public final PopulationEntry POPULATION_ENTRY = PopulationEntry.POPULATION_ENTRY;
 
     /**
-     * The table <code>data.population_year</code>.
+     * The table <code>data.population_value</code>.
      */
-    public final PopulationYear POPULATION_YEAR = PopulationYear.POPULATION_YEAR;
+    public final PopulationValue POPULATION_VALUE = PopulationValue.POPULATION_VALUE;
 
     /**
      * The table <code>data.race</code>.
@@ -642,8 +754,10 @@ public class Data extends SchemaImpl {
             EndpointGroup.ENDPOINT_GROUP,
             Ethnicity.ETHNICITY,
             Gender.GENDER,
+            GetHifResults.GET_HIF_RESULTS,
             GetIncidence.GET_INCIDENCE,
             GetPopulation.GET_POPULATION,
+            GetValuationResults.GET_VALUATION_RESULTS,
             GetVariable.GET_VARIABLE,
             GridDefinition.GRID_DEFINITION,
             HealthImpactFunction.HEALTH_IMPACT_FUNCTION,
@@ -668,7 +782,7 @@ public class Data extends SchemaImpl {
             PopConfigRace.POP_CONFIG_RACE,
             PopulationDataset.POPULATION_DATASET,
             PopulationEntry.POPULATION_ENTRY,
-            PopulationYear.POPULATION_YEAR,
+            PopulationValue.POPULATION_VALUE,
             Race.RACE,
             SeasonalMetric.SEASONAL_METRIC,
             SeasonalMetricSeason.SEASONAL_METRIC_SEASON,

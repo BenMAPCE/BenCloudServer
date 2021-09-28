@@ -45,7 +45,7 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
     /**
      * The column <code>data.get_population.grid_cell_id</code>.
      */
-    public final TableField<GetPopulationRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
+    public final TableField<GetPopulationRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.get_population.race_id</code>.
@@ -137,7 +137,7 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Long, Integer, Integer, Integer, Integer, BigDecimal> fieldsRow() {
+    public Row6<Integer, Integer, Integer, Integer, Integer, BigDecimal> fieldsRow() {
         return (Row6) super.fieldsRow();
     }
 

@@ -9,7 +9,6 @@ import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationEntryRecord;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,11 +17,12 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row10;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
+import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
@@ -50,6 +50,11 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
     }
 
     /**
+     * The column <code>data.population_entry.id</code>.
+     */
+    public final TableField<PopulationEntryRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false), this, "");
+
+    /**
      * The column <code>data.population_entry.pop_dataset_id</code>.
      */
     public final TableField<PopulationEntryRecord, Integer> POP_DATASET_ID = createField(DSL.name("pop_dataset_id"), SQLDataType.INTEGER, this, "");
@@ -75,29 +80,9 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
     public final TableField<PopulationEntryRecord, Integer> AGE_RANGE_ID = createField(DSL.name("age_range_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.population_entry.grid_col</code>.
-     */
-    public final TableField<PopulationEntryRecord, Integer> GRID_COL = createField(DSL.name("grid_col"), SQLDataType.INTEGER, this, "");
-
-    /**
-     * The column <code>data.population_entry.grid_row</code>.
-     */
-    public final TableField<PopulationEntryRecord, Integer> GRID_ROW = createField(DSL.name("grid_row"), SQLDataType.INTEGER, this, "");
-
-    /**
-     * The column <code>data.population_entry.grid_cell_id</code>.
-     */
-    public final TableField<PopulationEntryRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
-
-    /**
      * The column <code>data.population_entry.pop_year</code>.
      */
     public final TableField<PopulationEntryRecord, Short> POP_YEAR = createField(DSL.name("pop_year"), SQLDataType.SMALLINT, this, "");
-
-    /**
-     * The column <code>data.population_entry.pop_value</code>.
-     */
-    public final TableField<PopulationEntryRecord, BigDecimal> POP_VALUE = createField(DSL.name("pop_value"), SQLDataType.NUMERIC, this, "");
 
     private PopulationEntry(Name alias, Table<PopulationEntryRecord> aliased) {
         this(alias, aliased, null);
@@ -139,21 +124,17 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.POPULATION_ENTRY_POP_DATASET_ID_IDX);
+        return Arrays.<Index>asList(Indexes.POPULATION_ENTRY_ID_IDX);
     }
 
     @Override
-    public List<ForeignKey<PopulationEntryRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<PopulationEntryRecord, ?>>asList(Keys.POPULATION_ENTRY__POPULATION_ENTRY_POP_DATASET_ID_FKEY);
+    public UniqueKey<PopulationEntryRecord> getPrimaryKey() {
+        return Keys.POPULATION_ENTRY_PK;
     }
 
-    private transient PopulationDataset _populationDataset;
-
-    public PopulationDataset populationDataset() {
-        if (_populationDataset == null)
-            _populationDataset = new PopulationDataset(this, Keys.POPULATION_ENTRY__POPULATION_ENTRY_POP_DATASET_ID_FKEY);
-
-        return _populationDataset;
+    @Override
+    public List<UniqueKey<PopulationEntryRecord>> getKeys() {
+        return Arrays.<UniqueKey<PopulationEntryRecord>>asList(Keys.POPULATION_ENTRY_PK);
     }
 
     @Override
@@ -183,11 +164,11 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row10 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row10<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Long, Short, BigDecimal> fieldsRow() {
-        return (Row10) super.fieldsRow();
+    public Row7<Integer, Integer, Integer, Integer, Integer, Integer, Short> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 }

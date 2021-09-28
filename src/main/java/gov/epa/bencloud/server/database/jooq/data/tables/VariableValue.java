@@ -67,7 +67,7 @@ public class VariableValue extends TableImpl<VariableValueRecord> {
     /**
      * The column <code>data.variable_value.grid_cell_id</code>.
      */
-    public final TableField<VariableValueRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
+    public final TableField<VariableValueRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
 
     private VariableValue(Name alias, Table<VariableValueRecord> aliased) {
         this(alias, aliased, null);
@@ -138,7 +138,7 @@ public class VariableValue extends TableImpl<VariableValueRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, Integer, Integer, BigDecimal, Long> fieldsRow() {
+    public Row5<Integer, Integer, Integer, BigDecimal, Integer> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

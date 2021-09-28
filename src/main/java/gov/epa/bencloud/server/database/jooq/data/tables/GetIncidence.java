@@ -45,7 +45,7 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
     /**
      * The column <code>data.get_incidence.grid_cell_id</code>.
      */
-    public final TableField<GetIncidenceRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
+    public final TableField<GetIncidenceRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.get_incidence.race_id</code>.
@@ -142,7 +142,7 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Long, Integer, Integer, Integer, Short, Short, BigDecimal> fieldsRow() {
+    public Row7<Integer, Integer, Integer, Integer, Short, Short, BigDecimal> fieldsRow() {
         return (Row7) super.fieldsRow();
     }
 

@@ -24,16 +24,6 @@ public class PublicRoutes extends RoutesBase {
 
 	private void addRoutes(Configuration freeMarkerConfiguration) {
 
-		service.get("/", (req, res) -> {
-			Map<String, Object> attributes = new HashMap<>();
-			return FreeMarkerRenderUtil.render(freeMarkerConfiguration, attributes, "index.ftl");
-		});
-
-		service.get("/about", (req, res) -> {
-			Map<String, Object> attributes = new HashMap<>();
-			return FreeMarkerRenderUtil.render(freeMarkerConfiguration, attributes, "about.ftl");
-		});
-
 		service.notFound((request, response) -> {
 			Map<String, Object> attributes = new HashMap<>();
 			attributes.put("page", request.pathInfo());
@@ -46,31 +36,5 @@ public class PublicRoutes extends RoutesBase {
 			return FreeMarkerRenderUtil.render(freeMarkerConfiguration, attributes, "/error/500.ftl");
 		});
 
-		service.post("/test-ajax", (req, res) -> {
-
-		    req.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-
-//			for file upload...
-//
-//		    try (InputStream is = req.raw().getPart("uploaded_file").getInputStream()) {
-//		        // Use the input stream to create a file
-//		    }
-//
-			
-//		    System.out.println(req.raw());
-		    
-//			Collection<Part> parts = req.raw().getParts();
-//			for (Part part : parts) {
-//			   System.out.println("Name: " + part.getName());
-//			   System.out.println("Size: " + part.getSize());
-//			   System.out.println("Filename: " + part.getSubmittedFileName());
-//			}
-			
-//			System.out.println(getPostParameterValue(req, "name"));
-
-			Map<String, Object> attributes = new HashMap<>();
-
-			return true;
-		});
 	}
 }

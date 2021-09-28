@@ -23,6 +23,7 @@ import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record12;
 import org.jooq.Record13;
+import org.jooq.Record14;
 import org.jooq.Record6;
 import org.jooq.Result;
 import org.jooq.SortOrder;
@@ -103,7 +104,7 @@ public class AirQualityApi {
 		
 		System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 		
-		Result<Record13<Integer, String, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Boolean, Integer, String, Integer, String>> aqRecords = 
+		Result<Record14<Integer, String, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Boolean, Integer, String, Integer, String, String>> aqRecords = 
 			DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
 						AIR_QUALITY_LAYER.ID, 
@@ -118,7 +119,8 @@ public class AirQualityApi {
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 						GRID_DEFINITION.NAME.as("grid_definition_name"),
 						AIR_QUALITY_LAYER.POLLUTANT_ID,
-						POLLUTANT.NAME.as("pollutant_name")
+						POLLUTANT.NAME.as("pollutant_name"),
+						POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
 						)
 				.from(AIR_QUALITY_LAYER)
 				.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
@@ -167,12 +169,12 @@ public class AirQualityApi {
 	public static Object getAirQualityLayerDefinition(Request request, Response response) {
 		Integer id = Integer.valueOf(request.params("id"));
 		
-		Record13<Integer, String, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Boolean, Integer, Integer, String, String> aqRecord = getAirQualityLayerDefinition(id);
+		Record14<Integer, String, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Boolean, Integer, Integer, String, String, String> aqRecord = getAirQualityLayerDefinition(id);
 		response.type("application/json");
 		return aqRecord.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
-	private static Record13<Integer, String, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Boolean, Integer, Integer, String, String> getAirQualityLayerDefinition(Integer id) {
+	private static Record14<Integer, String, Integer, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Boolean, Integer, Integer, String, String, String> getAirQualityLayerDefinition(Integer id) {
 		return DSL.using(JooqUtil.getJooqConfiguration())
 		.select(
 				AIR_QUALITY_LAYER.ID, 
@@ -187,6 +189,7 @@ public class AirQualityApi {
 				AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 				AIR_QUALITY_LAYER.POLLUTANT_ID,
 				POLLUTANT.NAME.as("pollutant_name"), 
+				POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name"),
 				GRID_DEFINITION.NAME.as("grid_definition_name"))
 		.from(AIR_QUALITY_LAYER)
 		.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
@@ -209,8 +212,6 @@ public class AirQualityApi {
 		Integer id = Integer.valueOf(request.params("id"));
 		
 		System.out.println("in getAirQualityLayerDetails");
-
-		//int id = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("id"), 0);
 		
 		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
 		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
@@ -318,9 +319,9 @@ public class AirQualityApi {
 	}
 
 
-	public static Map<Long, AirQualityCellRecord> getAirQualityLayerMap(Integer id) {
+	public static Map<Integer, AirQualityCellRecord> getAirQualityLayerMap(Integer id) {
 
-		Map<Long, AirQualityCellRecord> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Map<Integer, AirQualityCellRecord> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.selectFrom(AIR_QUALITY_CELL)
 				.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id))
 				.orderBy(AIR_QUALITY_CELL.GRID_COL, AIR_QUALITY_CELL.GRID_ROW)
@@ -395,7 +396,7 @@ public class AirQualityApi {
 			.fetchOne();
 			
 			// Read the data rows and write to the db	
-			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Long, Integer, Integer, String, BigDecimal> batch = DSL.using(JooqUtil.getJooqConfiguration())
+			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Integer, Integer, Integer, String, BigDecimal> batch = DSL.using(JooqUtil.getJooqConfiguration())
 					.insertInto(
 							AIR_QUALITY_CELL, 
 							AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID,
@@ -431,7 +432,7 @@ public class AirQualityApi {
 						aqRecord.value1(), 
 						Integer.valueOf(record[columnIdx]), 
 						Integer.valueOf(record[rowIdx]),
-						Long.valueOf(ApiUtil.getCellId(Integer.valueOf(record[columnIdx]), Integer.valueOf(record[rowIdx]))),
+						ApiUtil.getCellId(Integer.valueOf(record[columnIdx]), Integer.valueOf(record[rowIdx])),
 						pollutantMetricIdLookup.get(metricNameLowerCase), 
 						seasonalMetricIdLookup.get(seasonalMetricLowerCase), 
 						record[annualMetricIdx],

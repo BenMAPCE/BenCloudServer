@@ -57,7 +57,7 @@ public class IncidenceValue extends TableImpl<IncidenceValueRecord> {
     /**
      * The column <code>data.incidence_value.grid_cell_id</code>.
      */
-    public final TableField<IncidenceValueRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
+    public final TableField<IncidenceValueRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.incidence_value.grid_col</code>.
@@ -162,7 +162,7 @@ public class IncidenceValue extends TableImpl<IncidenceValueRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, Long, Integer, Integer, BigDecimal> fieldsRow() {
+    public Row5<Integer, Integer, Integer, Integer, BigDecimal> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

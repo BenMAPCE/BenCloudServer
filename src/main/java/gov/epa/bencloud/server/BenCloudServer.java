@@ -12,8 +12,6 @@ import gov.epa.bencloud.server.jobs.JobsUtil;
 import gov.epa.bencloud.server.routes.AdminRoutes;
 import gov.epa.bencloud.server.routes.ApiRoutes;
 import gov.epa.bencloud.server.routes.PublicRoutes;
-import gov.epa.bencloud.server.routes.SecuredRoutes;
-import gov.epa.bencloud.server.routes.TaskRoutes;
 import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.FreeMarkerRenderUtil;
@@ -102,8 +100,6 @@ public class BenCloudServer {
 		new PublicRoutes(benCloudService, freeMarkerConfiguration);
 		new AdminRoutes(benCloudService, freeMarkerConfiguration);
 		new ApiRoutes(benCloudService, freeMarkerConfiguration);
-		new SecuredRoutes(benCloudService, freeMarkerConfiguration);
-		new TaskRoutes(benCloudService, freeMarkerConfiguration);
 		
 		JobsUtil.startJobScheduler();
 		

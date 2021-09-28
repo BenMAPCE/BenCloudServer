@@ -23,7 +23,7 @@ import spark.Response;
 
 public class PopulationApi {
 
-	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(ArrayList<HealthImpactFunctionRecord> hifDefinitionList, HIFTaskConfig hifTaskConfig) {
+	public static Map<Integer, Result<GetPopulationRecord>> getPopulationEntryGroups(ArrayList<HealthImpactFunctionRecord> hifDefinitionList, HIFTaskConfig hifTaskConfig) {
 
 		//TODO: Need to grow the population using the selected popYear
 		//NOTE: For now, we're focusing on age groups and not dealing with race, gender, ethnicity
@@ -33,7 +33,7 @@ public class PopulationApi {
         Integer arrAgeRangeIds[] = new Integer[ageRangeIds.size()];
         arrAgeRangeIds = ageRangeIds.toArray(arrAgeRangeIds);
         
-		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
+		Map<Integer, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
 				null, 
@@ -103,13 +103,13 @@ public class PopulationApi {
 	
 	public static Object getAllPopulationDatasets(Response response) {
 
-			Result<Record4<String, Integer, Integer, Integer[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
+			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID,
-							DSL.arrayAggDistinct(POPULATION_YEAR.POP_YEAR).orderBy(POPULATION_YEAR.POP_YEAR).as("years"))
+							DSL.arrayAggDistinct(POPULATION_ENTRY.POP_YEAR).orderBy(POPULATION_ENTRY.POP_YEAR).as("years"))
 					.from(POPULATION_DATASET)
-					.join(POPULATION_YEAR).on(POPULATION_DATASET.ID.eq(POPULATION_YEAR.POPULATION_DATASET_ID))
+					.join(POPULATION_ENTRY).on(POPULATION_DATASET.ID.eq(POPULATION_ENTRY.POP_DATASET_ID))
 					.groupBy(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID)

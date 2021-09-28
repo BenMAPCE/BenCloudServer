@@ -63,15 +63,15 @@ public class HIFTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 1, "Loading air quality data");
 			//TODO: This will need to change as we start supporting more metrics within a single AQ layer.
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
-			Map<Long, AirQualityCellRecord> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
-			Map<Long, AirQualityCellRecord> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
+			Map<Integer, AirQualityCellRecord> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
+			Map<Integer, AirQualityCellRecord> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
 			
 			ArrayList<Expression> hifFunctionExpressionList = new ArrayList<Expression>();
 			ArrayList<Expression> hifBaselineExpressionList = new ArrayList<Expression>();
 			ArrayList<HealthImpactFunctionRecord> hifDefinitionList = new ArrayList<HealthImpactFunctionRecord>();
 			
 			// incidenceLists contains an array of incidence maps for each HIF
-			ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			ArrayList<Map<Integer, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
 			
 			// incidenceCachepMap is used inside addIncidenceEntryGroups to avoid querying for datasets we already have
 			Map<String, Integer> incidenceCacheMap = new HashMap<String, Integer>();
@@ -122,7 +122,7 @@ public class HIFTaskRunnable implements Runnable {
 			ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = getPopAgeRangeMapping(hifTaskConfig, hifDefinitionList);
 			
 			// Load the population dataset
-			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifDefinitionList, hifTaskConfig);
+			Map<Integer, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifDefinitionList, hifTaskConfig);
 
 			// Load data for the selected HIFs
 			// Determine the race/gender/ethnicity groups and age ranges needed for the
@@ -146,7 +146,7 @@ public class HIFTaskRunnable implements Runnable {
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
-			for (Entry<Long, AirQualityCellRecord> baselineEntry : baseline.entrySet()) {
+			for (Entry<Integer, AirQualityCellRecord> baselineEntry : baseline.entrySet()) {
 				// updating task percentage
 				int currentPct = Math.round(currentCell * 100 / totalCells);
 				currentCell++;
@@ -209,7 +209,7 @@ public class HIFTaskRunnable implements Runnable {
 					hifBaselineExpression.setArgumentValue("Q1", scenarioCell.getValue().doubleValue());
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
-					Map<Long, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
+					Map<Integer, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
 					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineCell.getGridCellId());
 
 					/*
