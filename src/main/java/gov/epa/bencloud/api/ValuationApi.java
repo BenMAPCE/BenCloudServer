@@ -17,10 +17,10 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record12;
-import org.jooq.Record2;
 import org.jooq.impl.DSL;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
@@ -43,7 +43,9 @@ public class ValuationApi {
 		 
 		//TODO: Implement sortBy, descending, and filter
 		
-		int id = ParameterUtil.getParameterValueAsInteger(request.params("id"), 0);
+		String idParam = request.params("resultDatasetId");
+		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
+		
 		String hifIdsParam = request.raw().getParameter("hifId");
 		String vfIdsParam = request.raw().getParameter("vfId");
 		
@@ -139,7 +141,19 @@ public class ValuationApi {
 	}
 	
 	
-	
+	public static Integer getValuationResultDatasetId(String uuid) {
+
+		ValuationResultDatasetRecord valuationResultDataset = DSL.using(JooqUtil.getJooqConfiguration())
+		.select(VALUATION_RESULT_DATASET.asterisk())
+		.from(VALUATION_RESULT_DATASET)
+		.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(uuid))
+		.fetchOneInto(VALUATION_RESULT_DATASET);
+		
+		if(valuationResultDataset == null) {
+			return null;
+		}
+		return valuationResultDataset.getId();
+	}
 	
 	public static void getValuationResultDetails(Request request, Response response) {
 		String uuid = request.params("uuid");
@@ -236,8 +250,8 @@ public class ValuationApi {
 	}
 	
 	public static Object getValuationResultDatasets(Request request, Response response) {
-		Result<Record2<String, Integer>> valuationDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(VALUATION_RESULT_DATASET.NAME, VALUATION_RESULT_DATASET.ID)
+		Result<Record> valuationDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(VALUATION_RESULT_DATASET.asterisk())
 				.from(VALUATION_RESULT_DATASET)
 				.orderBy(VALUATION_RESULT_DATASET.NAME)
 				.fetch();
@@ -247,7 +261,8 @@ public class ValuationApi {
 	}
 	
 	public static Object getValuationResultDatasetFunctions(Request request, Response response) {
-		String id = request.params("id");
+		String idParam = request.params("resultDatasetId");
+		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
 		
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(VALUATION_FUNCTION.asterisk()
@@ -270,7 +285,7 @@ public class ValuationApi {
 				.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
 				.join(VALUATION_RESULT_FUNCTION_CONFIG).on(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(VALUATION_FUNCTION.ID))
 				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID))
-				.where(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(Integer.valueOf(id)))
+				.where(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(id))
 				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.REFERENCE)
 				.fetch();
 		

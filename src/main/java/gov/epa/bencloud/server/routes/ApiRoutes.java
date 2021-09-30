@@ -182,8 +182,9 @@ public class ApiRoutes extends RoutesBase {
 		
 		/*
 		 * GET array of all health impact function definitions that are part of a hif result dataset
+		 * resultDatasetId can be the hifResultDataset.id OR the task UUID
 		 */	
-		service.get(apiPrefix + "/results/hif/:id/functions", (req, res) -> {
+		service.get(apiPrefix + "/results/hif/:resultDatasetId/functions", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -194,7 +195,7 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET health impact function results from an analysis
 		 * PARAMETERS:
-		 *  :id (health impact function results dataset id)
+		 *  :resultDatasetId (health impact function results dataset id or task UUID)
 		 *  gridId= (aggregate the results to another grid definition)
 		 *  hifId= (filter results to those from one or more functions via comma delimited list)
 		 *  page=
@@ -206,7 +207,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
 		 *  else, application/json response
 		 */	
-		service.get(apiPrefix + "/results/hif/:id/details", (req, res) -> {
+		service.get(apiPrefix + "/results/hif/:resultDatasetId/details", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -230,8 +231,9 @@ public class ApiRoutes extends RoutesBase {
 		
 		/*
 		 * GET array of all health impact function definitions that are part of a hif result dataset
+		 * resultDatasetId can be the valuationResultDataset.id OR the task UUID
 		 */	
-		service.get(apiPrefix + "/results/valuation/:id/functions", (req, res) -> {
+		service.get(apiPrefix + "/results/valuation/:resultDatasetId/functions", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -243,7 +245,7 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET valuation results from an analysis
 		 * PARAMETERS:
-		 *  :id (valuation results dataset id)
+		 *  :resultDatasetId (valuation results dataset id or task UUID)
 		 *  gridId= (aggregate the results to another grid definition)
 		 *  hifId= (filter results to those from one or more functions via comma delimited list)
 		 *  vfId= (filter results to those from one or more functions via comma delimited list)
@@ -256,22 +258,12 @@ public class ApiRoutes extends RoutesBase {
 		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
 		 *  else, application/json response
 		 */	
-		service.get(apiPrefix + "/results/valuation/:id/details", (req, res) -> {
+		service.get(apiPrefix + "/results/valuation/:resultDatasetId/details", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
 			//TODO: Implement a new version of this that supports filtering, etc
 			ValuationApi.getValuationResultDetails2(req, res);
-			
-			return null;
-
-		});
-		
-		service.get(apiPrefix + "/tasks/:uuid/results", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			ApiUtil.getTaskResultDetails(req, res);
 			
 			return null;
 

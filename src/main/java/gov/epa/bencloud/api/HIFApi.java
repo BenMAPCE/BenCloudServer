@@ -61,7 +61,9 @@ public class HIFApi {
 		 
 		//TODO: Implement sortBy, descending, and filter
 		
-		int id = ParameterUtil.getParameterValueAsInteger(request.params("id"), 0);
+		String idParam = request.params("resultDatasetId");
+		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
+		
 		String hifIdsParam = request.raw().getParameter("hifId");
 		int gridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);
 		
@@ -545,8 +547,8 @@ public class HIFApi {
 	}
 
 	public static Object getHifResultDatasets(Request request, Response response) {
-		Result<Record2<String, Integer>> hifDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(HIF_RESULT_DATASET.NAME, HIF_RESULT_DATASET.ID)
+		Result<Record> hifDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(HIF_RESULT_DATASET.asterisk())
 				.from(HIF_RESULT_DATASET)
 				.orderBy(HIF_RESULT_DATASET.NAME)
 				.fetch();
@@ -556,8 +558,9 @@ public class HIFApi {
 	}
 	
 	public static Object getHifResultDatasetFunctions(Request request, Response response) {
-		String id = request.params("id");
-		
+		String idParam = request.params("resultDatasetId");
+		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
+				
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
