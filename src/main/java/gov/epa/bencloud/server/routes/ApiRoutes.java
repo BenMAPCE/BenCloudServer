@@ -64,7 +64,7 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET a single air quality surface definition
 		 */
-		service.get(apiPrefix + "/air-quality-data/:id/definition", (request, response) -> {
+		service.get(apiPrefix + "/air-quality-data/:id", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDefinition(request, response);
 		});
 
@@ -81,10 +81,32 @@ public class ApiRoutes extends RoutesBase {
 		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
 		 *  else, application/json response
 		 */
-		service.get(apiPrefix + "/air-quality-data/:id/details", (request, response) -> {
+		service.get(apiPrefix + "/air-quality-data/:id/contents", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDetails(request, response);
 		});
 
+		service.post(apiPrefix + "/air-quality-data", (request, response) -> {
+			
+			request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+			String layerName = getPostParameterValue(request, "name");
+			Integer pollutantId = Integer.valueOf(getPostParameterValue(request, "pollutantId"));
+			Integer gridId = Integer.valueOf(getPostParameterValue(request, "gridId"));
+			String layerType = getPostParameterValue(request, "type");
+			
+			return AirQualityApi.postAirQualityLayer(request, layerName, pollutantId, gridId, layerType, response);
+		});
+
+		service.delete(apiPrefix + "/air-quality-data/:id", (request, response) -> {
+
+			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response)) {
+				response.status(204);
+			} else {
+				response.status(404);
+			}
+			
+			return "";
+		});
+		
 		/*
 		 * GET array of all population dataset definitions
 		 */
@@ -102,7 +124,7 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET a health impact function definition
 		 */
-		service.get(apiPrefix + "/health-impact-function/:id", (request, response) -> {
+		service.get(apiPrefix + "/health-impact-functions/:id", (request, response) -> {
 			return HIFApi.getHealthImpactFunction(request, response);
 		});
 		
@@ -147,32 +169,11 @@ public class ApiRoutes extends RoutesBase {
 			return ValuationApi.getAllValuationFunctions(request, response);
 		});
 
-		service.post(apiPrefix + "/air-quality-data", (request, response) -> {
-			
-			request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-			String layerName = getPostParameterValue(request, "name");
-			Integer pollutantId = Integer.valueOf(getPostParameterValue(request, "pollutantId"));
-			Integer gridId = Integer.valueOf(getPostParameterValue(request, "gridId"));
-			String layerType = getPostParameterValue(request, "type");
-			
-			return AirQualityApi.postAirQualityLayer(request, layerName, pollutantId, gridId, layerType, response);
-		});
-
-		service.delete(apiPrefix + "/air-quality-data/:id", (request, response) -> {
-
-			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response)) {
-				response.status(204);
-			} else {
-				response.status(404);
-			}
-			
-			return "";
-		});
 
 		/*
 		 * GET array of all health impact function result datasets
 		 */	
-		service.get(apiPrefix + "/results/hif", (req, res) -> {
+		service.get(apiPrefix + "/health-impact-result-datasets", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -182,9 +183,9 @@ public class ApiRoutes extends RoutesBase {
 		
 		/*
 		 * GET array of all health impact function definitions that are part of a hif result dataset
-		 * resultDatasetId can be the hifResultDataset.id OR the task UUID
+		 * id can be the hifResultDataset.id OR the task UUID
 		 */	
-		service.get(apiPrefix + "/results/hif/:resultDatasetId/functions", (req, res) -> {
+		service.get(apiPrefix + "/health-impact-result-datasets/:id", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -195,7 +196,7 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET health impact function results from an analysis
 		 * PARAMETERS:
-		 *  :resultDatasetId (health impact function results dataset id or task UUID)
+		 *  :id (health impact function results dataset id or task UUID)
 		 *  gridId= (aggregate the results to another grid definition)
 		 *  hifId= (filter results to those from one or more functions via comma delimited list)
 		 *  page=
@@ -207,7 +208,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
 		 *  else, application/json response
 		 */	
-		service.get(apiPrefix + "/results/hif/:resultDatasetId/details", (req, res) -> {
+		service.get(apiPrefix + "/health-impact-result-datasets/:id/contents", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -221,7 +222,7 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET array of all health impact function result datasets
 		 */	
-		service.get(apiPrefix + "/results/valuation", (req, res) -> {
+		service.get(apiPrefix + "/valuation-result-datasets", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -231,9 +232,9 @@ public class ApiRoutes extends RoutesBase {
 		
 		/*
 		 * GET array of all health impact function definitions that are part of a hif result dataset
-		 * resultDatasetId can be the valuationResultDataset.id OR the task UUID
+		 * id can be the valuationResultDataset.id OR the task UUID
 		 */	
-		service.get(apiPrefix + "/results/valuation/:resultDatasetId/functions", (req, res) -> {
+		service.get(apiPrefix + "/valuation-result-datasets/:id", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -245,7 +246,7 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET valuation results from an analysis
 		 * PARAMETERS:
-		 *  :resultDatasetId (valuation results dataset id or task UUID)
+		 *  :id (valuation results dataset id or task UUID)
 		 *  gridId= (aggregate the results to another grid definition)
 		 *  hifId= (filter results to those from one or more functions via comma delimited list)
 		 *  vfId= (filter results to those from one or more functions via comma delimited list)
@@ -258,7 +259,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
 		 *  else, application/json response
 		 */	
-		service.get(apiPrefix + "/results/valuation/:resultDatasetId/details", (req, res) -> {
+		service.get(apiPrefix + "/valuation-result-datasets/:id/contents", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -269,7 +270,7 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 
-		service.delete(apiPrefix + "/tasks/:uuid/results", (req, res) -> {
+		service.delete(apiPrefix + "/tasks/:uuid", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			

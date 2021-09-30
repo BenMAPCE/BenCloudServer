@@ -61,7 +61,7 @@ public class HIFApi {
 		 
 		//TODO: Implement sortBy, descending, and filter
 		
-		String idParam = request.params("resultDatasetId");
+		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
 		
 		String hifIdsParam = request.raw().getParameter("hifId");
@@ -558,7 +558,7 @@ public class HIFApi {
 	}
 	
 	public static Object getHifResultDatasetFunctions(Request request, Response response) {
-		String idParam = request.params("resultDatasetId");
+		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
 				
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())

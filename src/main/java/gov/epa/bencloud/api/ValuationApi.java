@@ -43,7 +43,7 @@ public class ValuationApi {
 		 
 		//TODO: Implement sortBy, descending, and filter
 		
-		String idParam = request.params("resultDatasetId");
+		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
 		
 		String hifIdsParam = request.raw().getParameter("hifId");
@@ -261,7 +261,7 @@ public class ValuationApi {
 	}
 	
 	public static Object getValuationResultDatasetFunctions(Request request, Response response) {
-		String idParam = request.params("resultDatasetId");
+		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
 		
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
