@@ -62,6 +62,8 @@ public class HIFApi {
 		//TODO: Implement sortBy, descending, and filter
 		
 		String idParam = request.params("id");
+		
+		//If the id is 36 characters long, we'll assume it's a task uuid
 		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
 		
 		String hifIdsParam = request.raw().getParameter("hifId");
@@ -75,6 +77,7 @@ public class HIFApi {
 		
 		List<Integer> hifIds = hifIdsParam == null ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		
+		// If a gridId wasn't provided, look up the baseline AQ grid grid for this resultset
 		if(gridId == 0) {
 			gridId = HIFApi.getBaselineGridForHifResults(id).intValue();
 		}
@@ -85,7 +88,7 @@ public class HIFApi {
 				GET_HIF_RESULTS(
 						id, 
 						hifIds == null ? null : hifIds.toArray(new Integer[0]), 
-								gridId))
+						gridId))
 				.asTable("hif_result_records");
 		
 
@@ -134,6 +137,10 @@ public class HIFApi {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				
+				//TODO: BCD-120 - Instead of streaming the csv contents directly back to the browser
+				//	write to a temp file, zip that up, and stream the zipfile back to the user.
+				
 				/*
 				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(id).name);
 		    	String tempDirPath = System.getProperty("java.io.tmpdir");

@@ -150,6 +150,18 @@ public class HIFUtil {
 		.execute();	
 	}
 
+	/**
+	 * Selects the most appropriate incidence and prevalence dataset and year for a given function
+	 * First, tries the user's default incidence/prevalence selection
+	 * If that doesn't work, tries to use the selection in the health impact function config
+	 * Failing that, it resorts to default datasets that contain data for the endpoint group
+	 * In all cases, the selected year the closest available to the population year
+	 * @param function
+	 * @param popYear
+	 * @param defaultIncidencePrevalenceDataset
+	 * @param functionIncidenceDataset
+	 * @param functionPrevalenceDataset
+	 */
 	public static void setIncidencePrevalence(ObjectNode function, int popYear, int defaultIncidencePrevalenceDataset, Integer functionIncidenceDataset, Integer functionPrevalenceDataset) {
 
 		int endpointGroupId = function.get("endpoint_group_id").asInt();
@@ -265,7 +277,10 @@ public class HIFUtil {
 		if(years.length == 1) {
 			return years[0];
 		}
-		
+		// binarySearch returns the index of the popYear in the dataset's list of supported years
+		// If the exact value is not found, a negative is returned. The absolute value of which
+		// is the insertion point in the sorted array. Using this information, we can find the 
+		// closest match
 		int n = Arrays.binarySearch(years, popYear);
 		if (n >= 0) {
 			return years[n];

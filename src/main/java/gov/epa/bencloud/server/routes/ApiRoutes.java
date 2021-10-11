@@ -63,6 +63,8 @@ public class ApiRoutes extends RoutesBase {
 
 		/*
 		 * GET a single air quality surface definition
+		 * PARAMETERS:
+		 *  :id
 		 */
 		service.get(apiPrefix + "/air-quality-data/:id", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDefinition(request, response);
@@ -85,6 +87,15 @@ public class ApiRoutes extends RoutesBase {
 			return AirQualityApi.getAirQualityLayerDetails(request, response);
 		});
 
+		/*
+		 * POST a single air quality surface
+		 * PARAMETERS:
+		 *  csv file
+		 *  name=
+		 *  pollutantId=
+		 *  gridId=
+		 *  type= (model or monitor)
+		 */
 		service.post(apiPrefix + "/air-quality-data", (request, response) -> {
 			
 			request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
@@ -96,6 +107,11 @@ public class ApiRoutes extends RoutesBase {
 			return AirQualityApi.postAirQualityLayer(request, layerName, pollutantId, gridId, layerType, response);
 		});
 
+		/*
+		 * DELETE a single air quality surface definition
+		 * PARAMETERS:
+		 *  :id
+		 */
 		service.delete(apiPrefix + "/air-quality-data/:id", (request, response) -> {
 
 			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response)) {
@@ -157,10 +173,16 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getSelectedHifGroups(request, response);
 		});
 		
+		/*
+		 * GET a list of incidence datasets
+		 */
 		service.get(apiPrefix + "/incidence", (request, response) -> {
 			return IncidenceApi.getAllIncidenceDatasets(response);
 		});
 		
+		/*
+		 * GET a list of prevalence datasets
+		 */
 		service.get(apiPrefix + "/prevalence", (request, response) -> {
 			return IncidenceApi.getAllPrevalenceDatasets(response);
 		});
