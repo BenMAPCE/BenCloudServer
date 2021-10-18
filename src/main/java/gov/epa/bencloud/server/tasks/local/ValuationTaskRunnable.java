@@ -43,6 +43,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
 public class ValuationTaskRunnable implements Runnable {
 
@@ -55,45 +56,24 @@ public class ValuationTaskRunnable implements Runnable {
 	}
 
 	private boolean taskSuccessful = true;
-	private String taskCompleteMessage = "Task Complete";
 
 	public void run() {
-
+		ObjectMapper mapper = new ObjectMapper();
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 		final int maxRowsInMemory = 100000;
-		
+		ArrayList<TaskMessage> messages = new ArrayList<TaskMessage>();
 		int rowsSaved = 0;
 		
 		try {
-			TaskQueue.updateTaskPercentage(taskUuid, 1, "Loading datasets");
+			messages.add(new TaskMessage("active", "Loading datasets"));
+			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
 			ValuationTaskConfig valuationTaskConfig = parseTaskParameters(task);
-
-			//Use the hifTaskUuid to wait here until the HIF run is no longer pending
-			String hifTaskStatus = HIFApi.getHIFTaskStatus(valuationTaskConfig.hifTaskUuid);
 			
-			if(hifTaskStatus.equals("pending")) {
-				TaskQueue.updateTaskPercentage(taskUuid, 0, "Waiting for HIF analysis");
-				
-				// Check again every 10 seconds. Keep the heartbeat updated so the worker doesn't look dead.
-				while(hifTaskStatus.equals("pending")) {
-					Thread.sleep(10000);
-					//System.out.println("Valuation task waiting for: " + valuationTaskConfig.name);
-					TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
-					hifTaskStatus = HIFApi.getHIFTaskStatus(valuationTaskConfig.hifTaskUuid);
-				}
-			}
-				
-			//If the HIF task is failed, let's also fail the valuation task			
-			if(hifTaskStatus.equals("failed")) {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Associated HIF task failed");
-				return;
-			}
-
-			
-			// If we get here, the HIF task isn't pending or failed, so it must have succeeded
-			TaskQueue.updateTaskPercentage(taskUuid, 1, "Preparing datasets for valuation");
+			messages.get(messages.size()-1).setStatus("complete");
+			messages.add(new TaskMessage("active", "Preparing datasets for valuation"));
+			TaskQueue.updateTaskPercentage(taskUuid, 2, mapper.writeValueAsString(messages));
 			
 			valuationTaskConfig.hifResultDatasetId = HIFApi.getHIFResultDatasetId(valuationTaskConfig.hifTaskUuid);
 			
@@ -153,6 +133,9 @@ public class ValuationTaskRunnable implements Runnable {
 			 * FOR EACH HEALTH IMPACT FUNCTION IN THE RUN
 			 */
 			
+			messages.get(messages.size()-1).setStatus("complete");
+			messages.add(new TaskMessage("active", "Running valuation functions"));
+			
 			for(Integer hifId : hifIdList) {
 
 				hifResults = HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId, hifId);					
@@ -167,7 +150,8 @@ public class ValuationTaskRunnable implements Runnable {
 					currentCell++;
 
 					if (prevPct != currentPct) {
-						TaskQueue.updateTaskPercentage(taskUuid, currentPct, "Running valuation functions");
+						
+						TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 						TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 						prevPct = currentPct;
 					}
@@ -272,9 +256,12 @@ public class ValuationTaskRunnable implements Runnable {
 							// Control the size of the results vector by saving partial results along the way
 							if(valuationResults.size() >= maxRowsInMemory) {
 								rowsSaved += valuationResults.size();
-								TaskQueue.updateTaskPercentage(taskUuid, currentPct, "Saving progress...");
+								messages.get(messages.size()-1).setMessage("Saving progress...");
+								TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 								ValuationUtil.storeResults(task, valuationTaskConfig, valuationResults);
 								valuationResults.clear();
+								messages.get(messages.size()-1).setMessage("Running valuation functions");
+								TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 							}
 						}
 					}
@@ -285,14 +272,26 @@ public class ValuationTaskRunnable implements Runnable {
 			
 			
 			rowsSaved += valuationResults.size();
-			TaskQueue.updateTaskPercentage(taskUuid, 100, String.format("Saving %,d results", rowsSaved));
+			
+			messages.get(messages.size()-1).setStatus("complete");
+			messages.add(new TaskMessage("active", String.format("Saving %,d results", rowsSaved)));
+			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
+			
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			ValuationUtil.storeResults(task, valuationTaskConfig, valuationResults);
-
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, taskCompleteMessage);
+			messages.get(messages.size()-1).setStatus("complete");
+			
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, mapper.writeValueAsString(messages));
 
 		} catch (Exception e) {
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
+			messages.add(new TaskMessage("error", "Task Failed"));
+			try {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, mapper.writeValueAsString(messages));
+			} catch (JsonProcessingException e1) {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			e.printStackTrace();
 		}
 	}
@@ -307,7 +306,7 @@ public class ValuationTaskRunnable implements Runnable {
 			JsonNode params = mapper.readTree(paramString);
 
 			valuationTaskConfig.name = task.getName();
-			valuationTaskConfig.hifTaskUuid = params.get("hif_task_uuid").asText();
+			valuationTaskConfig.hifTaskUuid = params.get("parent_task_uuid").asText();
 			valuationTaskConfig.hifResultDatasetId = params.get("hif_result_dataset_id").asInt();
 			valuationTaskConfig.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
 

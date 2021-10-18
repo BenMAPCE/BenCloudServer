@@ -1,11 +1,9 @@
 package gov.epa.bencloud.server.tasks;
 
-import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_COMPLETE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_QUEUE;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import org.jooq.Record;
 import org.jooq.Result;
@@ -17,10 +15,11 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.util.RawValue;
 
+import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
-import gov.epa.bencloud.server.util.DataUtil;
 
 public class TaskQueue {
 
@@ -36,14 +35,22 @@ public class TaskQueue {
 					.transactionResult(ctx -> {
 
 						String taskUuid = null;
-
-						Result<Record> result = DSL.using(ctx).select().from(TASK_QUEUE)
-								.where(TASK_QUEUE.TASK_IN_PROCESS.isFalse())
-								.orderBy(TASK_QUEUE.TASK_SUBMITTED_DATE.asc())
+						boolean shouldStart = true;
+						gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue t1 = TASK_QUEUE.as("t1");
+						gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue t2 = TASK_QUEUE.as("t2");
+						
+						// Query the next pending task that does not have a parent present in the queue
+						Result<Record> result = DSL.using(ctx).select(t1.asterisk())
+								.from(t1)
+								.leftJoin(t2).on(t1.TASK_PARENT_UUID.eq(t2.TASK_UUID))
+								.where(t1.TASK_IN_PROCESS.isFalse()
+										.and(t2.TASK_UUID.isNull()))
+								.orderBy(t1.TASK_SUBMITTED_DATE.asc())
 								.limit(1)
-								.forUpdate()
+								.forUpdate().of(t1)
 								.fetch();
 
+						
 						if (result.size() == 0) {
 							// System.out.println("no tasks to process");
 						} else if (result.size() > 1) {
@@ -51,15 +58,27 @@ public class TaskQueue {
 						} else {
 							Record record = result.get(0);
 
-							//						System.out.println("get job from queue: " + 
-							//								record.get(TASK_QUEUE.TASK_NAME));
-
-							DSL.using(ctx).update(TASK_QUEUE)
-							.set(TASK_QUEUE.TASK_IN_PROCESS, true)
-							.where(TASK_QUEUE.TASK_ID.eq(record.getValue(TASK_QUEUE.TASK_ID)))
-							.execute();
-
-							taskUuid = record.getValue(TASK_QUEUE.TASK_UUID);
+							// If it's a child task, make sure the parent succeeded
+							String parentUuid = record.getValue(TASK_QUEUE.TASK_PARENT_UUID);
+							if(parentUuid != null && parentUuid.length() > 0) {
+								String parentStatus = HIFApi.getHIFTaskStatus(parentUuid);
+								
+								if(parentStatus.equals("failed")) { //parent failed so fail this task
+									TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(record.getValue(TASK_QUEUE.TASK_UUID), null, false, "Parent task failed");
+									shouldStart = false;
+								}	
+							}
+							
+							if (shouldStart) {
+								DSL.using(ctx).update(TASK_QUEUE)
+								.set(TASK_QUEUE.TASK_IN_PROCESS, true)
+								.where(TASK_QUEUE.TASK_ID.eq(record.getValue(TASK_QUEUE.TASK_ID)))
+								.execute();
+	
+								taskUuid = record.getValue(TASK_QUEUE.TASK_UUID);
+							} else {
+								
+							}
 						}
 
 						return taskUuid;
@@ -192,6 +211,7 @@ public class TaskQueue {
 					TASK_QUEUE.TASK_USER_IDENTIFIER,
 					TASK_QUEUE.TASK_PRIORITY,
 					TASK_QUEUE.TASK_UUID,
+					TASK_QUEUE.TASK_PARENT_UUID,
 					TASK_QUEUE.TASK_NAME,
 					TASK_QUEUE.TASK_DESCRIPTION,
 					TASK_QUEUE.TASK_PARAMETERS,
@@ -202,6 +222,7 @@ public class TaskQueue {
 					task.getUserIdentifier(),
 					Integer.valueOf(10),
 					task.getUuid(),
+					task.getParentUuid(),
 					task.getName(),
 					task.getDescription(),
 					task.getParameters(),
@@ -247,37 +268,42 @@ public class TaskQueue {
 
 						task = mapper.createObjectNode();
 
-						task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
-						task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
-						task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
-						task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
-						task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
+						task.put("task_name", record.getValue(TASK_QUEUE.TASK_NAME));
+						//task.put("task_description", record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
+						task.put("task_uuid", record.getValue(TASK_QUEUE.TASK_UUID));
+						task.put("task_submitted_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
+						task.put("task_type", record.getValue(TASK_QUEUE.TASK_TYPE));
 
 						wrappedObject = mapper.createObjectNode();
 
 						if (record.getValue(TASK_QUEUE.TASK_IN_PROCESS)) {
 
-							task.put("task_wait_time", DataUtil.getHumanReadableTime(
-									record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
-									record.getValue(TASK_QUEUE.TASK_STARTED_DATE)));
+							task.put("task_status_message", "Started at " + record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter) );
+							task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
+							//task.put("task_wait_time", DataUtil.getHumanReadableTime(
+							//		record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
+							//		record.getValue(TASK_QUEUE.TASK_STARTED_DATE)));
 
-							task.put("task_active_time", DataUtil.getHumanReadableTime(
-									record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
-									now));
+							//task.put("task_active_time", DataUtil.getHumanReadableTime(
+							//		record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
+							//		now));
 
-							task.put("task_started_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
+							//task.put("task_started_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
 						} else {
-							task.put("task_wait_time", DataUtil.getHumanReadableTime(
-									record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
-									now));
 							
-							task.put("task_active_time", "");
-							task.put("task_started_date", "");
+							task.put("task_status_message", "Pending");
+							task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
+//							task.put("task_wait_time", DataUtil.getHumanReadableTime(
+//									record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
+//									now));
+//							
+//							task.put("task_active_time", "");
+//							task.put("task_started_date", "");
 						}
 
 						task.put("task_status", record.getValue(TASK_QUEUE.TASK_IN_PROCESS));
 						task.put("task_percentage", record.getValue(TASK_QUEUE.TASK_PERCENTAGE));
-						task.put("task_message", record.getValue(TASK_QUEUE.TASK_MESSAGE));
+
 
 						tasks.add(task);
 						records++;
@@ -334,6 +360,7 @@ public class TaskQueue {
 				task.setUserIdentifier(record.getValue(TASK_QUEUE.TASK_USER_IDENTIFIER));
 				task.setPriority(record.getValue(TASK_QUEUE.TASK_PRIORITY));
 				task.setUuid(record.getValue(TASK_QUEUE.TASK_UUID));
+				task.setParentUuid(record.getValue(TASK_QUEUE.TASK_PARENT_UUID));
 				task.setParameters(record.getValue(TASK_QUEUE.TASK_PARAMETERS));
 				task.setType(record.getValue(TASK_QUEUE.TASK_TYPE));
 				task.setSubmittedDate(record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE));

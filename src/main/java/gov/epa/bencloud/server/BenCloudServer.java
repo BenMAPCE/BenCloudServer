@@ -16,6 +16,7 @@ import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.FreeMarkerRenderUtil;
 import spark.Service;
+import spark.Spark;
 
 public class BenCloudServer {
 
@@ -96,6 +97,10 @@ public class BenCloudServer {
 		        });
 
 		benCloudService.before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
+		
+		Spark.exception(Exception.class, (exception, request, response) -> {
+		    exception.printStackTrace();
+		});
 		
 		new PublicRoutes(benCloudService, freeMarkerConfiguration);
 		new AdminRoutes(benCloudService, freeMarkerConfiguration);

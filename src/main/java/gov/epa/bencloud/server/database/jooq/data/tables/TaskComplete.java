@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row14;
+import org.jooq.Row15;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -121,6 +121,11 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
      */
     public final TableField<TaskCompleteRecord, LocalDateTime> TASK_COMPLETED_DATE = createField(DSL.name("task_completed_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
+    /**
+     * The column <code>data.task_complete.task_parent_uuid</code>.
+     */
+    public final TableField<TaskCompleteRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
+
     private TaskComplete(Name alias, Table<TaskCompleteRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -206,11 +211,11 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row14 type methods
+    // Row15 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Long, String, String, Integer, String, String, String, String, String, Boolean, String, LocalDateTime, LocalDateTime, LocalDateTime> fieldsRow() {
-        return (Row14) super.fieldsRow();
+    public Row15<Long, String, String, Integer, String, String, String, String, String, Boolean, String, LocalDateTime, LocalDateTime, LocalDateTime, String> fieldsRow() {
+        return (Row15) super.fieldsRow();
     }
 }

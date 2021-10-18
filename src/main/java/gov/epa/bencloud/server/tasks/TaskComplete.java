@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.util.RawValue;
 
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -42,14 +43,18 @@ public class TaskComplete {
 
 			DSL.using(JooqUtil.getJooqConfiguration()).transaction(ctx -> {
 
-				DSL.using(ctx).delete(TASK_WORKER)
-				.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskWorkerUuid))
-				.execute();
+				//taskWorkerUuid might be null if a child task is failed because the parent task failed
+				if(taskWorkerUuid != null) {
+					DSL.using(ctx).delete(TASK_WORKER)
+					.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskWorkerUuid))
+					.execute();
+				}
 
 				DSL.using(ctx).insertInto(TASK_COMPLETE,
 						TASK_COMPLETE.TASK_USER_IDENTIFIER,
 						TASK_COMPLETE.TASK_PRIORITY,
 						TASK_COMPLETE.TASK_UUID,
+						TASK_COMPLETE.TASK_PARENT_UUID,
 						TASK_COMPLETE.TASK_NAME,
 						TASK_COMPLETE.TASK_DESCRIPTION,
 						TASK_COMPLETE.TASK_TYPE,
@@ -64,6 +69,7 @@ public class TaskComplete {
 						task.getUserIdentifier(),
 						task.getPriority(),
 						task.getUuid(),
+						task.getParentUuid(),
 						task.getName(),
 						task.getDescription(),
 						task.getType(),
@@ -159,7 +165,7 @@ public class TaskComplete {
 							record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
 					
 					task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
-					task.put("task_message", record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE));
+					task.putRawValue("task_message", new RawValue(record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE)));
 				    					
 					tasks.add(task);
 					records++;
@@ -209,6 +215,7 @@ public class TaskComplete {
 				task.setUserIdentifier(record.getValue(TASK_COMPLETE.TASK_USER_IDENTIFIER));
 				task.setPriority(record.getValue(TASK_COMPLETE.TASK_PRIORITY));
 				task.setUuid(record.getValue(TASK_COMPLETE.TASK_UUID));
+				task.setParentUuid(record.getValue(TASK_COMPLETE.TASK_PARENT_UUID));
 				task.setParameters(record.getValue(TASK_COMPLETE.TASK_PARAMETERS));
 				task.setType(record.getValue(TASK_COMPLETE.TASK_TYPE));
 				task.setSubmittedDate(record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE));

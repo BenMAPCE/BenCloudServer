@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row13;
+import org.jooq.Row14;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -116,6 +116,11 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
      */
     public final TableField<TaskQueueRecord, LocalDateTime> TASK_STARTED_DATE = createField(DSL.name("task_started_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
+    /**
+     * The column <code>data.task_queue.task_parent_uuid</code>.
+     */
+    public final TableField<TaskQueueRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
+
     private TaskQueue(Name alias, Table<TaskQueueRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -201,11 +206,11 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row13 type methods
+    // Row14 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row13<Long, String, Integer, String, String, String, String, String, Integer, String, Boolean, LocalDateTime, LocalDateTime> fieldsRow() {
-        return (Row13) super.fieldsRow();
+    public Row14<Long, String, Integer, String, String, String, String, String, Integer, String, Boolean, LocalDateTime, LocalDateTime, String> fieldsRow() {
+        return (Row14) super.fieldsRow();
     }
 }

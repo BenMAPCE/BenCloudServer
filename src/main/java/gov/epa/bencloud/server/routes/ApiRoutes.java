@@ -334,6 +334,11 @@ public class ApiRoutes extends RoutesBase {
 			
 			task.setParameters(body);
 			task.setUuid(UUID.randomUUID().toString());
+			JsonNode parentTaskUuid = params.get("parent_task_uuid");
+			if(parentTaskUuid != null) {
+				task.setParentUuid(params.get("parent_task_uuid").asText());
+				
+			}
 			task.setUserIdentifier(bcoUserIdentifier);
 			task.setType(params.get("type").asText());
 			

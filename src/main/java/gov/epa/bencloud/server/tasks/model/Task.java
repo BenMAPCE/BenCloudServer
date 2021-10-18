@@ -8,6 +8,7 @@ public class Task implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private String uuid;
+	private String parentUuid;
 	private Integer priority; 
 	private String name;
     private String description;
@@ -49,6 +50,14 @@ public class Task implements Serializable {
 		this.uuid = uuid;
 	}
 
+	public String getParentUuid() {
+		return parentUuid;
+	}
+
+	public void setParentUuid(String parentUuid) {
+		this.parentUuid = parentUuid;
+	}
+	
 	public String getUserIdentifier() {
 		return userIdentifier;
 	}

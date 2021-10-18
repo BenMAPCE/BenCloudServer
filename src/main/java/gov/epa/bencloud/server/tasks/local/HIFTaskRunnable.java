@@ -36,6 +36,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
 public class HIFTaskRunnable implements Runnable {
 
@@ -48,19 +49,20 @@ public class HIFTaskRunnable implements Runnable {
 	}
 
 	private boolean taskSuccessful = true;
-	private String taskCompleteMessage = "Task Complete";
 
 	public void run() {
-
+		
+		ObjectMapper mapper = new ObjectMapper();
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 		final int maxRowsInMemory = 100000;
-		
+		ArrayList<TaskMessage> messages = new ArrayList<TaskMessage>();
 		int rowsSaved = 0;
 		
 		try {
 			HIFTaskConfig hifTaskConfig = parseTaskParameters(task);
-
-			TaskQueue.updateTaskPercentage(taskUuid, 1, "Loading air quality data");
+			messages.add(new TaskMessage("active", "Loading air quality data"));
+			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+			
 			//TODO: This will need to change as we start supporting more metrics within a single AQ layer.
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
 			Map<Integer, AirQualityCellRecord> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
@@ -78,13 +80,16 @@ public class HIFTaskRunnable implements Runnable {
 			
 			ArrayList<double[]> hifBetaDistributionLists = new ArrayList<double[]>();
 						
+			messages.get(messages.size()-1).setStatus("complete");
 			
 			// Inspect each selected HIF and create parallel lists of math expressions and
 			// HIF config records
+			messages.add(new TaskMessage("active", "Loading incidence and prevalence data"));
 			int idx=0;
 			for (HIFConfig hif : hifTaskConfig.hifs) {
 				hif.arrayIdx = idx;
-				TaskQueue.updateTaskPercentage(taskUuid, 2, "Loading incidence for function " + ++idx + " of " + hifTaskConfig.hifs.size());
+				messages.get(messages.size()-1).setMessage("Loading incidence for function " + ++idx + " of " + hifTaskConfig.hifs.size());
+				TaskQueue.updateTaskPercentage(taskUuid, 2, mapper.writeValueAsString(messages));
 				
 				TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 
@@ -113,8 +118,10 @@ public class HIFTaskRunnable implements Runnable {
 				
 				hifBetaDistributionLists.add(distBeta);
 			}
+			messages.get(messages.size()-1).setStatus("complete");
 			
-			TaskQueue.updateTaskPercentage(taskUuid, 3, "Loading population data");
+			messages.add(new TaskMessage("active", "Loading population data"));
+			TaskQueue.updateTaskPercentage(taskUuid, 3, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
 			// For each HIF, keep track of which age groups (and what percentage) apply
@@ -143,6 +150,8 @@ public class HIFTaskRunnable implements Runnable {
 			mXparser.setToOverrideBuiltinTokens();
 			mXparser.disableUlpRounding();
 
+			messages.get(messages.size()-1).setStatus("complete");
+			messages.add(new TaskMessage("active", "Running health impact functions"));
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
@@ -152,7 +161,7 @@ public class HIFTaskRunnable implements Runnable {
 				currentCell++;
 
 				if (prevPct != currentPct) {
-					TaskQueue.updateTaskPercentage(taskUuid, currentPct, "Running health impact functions");
+					TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 					TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 					prevPct = currentPct;
 				}
@@ -282,130 +291,34 @@ public class HIFTaskRunnable implements Runnable {
 				// Control the size of the results vector by saving partial results along the way
 				if(hifResults.size() >= maxRowsInMemory) {
 					rowsSaved += hifResults.size();
-					TaskQueue.updateTaskPercentage(taskUuid, currentPct, "Saving progress...");
+					messages.get(messages.size()-1).setMessage("Saving progress...");
+					TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 					HIFUtil.storeResults(task, hifTaskConfig, hifResults);
 					hifResults.clear();
+					messages.get(messages.size()-1).setMessage("Running health impact functions");
+					TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 					//System.out.println("hifResults capacity after clear: " + hifResults.capacity());
 				}
 				
-				/*
-				for (int hifIdx = 0; hifIdx < hifTaskConfig.hifs.size(); hifIdx++) {
-					Expression hifFunctionExpression = hifFunctionExpressionList.get(hifIdx);
-					Expression hifBaselineExpression = hifBaselineExpressionList.get(hifIdx);
-					HIFConfig hifConfig = hifTaskConfig.hifs.get(hifIdx);
-					HealthImpactFunctionRecord hifDefinition = hifDefinitionList.get(hifIdx);
-					double[] betaDist = hifBetaDistributionLists.get(hifIdx);
-					
-
-					double seasonalScalar = 1.0;
-					if(hifDefinition.getMetricStatistic() == 0) { // NONE
-						seasonalScalar = hifConfig.totalDays.doubleValue();
-					}
-					// If we have variable values, grab them for use in the standard deviation calc below. 
-					// Else, set to 1 so they won't have any effect.
-					//Double varA = hifDefinition.getValA().doubleValue() != 0 ? hifDefinition.getValA().doubleValue() : 1.0;
-					//Double varB = hifDefinition.getValB().doubleValue() != 0 ? hifDefinition.getValB().doubleValue() : 1.0;
-					//Double varC = hifDefinition.getValC().doubleValue() != 0 ? hifDefinition.getValC().doubleValue() : 1.0;
-					
-					double beta = hifDefinition.getBeta().doubleValue();
-
-					// BenMAP-CE stores air quality values as floats but performs HIF estimates using doubles.
-					// Testing has shown that float to double conversion can cause small changes in values 
-					// Normal operation in BenCloud will use all doubles but, during validation with BenMAP results, it may be useful to preserve the legacy behavior
-					double baselineValue = hifTaskConfig.preserveLegacyBehavior ? baselineCell.getValue().floatValue() : baselineCell.getValue().doubleValue();
-					double scenarioValue = hifTaskConfig.preserveLegacyBehavior ? scenarioCell.getValue().floatValue() : scenarioCell.getValue().doubleValue();
-					double deltaQ = baselineValue - scenarioValue;					
-					
-					hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifFunctionExpression.setArgumentValue("Q0", baselineCell.getValue().doubleValue());
-					hifFunctionExpression.setArgumentValue("Q1", scenarioCell.getValue().doubleValue());
-
-					hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifBaselineExpression.setArgumentValue("Q0", baselineCell.getValue().doubleValue());
-					hifBaselineExpression.setArgumentValue("Q1", scenarioCell.getValue().doubleValue());
-
-					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifIdx);
-					Map<Long, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifIdx);
-					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineCell.getGridCellId());
-*/
-					/*
-					 * ACCUMULATE THE ESTIMATE FOR EACH AGE CATEGORY IN THIS CELL
-					 */
-/*
-					double totalPop = 0.0;
-					double hifFunctionEstimate = 0.0;
-					double hifBaselineEstimate = 0.0;
-					double[] resultPercentiles = new double[20];
-
-					for (GetPopulationRecord popCategory : populationCell) {
-						// <gridCellId, race, gender, ethnicity, agerange, pop>
-						Integer popAgeRange = popCategory.getAgeRangeId();
-						
-						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
-							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
-							double incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
-							totalPop += rangePop;
-
-							hifFunctionExpression.setArgumentValue("BETA", beta);
-							hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
-							hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
-							hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
-							
-							for(int i=0; i < resultPercentiles.length; i++) {
-								hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
-								resultPercentiles[i] += hifFunctionExpression.calculate() * seasonalScalar;
-							}
-							
-							hifBaselineExpression.setArgumentValue("INCIDENCE", incidence);
-							hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
-							hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
-						}
-					}
-					//This can happen if we're running multiple functions but we don't have any
-					//of the population ranges that this function wants
-					if(totalPop==0) {
-						continue;
-					}
-					
-					HifResultRecord rec = new HifResultRecord();
-					rec.setGridCellId(baselineEntry.getKey());
-					rec.setGridCol(baselineCell.getGridCol());
-					rec.setGridRow(baselineCell.getGridRow());
-					rec.setHifId(hifConfig.hifId);
-					rec.setPopulation(new BigDecimal(totalPop));
-					rec.setDelta(BigDecimal.valueOf(deltaQ));
-					rec.setResult(BigDecimal.valueOf(hifFunctionEstimate));
-					rec.setPct_2_5(BigDecimal.valueOf(resultPercentiles[0]));
-					rec.setPct_97_5(BigDecimal.valueOf(resultPercentiles[19]));
-					
-					BigDecimal[] tmp = new BigDecimal[resultPercentiles.length];
-					for(int i=0; i < resultPercentiles.length; i++) {
-						tmp[i] = BigDecimal.valueOf(resultPercentiles[i]);
-					}
-					rec.setPercentiles(tmp);
-					
-					DescriptiveStatistics stats = new DescriptiveStatistics();
-					for( int i = 0; i < resultPercentiles.length; i++) {
-				        stats.addValue(resultPercentiles[i]);
-					}
-					rec.setStandardDev(BigDecimal.valueOf(stats.getStandardDeviation()));
-					rec.setResultMean(BigDecimal.valueOf(stats.getMean()));
-					rec.setResultVariance(BigDecimal.valueOf(stats.getVariance()));
-					rec.setBaseline(BigDecimal.valueOf(hifBaselineEstimate));
-
-					hifResults.add(rec);
-				}
-				*/
 			}
 			rowsSaved += hifResults.size();
-			TaskQueue.updateTaskPercentage(taskUuid, 100, String.format("Saving %,d results", rowsSaved));
+			messages.get(messages.size()-1).setStatus("complete");
+			messages.add(new TaskMessage("active", String.format("Saving %,d results", rowsSaved)));
+			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			HIFUtil.storeResults(task, hifTaskConfig, hifResults);
-
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, taskCompleteMessage);
+			messages.get(messages.size()-1).setStatus("complete");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, mapper.writeValueAsString(messages));
 
 		} catch (Exception e) {
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
+			messages.add(new TaskMessage("error", "Task Failed"));
+			try {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, mapper.writeValueAsString(messages));
+			} catch (JsonProcessingException e1) {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			e.printStackTrace();
 		}
 	}
