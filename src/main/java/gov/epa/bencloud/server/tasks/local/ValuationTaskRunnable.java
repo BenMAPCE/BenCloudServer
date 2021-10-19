@@ -288,7 +288,7 @@ public class ValuationTaskRunnable implements Runnable {
 			try {
 				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, mapper.writeValueAsString(messages));
 			} catch (JsonProcessingException e1) {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "[{\"status\": \"error\",\"message\": \"Task Failed\"}]");
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
