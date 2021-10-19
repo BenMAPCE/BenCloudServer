@@ -281,17 +281,11 @@ public class ValuationTaskRunnable implements Runnable {
 			ValuationUtil.storeResults(task, valuationTaskConfig, valuationResults);
 			messages.get(messages.size()-1).setStatus("complete");
 			
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, mapper.writeValueAsString(messages));
+			String completeMessage = String.format("Saved %,d results", rowsSaved);
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
-			messages.add(new TaskMessage("error", "Task Failed"));
-			try {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, mapper.writeValueAsString(messages));
-			} catch (JsonProcessingException e1) {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "[{\"status\": \"error\",\"message\": \"Task Failed\"}]");
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
 			e.printStackTrace();
 		}
 	}

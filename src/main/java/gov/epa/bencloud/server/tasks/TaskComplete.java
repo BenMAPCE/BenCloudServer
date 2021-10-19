@@ -165,7 +165,7 @@ public class TaskComplete {
 							record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
 					
 					task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
-					task.putRawValue("task_message", new RawValue(record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE)));
+					task.put("task_message", record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE));
 				    					
 					tasks.add(task);
 					records++;

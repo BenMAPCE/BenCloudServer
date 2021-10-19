@@ -119,6 +119,7 @@ public class HIFTaskRunnable implements Runnable {
 				hifBetaDistributionLists.add(distBeta);
 			}
 			messages.get(messages.size()-1).setStatus("complete");
+			messages.get(messages.size()-1).setMessage("Loaded incidence and prevalence for " + hifTaskConfig.hifs.size() + " function" + (hifTaskConfig.hifs.size()==1 ? "" : "s"));
 			
 			messages.add(new TaskMessage("active", "Loading population data"));
 			TaskQueue.updateTaskPercentage(taskUuid, 3, mapper.writeValueAsString(messages));
@@ -308,17 +309,12 @@ public class HIFTaskRunnable implements Runnable {
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			HIFUtil.storeResults(task, hifTaskConfig, hifResults);
 			messages.get(messages.size()-1).setStatus("complete");
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, mapper.writeValueAsString(messages));
+			
+			String completeMessage = String.format("Saved %,d results", rowsSaved);
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
-			messages.add(new TaskMessage("error", "Task Failed"));
-			try {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, mapper.writeValueAsString(messages));
-			} catch (JsonProcessingException e1) {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "[{\"status\": \"error\",\"message\": \"Task Failed\"}]");
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
 			e.printStackTrace();
 		}
 	}
