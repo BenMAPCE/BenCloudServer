@@ -8,6 +8,7 @@ import gov.epa.bencloud.server.database.jooq.DefaultCatalog;
 import gov.epa.bencloud.server.database.jooq.data.tables.AgeRange;
 import gov.epa.bencloud.server.database.jooq.data.tables.AirQualityCell;
 import gov.epa.bencloud.server.database.jooq.data.tables.AirQualityLayer;
+import gov.epa.bencloud.server.database.jooq.data.tables.AirQualityLayerMetrics;
 import gov.epa.bencloud.server.database.jooq.data.tables.CrosswalkDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.CrosswalkEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.Endpoint;
@@ -46,6 +47,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.PopulationValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.Race;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
+import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
@@ -102,6 +104,11 @@ public class Data extends SchemaImpl {
      * The table <code>data.air_quality_layer</code>.
      */
     public final AirQualityLayer AIR_QUALITY_LAYER = AirQualityLayer.AIR_QUALITY_LAYER;
+
+    /**
+     * The table <code>data.air_quality_layer_metrics</code>.
+     */
+    public final AirQualityLayerMetrics AIR_QUALITY_LAYER_METRICS = AirQualityLayerMetrics.AIR_QUALITY_LAYER_METRICS;
 
     /**
      * The table <code>data.crosswalk_dataset</code>.
@@ -638,6 +645,11 @@ public class Data extends SchemaImpl {
     public final SeasonalMetricSeason SEASONAL_METRIC_SEASON = SeasonalMetricSeason.SEASONAL_METRIC_SEASON;
 
     /**
+     * The table <code>data.statistic_type</code>.
+     */
+    public final StatisticType STATISTIC_TYPE = StatisticType.STATISTIC_TYPE;
+
+    /**
      * The table <code>data.task_complete</code>.
      */
     public final TaskComplete TASK_COMPLETE = TaskComplete.TASK_COMPLETE;
@@ -710,6 +722,7 @@ public class Data extends SchemaImpl {
         return Arrays.<Sequence<?>>asList(
             Sequences.AGE_RANGE_ID_SEQ,
             Sequences.AIR_QUALITY_LAYER_ID_SEQ,
+            Sequences.AIR_QUALITY_LAYER_METRICS_ID_SEQ,
             Sequences.CROSSWALK_DATASET_ID_SEQ,
             Sequences.ENDPOINT_GROUP_ID_SEQ,
             Sequences.ENDPOINT_ID_SEQ,
@@ -732,6 +745,7 @@ public class Data extends SchemaImpl {
             Sequences.RACE_ID_SEQ,
             Sequences.SEASONAL_METRIC_ID_SEQ,
             Sequences.SEASONAL_METRIC_SEASON_ID_SEQ,
+            Sequences.STATISTIC_TYPE_ID_SEQ,
             Sequences.TASK_COMPLETE_TASK_ID_SEQ,
             Sequences.TASK_QUEUE_TASK_ID_SEQ,
             Sequences.TASK_WORKER_TASK_ID_SEQ,
@@ -748,6 +762,7 @@ public class Data extends SchemaImpl {
             AgeRange.AGE_RANGE,
             AirQualityCell.AIR_QUALITY_CELL,
             AirQualityLayer.AIR_QUALITY_LAYER,
+            AirQualityLayerMetrics.AIR_QUALITY_LAYER_METRICS,
             CrosswalkDataset.CROSSWALK_DATASET,
             CrosswalkEntry.CROSSWALK_ENTRY,
             Endpoint.ENDPOINT,
@@ -786,6 +801,7 @@ public class Data extends SchemaImpl {
             Race.RACE,
             SeasonalMetric.SEASONAL_METRIC,
             SeasonalMetricSeason.SEASONAL_METRIC_SEASON,
+            StatisticType.STATISTIC_TYPE,
             TaskComplete.TASK_COMPLETE,
             TaskQueue.TASK_QUEUE,
             TaskWorker.TASK_WORKER,

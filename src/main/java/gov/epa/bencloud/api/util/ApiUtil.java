@@ -41,9 +41,6 @@ public class ApiUtil {
 		return (int)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
 	}
 
-	public static void main(String[] args) {
-		System.out.println(ApiUtil.getCellId(5000, 5000));
-	}
 
 	public static Map<String, Double> getInflationIndices(int id, Integer inflationYear) {
 
@@ -71,6 +68,13 @@ public class ApiUtil {
 		return incomeGrowthFactorRecords;
 	}
 
+	public static Map<String, Integer> getStatisticIdLookup() {
+		Map<String, Integer> statistics = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(DSL.lower(STATISTIC_TYPE.NAME), STATISTIC_TYPE.ID)
+				.from(STATISTIC_TYPE)
+				.fetchMap(DSL.lower(STATISTIC_TYPE.NAME), STATISTIC_TYPE.ID);		
+		return statistics;	}
+	
 	public static void getTaskResultDetails(Request req, Response res) {
 		String uuid = req.params("uuid");
 

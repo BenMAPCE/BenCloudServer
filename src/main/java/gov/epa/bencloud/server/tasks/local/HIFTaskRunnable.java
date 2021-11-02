@@ -16,6 +16,8 @@ import org.jooq.Record3;
 import org.jooq.Result;
 import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -25,9 +27,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.PopulationApi;
+import gov.epa.bencloud.api.model.AirQualityCell;
+import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.util.HIFUtil;
+import gov.epa.bencloud.server.database.PooledDataSource;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
@@ -42,7 +47,8 @@ public class HIFTaskRunnable implements Runnable {
 
 	private String taskUuid;
 	private String taskWorkerUuid;
-
+	private static final Logger log = LoggerFactory.getLogger(HIFTaskRunnable.class);
+	
 	public HIFTaskRunnable(String taskUuid, String taskWorkerUuid) {
 		this.taskUuid = taskUuid;
 		this.taskWorkerUuid = taskWorkerUuid;
@@ -52,6 +58,7 @@ public class HIFTaskRunnable implements Runnable {
 
 	public void run() {
 		
+		log.info("Task Begin: " + taskUuid);
 		ObjectMapper mapper = new ObjectMapper();
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 		final int maxRowsInMemory = 100000;
@@ -65,8 +72,8 @@ public class HIFTaskRunnable implements Runnable {
 			
 			//TODO: This will need to change as we start supporting more metrics within a single AQ layer.
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
-			Map<Integer, AirQualityCellRecord> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
-			Map<Integer, AirQualityCellRecord> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
+			Map<Integer, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
+			Map<Integer, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
 			
 			ArrayList<Expression> hifFunctionExpressionList = new ArrayList<Expression>();
 			ArrayList<Expression> hifBaselineExpressionList = new ArrayList<Expression>();
@@ -156,7 +163,7 @@ public class HIFTaskRunnable implements Runnable {
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
-			for (Entry<Integer, AirQualityCellRecord> baselineEntry : baseline.entrySet()) {
+			for (Entry<Integer, AirQualityCell> baselineEntry : baseline.entrySet()) {
 				// updating task percentage
 				int currentPct = Math.round(currentCell * 100 / totalCells);
 				currentCell++;
@@ -167,8 +174,8 @@ public class HIFTaskRunnable implements Runnable {
 					prevPct = currentPct;
 				}
 
-				AirQualityCellRecord baselineCell = baselineEntry.getValue();
-				AirQualityCellRecord scenarioCell = scenario.getOrDefault(baselineEntry.getKey(), null);
+				AirQualityCell baselineCell = baselineEntry.getValue();
+				AirQualityCell scenarioCell = scenario.getOrDefault(baselineEntry.getKey(), null);
 				if (scenarioCell == null) {
 					continue;
 				}
@@ -190,7 +197,15 @@ public class HIFTaskRunnable implements Runnable {
 					HealthImpactFunctionRecord hifDefinition = hifDefinitionList.get(hifConfig.arrayIdx);
 					double[] betaDist = hifBetaDistributionLists.get(hifConfig.arrayIdx);
 					
-
+					Map<Integer, Map<Integer, AirQualityCellMetric>> baselineCellMetrics = baselineCell.getCellMetrics();
+					Map<Integer, Map<Integer, AirQualityCellMetric>> scenarioCellMetrics = scenarioCell.getCellMetrics();
+					
+					 Map<Integer, AirQualityCellMetric> baselineCellFirstMetric = baselineCellMetrics.get(baselineCellMetrics.keySet().toArray()[0]);
+					 Map<Integer, AirQualityCellMetric> scenarioCellFirstMetric = scenarioCellMetrics.get(scenarioCellMetrics.keySet().toArray()[0]);
+					
+					double baselineValue = baselineCellFirstMetric.get(baselineCellFirstMetric.keySet().toArray()[0]).getValue();
+					double scenarioValue = scenarioCellFirstMetric.get(scenarioCellFirstMetric.keySet().toArray()[0]).getValue();
+					
 					double seasonalScalar = 1.0;
 					if(hifDefinition.getMetricStatistic() == 0) { // NONE
 						seasonalScalar = hifConfig.totalDays.doubleValue();
@@ -206,21 +221,21 @@ public class HIFTaskRunnable implements Runnable {
 					// BenMAP-CE stores air quality values as floats but performs HIF estimates using doubles.
 					// Testing has shown that float to double conversion can cause small changes in values 
 					// Normal operation in BenCloud will use all doubles but, during validation with BenMAP results, it may be useful to preserve the legacy behavior
-					double baselineValue = hifTaskConfig.preserveLegacyBehavior ? baselineCell.getValue().floatValue() : baselineCell.getValue().doubleValue();
-					double scenarioValue = hifTaskConfig.preserveLegacyBehavior ? scenarioCell.getValue().floatValue() : scenarioCell.getValue().doubleValue();
+					baselineValue = hifTaskConfig.preserveLegacyBehavior ? (float)baselineValue : baselineValue;
+					scenarioValue = hifTaskConfig.preserveLegacyBehavior ? (float)scenarioValue : scenarioValue;
 					double deltaQ = baselineValue - scenarioValue;					
 					
 					hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifFunctionExpression.setArgumentValue("Q0", baselineCell.getValue().doubleValue());
-					hifFunctionExpression.setArgumentValue("Q1", scenarioCell.getValue().doubleValue());
+					hifFunctionExpression.setArgumentValue("Q0", baselineValue);
+					hifFunctionExpression.setArgumentValue("Q1", scenarioValue);
 
 					hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifBaselineExpression.setArgumentValue("Q0", baselineCell.getValue().doubleValue());
-					hifBaselineExpression.setArgumentValue("Q1", scenarioCell.getValue().doubleValue());
+					hifBaselineExpression.setArgumentValue("Q0", baselineValue);
+					hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
 					Map<Integer, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
-					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineCell.getGridCellId());
+					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
 
 					/*
 					 * ACCUMULATE THE ESTIMATE FOR EACH AGE CATEGORY IN THIS CELL
@@ -317,6 +332,7 @@ public class HIFTaskRunnable implements Runnable {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
 			e.printStackTrace();
 		}
+		log.info("Task Complete: " + taskUuid);
 	}
 
 	private void updateHifConfigValues(HIFConfig hif, HealthImpactFunctionRecord h) {

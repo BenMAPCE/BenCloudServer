@@ -12,7 +12,7 @@ public class JooqUtil {
 	public static Configuration getJooqConfiguration() {
 		
 		Configuration configuration = new DefaultConfiguration()
-				.set(new DefaultExecuteListenerProvider(new SQLPrinter()))
+				//.set(new DefaultExecuteListenerProvider(new SQLPrinter()))
 			    .set(PooledDataSource.getDataSource())
 			    .set(SQLDialect.POSTGRES);
 

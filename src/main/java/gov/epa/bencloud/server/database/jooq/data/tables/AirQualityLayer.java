@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row11;
+import org.jooq.Row5;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -67,36 +67,6 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
      * The column <code>data.air_quality_layer.grid_definition_id</code>.
      */
     public final TableField<AirQualityLayerRecord, Integer> GRID_DEFINITION_ID = createField(DSL.name("grid_definition_id"), SQLDataType.INTEGER, this, "");
-
-    /**
-     * The column <code>data.air_quality_layer.cell_count</code>.
-     */
-    public final TableField<AirQualityLayerRecord, Integer> CELL_COUNT = createField(DSL.name("cell_count"), SQLDataType.INTEGER, this, "");
-
-    /**
-     * The column <code>data.air_quality_layer.min_value</code>.
-     */
-    public final TableField<AirQualityLayerRecord, Double> MIN_VALUE = createField(DSL.name("min_value"), SQLDataType.DOUBLE, this, "");
-
-    /**
-     * The column <code>data.air_quality_layer.max_value</code>.
-     */
-    public final TableField<AirQualityLayerRecord, Double> MAX_VALUE = createField(DSL.name("max_value"), SQLDataType.DOUBLE, this, "");
-
-    /**
-     * The column <code>data.air_quality_layer.mean_value</code>.
-     */
-    public final TableField<AirQualityLayerRecord, Double> MEAN_VALUE = createField(DSL.name("mean_value"), SQLDataType.DOUBLE, this, "");
-
-    /**
-     * The column <code>data.air_quality_layer.pct_2_5</code>.
-     */
-    public final TableField<AirQualityLayerRecord, Double> PCT_2_5 = createField(DSL.name("pct_2_5"), SQLDataType.DOUBLE, this, "");
-
-    /**
-     * The column <code>data.air_quality_layer.pct_97_5</code>.
-     */
-    public final TableField<AirQualityLayerRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.air_quality_layer.locked</code>.
@@ -205,11 +175,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row11 type methods
+    // Row5 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row11<Integer, String, Integer, Integer, Integer, Double, Double, Double, Double, Double, Boolean> fieldsRow() {
-        return (Row11) super.fieldsRow();
+    public Row5<Integer, String, Integer, Integer, Boolean> fieldsRow() {
+        return (Row5) super.fieldsRow();
     }
 }

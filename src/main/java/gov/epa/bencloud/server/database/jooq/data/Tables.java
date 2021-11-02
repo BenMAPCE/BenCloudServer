@@ -7,6 +7,7 @@ package gov.epa.bencloud.server.database.jooq.data;
 import gov.epa.bencloud.server.database.jooq.data.tables.AgeRange;
 import gov.epa.bencloud.server.database.jooq.data.tables.AirQualityCell;
 import gov.epa.bencloud.server.database.jooq.data.tables.AirQualityLayer;
+import gov.epa.bencloud.server.database.jooq.data.tables.AirQualityLayerMetrics;
 import gov.epa.bencloud.server.database.jooq.data.tables.CrosswalkDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.CrosswalkEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.Endpoint;
@@ -45,6 +46,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.PopulationValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.Race;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
+import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
@@ -87,6 +89,11 @@ public class Tables {
      * The table <code>data.air_quality_layer</code>.
      */
     public static final AirQualityLayer AIR_QUALITY_LAYER = AirQualityLayer.AIR_QUALITY_LAYER;
+
+    /**
+     * The table <code>data.air_quality_layer_metrics</code>.
+     */
+    public static final AirQualityLayerMetrics AIR_QUALITY_LAYER_METRICS = AirQualityLayerMetrics.AIR_QUALITY_LAYER_METRICS;
 
     /**
      * The table <code>data.crosswalk_dataset</code>.
@@ -621,6 +628,11 @@ public class Tables {
      * The table <code>data.seasonal_metric_season</code>.
      */
     public static final SeasonalMetricSeason SEASONAL_METRIC_SEASON = SeasonalMetricSeason.SEASONAL_METRIC_SEASON;
+
+    /**
+     * The table <code>data.statistic_type</code>.
+     */
+    public static final StatisticType STATISTIC_TYPE = StatisticType.STATISTIC_TYPE;
 
     /**
      * The table <code>data.task_complete</code>.

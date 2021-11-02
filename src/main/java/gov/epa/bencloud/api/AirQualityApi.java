@@ -16,6 +16,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.InsertValuesStep8;
+import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.OrderField;
@@ -24,7 +25,11 @@ import org.jooq.Record1;
 import org.jooq.Record12;
 import org.jooq.Record13;
 import org.jooq.Record14;
+import org.jooq.Record21;
+import org.jooq.Record5;
 import org.jooq.Record6;
+import org.jooq.Record7;
+import org.jooq.Record9;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.exception.DataAccessException;
@@ -40,6 +45,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.epa.bencloud.api.model.AirQualityCell;
+import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -96,6 +103,7 @@ public class AirQualityApi {
 		Integer filteredRecordsCount = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
 				.from(AIR_QUALITY_LAYER)
+				.join(AIR_QUALITY_LAYER_METRICS).on(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
 				.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
 				.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
 				
@@ -104,17 +112,24 @@ public class AirQualityApi {
 		
 		System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 		
-		Result<Record14<Integer, String, Integer, Double, Double, Double, Double, Double, Boolean, Integer, String, Integer, String, String>> aqRecords = 
+		Result<Record21<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer, Boolean, Integer, String, Integer, String, String>> aqRecords = 
 			DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
-						AIR_QUALITY_LAYER.CELL_COUNT,
-						AIR_QUALITY_LAYER.MIN_VALUE,
-						AIR_QUALITY_LAYER.MAX_VALUE,
-						AIR_QUALITY_LAYER.MEAN_VALUE,
-						AIR_QUALITY_LAYER.PCT_2_5,
-						AIR_QUALITY_LAYER.PCT_97_5,
+						AIR_QUALITY_LAYER_METRICS.METRIC_ID,
+						POLLUTANT_METRIC.NAME.as("metric"),
+						AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID,
+						SEASONAL_METRIC.NAME.as("seasonal_metric"),
+						AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID,
+						STATISTIC_TYPE.NAME.as("statistic"),
+						AIR_QUALITY_LAYER_METRICS.CELL_COUNT,
+						AIR_QUALITY_LAYER_METRICS.MIN_VALUE,
+						AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
+						AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
+						AIR_QUALITY_LAYER_METRICS.PCT_2_5,
+						AIR_QUALITY_LAYER_METRICS.PCT_97_5,
+						AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL,
 						AIR_QUALITY_LAYER.LOCKED,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 						GRID_DEFINITION.NAME.as("grid_definition_name"),
@@ -123,9 +138,12 @@ public class AirQualityApi {
 						POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
 						)
 				.from(AIR_QUALITY_LAYER)
+				.join(AIR_QUALITY_LAYER_METRICS).on(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
 				.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
 				.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
-				
+				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
+				.join(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
+				.join(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID))
 				.where(filterCondition)
 				.orderBy(orderFields)
 				.offset((page * rowsPerPage) - rowsPerPage)
@@ -169,32 +187,49 @@ public class AirQualityApi {
 	public static Object getAirQualityLayerDefinition(Request request, Response response) {
 		Integer id = Integer.valueOf(request.params("id"));
 		
-		Record14<Integer, String, Integer, Double, Double, Double, Double, Double, Boolean, Integer, Integer, String, String, String> aqRecord = getAirQualityLayerDefinition(id);
+		Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id);
 		response.type("application/json");
 		return aqRecord.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
-	private static Record14<Integer, String, Integer, Double, Double, Double, Double, Double, Boolean, Integer, Integer, String, String, String> getAirQualityLayerDefinition(Integer id) {
+	private static Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id) {
 		return DSL.using(JooqUtil.getJooqConfiguration())
 		.select(
 				AIR_QUALITY_LAYER.ID, 
 				AIR_QUALITY_LAYER.NAME,
-				AIR_QUALITY_LAYER.CELL_COUNT,
-				AIR_QUALITY_LAYER.MIN_VALUE,
-				AIR_QUALITY_LAYER.MAX_VALUE,
-				AIR_QUALITY_LAYER.MEAN_VALUE,
-				AIR_QUALITY_LAYER.PCT_2_5,
-				AIR_QUALITY_LAYER.PCT_97_5,
 				AIR_QUALITY_LAYER.LOCKED,
 				AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 				AIR_QUALITY_LAYER.POLLUTANT_ID,
 				POLLUTANT.NAME.as("pollutant_name"), 
 				POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name"),
-				GRID_DEFINITION.NAME.as("grid_definition_name"))
+				GRID_DEFINITION.NAME.as("grid_definition_name"),
+				DSL.jsonArrayAgg(DSL.jsonbObject(
+						AIR_QUALITY_LAYER_METRICS.METRIC_ID,
+						AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID,
+						AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID,
+						AIR_QUALITY_LAYER_METRICS.CELL_COUNT,
+						AIR_QUALITY_LAYER_METRICS.MIN_VALUE,
+						AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
+						AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
+						AIR_QUALITY_LAYER_METRICS.PCT_2_5,
+						AIR_QUALITY_LAYER_METRICS.PCT_97_5,
+						AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL
+						)).as("metric_statistics")
+				)
 		.from(AIR_QUALITY_LAYER)
+		.join(AIR_QUALITY_LAYER_METRICS).on(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
 		.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
 		.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
 		.where(AIR_QUALITY_LAYER.ID.eq(id))
+		.groupBy(AIR_QUALITY_LAYER.ID
+				, AIR_QUALITY_LAYER.NAME
+				, AIR_QUALITY_LAYER.LOCKED
+				, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
+				, AIR_QUALITY_LAYER.POLLUTANT_ID
+				, POLLUTANT.NAME
+				, POLLUTANT.FRIENDLY_NAME
+				, GRID_DEFINITION.NAME
+				)
 		.fetchOne();
 	}
 
@@ -259,13 +294,13 @@ public class AirQualityApi {
 						AIR_QUALITY_CELL.GRID_ROW,
 						POLLUTANT_METRIC.NAME.as("metric"),
 						SEASONAL_METRIC.NAME.as("seasonal_metric"),
-						AIR_QUALITY_CELL.ANNUAL_METRIC,
+						STATISTIC_TYPE.NAME.as("annual_statistic"),
 						AIR_QUALITY_CELL.VALUE
 						)
 				.from(AIR_QUALITY_CELL)
 				.leftJoin(POLLUTANT_METRIC).on(AIR_QUALITY_CELL.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 				.leftJoin(SEASONAL_METRIC).on(AIR_QUALITY_CELL.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-
+				.leftJoin(STATISTIC_TYPE).on(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID.eq(STATISTIC_TYPE.ID))
 				.where(filterCondition)
 				.orderBy(orderFields)
 				.offset((page * rowsPerPage) - rowsPerPage)
@@ -318,21 +353,82 @@ public class AirQualityApi {
 		return layerName.replaceAll("[^A-Za-z0-9._-]+", "") + ".csv";
 	}
 
-
-	public static Map<Integer, AirQualityCellRecord> getAirQualityLayerMap(Integer id) {
-
+	/*
+	 * Returns Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
+	 */
+	public static Map<Integer, AirQualityCell> getAirQualityLayerMap(Integer id) {
+/*
 		Map<Integer, AirQualityCellRecord> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.selectFrom(AIR_QUALITY_CELL)
 				.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id))
 				.orderBy(AIR_QUALITY_CELL.GRID_COL, AIR_QUALITY_CELL.GRID_ROW)
-				.fetchMap(AIR_QUALITY_CELL.GRID_CELL_ID);		
-		return aqRecords;
+				.fetchMap(AIR_QUALITY_CELL.GRID_CELL_ID);	
+*/
+		
+		Result<Record7<Integer, Integer, Integer, Integer, Integer, Integer, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(AIR_QUALITY_CELL.GRID_CELL_ID
+						, AIR_QUALITY_CELL.GRID_COL
+						, AIR_QUALITY_CELL.GRID_ROW
+						, AIR_QUALITY_CELL.METRIC_ID
+						, AIR_QUALITY_CELL.SEASONAL_METRIC_ID
+						, AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID
+						, AIR_QUALITY_CELL.VALUE)
+				.from(AIR_QUALITY_CELL)
+				.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id))
+				.fetch();
+		
+		
+		Map<Integer, AirQualityCell> aqMap = new HashMap<Integer, AirQualityCell>();
+		
+		for(Record7<Integer, Integer, Integer, Integer, Integer, Integer, Double> r : aqRecords) {
+			//Do we have a top-level entry in aqMap for this cell?
+			// If not, add it
+			Integer cellId = r.get(AIR_QUALITY_CELL.GRID_CELL_ID);
+			
+			//Get the cellAqMetrics from the map (or add it to the map)
+			AirQualityCell cellAq = aqMap.get(cellId);
+			if (cellAq == null) {
+				cellAq = new AirQualityCell(r.get(AIR_QUALITY_CELL.GRID_COL), r.get(AIR_QUALITY_CELL.GRID_ROW));
+				aqMap.put(cellId, cellAq);
+			}
+			
+			// cell = <cell id, (col, row, aqvalues)>
+			//   aqvalues = <metricId, <seasonalMetricId, aqValue>
+			//      aqValue = annnual statistic, value
+			// id=0 for metric or seasonal metric means empty
+			// 
+			
+			//Each cellAq object contains the cell's col, row, and a map of aq values indexed by metric id and seasonal metric id
+			Map<Integer, Map<Integer, AirQualityCellMetric>> cellAqMetrics = cellAq.getCellMetrics();
+			
+			AirQualityCellMetric cellAqMetric = new AirQualityCellMetric(r.get(AIR_QUALITY_CELL.METRIC_ID),r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID), r.get(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID), r.get(AIR_QUALITY_CELL.VALUE));
+			
+			Map<Integer, AirQualityCellMetric> cellAqSeasonalMetrics = cellAqMetrics.get(r.get(AIR_QUALITY_CELL.METRIC_ID));
+			if(cellAqSeasonalMetrics == null) {
+				cellAqSeasonalMetrics = new HashMap<Integer, AirQualityCellMetric>();	
+				cellAqMetrics.put(r.get(AIR_QUALITY_CELL.METRIC_ID), cellAqSeasonalMetrics);
+			}	
+					
+			if(r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID) != null && r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID) != 0) {
+				cellAqSeasonalMetrics.put(r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID), cellAqMetric);				
+			} else {
+				cellAqSeasonalMetrics.put(0, cellAqMetric);
+			}
+		}
+		
+		return aqMap;
 	}
 	
 	public static Object postAirQualityLayer(Request request, String layerName, Integer pollutantId, Integer gridId, String layerType, Response response) {
 
 		System.out.println("postAirQualityLayer");
 
+		//TODO: REMOVE THIS. IT'S JUST A BIG WORKAROUND
+		if(pollutantId.equals(0)) {
+			pollutantId = 6;
+		}
+		
+		
 		AirQualityLayerRecord aqRecord=null;
 		
 		//Create the air_quality_cell records
@@ -381,9 +477,9 @@ public class AirQualityApi {
 			
 			Map<String, Integer> pollutantMetricIdLookup = AirQualityUtil.getPollutantMetricIdLookup(pollutantId);
 			
-			//TODO: Finish creating lookups for these metrics so we can fill them in properly in the insert below
 			Map<String, Integer> seasonalMetricIdLookup = AirQualityUtil.getSeasonalMetricIdLookup(pollutantId);
 			
+			Map<String, Integer> statisticIdLookup = ApiUtil.getStatisticIdLookup();
 			
 			//TODO: Validate each record and abort before the batch.execute() if there's a problem.
 			//We might also need to clean up the header. Or, maybe we should make this a transaction?
@@ -396,7 +492,7 @@ public class AirQualityApi {
 			.fetchOne();
 			
 			// Read the data rows and write to the db	
-			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Integer, Integer, Integer, String, Double> batch = DSL.using(JooqUtil.getJooqConfiguration())
+			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Double> batch = DSL.using(JooqUtil.getJooqConfiguration())
 					.insertInto(
 							AIR_QUALITY_CELL, 
 							AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID,
@@ -405,7 +501,7 @@ public class AirQualityApi {
 							AIR_QUALITY_CELL.GRID_CELL_ID,
 							AIR_QUALITY_CELL.METRIC_ID,
 							AIR_QUALITY_CELL.SEASONAL_METRIC_ID,
-							AIR_QUALITY_CELL.ANNUAL_METRIC,
+							AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID,
 							AIR_QUALITY_CELL.VALUE
 							);
 			
@@ -426,6 +522,15 @@ public class AirQualityApi {
 							seasonalMetricLowerCase,
 							AirQualityUtil.createNewSeasonalMetric(pollutantMetricIdLookup.get(metricNameLowerCase), record[seasonalMetricIdx]));
 				}
+
+				String statisticLowerCase = record[seasonalMetricIdx].toLowerCase();
+				Integer statisticId=0;
+				if(statisticIdLookup.containsKey(seasonalMetricLowerCase)) {
+					statisticId = statisticIdLookup.get(seasonalMetricLowerCase);
+				} else {
+					//TODO: Throw up an error message here. We can't allow this process to add statistics. We just need to ignore those we don't support
+					
+				}
 				
 				// Add a record to the batch
 				batch.values(
@@ -435,7 +540,7 @@ public class AirQualityApi {
 						ApiUtil.getCellId(Integer.valueOf(record[columnIdx]), Integer.valueOf(record[rowIdx])),
 						pollutantMetricIdLookup.get(metricNameLowerCase), 
 						seasonalMetricIdLookup.get(seasonalMetricLowerCase), 
-						record[annualMetricIdx],
+						statisticId,
 						Double.valueOf(record[valuesIdx])
 					);
 			}
@@ -443,25 +548,60 @@ public class AirQualityApi {
 		    batch.execute();
 		    
 		    
-			//Now that the rows are in the database, let's get the cell count, mean, min, max and update the layer's header record
+			//Now that the rows are in the database, let's get the cell count, mean, min, max and create the metric summary records
 			DSL.using(JooqUtil.getJooqConfiguration())
-			.update(AIR_QUALITY_LAYER)
-			.set(DSL.row(AIR_QUALITY_LAYER.CELL_COUNT, AIR_QUALITY_LAYER.MIN_VALUE, AIR_QUALITY_LAYER.MAX_VALUE, AIR_QUALITY_LAYER.MEAN_VALUE, AIR_QUALITY_LAYER.PCT_2_5, AIR_QUALITY_LAYER.PCT_97_5),	
+			.insertInto(AIR_QUALITY_LAYER_METRICS
+					, AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID
+					, AIR_QUALITY_LAYER_METRICS.METRIC_ID
+					, AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID
+					, AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID
+					, AIR_QUALITY_LAYER_METRICS.CELL_COUNT
+					, AIR_QUALITY_LAYER_METRICS.MIN_VALUE
+					, AIR_QUALITY_LAYER_METRICS.MAX_VALUE
+					, AIR_QUALITY_LAYER_METRICS.MEAN_VALUE
+					, AIR_QUALITY_LAYER_METRICS.PCT_2_5
+					, AIR_QUALITY_LAYER_METRICS.PCT_97_5
+					, AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL
+					)
+			.select(
     		DSL.select(
-				DSL.count().as("cell_count"),
-				DSL.min(AIR_QUALITY_CELL.VALUE).as("min_value"),
-				DSL.max(AIR_QUALITY_CELL.VALUE).as("max_value"),
-				DSL.avg(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("mean_value"),
-				DSL.percentileCont(0.025).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_2_5"),
-				DSL.percentileCont(0.975).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_97_5")
-    		)
+    				AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID
+    				, AIR_QUALITY_CELL.METRIC_ID
+    				, AIR_QUALITY_CELL.SEASONAL_METRIC_ID
+    				, AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID
+    				, DSL.count().as("cell_count")
+    				, DSL.min(AIR_QUALITY_CELL.VALUE).as("min_value")
+    				, DSL.max(AIR_QUALITY_CELL.VALUE).as("max_value")
+    				, DSL.avg(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("mean_value")
+    				, DSL.percentileCont(0.025).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_2_5")
+    				, DSL.percentileCont(0.975).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_97_5")
+    				, DSL.val(0).as("cell_count_above_lrl")
+    				)
     		.from(AIR_QUALITY_CELL)
 			.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(aqRecord.value1()))
-			)
-			.where(AIR_QUALITY_LAYER.ID.eq(aqRecord.value1()))
+			.groupBy(
+					AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID
+					, AIR_QUALITY_CELL.METRIC_ID
+					, AIR_QUALITY_CELL.SEASONAL_METRIC_ID
+					, AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID
+			))
 			.execute();
 		
-			
+		/*
+		 			.set(DSL.row(
+					AIR_QUALITY_LAYER_METRICS.METRIC_ID
+					, AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID
+					, AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID
+					, AIR_QUALITY_LAYER_METRICS.CELL_COUNT
+					, AIR_QUALITY_LAYER_METRICS.MIN_VALUE
+					, AIR_QUALITY_LAYER_METRICS.MAX_VALUE
+					, AIR_QUALITY_LAYER_METRICS.MEAN_VALUE
+					, AIR_QUALITY_LAYER_METRICS.PCT_2_5
+					, AIR_QUALITY_LAYER_METRICS.PCT_97_5
+					)
+					
+						//.where(AIR_QUALITY_LAYER.ID.eq(aqRecord.value1()))		
+		 */
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
@@ -470,6 +610,7 @@ public class AirQualityApi {
 		return getAirQualityLayerDefinition(aqRecord.value1()).formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
+	/*
 	public static ObjectNode getAirQualityLayers(String userIdentifier) {
 
 //		System.out.println("getCompletedTasks");
@@ -545,15 +686,18 @@ public class AirQualityApi {
 
 		return data;
 	}
-
+	 */
+	
 	public static boolean deleteAirQualityLayerDefinition(Request request, Response response) {
 		Integer id = Integer.valueOf(request.params("id"));
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
 		int cellRows = create.deleteFrom(AIR_QUALITY_CELL).where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id)).execute();
+		int statRows = create.deleteFrom(AIR_QUALITY_LAYER_METRICS).where(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(id)).execute();
 		int headerRows = create.deleteFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.ID.eq(id)).execute();
+
 		
-		if(cellRows + headerRows == 0) {
+		if(cellRows + statRows + headerRows == 0) {
 			return false;
 		} else {
 			return true;
@@ -580,13 +724,13 @@ public class AirQualityApi {
 
 		if (null != filterValueAsInteger) {
 			searchCondition = 
-					searchCondition.or(AIR_QUALITY_LAYER.CELL_COUNT
+					searchCondition.or(AIR_QUALITY_LAYER_METRICS.CELL_COUNT
 							.eq(filterValueAsInteger));
 		}
 
 		if (null != filterValueAsDouble) {
 			searchCondition = 
-					searchCondition.or(AIR_QUALITY_LAYER.MEAN_VALUE
+					searchCondition.or(AIR_QUALITY_LAYER_METRICS.MEAN_VALUE
 							.eq(filterValueAsDouble));		
 		}
 		
@@ -616,7 +760,7 @@ public class AirQualityApi {
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 
-				searchCondition.or(AIR_QUALITY_CELL.ANNUAL_METRIC
+				searchCondition.or(STATISTIC_TYPE.NAME
 						.containsIgnoreCase(filterValue));
 
 

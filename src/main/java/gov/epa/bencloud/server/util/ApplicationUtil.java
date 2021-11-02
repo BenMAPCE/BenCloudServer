@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.util.StatusPrinter;
 import gov.epa.bencloud.server.BenCloudServer;
 
 public class ApplicationUtil {
@@ -137,13 +138,16 @@ public class ApplicationUtil {
 			// Call context.reset() to clear any previous configuration, e.g. default 
 			// configuration. For multi-step configuration, omit calling context.reset().
 			context.reset(); 
-			configurator.doConfigure(getProperty("config.directory") + File.separator + "logback.xml");
+			configurator.doConfigure(new File(".").getCanonicalPath() + getProperty("config.directory") + File.separator + "logback.xml");
 		} catch (JoranException je) {
 			// StatusPrinter will handle this
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 
 		// uncomment to check log configuration
-		// StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+		StatusPrinter.printInCaseOfErrorsOrWarnings(context);
 
 	}
 

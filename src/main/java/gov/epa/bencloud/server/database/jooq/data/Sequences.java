@@ -26,6 +26,11 @@ public class Sequences {
     public static final Sequence<Integer> AIR_QUALITY_LAYER_ID_SEQ = Internal.createSequence("air_quality_layer_id_seq", Data.DATA, SQLDataType.INTEGER.nullable(false), null, null, null, null, false, null);
 
     /**
+     * The sequence <code>data.air_quality_layer_metrics_id_seq</code>
+     */
+    public static final Sequence<Integer> AIR_QUALITY_LAYER_METRICS_ID_SEQ = Internal.createSequence("air_quality_layer_metrics_id_seq", Data.DATA, SQLDataType.INTEGER.nullable(false), null, null, null, null, false, null);
+
+    /**
      * The sequence <code>data.crosswalk_dataset_id_seq</code>
      */
     public static final Sequence<Integer> CROSSWALK_DATASET_ID_SEQ = Internal.createSequence("crosswalk_dataset_id_seq", Data.DATA, SQLDataType.INTEGER.nullable(false), null, null, null, null, false, null);
@@ -134,6 +139,11 @@ public class Sequences {
      * The sequence <code>data.seasonal_metric_season_id_seq</code>
      */
     public static final Sequence<Integer> SEASONAL_METRIC_SEASON_ID_SEQ = Internal.createSequence("seasonal_metric_season_id_seq", Data.DATA, SQLDataType.INTEGER.nullable(false), null, null, null, null, false, null);
+
+    /**
+     * The sequence <code>data.statistic_type_id_seq</code>
+     */
+    public static final Sequence<Integer> STATISTIC_TYPE_ID_SEQ = Internal.createSequence("statistic_type_id_seq", Data.DATA, SQLDataType.INTEGER.nullable(false), null, null, null, null, false, null);
 
     /**
      * The sequence <code>data.task_complete_task_id_seq</code>
