@@ -48,7 +48,7 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		/*
-		 * GET array of air quality surface definitions
+		 * GET array of air quality surface definition objects
 		 * PARAMETERS:
 		 *  pollutantId= (optional)
 		 *  page=
@@ -59,6 +59,20 @@ public class ApiRoutes extends RoutesBase {
 		 */
 		service.get(apiPrefix + "/air-quality-data", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDefinitions(request, response);
+		});
+		
+		/*
+		 * GET array of air quality surface definitions flattened for tabular display
+		 * PARAMETERS:
+		 *  pollutantId= (optional)
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 */
+		service.get(apiPrefix + "/air-quality-data-by-metric", (request, response) -> {
+			return AirQualityApi.getAirQualityLayerDefinitionsByMetric(request, response);
 		});
 
 		/*
