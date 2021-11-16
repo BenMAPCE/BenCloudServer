@@ -9,7 +9,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRe
 
 import org.jooq.Field;
 import org.jooq.Name;
-import org.jooq.Row12;
+import org.jooq.Row14;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -66,9 +66,19 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     public final TableField<GetHifResultsRecord, Double> POPULATION = createField(DSL.name("population"), SQLDataType.DOUBLE, this, "");
 
     /**
-     * The column <code>data.get_hif_results.delta</code>.
+     * The column <code>data.get_hif_results.baseline_aq</code>.
      */
-    public final TableField<GetHifResultsRecord, Double> DELTA = createField(DSL.name("delta"), SQLDataType.DOUBLE, this, "");
+    public final TableField<GetHifResultsRecord, Double> BASELINE_AQ = createField(DSL.name("baseline_aq"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.get_hif_results.scenario_aq</code>.
+     */
+    public final TableField<GetHifResultsRecord, Double> SCENARIO_AQ = createField(DSL.name("scenario_aq"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.get_hif_results.delta_aq</code>.
+     */
+    public final TableField<GetHifResultsRecord, Double> DELTA_AQ = createField(DSL.name("delta_aq"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.get_hif_results.mean</code>.
@@ -161,12 +171,12 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row12 type methods
+    // Row14 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double> fieldsRow() {
-        return (Row12) super.fieldsRow();
+    public Row14<Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double> fieldsRow() {
+        return (Row14) super.fieldsRow();
     }
 
     /**

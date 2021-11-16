@@ -25,6 +25,7 @@ import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record18;
 import org.jooq.Record2;
+import org.jooq.Record22;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
@@ -48,7 +49,7 @@ import spark.Response;
 
 public class HIFApi {
 
-	public static void getHifResultDetails2(Request request, Response response) {
+	public static void getHifResultDetails(Request request, Response response) {
 		
 		 //*  :id (health impact function results dataset id)
 		 //*  gridId= (aggregate the results to another grid definition)
@@ -60,6 +61,7 @@ public class HIFApi {
 		 //*  filter=
 		 
 		//TODO: Implement sortBy, descending, and filter
+		//TODO: I have (temporarily?) removed the paging and limit functionality. We will always give back all the rows.
 		
 		String idParam = request.params("id");
 		
@@ -92,18 +94,27 @@ public class HIFApi {
 				.asTable("hif_result_records");
 		
 
-		Cursor<Record18<Integer, Integer, String, String, Integer, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double>> hifRecords = create.select(
+		Cursor<Record> hifRecords = create.select(
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
 				ENDPOINT.NAME.as("endpoint"),
 				HEALTH_IMPACT_FUNCTION.AUTHOR,
 				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 				HEALTH_IMPACT_FUNCTION.LOCATION,
+				HEALTH_IMPACT_FUNCTION.QUALIFIER,
 				HIF_RESULT_FUNCTION_CONFIG.START_AGE,
 				HIF_RESULT_FUNCTION_CONFIG.END_AGE,
+				RACE.NAME.as("race"),
+				ETHNICITY.NAME.as("ethnicity"),
+				GENDER.NAME.as("gender"),
+				POLLUTANT_METRIC.NAME.as("metric"),
+				SEASONAL_METRIC.NAME.as("seasonal_metric"),
+				STATISTIC_TYPE.NAME.as("metric_statistic"),
 				hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
 				hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
-				hifResultRecords.field(GET_HIF_RESULTS.DELTA),
+				hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
+				hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
+				hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
 				hifResultRecords.field(GET_HIF_RESULTS.MEAN),
 				hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
 				DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
@@ -117,8 +128,14 @@ public class HIFApi {
 				.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
 				.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(id).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID))))
 				.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
-				.offset((page * rowsPerPage) - rowsPerPage)
-				.limit(rowsPerPage)
+				.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+				.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+				.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+				.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+				.join(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+				//.offset((page * rowsPerPage) - rowsPerPage)
+				//.limit(rowsPerPage)
 				.fetchSize(100000).fetchLazy();
 		
 		
@@ -138,38 +155,7 @@ public class HIFApi {
 					e.printStackTrace();
 				}
 				
-				//TODO: BCD-120 - Instead of streaming the csv contents directly back to the browser
-				//	write to a temp file, zip that up, and stream the zipfile back to the user.
-				
-				/*
-				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(id).name);
-		    	String tempDirPath = System.getProperty("java.io.tmpdir");
-		    	String filePath = tempDirPath + File.separator + UUID.randomUUID().toString().replace("-", "") + File.separator + taskFileName;
 
-		    	FileOutputStream fileOutputStream = new FileOutputStream(filePath + ".csv");
-	            //GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream);
-	            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
-	            
-				try {
-					//TODO: zip it, stream to the user, delete csv and zip
-
-
-					hifRecords.formatCSV(outputStreamWriter);
-
-					response.header("Content-Disposition", "attachment; filename=" + taskFileName + ".csv");
-					response.header("Access-Control-Expose-Headers", "Content-Disposition");
-			        File file = new File(filePath + ".csv");
-		            OutputStream outputStream = response.raw().getOutputStream();
-		            outputStream.write(Files.readAllBytes(file.toPath()));
-		            outputStream.flush();
-					file.delete();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} finally {
-					outputStreamWriter.close();
-				}
-				*/
 			} else {
 				response.type("application/json");
 				try {
@@ -191,80 +177,6 @@ public class HIFApi {
 			}
 		}
 		
-	}
-
-	
-	public static void getHifResultDetails(Request request, Response response) {
-		String uuid = request.params("uuid");
-		
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-
-		Record1<Integer> id = create.select(HIF_RESULT_DATASET.ID).from(HIF_RESULT_DATASET)
-				.where(HIF_RESULT_DATASET.TASK_UUID.eq(uuid)).fetchOne();
-
-		Cursor<Record18<Integer, Integer, String, String, Integer, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double>> hifRecords = create.select(
-				HIF_RESULT.GRID_COL.as("column"),
-				HIF_RESULT.GRID_ROW.as("row"),
-				ENDPOINT.NAME.as("endpoint"),
-				HEALTH_IMPACT_FUNCTION.AUTHOR,
-				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
-				HEALTH_IMPACT_FUNCTION.LOCATION,
-				HIF_RESULT_FUNCTION_CONFIG.START_AGE,
-				HIF_RESULT_FUNCTION_CONFIG.END_AGE,
-				HIF_RESULT.RESULT.as("point_estimate"),
-				HIF_RESULT.POPULATION,
-				HIF_RESULT.DELTA,
-				HIF_RESULT.RESULT_MEAN.as("mean"),
-				HIF_RESULT.BASELINE,
-				DSL.when(HIF_RESULT.BASELINE.eq(0.0), 0.0).otherwise(HIF_RESULT.RESULT_MEAN.div(HIF_RESULT.BASELINE)).as("percent_of_baseline"),
-				HIF_RESULT.STANDARD_DEV.as("standard_deviation"),
-				HIF_RESULT.RESULT_VARIANCE.as("variance"),
-				HIF_RESULT.PCT_2_5,
-				HIF_RESULT.PCT_97_5
-				)
-				.from(HIF_RESULT)
-				.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(HIF_RESULT.HIF_RESULT_DATASET_ID).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT.HIF_ID)))
-				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(HIF_RESULT.HIF_ID))
-				.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
-				.where(HIF_RESULT.HIF_RESULT_DATASET_ID.eq(id.value1()))
-				.orderBy(HIF_RESULT.GRID_COL, HIF_RESULT.GRID_ROW)
-				.fetchSize(100000).fetchLazy();
-
-		try {
-			if (request.headers("Accept").equalsIgnoreCase("text/csv")) {
-				response.type("text/csv");
-				String taskFileName = ApplicationUtil.replaceNonValidCharacters(TaskComplete.getTaskFromCompleteRecord(uuid).getName()) + ".csv";
-				response.header("Content-Disposition", "attachment; filename=" + taskFileName);
-				response.header("Access-Control-Expose-Headers", "Content-Disposition");
-				try {
-					hifRecords.formatCSV(response.raw().getWriter());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			} else {
-				response.type("application/json");
-				try {
-					hifRecords.formatJSON(response.raw().getWriter(), new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			if(hifRecords != null && !hifRecords.isClosed()) {
-				hifRecords.close();
-			}
-		}
 	}
 
 	public static Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
@@ -373,7 +285,9 @@ public class HIFApi {
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(ids)
 						.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId))
-						.and(supportedMetricIds == null ? DSL.noCondition() : HEALTH_IMPACT_FUNCTION.METRIC_ID.in(supportedMetricIds)))
+				//TODO: Add this constrain back in once we have beter requirements.
+				//		.and(supportedMetricIds == null ? DSL.noCondition() : HEALTH_IMPACT_FUNCTION.METRIC_ID.in(supportedMetricIds))
+						)
 				.orderBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME)
 				.fetch();
 		

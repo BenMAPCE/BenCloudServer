@@ -73,21 +73,7 @@ public class ApiUtil {
 				.select(DSL.lower(STATISTIC_TYPE.NAME), STATISTIC_TYPE.ID)
 				.from(STATISTIC_TYPE)
 				.fetchMap(DSL.lower(STATISTIC_TYPE.NAME), STATISTIC_TYPE.ID);		
-		return statistics;	}
-	
-	public static void getTaskResultDetails(Request req, Response res) {
-		String uuid = req.params("uuid");
-
-		Task task = TaskComplete.getTaskFromCompleteRecord(uuid);
-		switch(task.getType()) {
-		case "HIF":
-			HIFApi.getHifResultDetails(req, res);
-			break;
-		case "Valuation":
-			ValuationApi.getValuationResultDetails(req, res);
-			break;
-		}
-		
+		return statistics;	
 	}
 
 	public static Object deleteTaskResults(Request req, Response res) {

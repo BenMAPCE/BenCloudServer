@@ -11,7 +11,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row10;
+import org.jooq.Row13;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -92,6 +92,21 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
      */
     public final TableField<HifResultFunctionConfigRecord, Integer> ETHNICITY_ID = createField(DSL.name("ethnicity_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>data.hif_result_function_config.metric_id</code>.
+     */
+    public final TableField<HifResultFunctionConfigRecord, Integer> METRIC_ID = createField(DSL.name("metric_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.hif_result_function_config.seasonal_metric_id</code>.
+     */
+    public final TableField<HifResultFunctionConfigRecord, Integer> SEASONAL_METRIC_ID = createField(DSL.name("seasonal_metric_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.hif_result_function_config.metric_statistic</code>.
+     */
+    public final TableField<HifResultFunctionConfigRecord, Integer> METRIC_STATISTIC = createField(DSL.name("metric_statistic"), SQLDataType.INTEGER, this, "");
+
     private HifResultFunctionConfig(Name alias, Table<HifResultFunctionConfigRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -157,11 +172,11 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
     }
 
     // -------------------------------------------------------------------------
-    // Row10 type methods
+    // Row13 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row10<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> fieldsRow() {
-        return (Row10) super.fieldsRow();
+    public Row13<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> fieldsRow() {
+        return (Row13) super.fieldsRow();
     }
 }

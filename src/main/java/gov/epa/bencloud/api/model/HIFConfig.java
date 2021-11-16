@@ -7,6 +7,9 @@ public class HIFConfig {
 	public Integer race = null;
 	public Integer ethnicity = null;
 	public Integer gender = null;
+	public Integer metric = null;
+	public Integer seasonalMetric = null;
+	public Integer metricStatistic = null;
 	public Integer incidence = null;
 	public Integer incidenceYear = null;
 	public Integer prevalence = null;

@@ -249,7 +249,7 @@ public class ApiRoutes extends RoutesBase {
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
 			//TODO: Implement a new version of this that supports filtering, etc
-			HIFApi.getHifResultDetails2(req, res);
+			HIFApi.getHifResultDetails(req, res);
 			
 			return null;
 

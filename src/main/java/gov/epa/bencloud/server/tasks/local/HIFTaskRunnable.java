@@ -200,9 +200,12 @@ public class HIFTaskRunnable implements Runnable {
 					Map<Integer, Map<Integer, AirQualityCellMetric>> baselineCellMetrics = baselineCell.getCellMetrics();
 					Map<Integer, Map<Integer, AirQualityCellMetric>> scenarioCellMetrics = scenarioCell.getCellMetrics();
 					
-					 Map<Integer, AirQualityCellMetric> baselineCellFirstMetric = baselineCellMetrics.get(baselineCellMetrics.keySet().toArray()[0]);
-					 Map<Integer, AirQualityCellMetric> scenarioCellFirstMetric = scenarioCellMetrics.get(scenarioCellMetrics.keySet().toArray()[0]);
+					//TODO: This temporary code is always selecting the first metric we have for this cell
+					// Need to update to use metric, seasonal metric, and statistic
+					Map<Integer, AirQualityCellMetric> baselineCellFirstMetric = baselineCellMetrics.get(baselineCellMetrics.keySet().toArray()[0]);
+					Map<Integer, AirQualityCellMetric> scenarioCellFirstMetric = scenarioCellMetrics.get(scenarioCellMetrics.keySet().toArray()[0]);
 					
+					 
 					double baselineValue = baselineCellFirstMetric.get(baselineCellFirstMetric.keySet().toArray()[0]).getValue();
 					double scenarioValue = scenarioCellFirstMetric.get(scenarioCellFirstMetric.keySet().toArray()[0]).getValue();
 					
@@ -282,7 +285,9 @@ public class HIFTaskRunnable implements Runnable {
 						rec.setGridRow(baselineCell.getGridRow());
 						rec.setHifId(hifConfig.hifId);
 						rec.setPopulation(totalPop);
-						rec.setDelta(deltaQ);
+						rec.setDeltaAq(deltaQ);
+						rec.setBaselineAq(baselineValue);
+						rec.setScenarioAq(scenarioValue);
 						rec.setResult(hifFunctionEstimate);
 						rec.setPct_2_5(resultPercentiles[0]);
 						rec.setPct_97_5(resultPercentiles[19]);
@@ -356,6 +361,15 @@ public class HIFTaskRunnable implements Runnable {
 		}
 		if(hif.prevalence == null) {
 			hif.prevalence = h.getPrevalenceDatasetId();
+		}
+		if(hif.metric == null) {
+			hif.metric = h.getMetricId();
+		}
+		if(hif.seasonalMetric == null) {
+			hif.seasonalMetric = h.getSeasonalMetricId();
+		}
+		if(hif.metricStatistic == null) {
+			hif.metricStatistic = h.getMetricStatistic();
 		}
 
 		//This is a temporary solution to the fact that user's can't select incidence and 
@@ -484,6 +498,7 @@ public class HIFTaskRunnable implements Runnable {
 			hifConfig.prevalence = function.has("prevalence_dataset_id") ? function.get("prevalence_dataset_id").asInt() : null;
 			hifConfig.prevalenceYear = function.has("prevalence_year") ? function.get("prevalence_year").asInt() : null;
 			hifConfig.variable = function.has("variable") ? function.get("variable").asInt() : null;
+			//TODO: Add code to allow user to specific metric, seasonal metric, and metric statistic
 			hifTaskConfig.hifs.add(hifConfig);
 		}
 	}

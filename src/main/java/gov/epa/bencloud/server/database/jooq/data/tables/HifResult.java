@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row15;
+import org.jooq.Row17;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -78,9 +78,9 @@ public class HifResult extends TableImpl<HifResultRecord> {
     public final TableField<HifResultRecord, Double> POPULATION = createField(DSL.name("population"), SQLDataType.DOUBLE, this, "");
 
     /**
-     * The column <code>data.hif_result.delta</code>.
+     * The column <code>data.hif_result.delta_aq</code>.
      */
-    public final TableField<HifResultRecord, Double> DELTA = createField(DSL.name("delta"), SQLDataType.DOUBLE, this, "");
+    public final TableField<HifResultRecord, Double> DELTA_AQ = createField(DSL.name("delta_aq"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.hif_result.result</code>.
@@ -121,6 +121,16 @@ public class HifResult extends TableImpl<HifResultRecord> {
      * The column <code>data.hif_result.percentiles</code>.
      */
     public final TableField<HifResultRecord, Double[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.hif_result.baseline_aq</code>.
+     */
+    public final TableField<HifResultRecord, Double> BASELINE_AQ = createField(DSL.name("baseline_aq"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.hif_result.scenario_aq</code>.
+     */
+    public final TableField<HifResultRecord, Double> SCENARIO_AQ = createField(DSL.name("scenario_aq"), SQLDataType.DOUBLE, this, "");
 
     private HifResult(Name alias, Table<HifResultRecord> aliased) {
         this(alias, aliased, null);
@@ -192,11 +202,11 @@ public class HifResult extends TableImpl<HifResultRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row15 type methods
+    // Row17 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row15<Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
-        return (Row15) super.fieldsRow();
+    public Row17<Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[], Double, Double> fieldsRow() {
+        return (Row17) super.fieldsRow();
     }
 }

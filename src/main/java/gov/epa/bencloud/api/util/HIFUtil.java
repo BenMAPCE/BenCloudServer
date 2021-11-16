@@ -122,6 +122,9 @@ public class HIFUtil {
 						, HIF_RESULT_FUNCTION_CONFIG.RACE_ID
 						, HIF_RESULT_FUNCTION_CONFIG.GENDER_ID
 						, HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID
+						, HIF_RESULT_FUNCTION_CONFIG.METRIC_ID
+						, HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID
+						, HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC
 						, HIF_RESULT_FUNCTION_CONFIG.INCIDENCE_DATASET_ID
 						, HIF_RESULT_FUNCTION_CONFIG.PREVALENCE_DATASET_ID
 						, HIF_RESULT_FUNCTION_CONFIG.VARIABLE_DATASET_ID)
@@ -132,6 +135,9 @@ public class HIFUtil {
 						, hif.race
 						, hif.gender
 						, hif.ethnicity
+						, hif.metric
+						, hif.seasonalMetric
+						, hif.metricStatistic
 						, hif.incidence
 						, hif.prevalence
 						, hif.variable)
