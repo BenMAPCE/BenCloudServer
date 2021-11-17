@@ -13,7 +13,7 @@
   </appender>
     
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>/Users/bselack/Desktop/bencloud-command-line/logs/access.log</file>
+    <file>bencloud-api.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>access.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
     </rollingPolicy>
@@ -24,7 +24,7 @@
   </appender>
  
   <appender name="DATABASE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>/Users/bselack/Desktop/bencloud-command-line/logs/database.log</file>
+    <file>bencloud-database.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>startup.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
     </rollingPolicy>
@@ -49,13 +49,23 @@
   	<appender-ref ref="FILE" />
   </root>
   
-  <logger name="com.zaxxer.hikari" additivity="false" level="debug">
+  <logger name="com.zaxxer.hikari" additivity="false" level="info">
+    <appender-ref ref="DATABASE" />
+  </logger>
+
+  <logger name="org.jooq.tools.LoggerListener" additivity="false" level="info">
+    <appender-ref ref="DATABASE" />
+  </logger>
+    
+  <logger name="org.jooq" additivity="false" level="info">
     <appender-ref ref="DATABASE" />
   </logger>
   
-  <logger name="gov.epa.benmap.gbd" additivity="false" level="debug">
+  <logger name="gov.epa.bencloud" additivity="false" level="debug">
     <appender-ref ref="STDOUT" />
   </logger>
   
- 
+   <logger name="gov.epa.bencloud" additivity="false" level="debug">
+    <appender-ref ref="FILE" />
+  </logger>
 </configuration>

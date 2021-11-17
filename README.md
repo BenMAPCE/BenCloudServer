@@ -12,6 +12,8 @@ To build the .jar file for testing run:
 
 **gradle fatJar**
 
+(assumes you are running gradle 6.x)
+
 (this needs to be done before building a Docker image)
 
 
