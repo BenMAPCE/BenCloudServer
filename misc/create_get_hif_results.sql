@@ -46,9 +46,9 @@ begin
        			hr.hif_id,
        			sum(hr."result" * ce.percentage) as point_estimate,
        			sum(hr.population * ce.percentage) as population,
-       			sum(hr.delta_aq * ce.percentage) as delta_aq,
        			sum(hr.baseline_aq * ce.percentage) as baseline_aq,
        			sum(hr.scenario_aq * ce.percentage) as scenario_aq,
+       			sum(hr.delta_aq * ce.percentage) as delta_aq,
        			sum(hr.result_mean * ce.percentage) as mean,
 				sum(hr.baseline * ce.percentage) as baseline,
 				sum(hr.standard_dev * ce.percentage) as standard_dev,
@@ -81,9 +81,9 @@ begin
        			hr.hif_id,
        			hr."result" as point_estimate,
        			hr.population as population,
-       			hr.delta_aq,
        			hr.baseline_aq,
        			hr.scenario_aq,
+       			hr.delta_aq,
        			hr.result_mean as mean,
 				hr.baseline as baseline,
 				hr.standard_dev as standard_dev,
@@ -103,4 +103,3 @@ begin
 end
 $function$
 ;
-
