@@ -217,15 +217,15 @@ public class HIFUtil {
 				int dsId = 0;
 				switch (endpointGroupId) {
 				case 12:
-					dsId = 1; //Mortality
+					dsId = 1; //County
 					break;
 				case 28:
 				case 29:
 				case 30:
-					dsId = 52; //National Incidence & Prevalence
+					dsId = 3; //National
 					break;
 				default:
-					dsId = 12; //Other Incidence
+					dsId = 1; //County
 				}
 				
 				function.put("incidence_dataset_id", dsId); 
@@ -250,7 +250,7 @@ public class HIFUtil {
 				function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(functionPrevalenceDataset, true, endpointGroupId, popYear));
 				function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(functionPrevalenceDataset));
 			} else {
-				int dsId = (endpointGroupId == 30 || endpointGroupId == 28) ? 52 : 19; //National Incidence & Prevalence OR Prevalence
+				int dsId = (endpointGroupId == 30 || endpointGroupId == 28) ? 3 : 1; //National Incidence & Prevalence OR Prevalence
 				function.put("prevalence_dataset_id", dsId);
 				function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(dsId, true, endpointGroupId, popYear));
 				function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(dsId));

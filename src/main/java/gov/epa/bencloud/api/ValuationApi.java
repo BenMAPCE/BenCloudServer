@@ -19,24 +19,22 @@ import org.jooq.exception.IOException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record12;
-import org.jooq.Record16;
 import org.jooq.Record21;
 import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
-import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
 
 public class ValuationApi {
+	private static Logger log = LoggerFactory.getLogger(ValuationApi.class);
 	
 	public static void getValuationResultDetails(Request request, Response response) {
 		
@@ -54,6 +52,8 @@ public class ValuationApi {
 		
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
+		log.debug("Valuation export for id: " + id);
+		
 		
 		String hifIdsParam = request.raw().getParameter("hifId");
 		String vfIdsParam = request.raw().getParameter("vfId");
@@ -135,16 +135,16 @@ public class ValuationApi {
 		try {
 			if (request.headers("Accept").equalsIgnoreCase("text/csv")) {
 				response.type("text/csv");
-				String taskFileName = "test.csv";
-				response.header("Content-Disposition", "attachment; filename=" + taskFileName);
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(id).name);
+				response.header("Content-Disposition", "attachment; filename=" + taskFileName + ".csv");
 				response.header("Access-Control-Expose-Headers", "Content-Disposition");
 				try {
 					vfRecords.formatCSV(response.raw().getWriter());
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					log.error("Error in CSV export", e);
 					e.printStackTrace();
 				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
+					log.error("Error in CSV export", e);
 					e.printStackTrace();
 				}
 			} else if (request.headers("Accept").equalsIgnoreCase("application/zip")) {
@@ -166,10 +166,10 @@ public class ValuationApi {
 					zipStream.close();
 					responseOutputStream.flush();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					log.error("Error in ZIP export", e);
 					e.printStackTrace();
 				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
+					log.error("Error in ZIP export", e);
 					e.printStackTrace();
 				}
 			} else {
@@ -177,15 +177,16 @@ public class ValuationApi {
 				try {
 					vfRecords.formatJSON(response.raw().getWriter(), new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					log.error("Error in JSON export", e);
 					e.printStackTrace();
 				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
+					log.error("Error in JSON export", e);
 					e.printStackTrace();
 				}
 
 			}
 		} catch (Exception e) {
+			log.error("Error in Valuation export", e);
 			e.printStackTrace();
 		} finally {
 			if(vfRecords != null && !vfRecords.isClosed()) {
@@ -240,7 +241,7 @@ public class ValuationApi {
 					.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.QUALIFIER)
 					.fetch();
 		} catch (DataAccessException e) {
-			// TODO Auto-generated catch block
+			log.error("Error getAllValuationFunctions", e);
 			e.printStackTrace();
 		}
 		
