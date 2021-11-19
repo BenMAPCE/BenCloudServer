@@ -17,6 +17,8 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record12;
+import org.jooq.Record16;
+import org.jooq.Record21;
 import org.jooq.impl.DSL;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
@@ -29,7 +31,7 @@ import spark.Response;
 
 public class ValuationApi {
 	
-	public static void getValuationResultDetails2(Request request, Response response) {
+	public static void getValuationResultDetails(Request request, Response response) {
 		
 		 //*  :id (valuation results dataset id)
 		 //*  gridId= (aggregate the results to another grid definition)
@@ -76,11 +78,20 @@ public class ValuationApi {
 				.asTable("vf_result_records");
 		
 
-		Cursor<Record12<Integer, Integer, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords = create.select(
+		Cursor<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords = create.select(
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
 				ENDPOINT.NAME.as("endpoint"),
-				VALUATION_FUNCTION.QUALIFIER,
+				VALUATION_FUNCTION.QUALIFIER.as("name"),
+				HEALTH_IMPACT_FUNCTION.AUTHOR,
+				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+				HEALTH_IMPACT_FUNCTION.QUALIFIER,
+				RACE.NAME.as("race"),
+				ETHNICITY.NAME.as("ethnicity"),
+				GENDER.NAME.as("gender"),
+				POLLUTANT_METRIC.NAME.as("metric"),
+				SEASONAL_METRIC.NAME.as("seasonal_metric"),
+				STATISTIC_TYPE.NAME.as("metric_statistic"),
 				VALUATION_FUNCTION.START_AGE,
 				VALUATION_FUNCTION.END_AGE,
 				vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
@@ -95,10 +106,22 @@ public class ValuationApi {
 				.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(id)
 						.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID)))
 						.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
+				.join(VALUATION_RESULT_DATASET)
+				.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
+				.join(HIF_RESULT_FUNCTION_CONFIG)
+				.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
+						.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
 				.join(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)))
+				.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
 				.join(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
-				.offset((page * rowsPerPage) - rowsPerPage)
-				.limit(rowsPerPage)
+				.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+				.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+				.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+				.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+				//.offset((page * rowsPerPage) - rowsPerPage)
+				//.limit(rowsPerPage)
 				.fetchSize(100000).fetchLazy();
 		
 		
@@ -153,77 +176,6 @@ public class ValuationApi {
 			return null;
 		}
 		return valuationResultDataset.getId();
-	}
-	
-	public static void getValuationResultDetails(Request request, Response response) {
-		String uuid = request.params("uuid");
-
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-
-		Record1<Integer> id = create.select(VALUATION_RESULT_DATASET.ID).from(VALUATION_RESULT_DATASET)
-				.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(uuid)).fetchOne();
-
-
-		Cursor<Record12<Integer, Integer, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> valuationRecords = create.select(
-				VALUATION_RESULT.GRID_COL.as("column"),
-				VALUATION_RESULT.GRID_ROW.as("row"),
-				ENDPOINT.NAME.as("endpoint"),
-				VALUATION_FUNCTION.QUALIFIER,
-				VALUATION_FUNCTION.START_AGE,
-				VALUATION_FUNCTION.END_AGE,
-				VALUATION_RESULT.RESULT.as("point_estimate"),
-				VALUATION_RESULT.RESULT_MEAN.as("mean"),
-				VALUATION_RESULT.STANDARD_DEV.as("standard_deviation"),
-				VALUATION_RESULT.RESULT_VARIANCE.as("variance"),
-				VALUATION_RESULT.PCT_2_5,
-				VALUATION_RESULT.PCT_97_5
-				)
-				.from(VALUATION_RESULT)
-				.join(VALUATION_RESULT_FUNCTION_CONFIG)
-				.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT.VALUATION_RESULT_DATASET_ID)
-						.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(VALUATION_RESULT.HIF_ID))
-						.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(VALUATION_RESULT.VF_ID)))
-				.join(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(VALUATION_RESULT.VF_ID))
-				.join(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
-				.where(VALUATION_RESULT.VALUATION_RESULT_DATASET_ID.eq(id.value1()))
-				.orderBy(VALUATION_RESULT.GRID_COL, VALUATION_RESULT.GRID_ROW)
-				.fetchSize(100000).fetchLazy();
-
-		try {
-			if (request.headers("Accept").equalsIgnoreCase("text/csv")) {
-				response.type("text/csv");
-				String taskFileName = ApplicationUtil.replaceNonValidCharacters(TaskComplete.getTaskFromCompleteRecord(uuid).getName()) + ".csv";
-				response.header("Content-Disposition", "attachment; filename=" + taskFileName);
-				response.header("Access-Control-Expose-Headers", "Content-Disposition");
-				
-				try {
-					valuationRecords.formatCSV(response.raw().getWriter());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			} else {
-				response.type("application/json");
-				try {
-					valuationRecords.formatJSON(response.raw().getWriter(), new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			if(valuationRecords != null && !valuationRecords.isClosed()) {
-				valuationRecords.close();
-			}
-		}
 	}
 
 	public static Object getAllValuationFunctions(Request request, Response response) {

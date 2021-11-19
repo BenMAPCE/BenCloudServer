@@ -300,7 +300,7 @@ public class ApiRoutes extends RoutesBase {
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
 			//TODO: Implement a new version of this that supports filtering, etc
-			ValuationApi.getValuationResultDetails2(req, res);
+			ValuationApi.getValuationResultDetails(req, res);
 			
 			return null;
 
