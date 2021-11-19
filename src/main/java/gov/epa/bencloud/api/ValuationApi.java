@@ -2,9 +2,12 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.io.OutputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
@@ -20,8 +23,12 @@ import org.jooq.Record12;
 import org.jooq.Record16;
 import org.jooq.Record21;
 import org.jooq.impl.DSL;
+
+import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.util.ApplicationUtil;
@@ -140,6 +147,31 @@ public class ValuationApi {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+			} else if (request.headers("Accept").equalsIgnoreCase("application/zip")) {
+				response.type("application/zip");
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(id).name);
+				try {
+					response.header("Content-Disposition", "attachment; filename=" + taskFileName + ".zip");
+					response.header("Access-Control-Expose-Headers", "Content-Disposition");
+
+					// Get response output stream
+					OutputStream responseOutputStream = response.raw().getOutputStream();
+
+					// Stream .ZIP file to response
+					ZipOutputStream zipStream = new ZipOutputStream(responseOutputStream);
+					zipStream.putNextEntry(new ZipEntry(taskFileName + ".csv"));
+
+					vfRecords.formatCSV(zipStream);
+					
+					zipStream.close();
+					responseOutputStream.flush();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (java.io.IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			} else {
 				response.type("application/json");
 				try {
@@ -163,6 +195,21 @@ public class ValuationApi {
 		
 	}
 	
+	public static ValuationTaskConfig getValuationTaskConfigFromDb(Integer valuationResultDatasetId) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig();
+		
+		ValuationResultDatasetRecord valuationTaskConfigRecord = create
+				.selectFrom(VALUATION_RESULT_DATASET)
+				.where(VALUATION_RESULT_DATASET.ID.eq(valuationResultDatasetId))
+				.fetchOne();
+		
+		valuationTaskConfig.name = valuationTaskConfigRecord.getName();
+		//TODO: Add code to load the other details
+		
+		return valuationTaskConfig;
+	}
 	
 	public static Integer getValuationResultDatasetId(String uuid) {
 

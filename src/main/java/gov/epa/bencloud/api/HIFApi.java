@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import java.util.stream.Collectors;
 import java.util.UUID;
 
@@ -154,12 +156,37 @@ public class HIFApi {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
+			} else if (request.headers("Accept").equalsIgnoreCase("application/zip")) {
+				response.type("application/zip");
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(id).name);
+				try {
+					response.header("Content-Disposition", "attachment; filename=" + taskFileName + ".zip");
+					response.header("Access-Control-Expose-Headers", "Content-Disposition");
+
+					// Get response output stream
+					OutputStream responseOutputStream = response.raw().getOutputStream();
+
+					// Stream .ZIP file to response
+					ZipOutputStream zipStream = new ZipOutputStream(responseOutputStream);
+					zipStream.putNextEntry(new ZipEntry(taskFileName + ".csv"));
+
+					hifRecords.formatCSV(zipStream);
+					
+					zipStream.close();
+					responseOutputStream.flush();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (java.io.IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
 			} else {
 				response.type("application/json");
 				try {
-					hifRecords.formatJSON(response.raw().getWriter(), new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+					hifRecords.formatJSON(response.raw().getWriter(),
+							new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
