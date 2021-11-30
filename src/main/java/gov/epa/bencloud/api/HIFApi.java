@@ -255,9 +255,7 @@ public class HIFApi {
 			
 			try {
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-
 					hifRecords.formatCSV(zipStream);
-
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {

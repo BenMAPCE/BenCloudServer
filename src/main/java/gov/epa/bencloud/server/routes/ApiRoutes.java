@@ -309,20 +309,34 @@ public class ApiRoutes extends RoutesBase {
 		 *  descending=
 		 *  filter=
 		 *  
-		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
-		 *  else, application/json response
+		 *   application/json response
 		 */	
 		service.get(apiPrefix + "/valuation-result-datasets/:id/contents", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			//TODO: Implement a new version of this that supports filtering, etc
-			ValuationApi.getValuationResultDetails(req, res);
+			ValuationApi.getValuationResultContents(req, res);
 			
 			return null;
 
 		});
 
+		/*
+		 * GET valuation results from an analysis
+		 * PARAMETERS:
+		 *  :id (valuation results dataset id or task UUID)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definitions)
+		 */	
+		service.get(apiPrefix + "/valuation-result-datasets/:id/export", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			ValuationApi.getValuationResultExport(req, res);
+			
+			return null;
+
+		});
+		
 		service.delete(apiPrefix + "/tasks/:uuid", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
