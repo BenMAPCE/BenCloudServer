@@ -6,6 +6,7 @@ import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
+import org.jooq.Record1;
 import org.jooq.impl.DSL;
 import gov.epa.bencloud.server.database.JooqUtil;
 import spark.Response;
@@ -21,5 +22,16 @@ public class GridDefinitionApi {
 		
 		response.type("application/json");
 		return gridRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+	}
+	
+	public static String getGridDefinitionName(int gridId) {
+
+		Record1<String> gridRecord = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(GRID_DEFINITION.NAME)
+				.from(GRID_DEFINITION)
+				.where(GRID_DEFINITION.ID.eq(gridId))
+				.fetchOne();
+		
+		return gridRecord.value1();
 	}
 }

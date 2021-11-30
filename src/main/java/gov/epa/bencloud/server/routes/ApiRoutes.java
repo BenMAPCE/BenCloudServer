@@ -241,15 +241,32 @@ public class ApiRoutes extends RoutesBase {
 		 *  descending=
 		 *  filter=
 		 *  
-		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
-		 *  else, application/json response
+		 *  application/json response
 		 */	
 		service.get(apiPrefix + "/health-impact-result-datasets/:id/contents", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
 			//TODO: Implement a new version of this that supports filtering, etc
-			HIFApi.getHifResultDetails(req, res);
+			HIFApi.getHifResultContents(req, res);
+			
+			return null;
+
+		});
+		
+		/*
+		 * GET health impact function results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (health impact function results dataset id or task UUID)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.get(apiPrefix + "/health-impact-result-datasets/:id/export", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			//TODO: Implement a new version of this that supports filtering, etc
+			HIFApi.getHifResultExport(req, res);
 			
 			return null;
 

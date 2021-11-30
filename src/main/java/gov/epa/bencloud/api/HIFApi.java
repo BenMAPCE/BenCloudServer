@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -51,9 +52,9 @@ import spark.Response;
 
 public class HIFApi {
 
-	public static void getHifResultDetails(Request request, Response response) {
+	public static void getHifResultContents(Request request, Response response) {
 		
-		 //*  :id (health impact function results dataset id)
+		 //*  :id (health impact function results dataset id (can also support task id))
 		 //*  gridId= (aggregate the results to another grid definition)
 		 //*  hifId= (filter results to those from one or more functions via comma delimited list)
 		 //*  page=
@@ -63,7 +64,6 @@ public class HIFApi {
 		 //*  filter=
 		 
 		//TODO: Implement sortBy, descending, and filter
-		//TODO: I have (temporarily?) removed the paging and limit functionality. We will always give back all the rows.
 		
 		String idParam = request.params("id");
 		
@@ -71,20 +71,15 @@ public class HIFApi {
 		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
 		
 		String hifIdsParam = request.raw().getParameter("hifId");
-		int gridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);
+		int gridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);	
 		
 		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
-		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 100);
+		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 1000);
 		String sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 		boolean descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 		String filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
 		
 		List<Integer> hifIds = hifIdsParam == null ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
-		
-		// If a gridId wasn't provided, look up the baseline AQ grid grid for this resultset
-		if(gridId == 0) {
-			gridId = HIFApi.getBaselineGridForHifResults(id).intValue();
-		}
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
@@ -136,65 +131,22 @@ public class HIFApi {
 				.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-				//.offset((page * rowsPerPage) - rowsPerPage)
-				//.limit(rowsPerPage)
+				.offset((page * rowsPerPage) - rowsPerPage)
+				.limit(rowsPerPage)
 				.fetchSize(100000).fetchLazy();
 		
 		
 		try {
-			if (request.headers("Accept").equalsIgnoreCase("text/csv")) {
-				response.type("text/csv");
-				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(id).name) + ".csv";
-				response.header("Content-Disposition", "attachment; filename=" + taskFileName);
-				response.header("Access-Control-Expose-Headers", "Content-Disposition");
-				try {
-					hifRecords.formatCSV(response.raw().getWriter());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			} else if (request.headers("Accept").equalsIgnoreCase("application/zip")) {
-				response.type("application/zip");
-				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(id).name);
-				try {
-					response.header("Content-Disposition", "attachment; filename=" + taskFileName + ".zip");
-					response.header("Access-Control-Expose-Headers", "Content-Disposition");
-
-					// Get response output stream
-					OutputStream responseOutputStream = response.raw().getOutputStream();
-
-					// Stream .ZIP file to response
-					ZipOutputStream zipStream = new ZipOutputStream(responseOutputStream);
-					zipStream.putNextEntry(new ZipEntry(taskFileName + ".csv"));
-
-					hifRecords.formatCSV(zipStream);
-					
-					zipStream.close();
-					responseOutputStream.flush();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			} else {
-				response.type("application/json");
-				try {
-					hifRecords.formatJSON(response.raw().getWriter(),
-							new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
+			response.type("application/json");
+			try {
+				hifRecords.formatJSON(response.raw().getWriter(),
+						new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (java.io.IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -203,6 +155,126 @@ public class HIFApi {
 				hifRecords.close();
 			}
 		}
+	}
+	
+	public static void getHifResultExport(Request request, Response response) {
+		
+		 //*  :id (health impact function results dataset id (can also support task id))
+		 //*  gridId= (aggregate the results to one or more grid definitions)
+		 
+		//TODO: Implement sortBy, descending, and filter
+		//TODO: I have (temporarily?) removed the paging and limit functionality. We will always give back all the rows.
+		
+		String idParam = request.params("id");
+		
+		//If the id is 36 characters long, we'll assume it's a task uuid
+		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
+		
+		String gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
+		int[] gridIds = gridIdParam==null ? null : Arrays.stream(gridIdParam.split(","))
+			    .mapToInt(Integer::parseInt)
+			    .toArray();
+		
+		// If a gridId wasn't provided, look up the baseline AQ grid grid for this resultset
+		if(gridIds == null) {
+			gridIds = new int[] {HIFApi.getBaselineGridForHifResults(id).intValue()};
+		}
+		
+		String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(id).name);
+		response.header("Content-Disposition", "attachment; filename=" + taskFileName + ".zip");
+		response.header("Access-Control-Expose-Headers", "Content-Disposition");
+		response.type("application/zip");
+		
+		// Get response output stream
+		OutputStream responseOutputStream;
+		ZipOutputStream zipStream;
+		
+		try {
+			responseOutputStream = response.raw().getOutputStream();
+			
+			// Stream .ZIP file to response
+			zipStream = new ZipOutputStream(responseOutputStream);
+		} catch (java.io.IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			return;
+		}
+		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		for(int i=0; i < gridIds.length; i++) {
+			
+			Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
+					GET_HIF_RESULTS(
+							id, 
+							null, 
+							gridIds[i]))
+					.asTable("hif_result_records");
+	
+			Cursor<Record> hifRecords = create.select(
+					hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
+					hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
+					ENDPOINT.NAME.as("endpoint"),
+					HEALTH_IMPACT_FUNCTION.AUTHOR,
+					HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+					HEALTH_IMPACT_FUNCTION.LOCATION,
+					HEALTH_IMPACT_FUNCTION.QUALIFIER,
+					HIF_RESULT_FUNCTION_CONFIG.START_AGE,
+					HIF_RESULT_FUNCTION_CONFIG.END_AGE,
+					RACE.NAME.as("race"),
+					ETHNICITY.NAME.as("ethnicity"),
+					GENDER.NAME.as("gender"),
+					POLLUTANT_METRIC.NAME.as("metric"),
+					SEASONAL_METRIC.NAME.as("seasonal_metric"),
+					STATISTIC_TYPE.NAME.as("metric_statistic"),
+					hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
+					hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
+					hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
+					hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
+					hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
+					hifResultRecords.field(GET_HIF_RESULTS.MEAN),
+					hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
+					DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
+						.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE))).as("percent_of_baseline"),
+					hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
+					hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
+					hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
+					hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5)
+					)
+					.from(hifResultRecords)
+					.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+					.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(id).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID))))
+					.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+					.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+					.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+					.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+					.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+					.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+					.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+					.fetchSize(100000).fetchLazy();
+			
+			try {
+					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+
+					hifRecords.formatCSV(zipStream);
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				if(hifRecords != null && !hifRecords.isClosed()) {
+					hifRecords.close();
+				}
+			}
+		}
+		
+		try {
+			zipStream.close();
+			responseOutputStream.flush();
+		} catch (java.io.IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		
 	}
 
