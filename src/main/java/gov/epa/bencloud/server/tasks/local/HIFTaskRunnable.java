@@ -81,9 +81,11 @@ public class HIFTaskRunnable implements Runnable {
 			
 			// incidenceLists contains an array of incidence maps for each HIF
 			ArrayList<Map<Integer, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
+			ArrayList<Map<Integer, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
 			
 			// incidenceCachepMap is used inside addIncidenceEntryGroups to avoid querying for datasets we already have
 			Map<String, Integer> incidenceCacheMap = new HashMap<String, Integer>();
+			Map<String, Integer> prevalenceCacheMap = new HashMap<String, Integer>();
 			
 			ArrayList<double[]> hifBetaDistributionLists = new ArrayList<double[]>();
 						
@@ -95,7 +97,7 @@ public class HIFTaskRunnable implements Runnable {
 			int idx=0;
 			for (HIFConfig hif : hifTaskConfig.hifs) {
 				hif.arrayIdx = idx;
-				messages.get(messages.size()-1).setMessage("Loading incidence for function " + ++idx + " of " + hifTaskConfig.hifs.size());
+				messages.get(messages.size()-1).setMessage("Loading incidence and prevalence for function " + ++idx + " of " + hifTaskConfig.hifs.size());
 				TaskQueue.updateTaskPercentage(taskUuid, 2, mapper.writeValueAsString(messages));
 				
 				TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
@@ -110,8 +112,9 @@ public class HIFTaskRunnable implements Runnable {
 				// Override hif config where user has not provided a value
 				updateHifConfigValues(hif, h);
 				
-				//This will get the incidence (or prevalence) dataset for the year specified in the hif config
-				boolean ret = IncidenceApi.addIncidenceEntryGroups(hifTaskConfig, hif, h, incidenceLists, incidenceCacheMap);
+				//This will get the incidence and prevalence dataset for the year specified in the hif config
+				boolean ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hif, true, h, incidenceLists, incidenceCacheMap);
+				ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hif, false, h, prevalenceLists, prevalenceCacheMap);
 				
 				double[] distSamples = getDistributionSamples(h);
 				double[] distBeta = new double[20];
@@ -238,7 +241,9 @@ public class HIFTaskRunnable implements Runnable {
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
 					Map<Integer, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
+					Map<Integer, Map<Integer, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
 					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
+					Map<Integer, Double> prevalenceCell = prevalenceMap.get(baselineEntry.getKey());
 
 					/*
 					 * ACCUMULATE THE ESTIMATE FOR EACH AGE CATEGORY IN THIS CELL
@@ -257,11 +262,13 @@ public class HIFTaskRunnable implements Runnable {
 						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
 							double incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
+							double prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popAgeRange, 0.0);
+							
 							totalPop += rangePop;
 
 							hifFunctionExpression.setArgumentValue("BETA", beta);
 							hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
-							hifFunctionExpression.setArgumentValue("PREVALENCE", incidence);
+							hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
 							hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
 							hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
 							
@@ -271,7 +278,7 @@ public class HIFTaskRunnable implements Runnable {
 							}
 							
 							hifBaselineExpression.setArgumentValue("INCIDENCE", incidence);
-							hifBaselineExpression.setArgumentValue("PREVALENCE", incidence);
+							hifBaselineExpression.setArgumentValue("PREVALENCE", prevalence);
 							hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
 							hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
 						}
