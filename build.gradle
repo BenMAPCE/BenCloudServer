@@ -9,41 +9,41 @@ repositories {
 
 dependencies {
 
-	compile 'com.sparkjava:spark-core:2.9.3'
-	compile 'com.sparkjava:spark-template-freemarker:2.7.1'
+	implementation 'com.sparkjava:spark-core:2.9.3'
+	implementation 'com.sparkjava:spark-template-freemarker:2.7.1'
 
-	compile 'org.freemarker:freemarker:2.3.31'
+	implementation 'org.freemarker:freemarker:2.3.31'
 
 	// database related
 	
-	compile 'org.postgresql:postgresql:42.2.20'
+	implementation 'org.postgresql:postgresql:42.2.20'
 	
-	compile 'com.h2database:h2:1.4.199'
-	compile 'org.jooq:jooq:3.14.9'
-	compile 'p6spy:p6spy:3.8.2'
-	compile 'com.zaxxer:HikariCP:4.0.3'
+	implementation 'com.h2database:h2:1.4.199'
+	implementation 'org.jooq:jooq:3.14.9'
+	implementation 'p6spy:p6spy:3.8.2'
+	implementation 'com.zaxxer:HikariCP:4.0.3'
 
-	compile 'io.dropwizard.metrics:metrics-core:4.2.0'
-	compile 'io.dropwizard.metrics:metrics-jvm:4.2.0'
-	compile 'io.dropwizard.metrics:metrics-healthchecks:4.2.0'
-	compile 'io.dropwizard.metrics:metrics-jmx:4.2.0'
+	implementation 'io.dropwizard.metrics:metrics-core:4.2.0'
+	implementation 'io.dropwizard.metrics:metrics-jvm:4.2.0'
+	implementation 'io.dropwizard.metrics:metrics-healthchecks:4.2.0'
+	implementation 'io.dropwizard.metrics:metrics-jmx:4.2.0'
 
-	compile 'com.fasterxml.jackson.core:jackson-core:2.12.3'
-	compile 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
+	implementation 'com.fasterxml.jackson.core:jackson-core:2.12.3'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
 
-	compile 'io.vavr:vavr:0.10.0'
-	compile 'org.slf4j:slf4j-api:1.7.26'
-	compile 'ch.qos.logback:logback-classic:1.2.3'
-	compile 'commons-cli:commons-cli:1.4'
-	compile 'com.opencsv:opencsv:4.6'
-	compile 'org.apache.commons:commons-lang3:3.9'
-	compile 'org.apache.poi:poi:4.1.0'
-	compile 'org.apache.poi:poi-ooxml:4.1.0'
-	compile 'com.squareup.tape2:tape:2.0.0-beta1'
-	compile 'org.quartz-scheduler:quartz:2.3.1'
+	implementation 'io.vavr:vavr:0.10.0'
+	implementation 'org.slf4j:slf4j-api:1.7.26'
+	implementation 'ch.qos.logback:logback-classic:1.2.3'
+	implementation 'commons-cli:commons-cli:1.4'
+	implementation 'com.opencsv:opencsv:4.6'
+	implementation 'org.apache.commons:commons-lang3:3.9'
+	implementation 'org.apache.poi:poi:4.1.0'
+	implementation 'org.apache.poi:poi-ooxml:4.1.0'
+	implementation 'com.squareup.tape2:tape:2.0.0-beta1'
+	implementation 'org.quartz-scheduler:quartz:2.3.1'
 
-    compile 'com.github.javafaker:javafaker:1.0.2'
-    compile 'org.mariuszgromada.math:MathParser.org-mXparser:4.4.2'
+    implementation 'com.github.javafaker:javafaker:1.0.2'
+    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:4.4.2'
     
 
 }
