@@ -22,38 +22,33 @@ public class BenCloudServer {
 
 	public static final String version = "0.1";
 	
-	private static Logger log = LoggerFactory.getLogger(BenCloudServer.class);
+	private static final Logger log = LoggerFactory.getLogger(BenCloudServer.class);
     
 	private static String applicationPath;
 	
 	public static void main(String[] args) {
 
 		String javaVersion = System.getProperty("java.version");
-/*
-		if (!javaVersion.startsWith("1.8")) {
-			System.out.println("Java 8 is required to run the BenCloud Demo");
-			System.exit(0);
-		}
-*/
+
 		try {
 			ApplicationUtil.loadProperties("bencloud-server.properties");
 			ApplicationUtil.loadProperties("bencloud-local.properties", true);
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("Unable to load application properties", e);
 			System.exit(-1);
 		}
 
 		try {
 			if (!ApplicationUtil.validateProperties()) {
-				System.out.println("properties are not all valid, application exiting");
+				log.error("properties are not all valid, application exiting");
 				System.exit(-1);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("Unable to validate application properties", e);
 			System.exit(-1);
 		}
 
-		System.out.println("max Task Workers: " + TaskWorker.getMaxTaskWorkers());
+		log.debug("max Task Workers: " + TaskWorker.getMaxTaskWorkers());
 		
 		ApplicationUtil.configureLogging();
 		LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
@@ -62,7 +57,7 @@ public class BenCloudServer {
 		try {
 			applicationPath = new File(".").getCanonicalPath();
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			log.error("Unable to set application path", e1);
 		}
 		
 		Configuration freeMarkerConfiguration = FreeMarkerRenderUtil.configureFreemarker(
@@ -99,7 +94,7 @@ public class BenCloudServer {
 		benCloudService.before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 		
 		Spark.exception(Exception.class, (exception, request, response) -> {
-		    exception.printStackTrace();
+		    log.error("Spark exception thrown", exception);
 		});
 		
 		new PublicRoutes(benCloudService, freeMarkerConfiguration);
@@ -111,7 +106,7 @@ public class BenCloudServer {
 //		QueueTest.startTaskCreateThreads(1000);
 //		QueueTest.startQueueReadThreads(10000);
         
-		System.out.println("\nStarting BenCloud Demo, version " + version);
+		log.info("Starting BenCloud, version " + version);
 
 	}
 

@@ -35,7 +35,7 @@ import spark.Request;
 import spark.Response;
 
 public class ValuationApi {
-	private static Logger log = LoggerFactory.getLogger(ValuationApi.class);
+	private static final Logger log = LoggerFactory.getLogger(ValuationApi.class);
 	
 	public static void getValuationResultContents(Request request, Response response) {
 		
@@ -127,7 +127,8 @@ public class ValuationApi {
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
-				.fetchSize(100000).fetchLazy();
+				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
+				.fetchLazy();
 		
 		
 		try {
@@ -135,7 +136,6 @@ public class ValuationApi {
 			vfRecords.formatJSON(response.raw().getWriter(), new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 		} catch (Exception e) {
 			log.error("Error in Valuation export", e);
-			e.printStackTrace();
 		} finally {
 			if(vfRecords != null && !vfRecords.isClosed()) {
 				vfRecords.close();
@@ -177,8 +177,7 @@ public class ValuationApi {
 			// Stream .ZIP file to response
 			zipStream = new ZipOutputStream(responseOutputStream);
 		} catch (java.io.IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Error getting output stream", e1);
 			return;
 		}
 		
@@ -234,13 +233,13 @@ public class ValuationApi {
 					.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 					.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 					.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-					.fetchSize(100000).fetchLazy();
+					//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
+					.fetchLazy();
 			try {
 				zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
 				vfRecords.formatCSV(zipStream);
 			} catch (Exception e) {
 				log.error("Error in Valuation export", e);
-				e.printStackTrace();
 			} finally {
 				if(vfRecords != null && !vfRecords.isClosed()) {
 					vfRecords.close();
@@ -253,8 +252,7 @@ public class ValuationApi {
 			zipStream.close();
 			responseOutputStream.flush();
 		} catch (java.io.IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error closing and flushing export", e);
 		}
 		
 	}
@@ -305,7 +303,6 @@ public class ValuationApi {
 					.fetch();
 		} catch (DataAccessException e) {
 			log.error("Error getAllValuationFunctions", e);
-			e.printStackTrace();
 		}
 		
 		response.type("application/json");

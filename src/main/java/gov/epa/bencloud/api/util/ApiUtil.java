@@ -84,9 +84,7 @@ public class ApiUtil {
 				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
 				.fetch();
 
-		if (completedTasks.size() == 0) {
-			// System.out.println("no tasks to process");
-		} else {
+		if (completedTasks.size() > 0) {
 			Record taskCompleteRecord = completedTasks.get(0);
 			
 			if (taskCompleteRecord.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {

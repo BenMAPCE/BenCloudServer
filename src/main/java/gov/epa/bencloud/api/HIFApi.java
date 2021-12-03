@@ -32,6 +32,8 @@ import org.jooq.Record22;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -51,6 +53,7 @@ import spark.Request;
 import spark.Response;
 
 public class HIFApi {
+	private static final Logger log = LoggerFactory.getLogger(HIFApi.class);
 
 	public static void getHifResultContents(Request request, Response response) {
 		
@@ -82,6 +85,7 @@ public class HIFApi {
 		List<Integer> hifIds = hifIdsParam == null ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
 
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
@@ -133,23 +137,16 @@ public class HIFApi {
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
-				.fetchSize(100000).fetchLazy();
+				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
+				.fetchLazy();
 		
 		
 		try {
 			response.type("application/json");
-			try {
-				hifRecords.formatJSON(response.raw().getWriter(),
-						new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (java.io.IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			hifRecords.formatJSON(response.raw().getWriter(),
+					new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error formatting JSON", e);
 		} finally {
 			if(hifRecords != null && !hifRecords.isClosed()) {
 				hifRecords.close();
@@ -195,8 +192,7 @@ public class HIFApi {
 			// Stream .ZIP file to response
 			zipStream = new ZipOutputStream(responseOutputStream);
 		} catch (java.io.IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Error getting output stream", e1);
 			return;
 		}
 		
@@ -251,13 +247,14 @@ public class HIFApi {
 					.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 					.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 					.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-					.fetchSize(100000).fetchLazy();
+					//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
+					.fetchLazy();
 			
 			try {
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
 					hifRecords.formatCSV(zipStream);
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.error("Error creating export file", e);
 			} finally {
 				if(hifRecords != null && !hifRecords.isClosed()) {
 					hifRecords.close();
@@ -269,8 +266,7 @@ public class HIFApi {
 			zipStream.close();
 			responseOutputStream.flush();
 		} catch (java.io.IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error closing and flushing export", e);
 		}
 
 		

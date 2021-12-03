@@ -7,6 +7,9 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import freemarker.cache.FileTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateExceptionHandler;
@@ -14,6 +17,7 @@ import spark.ModelAndView;
 import spark.template.freemarker.FreeMarkerEngine;
 
 public class FreeMarkerRenderUtil {
+	private static final Logger log = LoggerFactory.getLogger(FreeMarkerRenderUtil.class);
 
 	public static Configuration configureFreemarker(String templatePath) {
 		
@@ -30,7 +34,7 @@ public class FreeMarkerRenderUtil {
 			freeMarkerConfiguration.setTemplateLoader(templateLoader);
 			
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("Error configuring freemarker", e);
 		}
 		return freeMarkerConfiguration;
 		

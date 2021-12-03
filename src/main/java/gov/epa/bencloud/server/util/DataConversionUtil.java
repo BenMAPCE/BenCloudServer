@@ -5,8 +5,12 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class DataConversionUtil {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+public class DataConversionUtil {
+	private static final Logger log = LoggerFactory.getLogger(DataConversionUtil.class);
+	
 	public static Integer getFilterValueAsInteger(String filterValue) {
 
 		Integer filterValueAsInteger = null;

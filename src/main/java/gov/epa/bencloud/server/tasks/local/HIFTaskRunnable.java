@@ -44,11 +44,11 @@ import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
 public class HIFTaskRunnable implements Runnable {
-
-	private String taskUuid;
-	private String taskWorkerUuid;
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskRunnable.class);
 	
+	private String taskUuid;
+	private String taskWorkerUuid;
+
 	public HIFTaskRunnable(String taskUuid, String taskWorkerUuid) {
 		this.taskUuid = taskUuid;
 		this.taskWorkerUuid = taskWorkerUuid;
@@ -342,7 +342,7 @@ public class HIFTaskRunnable implements Runnable {
 
 		} catch (Exception e) {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
-			e.printStackTrace();
+			log.error("Task failed", e);
 		}
 		log.info("Task Complete: " + taskUuid);
 	}
@@ -482,11 +482,9 @@ public class HIFTaskRunnable implements Runnable {
 			hifTaskConfig.preserveLegacyBehavior = params.has("preserveLegacyBehavior") ? params.get("preserveLegacyBehavior").asBoolean(false) : false;
 			
 		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error parsing task parameters", e);
 		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error processing task parameters", e);
 		}
 		return hifTaskConfig;
 	}

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -15,7 +16,8 @@ import ch.qos.logback.core.util.StatusPrinter;
 import gov.epa.bencloud.server.BenCloudServer;
 
 public class ApplicationUtil {
-
+	private static final Logger log = LoggerFactory.getLogger(ApplicationUtil.class);
+	
 	public static Properties properties = new Properties();
 
 	public static boolean usingLocalProperties() {
@@ -30,7 +32,7 @@ public class ApplicationUtil {
 				return true;
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("Unable to access bencloud-local.properties", e);
 		}
 		
 		return false;
@@ -59,8 +61,8 @@ public class ApplicationUtil {
 
 				properties.load(input);
 				
-			} catch (IOException ex) {
-				ex.printStackTrace();
+			} catch (IOException e) {
+				log.error("Unable to local bencloud-local.properties", e);
 			}
 		}
 	}
@@ -96,7 +98,7 @@ public class ApplicationUtil {
 					System.out.println("max.task.workers must be > 0");
 				}
 			} catch (NumberFormatException e) {
-				System.out.println("max.task.workers property is not numeric");
+				log.error("max.task.workers property is not numeric", e);
 			}
 		}
 
@@ -143,7 +145,7 @@ public class ApplicationUtil {
 			// StatusPrinter will handle this
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Exception configuring logging", e);
 		}
 
 		// uncomment to check log configuration
