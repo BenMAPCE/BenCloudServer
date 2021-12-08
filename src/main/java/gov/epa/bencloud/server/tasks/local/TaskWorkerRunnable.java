@@ -2,13 +2,17 @@ package gov.epa.bencloud.server.tasks.local;
 
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.tasks.model.Task;
 
 public class TaskWorkerRunnable implements Runnable {
-
+	private static final Logger log = LoggerFactory.getLogger(TaskWorkerRunnable.class);
+	
 	private String taskUuid;
 	private String taskWorkerUuid;
 
@@ -61,6 +65,7 @@ public class TaskWorkerRunnable implements Runnable {
 					taskUuid, taskWorkerUuid, taskSuccessful, taskCompleteMessage);
 
 		} catch (InterruptedException e) {
+			log.error("Task was interrupted", e);
 		}
 	}
 }

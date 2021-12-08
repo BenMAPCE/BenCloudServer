@@ -47,17 +47,14 @@ public class PooledDataSource {
 					(null == databasePassword)
 					) {
 				log.info("some or all bencloud-local.properties not found");
-				System.out.println("some or all bencloud-local.properties not found");
 				databasePropertiesFound = false;
 			} else {
 				databasePropertiesFound = true;
 				log.info("using bencloud-local.properties");
-				System.out.println("using bencloud-local.properties");
 			}
 		} else {
 
 			log.info("bencloud-local.properties not found");
-			System.out.println("bencloud-local.properties not found");
 
 			databaseHost = System.getenv("postgresql_host");
 			databasePort = System.getenv("postgresql_port");
@@ -72,11 +69,9 @@ public class PooledDataSource {
 					(null == databasePassword)
 					) {
 				log.info("environment variables not found");
-				System.out.println("environment variables not found");
 				databasePropertiesFound = false;
 			} else {
 				log.info("using environment variables");
-				System.out.println("using environment variables");
 			}
 		}
 		
@@ -118,7 +113,7 @@ public class PooledDataSource {
 			try {
 				dataSource = new HikariDataSource( config );
 			} catch (Exception e1) {
-				e1.printStackTrace();
+				log.error("Error creating HikariDataSource", e1);
 			}
 		}
 	}
@@ -140,7 +135,7 @@ public class PooledDataSource {
 			dataSource.unwrap(HikariDataSource.class).close();
 
 		} catch (SQLException e) {
-			e.printStackTrace();
+			log.error("Error shutting down data source", e);
 		}
 	}
 

@@ -22,7 +22,7 @@ import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class TaskWorker {
 
-	private static Logger log = LoggerFactory.getLogger(TaskWorker.class);
+	private static final Logger log = LoggerFactory.getLogger(TaskWorker.class);
 
 	public static int maxTaskWorkers = 0;
 
@@ -97,7 +97,7 @@ public class TaskWorker {
 			});
 
 		} catch (DataAccessException e1) {
-			e1.printStackTrace();
+			log.error("Error starting task", e1);
 		}
 
 		if (transactionSuccessful) {
@@ -142,7 +142,7 @@ public class TaskWorker {
 			});
 
 		} catch (DataAccessException e1) {
-			e1.printStackTrace();
+			log.error("Error updating task heartbeat", e1);
 		}
 	}
 
@@ -163,7 +163,7 @@ public class TaskWorker {
 			});
 
 		} catch (DataAccessException e1) {
-			e1.printStackTrace();
+			log.error("Error updating task heartbeat", e1);
 		}
 	}
 	
@@ -200,7 +200,7 @@ public class TaskWorker {
 			});
 
 		} catch (DataAccessException e1) {
-			e1.printStackTrace();
+			log.error("Error checking for unresponsive workers", e1);
 		}		
 		
 		

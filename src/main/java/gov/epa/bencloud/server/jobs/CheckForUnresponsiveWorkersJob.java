@@ -12,7 +12,7 @@ import gov.epa.bencloud.server.tasks.TaskWorker;
 @DisallowConcurrentExecution
 public class CheckForUnresponsiveWorkersJob implements Job {
 
-	private static Logger log = LoggerFactory.getLogger(CheckForUnresponsiveWorkersJob.class);
+	private static final Logger log = LoggerFactory.getLogger(CheckForUnresponsiveWorkersJob.class);
 	
 	public CheckForUnresponsiveWorkersJob() {
 	}

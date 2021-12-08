@@ -13,7 +13,7 @@ import gov.epa.bencloud.server.database.JooqUtil;
 
 public class TaskUtil {
 
-	private static Logger log = LoggerFactory.getLogger(TaskUtil.class);
+	private static final Logger log = LoggerFactory.getLogger(TaskUtil.class);
 
 	
 	public static void deleteHifResults(String uuid) {
@@ -61,7 +61,7 @@ public class TaskUtil {
 				}
 			});
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error deleting HIF results", e);
 		} finally {
 
 		}
@@ -113,7 +113,7 @@ public class TaskUtil {
 				}
 			});
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error deleting valuation results", e);
 		} finally {
 
 		}

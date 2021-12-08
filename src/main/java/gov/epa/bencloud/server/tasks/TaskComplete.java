@@ -27,7 +27,7 @@ import gov.epa.bencloud.server.util.DataUtil;
 
 public class TaskComplete {
 
-	private static Logger log = LoggerFactory.getLogger(TaskComplete.class);
+	private static final Logger log = LoggerFactory.getLogger(TaskComplete.class);
 
 	public static void addTaskToCompleteAndRemoveTaskFromQueue(
 			String taskUuid, String taskWorkerUuid, 
@@ -89,8 +89,7 @@ public class TaskComplete {
 			});
 
 		} catch (DataAccessException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Error moving task to completed queue", e1);
 		}
 
 	}
@@ -180,11 +179,11 @@ public class TaskComplete {
 			} catch (DataAccessException e) {
 				data.put("success", false);
 				data.put("error_message", e.getMessage());
-				e.printStackTrace();
+				log.error("Error getting completed tasks", e);
 			} catch (IllegalArgumentException e) {
 				data.put("success", false);
 				data.put("error_message", e.getMessage());
-				e.printStackTrace();
+				log.error("Error getting completed tasks", e);
 			}
 //		}
 
@@ -223,8 +222,7 @@ public class TaskComplete {
 				task.setCompletedDate(record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE));
 			}
 		} catch (DataAccessException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Error getting task", e1);
 		}
 
 		return task;
