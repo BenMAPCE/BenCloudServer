@@ -9,7 +9,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRe
 
 import org.jooq.Field;
 import org.jooq.Name;
-import org.jooq.Row14;
+import org.jooq.Row16;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -81,6 +81,11 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     public final TableField<GetHifResultsRecord, Double> DELTA_AQ = createField(DSL.name("delta_aq"), SQLDataType.DOUBLE, this, "");
 
     /**
+     * The column <code>data.get_hif_results.incidence</code>.
+     */
+    public final TableField<GetHifResultsRecord, Double> INCIDENCE = createField(DSL.name("incidence"), SQLDataType.DOUBLE, this, "");
+
+    /**
      * The column <code>data.get_hif_results.mean</code>.
      */
     public final TableField<GetHifResultsRecord, Double> MEAN = createField(DSL.name("mean"), SQLDataType.DOUBLE, this, "");
@@ -109,6 +114,11 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
      * The column <code>data.get_hif_results.pct_97_5</code>.
      */
     public final TableField<GetHifResultsRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.get_hif_results.percentiles</code>.
+     */
+    public final TableField<GetHifResultsRecord, Double[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.FLOAT.getArrayDataType(), this, "");
 
     private GetHifResults(Name alias, Table<GetHifResultsRecord> aliased) {
         this(alias, aliased, new Field[3]);
@@ -171,12 +181,12 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row14 type methods
+    // Row16 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double> fieldsRow() {
-        return (Row14) super.fieldsRow();
+    public Row16<Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
+        return (Row16) super.fieldsRow();
     }
 
     /**

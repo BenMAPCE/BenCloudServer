@@ -215,9 +215,15 @@ public class ValuationTaskRunnable implements Runnable {
 							try {
 
 								if (valuationFunctionEstimate == 0.0) {
-
+									rec.setPct_2_5(0.0);
+									rec.setPct_97_5(0.00);
+									Double[] percentiles20 = new Double[20];
+									Arrays.fill(percentiles20, 0.0);
+									rec.setPercentiles(percentiles20);
+									rec.setResultMean(0.0);
+									rec.setStandardDev(0.0);
+									rec.setResultVariance(0.0);
 								} else {
-
 									double[] percentiles = new double[100];
 									Double[] percentiles20 = new Double[20];
 									double[] distValues = distStats.getSortedValues();
@@ -239,13 +245,19 @@ public class ValuationTaskRunnable implements Runnable {
 									rec.setPct_2_5((percentiles[1] + percentiles[2]) / 2.0);
 									rec.setPct_97_5((percentiles[96] + percentiles[97]) / 2.0);
 									rec.setPercentiles(percentiles20);
-									rec.setStandardDev(statsPercentiles.getStandardDeviation());
 									rec.setResultMean(statsPercentiles.getMean());
+									
+									//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop version
+									statsPercentiles.addValue(valuationFunctionEstimate);
+									rec.setStandardDev(statsPercentiles.getStandardDeviation());
 									rec.setResultVariance(statsPercentiles.getVariance());
 								}
 							} catch (Exception e) {
 								rec.setPct_2_5(0.0);
 								rec.setPct_97_5(0.0);
+								Double[] percentiles20 = new Double[20];
+								Arrays.fill(percentiles20, 0.0);
+								rec.setPercentiles(percentiles20);
 								rec.setStandardDev(0.0);
 								rec.setResultMean(0.0);
 								rec.setResultVariance(0.0);

@@ -252,6 +252,8 @@ public class HIFTaskRunnable implements Runnable {
 					double totalPop = 0.0;
 					double hifFunctionEstimate = 0.0;
 					double hifBaselineEstimate = 0.0;
+					double incidence = 0.0;
+					double prevalence = 0.0;
 					Double[] resultPercentiles = new Double[20];
 					Arrays.fill(resultPercentiles, 0.0);
 					
@@ -261,8 +263,8 @@ public class HIFTaskRunnable implements Runnable {
 						
 						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
-							double incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
-							double prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popAgeRange, 0.0);
+							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
+							prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popAgeRange, 0.0);
 							
 							totalPop += rangePop;
 
@@ -295,6 +297,7 @@ public class HIFTaskRunnable implements Runnable {
 						rec.setDeltaAq(deltaQ);
 						rec.setBaselineAq(baselineValue);
 						rec.setScenarioAq(scenarioValue);
+						rec.setIncidence(incidence);
 						rec.setResult(hifFunctionEstimate);
 						rec.setPct_2_5(resultPercentiles[0]);
 						rec.setPct_97_5(resultPercentiles[19]);
@@ -305,9 +308,13 @@ public class HIFTaskRunnable implements Runnable {
 						for (int i = 0; i < resultPercentiles.length; i++) {
 							stats.addValue(resultPercentiles[i]);
 						}
-						rec.setStandardDev(stats.getStandardDeviation());
 						rec.setResultMean(stats.getMean());
+						
+						//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop version
+						stats.addValue(hifFunctionEstimate);
+						rec.setStandardDev(stats.getStandardDeviation());
 						rec.setResultVariance(stats.getVariance());
+						
 						rec.setBaseline(hifBaselineEstimate);
 
 						hifResults.add(rec);

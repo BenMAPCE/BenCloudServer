@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row17;
+import org.jooq.Row18;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -132,6 +132,11 @@ public class HifResult extends TableImpl<HifResultRecord> {
      */
     public final TableField<HifResultRecord, Double> SCENARIO_AQ = createField(DSL.name("scenario_aq"), SQLDataType.DOUBLE, this, "");
 
+    /**
+     * The column <code>data.hif_result.incidence</code>.
+     */
+    public final TableField<HifResultRecord, Double> INCIDENCE = createField(DSL.name("incidence"), SQLDataType.DOUBLE, this, "");
+
     private HifResult(Name alias, Table<HifResultRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -202,11 +207,11 @@ public class HifResult extends TableImpl<HifResultRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row17 type methods
+    // Row18 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row17<Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[], Double, Double> fieldsRow() {
-        return (Row17) super.fieldsRow();
+    public Row18<Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[], Double, Double, Double> fieldsRow() {
+        return (Row18) super.fieldsRow();
     }
 }
