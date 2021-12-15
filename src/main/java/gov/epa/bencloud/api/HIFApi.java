@@ -17,6 +17,7 @@ import java.util.zip.ZipOutputStream;
 import java.util.stream.Collectors;
 import java.util.UUID;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
@@ -32,6 +33,8 @@ import org.jooq.Record22;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -51,6 +54,7 @@ import spark.Request;
 import spark.Response;
 
 public class HIFApi {
+	private static final Logger log = LoggerFactory.getLogger(HIFApi.class);
 
 	public static void getHifResultContents(Request request, Response response) {
 		
@@ -83,6 +87,7 @@ public class HIFApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
 						id, 
@@ -90,8 +95,7 @@ public class HIFApi {
 						gridId))
 				.asTable("hif_result_records");
 		
-
-		Cursor<Record> hifRecords = create.select(
+		Result<Record> hifRecords = create.select(
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
 				ENDPOINT.NAME.as("endpoint"),
@@ -112,14 +116,16 @@ public class HIFApi {
 				hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
 				hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
 				hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
+				hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
 				hifResultRecords.field(GET_HIF_RESULTS.MEAN),
 				hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
 				DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
-					.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE))).as("percent_of_baseline"),
+					.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE)).times(100.0)).as("percent_of_baseline"),
 				hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
 				hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
 				hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
-				hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5)
+				hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
+				hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES)
 				)
 				.from(hifResultRecords)
 				.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
@@ -133,27 +139,38 @@ public class HIFApi {
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
-				.fetchSize(100000).fetchLazy();
+				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
+				.fetch();
 		
+		//If results are geing aggregated, recalc mean, variance, std deviation, and percent of baseline
+		if(HIFApi.getBaselineGridForHifResults(id) != gridId) {
+			for(Record res : hifRecords) {
+				DescriptiveStatistics stats = new DescriptiveStatistics();
+				Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
+				for (int i = 0; i < pct.length; i++) {
+					stats.addValue(pct[i]);
+				}
+				
+				res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
+				res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
+				res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+				res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
+			}
+			
+		}
+	
+		//TODO: Can we remove percentiles?
 		
 		try {
 			response.type("application/json");
-			try {
-				hifRecords.formatJSON(response.raw().getWriter(),
-						new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (java.io.IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			hifRecords.formatJSON(response.raw().getWriter(),
+					new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error formatting JSON", e);
 		} finally {
-			if(hifRecords != null && !hifRecords.isClosed()) {
-				hifRecords.close();
-			}
+			//if(hifRecords != null && !hifRecords.isClosed()) {
+			//	hifRecords.close();
+			//}
 		}
 	}
 	
@@ -195,8 +212,7 @@ public class HIFApi {
 			// Stream .ZIP file to response
 			zipStream = new ZipOutputStream(responseOutputStream);
 		} catch (java.io.IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Error getting output stream", e1);
 			return;
 		}
 		
@@ -211,7 +227,7 @@ public class HIFApi {
 							gridIds[i]))
 					.asTable("hif_result_records");
 	
-			Cursor<Record> hifRecords = create.select(
+			Result<Record> hifRecords = create.select(
 					hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 					hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
 					ENDPOINT.NAME.as("endpoint"),
@@ -232,14 +248,16 @@ public class HIFApi {
 					hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
 					hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
 					hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
+					hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
 					hifResultRecords.field(GET_HIF_RESULTS.MEAN),
 					hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
 					DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
-						.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE))).as("percent_of_baseline"),
+						.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE)).times(100.0)).as("percent_of_baseline"),
 					hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
 					hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
 					hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
-					hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5)
+					hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
+					hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES)
 					)
 					.from(hifResultRecords)
 					.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
@@ -251,17 +269,41 @@ public class HIFApi {
 					.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 					.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 					.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-					.fetchSize(100000).fetchLazy();
+					//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
+					.fetch();
+			
+					//If results are geing aggregated, recalc mean, variance, std deviation, and percent of baseline
+					if(HIFApi.getBaselineGridForHifResults(id) != gridIds[i]) {
+						for(Record res : hifRecords) {
+							DescriptiveStatistics stats = new DescriptiveStatistics();
+							Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
+							for (int j = 0; j < pct.length; j++) {
+								stats.addValue(pct[j]);
+							}
+							
+							res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
+							
+							//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+							stats.addValue(res.getValue(GET_HIF_RESULTS.POINT_ESTIMATE));
+							res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
+							res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+							
+							res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
+						}
+						
+					}
+					
+					//TODO: Can we remove percentiles?
 			
 			try {
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
 					hifRecords.formatCSV(zipStream);
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.error("Error creating export file", e);
 			} finally {
-				if(hifRecords != null && !hifRecords.isClosed()) {
-					hifRecords.close();
-				}
+				//if(hifRecords != null && !hifRecords.isClosed()) {
+				//	hifRecords.close();
+				//}
 			}
 		}
 		
@@ -269,8 +311,7 @@ public class HIFApi {
 			zipStream.close();
 			responseOutputStream.flush();
 		} catch (java.io.IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error closing and flushing export", e);
 		}
 
 		

@@ -13,7 +13,7 @@ import gov.epa.bencloud.server.tasks.TaskQueue;
 @DisallowConcurrentExecution
 public class ReadFromQueueJob implements Job {
 
-	private static Logger log = LoggerFactory.getLogger(ReadFromQueueJob.class);
+	private static final Logger log = LoggerFactory.getLogger(ReadFromQueueJob.class);
 	
 	public ReadFromQueueJob() {
 	}

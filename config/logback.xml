@@ -13,9 +13,9 @@
   </appender>
     
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>bencloud-api.log</file>
+    <file>logs/bencloud-api.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>access.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+      <fileNamePattern>logs/bencloud-api.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
     </rollingPolicy>
 
     <encoder>
@@ -24,9 +24,9 @@
   </appender>
  
   <appender name="DATABASE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>bencloud-database.log</file>
+    <file>logs/bencloud-database.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>startup.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+      <fileNamePattern>logs/bencloud-database.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
     </rollingPolicy>
 
     <encoder>

@@ -9,9 +9,14 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import gov.epa.bencloud.server.database.PooledDataSource;
 
 public class JobsUtil {
-
+	private static final Logger log = LoggerFactory.getLogger(JobsUtil.class);
+	
 	public static void startJobScheduler() {
 		
       try {
@@ -46,7 +51,7 @@ public class JobsUtil {
 		    scheduler.scheduleJob(checkForUnresponsiveWorkersJob, checkForUnresponsiveWorkersJobTrigger);
 
 		} catch (SchedulerException e1) {
-			e1.printStackTrace();
+			log.error("Error starting job scheduler", e1);
 		}
 	}
 }

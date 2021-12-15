@@ -23,7 +23,7 @@ import gov.epa.bencloud.server.tasks.model.Task;
 
 public class TaskQueue {
 
-	private static Logger log = LoggerFactory.getLogger(TaskQueue.class);
+	private static final Logger log = LoggerFactory.getLogger(TaskQueue.class);
 
 	public static String getTaskFromQueue() {
 
@@ -85,7 +85,7 @@ public class TaskQueue {
 
 					});
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error getting task", e);
 		} finally {
 
 		}
@@ -123,7 +123,7 @@ public class TaskQueue {
 			});
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error updating task", e);
 		} finally {
 
 		}
@@ -159,7 +159,7 @@ public class TaskQueue {
 			});
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error updating task", e);
 		} finally {
 
 		}
@@ -196,7 +196,7 @@ public class TaskQueue {
 				System.out.println("returning task to Queue: " + uuid);
 			});
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error returning task", e);
 		} finally {
 
 		}		
@@ -232,8 +232,7 @@ public class TaskQueue {
 			.execute();
 
 		} catch (DataAccessException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Error writing task", e1);
 		}
 	}
 
@@ -318,21 +317,15 @@ public class TaskQueue {
 				} catch (DataAccessException e) {
 					data.put("success", false);
 					data.put("error_message", e.getMessage());
-					e.printStackTrace();
+					log.error("Error getting pending tasks", e);
 				} catch (IllegalArgumentException e) {
 					data.put("success", false);
 					data.put("error_message", e.getMessage());
-					e.printStackTrace();
+					log.error("Error getting pending tasks", e);
 				}
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.error("Error getting pending tasks", e);
 			}
-//		}
-
-//				System.out.println("--------------------------------------------------");
-//				System.out.println(data.toPrettyString());
-//				System.out.println("--------------------------------------------------");
 
 		return data;
 	} 
@@ -367,8 +360,7 @@ public class TaskQueue {
 				task.setStartedDate(record.getValue(TASK_QUEUE.TASK_STARTED_DATE));
 			}
 		} catch (DataAccessException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Error getting task", e1);
 		}
 
 		return task;

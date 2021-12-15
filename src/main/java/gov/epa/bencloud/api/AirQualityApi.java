@@ -36,6 +36,8 @@ import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.tools.csv.CSVReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -59,6 +61,7 @@ import spark.Request;
 import spark.Response;
 
 public class AirQualityApi {
+	private static final Logger log = LoggerFactory.getLogger(AirQualityApi.class);
 
 	public static Object getAirQualityLayerDefinitions(Request request, Response response) {
 		
@@ -110,7 +113,7 @@ public class AirQualityApi {
 				.where(filterCondition)
 				.fetchOne(DSL.count());
 		
-		System.out.println("filteredRecordsCount: " + filteredRecordsCount);
+		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 	
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
@@ -181,7 +184,7 @@ public class AirQualityApi {
 				.fetch();
 	
 		
-		System.out.println("aqRecords: " + aqRecords.size());
+		//System.out.println("aqRecords: " + aqRecords.size());
 
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode data = mapper.createObjectNode();
@@ -195,11 +198,11 @@ public class AirQualityApi {
 			JsonNode actualObj = mapper.readTree(jp);
 			data.set("records", actualObj);
 		} catch (JsonParseException e) {
-			e.printStackTrace();
+			log.error("Error parsing JSON",e);
 		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+			log.error("Error processing JSON",e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("IO Exception", e);
 		}
 		
 		//System.out.println(data);
@@ -260,7 +263,7 @@ public class AirQualityApi {
 				.where(filterCondition)
 				.fetchOne(DSL.count());
 		
-		System.out.println("filteredRecordsCount: " + filteredRecordsCount);
+		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 		
 		Result<Record21<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer, Boolean, Integer, String, Integer, String, String>> aqRecords = 
 			DSL.using(JooqUtil.getJooqConfiguration())
@@ -301,7 +304,7 @@ public class AirQualityApi {
 				.fetch();
 	
 		
-		System.out.println("aqRecords: " + aqRecords.size());
+		//System.out.println("aqRecords: " + aqRecords.size());
 
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode data = mapper.createObjectNode();
@@ -315,11 +318,11 @@ public class AirQualityApi {
 			JsonNode actualObj = mapper.readTree(jp);
 			data.set("records", actualObj);
 		} catch (JsonParseException e) {
-			e.printStackTrace();
+			log.error("Error parsing JSON",e);
 		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+			log.error("Error processing JSON",e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("IO Exception", e);
 		}
 		
 		//System.out.println(data);
@@ -427,7 +430,7 @@ public class AirQualityApi {
 		
 		Integer id = Integer.valueOf(request.params("id"));
 		
-		System.out.println("in getAirQualityLayerDetails");
+		//System.out.println("in getAirQualityLayerDetails");
 		
 		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
 		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
@@ -435,9 +438,9 @@ public class AirQualityApi {
 		boolean descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 		String filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
 
-		System.out.println("id: " + id);
-		System.out.println("filter: " + filter);
-		System.out.println("rowsPerPage: " + rowsPerPage);
+		//System.out.println("id: " + id);
+		//System.out.println("filter: " + filter);
+		//System.out.println("rowsPerPage: " + rowsPerPage);
 
 		Condition filterCondition = DSL.trueCondition();
 		Condition airQualityLayerCondition = DSL.trueCondition();
@@ -454,7 +457,7 @@ public class AirQualityApi {
 	
 		List<OrderField<?>> orderFields = new ArrayList<>();
 		
-		System.out.println("sortBy: " + sortBy);
+		//System.out.println("sortBy: " + sortBy);
 		
 		setAirQualityCellsSortOrder(sortBy, descending, orderFields);
 
@@ -467,7 +470,7 @@ public class AirQualityApi {
 				.where(filterCondition)
 				.fetchOne(DSL.count());
 
-		System.out.println("filteredRecordsCount: " + filteredRecordsCount);
+		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 
 		Result<Record6<Integer, Integer, String, String, String, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
@@ -503,7 +506,7 @@ public class AirQualityApi {
 			return aqRecords.formatCSV();
 		} else {
 
-			System.out.println("aqRecords: " + aqRecords.size());
+			//System.out.println("aqRecords: " + aqRecords.size());
 
 			ObjectMapper mapper = new ObjectMapper();
 			ObjectNode data = mapper.createObjectNode();
@@ -517,11 +520,11 @@ public class AirQualityApi {
 				JsonNode actualObj = mapper.readTree(jp);
 				data.set("records", actualObj);
 			} catch (JsonParseException e) {
-				e.printStackTrace();
+				log.error("Error parsing JSON",e);
 			} catch (JsonProcessingException e) {
-				e.printStackTrace();
+				log.error("Error processing JSON",e);
 			} catch (IOException e) {
-				e.printStackTrace();
+				log.error("IO Exception", e);
 			}
 
 			response.type("application/json");
@@ -602,7 +605,7 @@ public class AirQualityApi {
 	
 	public static Object postAirQualityLayer(Request request, String layerName, Integer pollutantId, Integer gridId, String layerType, Response response) {
 
-		System.out.println("postAirQualityLayer");
+		//System.out.println("postAirQualityLayer");
 
 		//TODO: REMOVE THIS. IT'S JUST A WORKAROUND FOR A TEMPORARY UI BUG
 		if(pollutantId.equals(0)) {
@@ -652,7 +655,7 @@ public class AirQualityApi {
 			String tmp = AirQualityUtil.validateModelColumnHeadings(columnIdx, rowIdx, metricIdx, seasonalMetricIdx, annualMetricIdx, valuesIdx);
 			if(tmp.length() > 0) {
 				response.status(400);
-				System.out.println("The following columns are missing: " + tmp);
+				log.debug("AQ dataset posted - columns are missing: " + tmp);
 				return "The following columns are missing: " + tmp;
 			}
 			
@@ -784,90 +787,11 @@ public class AirQualityApi {
 						//.where(AIR_QUALITY_LAYER.ID.eq(aqRecord.value1()))		
 		 */
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
+			log.error("Error processing AQ file", e);
 		}
 		response.type("application/json");
 		return getAirQualityLayerDefinition(aqRecord.value1()).formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
-	
-	/*
-	public static ObjectNode getAirQualityLayers(String userIdentifier) {
-
-//		System.out.println("getCompletedTasks");
-//		System.out.println("userIdentifier: " + userIdentifier);
-		
-//		System.out.println("length: " + postParameters.get("length")[0]);
-//		System.out.println("start: " + postParameters.get("start")[0]);
-//		System.out.println("searchValue: " + postParameters.get("searchValue")[0]);
-//		System.out.println("sortColumn: " + postParameters.get("sortColumn")[0]);
-//		System.out.println("sortDirection: " + postParameters.get("sortDirection")[0]);
-
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode data = mapper.createObjectNode();
-        
-        ArrayNode airQualityLayers = mapper.createArrayNode();
-        ObjectNode airQualityLayer = mapper.createObjectNode();
-
-        int records = 0;
-        
-		if (null != userIdentifier) {
-
-			try {
-
-				Result<Record12<Integer, String, Integer, Double, Double, Double, Double, Double, Integer, Integer, String, String>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
-						.select(
-								AIR_QUALITY_LAYER.ID, 
-								AIR_QUALITY_LAYER.NAME,
-								AIR_QUALITY_LAYER.CELL_COUNT,
-								AIR_QUALITY_LAYER.MIN_VALUE,
-								AIR_QUALITY_LAYER.MAX_VALUE,
-								AIR_QUALITY_LAYER.MEAN_VALUE,
-								AIR_QUALITY_LAYER.PCT_2_5,
-								AIR_QUALITY_LAYER.PCT_97_5,
-								AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
-								AIR_QUALITY_LAYER.POLLUTANT_ID,
-								POLLUTANT.NAME, 
-								GRID_DEFINITION.NAME)
-						.from(AIR_QUALITY_LAYER)
-						.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
-						.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
-						.orderBy(AIR_QUALITY_LAYER.NAME)
-						.fetch();
-
-				for (Record record : aqRecords) {
-
-					airQualityLayer = mapper.createObjectNode();
-
-					airQualityLayer.put("id", record.getValue(AIR_QUALITY_LAYER.ID));
-					airQualityLayer.put("name", record.getValue(AIR_QUALITY_LAYER.NAME));
-					airQualityLayer.put("pollutant_name", record.getValue(POLLUTANT.NAME));
-					airQualityLayer.put("grid_definition_name", record.getValue(GRID_DEFINITION.NAME));
-					
-					airQualityLayers.add(airQualityLayer);
-					records++;
-					
-				}
-				
-				data.set("data", airQualityLayers);
-				data.put("success", true);
-				data.put("recordsFiltered", records);
-				data.put("recordsTotal", records);
-				
-			} catch (DataAccessException e) {
-				data.put("success", false);
-				data.put("error_message", e.getMessage());
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				data.put("success", false);
-				data.put("error_message", e.getMessage());
-				e.printStackTrace();
-			}
-		}
-
-		return data;
-	}
-	 */
 	
 	public static boolean deleteAirQualityLayerDefinition(Request request, Response response) {
 		Integer id = Integer.valueOf(request.params("id"));
@@ -1043,7 +967,7 @@ public class AirQualityApi {
 				break;
 
 			default:
-				System.out.println("... in default...");
+				//System.out.println("... in default...");
 				orderFields.add(DSL.field("grid_col", Integer.class.getName()).sort(SortOrder.ASC));	
 				orderFields.add(DSL.field("grid_row", Integer.class.getName()).sort(SortOrder.ASC));	
 				break;
@@ -1067,11 +991,11 @@ public class AirQualityApi {
 					records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
 			recordsJSON = mapper.readTree(jp);
 		} catch (JsonParseException e) {
-			e.printStackTrace();
+			log.error("Error parsing JSON",e);
 		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+			log.error("Error processing JSON",e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("IO Exception", e);
 		}
 		
 		return recordsJSON;

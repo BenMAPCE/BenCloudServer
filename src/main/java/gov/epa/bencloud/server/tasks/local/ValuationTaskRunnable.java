@@ -24,6 +24,8 @@ import org.jooq.Record7;
 import org.jooq.Result;
 import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -46,7 +48,8 @@ import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
 public class ValuationTaskRunnable implements Runnable {
-
+	private static final Logger log = LoggerFactory.getLogger(ValuationTaskRunnable.class);
+	
 	private String taskUuid;
 	private String taskWorkerUuid;
 
@@ -212,9 +215,15 @@ public class ValuationTaskRunnable implements Runnable {
 							try {
 
 								if (valuationFunctionEstimate == 0.0) {
-
+									rec.setPct_2_5(0.0);
+									rec.setPct_97_5(0.00);
+									Double[] percentiles20 = new Double[20];
+									Arrays.fill(percentiles20, 0.0);
+									rec.setPercentiles(percentiles20);
+									rec.setResultMean(0.0);
+									rec.setStandardDev(0.0);
+									rec.setResultVariance(0.0);
 								} else {
-
 									double[] percentiles = new double[100];
 									Double[] percentiles20 = new Double[20];
 									double[] distValues = distStats.getSortedValues();
@@ -236,17 +245,23 @@ public class ValuationTaskRunnable implements Runnable {
 									rec.setPct_2_5((percentiles[1] + percentiles[2]) / 2.0);
 									rec.setPct_97_5((percentiles[96] + percentiles[97]) / 2.0);
 									rec.setPercentiles(percentiles20);
-									rec.setStandardDev(statsPercentiles.getStandardDeviation());
 									rec.setResultMean(statsPercentiles.getMean());
+									
+									//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop version
+									statsPercentiles.addValue(valuationFunctionEstimate);
+									rec.setStandardDev(statsPercentiles.getStandardDeviation());
 									rec.setResultVariance(statsPercentiles.getVariance());
 								}
 							} catch (Exception e) {
 								rec.setPct_2_5(0.0);
 								rec.setPct_97_5(0.0);
+								Double[] percentiles20 = new Double[20];
+								Arrays.fill(percentiles20, 0.0);
+								rec.setPercentiles(percentiles20);
 								rec.setStandardDev(0.0);
 								rec.setResultMean(0.0);
 								rec.setResultVariance(0.0);
-								e.printStackTrace();
+								log.info("Error populating valuation estimate", e);
 							}
 
 
@@ -286,7 +301,7 @@ public class ValuationTaskRunnable implements Runnable {
 
 		} catch (Exception e) {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
-			e.printStackTrace();
+			log.error("Task failed", e);
 		}
 	}
 
@@ -308,11 +323,9 @@ public class ValuationTaskRunnable implements Runnable {
 			parseFunctions(functions, valuationTaskConfig);
 			
 		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error parsing task parameters", e);
 		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error processing task parameters", e);
 		}
 		return valuationTaskConfig;
 	}

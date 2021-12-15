@@ -4,7 +4,7 @@ plugins {
 }
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
@@ -49,6 +49,8 @@ dependencies {
 }
 
 task fatJar(type: Jar) {
+    duplicatesStrategy = 'include'
+
 	manifest {
 		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
     }
@@ -56,6 +58,6 @@ task fatJar(type: Jar) {
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
 	baseName = "BenCloudServer"
-	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
 }

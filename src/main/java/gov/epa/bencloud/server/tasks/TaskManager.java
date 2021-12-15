@@ -7,7 +7,7 @@ import gov.epa.bencloud.server.tasks.model.Task;
 
 public class TaskManager {
 
-	private static Logger log = LoggerFactory.getLogger(TaskManager.class);
+	private static final Logger log = LoggerFactory.getLogger(TaskManager.class);
 
 	public static void processTask(String uuid) {
 
