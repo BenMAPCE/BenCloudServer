@@ -10,7 +10,7 @@
 stages:
   - build
   - Image
-
+  - Non-Production Deployment
 
 
 # Disable the Gradle daemon for Continuous Integration servers as correctness
@@ -57,6 +57,34 @@ Build BenCloudServer Image:
   #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
     - Build BenCloudServer Jar
+
+Development:
+  stage: Non-Production Deployment
+  tags:
+    - benmapdevgitlab
+  when: manual
+  image: dtzar/helm-kubectl
+  script:
+    - apk add gettext
+    - kubectl config set-cluster benmap-shared-dev00 --server="$KUBE_URL"
+    - kubectl config set-cluster benmap-shared-dev00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
+    - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
+    - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="$KUBE_NAMESPACE"
+    - kubectl config use-context default
+    - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
+  environment:
+    name: testdev
+    url: http://bencloud-dev.devsecops-eval.epa.gov
+    kubernetes:
+      namespace: bencloud-testdev
+  variables:
+    DB_CONNECTION: postgres
+    DB_HOST: bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
+    DB_PORT: 5432
+    DB_DATABASE: benmap
+    DB_USERNAME: benmap_system
+    DB_PASSWORD: secret
+
 
 #test:
 #  stage: test
