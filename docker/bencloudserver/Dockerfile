@@ -1,10 +1,10 @@
 FROM amazoncorretto:8-alpine
 
-ENV postgresql_host 192.168.0.152
+ENV postgresql_host bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
 ENV postgresql_port 5432
-ENV postgresql_database docker
-ENV postgresql_user docker
-ENV postgresql_password docker
+ENV postgresql_database benmap
+ENV postgresql_user benmap_system
+ENV postgresql_password unknown_password
 
 WORKDIR /bencloud
 
