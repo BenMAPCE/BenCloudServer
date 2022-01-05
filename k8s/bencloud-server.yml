@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bencloud-server
+  annotations:
+    app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+    app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+    eks.amazonaws.com/compute-type: fargate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bencloud-server
+
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+
+  template:
+    metadata:
+      labels:
+        app: bencloudserver
+      annotations:
+        app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+        app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+    spec:
+      securityContext:
+        runAsUser: 555
+        runAsGroup: 555
+        fsGroup: 555
+      containers:
+      - name: api
+        image:  registry.epa.gov/benmap/bencloudserver/bencloudserver:$CI_COMMIT_SHORT_SHA
+        imagePullPolicy: Always
+        livenessProbe:
+         tcpSocket:
+            port: 4567
+         initialDelaySeconds: 10
+         periodSeconds: 15
+        startupProbe:
+          tcpSocket:
+            port: 4567
+          failureThreshold: 30
+          periodSeconds: 10
+        env:
+          - name: REDEPLOY_META
+            value: $CI_JOB_ID-$CI_COMMIT_SHA
+          - name: DB_CONNECTION
+            value: "$DB_CONNECTION"
+          - name: DB_HOST
+            value: "$DB_HOST"
+          - name: DB_PORT
+            value: "$DB_PORT"
+          - name: DB_DATABASE
+            value: "$DB_DATABASE"
+          - name: DB_USERNAME
+            value: "$DB_USERNAME"
+          - name: DB_PASSWORD
+            value: "$DB_PASSWORD"
+        ports:
+        - containerPort: 4567
+      imagePullSecrets:
+      - name: glcr-auth
+
