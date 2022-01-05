@@ -8,7 +8,7 @@ ENV postgresql_password unknown_password
 
 WORKDIR /bencloud
 
-COPY build/libs/BenCloudServer.jar /bencloud/BenCloudServer.jar
+COPY BenCloudServer.jar /bencloud/BenCloudServer.jar
 COPY bencloud-server.properties /bencloud/bencloud-server.properties
 ADD config /bencloud/config
 ADD www /bencloud/www
