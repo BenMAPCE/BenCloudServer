@@ -396,6 +396,27 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
+		service.get(apiPrefix + "/task-configs", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = CoreApi.getTaskConfigs(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
+		service.post(apiPrefix + "/task-configs", (req, res) -> {
+
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			String ret = CoreApi.postTaskConfig(req, res);
+
+			res.type("application/json");
+			return ret;
+
+		});
+		
 	}
 
 }

@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.VariableDatasetRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -98,7 +95,7 @@ public class VariableDataset extends TableImpl<VariableDatasetRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -109,11 +106,6 @@ public class VariableDataset extends TableImpl<VariableDatasetRecord> {
     @Override
     public UniqueKey<VariableDatasetRecord> getPrimaryKey() {
         return Keys.VARIABLE_DATASET_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<VariableDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<VariableDatasetRecord>>asList(Keys.VARIABLE_DATASET_PKEY);
     }
 
     @Override

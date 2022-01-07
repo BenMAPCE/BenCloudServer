@@ -30,7 +30,8 @@ public class ValuationResultFunctionConfig extends TableImpl<ValuationResultFunc
     private static final long serialVersionUID = 1L;
 
     /**
-     * The reference instance of <code>data.valuation_result_function_config</code>
+     * The reference instance of
+     * <code>data.valuation_result_function_config</code>
      */
     public static final ValuationResultFunctionConfig VALUATION_RESULT_FUNCTION_CONFIG = new ValuationResultFunctionConfig();
 
@@ -43,7 +44,8 @@ public class ValuationResultFunctionConfig extends TableImpl<ValuationResultFunc
     }
 
     /**
-     * The column <code>data.valuation_result_function_config.valuation_result_dataset_id</code>.
+     * The column
+     * <code>data.valuation_result_function_config.valuation_result_dataset_id</code>.
      */
     public final TableField<ValuationResultFunctionConfigRecord, Integer> VALUATION_RESULT_DATASET_ID = createField(DSL.name("valuation_result_dataset_id"), SQLDataType.INTEGER, this, "");
 
@@ -66,21 +68,24 @@ public class ValuationResultFunctionConfig extends TableImpl<ValuationResultFunc
     }
 
     /**
-     * Create an aliased <code>data.valuation_result_function_config</code> table reference
+     * Create an aliased <code>data.valuation_result_function_config</code>
+     * table reference
      */
     public ValuationResultFunctionConfig(String alias) {
         this(DSL.name(alias), VALUATION_RESULT_FUNCTION_CONFIG);
     }
 
     /**
-     * Create an aliased <code>data.valuation_result_function_config</code> table reference
+     * Create an aliased <code>data.valuation_result_function_config</code>
+     * table reference
      */
     public ValuationResultFunctionConfig(Name alias) {
         this(alias, VALUATION_RESULT_FUNCTION_CONFIG);
     }
 
     /**
-     * Create a <code>data.valuation_result_function_config</code> table reference
+     * Create a <code>data.valuation_result_function_config</code> table
+     * reference
      */
     public ValuationResultFunctionConfig() {
         this(DSL.name("valuation_result_function_config"), null);
@@ -92,7 +97,7 @@ public class ValuationResultFunctionConfig extends TableImpl<ValuationResultFunc
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override

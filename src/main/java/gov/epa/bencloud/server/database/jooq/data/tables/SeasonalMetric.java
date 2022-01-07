@@ -98,7 +98,7 @@ public class SeasonalMetric extends TableImpl<SeasonalMetricRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -112,13 +112,8 @@ public class SeasonalMetric extends TableImpl<SeasonalMetricRecord> {
     }
 
     @Override
-    public List<UniqueKey<SeasonalMetricRecord>> getKeys() {
-        return Arrays.<UniqueKey<SeasonalMetricRecord>>asList(Keys.SEASONAL_METRIC_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<SeasonalMetricRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<SeasonalMetricRecord, ?>>asList(Keys.SEASONAL_METRIC__SEASONAL_METRIC_METRIC_ID_FKEY);
+        return Arrays.asList(Keys.SEASONAL_METRIC__SEASONAL_METRIC_METRIC_ID_FKEY);
     }
 
     private transient PollutantMetric _pollutantMetric;

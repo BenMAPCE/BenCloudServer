@@ -121,7 +121,11 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     public final TableField<GetHifResultsRecord, Double[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.FLOAT.getArrayDataType(), this, "");
 
     private GetHifResults(Name alias, Table<GetHifResultsRecord> aliased) {
-        this(alias, aliased, new Field[3]);
+        this(alias, aliased, new Field[] {
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER)
+        });
     }
 
     private GetHifResults(Name alias, Table<GetHifResultsRecord> aliased, Field<?>[] parameters) {
@@ -151,7 +155,7 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -198,9 +202,9 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
         , Integer _OutputGridDefinitionId
     ) {
         GetHifResults result = new GetHifResults(DSL.name("get_hif_results"), null, new Field[] {
-              DSL.val(_DatasetId, SQLDataType.INTEGER)
-            , DSL.val(_HifId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
+            DSL.val(_DatasetId, SQLDataType.INTEGER),
+            DSL.val(_HifId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -215,9 +219,9 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         GetHifResults result = new GetHifResults(DSL.name("get_hif_results"), null, new Field[] {
-              _DatasetId
-            , _HifId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _OutputGridDefinitionId
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;

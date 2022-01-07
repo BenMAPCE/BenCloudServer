@@ -161,12 +161,12 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.TASK_COMPLETE_ON_DATE, Indexes.TASK_COMPLETE_ON_UUID);
+        return Arrays.asList(Indexes.TASK_COMPLETE_ON_DATE, Indexes.TASK_COMPLETE_ON_UUID);
     }
 
     @Override
@@ -177,11 +177,6 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     @Override
     public UniqueKey<TaskCompleteRecord> getPrimaryKey() {
         return Keys.TASK_COMPLETE_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<TaskCompleteRecord>> getKeys() {
-        return Arrays.<UniqueKey<TaskCompleteRecord>>asList(Keys.TASK_COMPLETE_PKEY);
     }
 
     @Override

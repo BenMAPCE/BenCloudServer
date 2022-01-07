@@ -47,8 +47,10 @@ import gov.epa.bencloud.server.database.jooq.data.tables.PopulationValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.Race;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
+import gov.epa.bencloud.server.database.jooq.data.tables.Settings;
 import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
+import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
@@ -72,7 +74,6 @@ import org.jooq.Catalog;
 import org.jooq.Configuration;
 import org.jooq.Field;
 import org.jooq.Result;
-import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 
@@ -170,9 +171,9 @@ public class Data extends SchemaImpl {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -185,9 +186,9 @@ public class Data extends SchemaImpl {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -251,19 +252,19 @@ public class Data extends SchemaImpl {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence.GET_INCIDENCE.call(
-              _DatasetId
-            , _Year
-            , _EndpointId
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _StartAge
-            , _EndAge
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _EndpointId,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _StartAge,
+            _EndAge,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -286,19 +287,19 @@ public class Data extends SchemaImpl {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence.GET_INCIDENCE.call(
-              _DatasetId
-            , _Year
-            , _EndpointId
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _StartAge
-            , _EndAge
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _EndpointId,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _StartAge,
+            _EndAge,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -356,17 +357,17 @@ public class Data extends SchemaImpl {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation.GET_POPULATION.call(
-              _DatasetId
-            , _Year
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _AgeRangeId
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _AgeRangeId,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -387,17 +388,17 @@ public class Data extends SchemaImpl {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation.GET_POPULATION.call(
-              _DatasetId
-            , _Year
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _AgeRangeId
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _AgeRangeId,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -434,10 +435,10 @@ public class Data extends SchemaImpl {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _VfId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _VfId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -451,10 +452,10 @@ public class Data extends SchemaImpl {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _VfId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _VfId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -488,9 +489,9 @@ public class Data extends SchemaImpl {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
-              _DatasetId
-            , _VariableName
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _VariableName,
+            _OutputGridDefinitionId
         );
     }
 
@@ -503,9 +504,9 @@ public class Data extends SchemaImpl {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
-              _DatasetId
-            , _VariableName
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _VariableName,
+            _OutputGridDefinitionId
         );
     }
 
@@ -645,6 +646,11 @@ public class Data extends SchemaImpl {
     public final SeasonalMetricSeason SEASONAL_METRIC_SEASON = SeasonalMetricSeason.SEASONAL_METRIC_SEASON;
 
     /**
+     * The table <code>data.settings</code>.
+     */
+    public final Settings SETTINGS = Settings.SETTINGS;
+
+    /**
      * The table <code>data.statistic_type</code>.
      */
     public final StatisticType STATISTIC_TYPE = StatisticType.STATISTIC_TYPE;
@@ -653,6 +659,11 @@ public class Data extends SchemaImpl {
      * The table <code>data.task_complete</code>.
      */
     public final TaskComplete TASK_COMPLETE = TaskComplete.TASK_COMPLETE;
+
+    /**
+     * The table <code>data.task_config</code>.
+     */
+    public final TaskConfig TASK_CONFIG = TaskConfig.TASK_CONFIG;
 
     /**
      * The table <code>data.task_queue</code>.
@@ -718,47 +729,8 @@ public class Data extends SchemaImpl {
     }
 
     @Override
-    public final List<Sequence<?>> getSequences() {
-        return Arrays.<Sequence<?>>asList(
-            Sequences.AGE_RANGE_ID_SEQ,
-            Sequences.AIR_QUALITY_LAYER_ID_SEQ,
-            Sequences.AIR_QUALITY_LAYER_METRICS_ID_SEQ,
-            Sequences.CROSSWALK_DATASET_ID_SEQ,
-            Sequences.ENDPOINT_GROUP_ID_SEQ,
-            Sequences.ENDPOINT_ID_SEQ,
-            Sequences.ETHNICITY_ID_SEQ,
-            Sequences.GENDER_ID_SEQ,
-            Sequences.GRID_DEFINITION_ID_SEQ,
-            Sequences.HEALTH_IMPACT_FUNCTION_DATASET_ID_SEQ,
-            Sequences.HEALTH_IMPACT_FUNCTION_GROUP_ID_SEQ,
-            Sequences.HEALTH_IMPACT_FUNCTION_ID_SEQ,
-            Sequences.HIF_RESULT_DATASET_ID_SEQ,
-            Sequences.INCIDENCE_DATASET_ID_SEQ,
-            Sequences.INCIDENCE_ENTRY_ID_SEQ,
-            Sequences.INCOME_GROWTH_ADJ_DATASET_ID_SEQ,
-            Sequences.INCOME_GROWTH_ADJ_FACTOR_ID_SEQ,
-            Sequences.INFLATION_DATASET_ID_SEQ,
-            Sequences.POLLUTANT_ID_SEQ,
-            Sequences.POLLUTANT_METRIC_ID_SEQ,
-            Sequences.POP_CONFIG_ID_SEQ,
-            Sequences.POPULATION_DATASET_ID_SEQ,
-            Sequences.RACE_ID_SEQ,
-            Sequences.SEASONAL_METRIC_ID_SEQ,
-            Sequences.SEASONAL_METRIC_SEASON_ID_SEQ,
-            Sequences.STATISTIC_TYPE_ID_SEQ,
-            Sequences.TASK_COMPLETE_TASK_ID_SEQ,
-            Sequences.TASK_QUEUE_TASK_ID_SEQ,
-            Sequences.TASK_WORKER_TASK_ID_SEQ,
-            Sequences.VALUATION_FUNCTION_DATASET_ID_SEQ,
-            Sequences.VALUATION_FUNCTION_ID_SEQ,
-            Sequences.VALUATION_RESULT_DATASET_ID_SEQ,
-            Sequences.VARIABLE_DATASET_ID_SEQ,
-            Sequences.VARIABLE_ENTRY_ID_SEQ);
-    }
-
-    @Override
     public final List<Table<?>> getTables() {
-        return Arrays.<Table<?>>asList(
+        return Arrays.asList(
             AgeRange.AGE_RANGE,
             AirQualityCell.AIR_QUALITY_CELL,
             AirQualityLayer.AIR_QUALITY_LAYER,
@@ -801,8 +773,10 @@ public class Data extends SchemaImpl {
             Race.RACE,
             SeasonalMetric.SEASONAL_METRIC,
             SeasonalMetricSeason.SEASONAL_METRIC_SEASON,
+            Settings.SETTINGS,
             StatisticType.STATISTIC_TYPE,
             TaskComplete.TASK_COMPLETE,
+            TaskConfig.TASK_CONFIG,
             TaskQueue.TASK_QUEUE,
             TaskWorker.TASK_WORKER,
             ValuationFunction.VALUATION_FUNCTION,
@@ -812,6 +786,7 @@ public class Data extends SchemaImpl {
             ValuationResultFunctionConfig.VALUATION_RESULT_FUNCTION_CONFIG,
             VariableDataset.VARIABLE_DATASET,
             VariableEntry.VARIABLE_ENTRY,
-            VariableValue.VARIABLE_VALUE);
+            VariableValue.VARIABLE_VALUE
+        );
     }
 }

@@ -142,7 +142,10 @@ public class UsCmaq_12kmNationClipped extends TableImpl<UsCmaq_12kmNationClipped
     public final TableField<UsCmaq_12kmNationClippedRecord, Double> NEWCR_1 = createField(DSL.name("newcr_1"), SQLDataType.DOUBLE, this, "");
 
     /**
-     * @deprecated Unknown data type. Please define an explicit {@link org.jooq.Binding} to specify how this type should be handled. Deprecation can be turned off using {@literal <deprecationOnUnknownTypes/>} in your code generator configuration.
+     * @deprecated Unknown data type. Please define an explicit {@link
+     * org.jooq.Binding} to specify how this type should be handled. Deprecation
+     * can be turned off using {@literal <deprecationOnUnknownTypes/>} in your
+     * code generator configuration.
      */
     @Deprecated
     public final TableField<UsCmaq_12kmNationClippedRecord, Object> GEOM = createField(DSL.name("geom"), org.jooq.impl.DefaultDataType.getDefaultDataType("\"public\".\"geometry\""), this, "");
@@ -156,14 +159,16 @@ public class UsCmaq_12kmNationClipped extends TableImpl<UsCmaq_12kmNationClipped
     }
 
     /**
-     * Create an aliased <code>grids.us_cmaq_12km_nation_clipped</code> table reference
+     * Create an aliased <code>grids.us_cmaq_12km_nation_clipped</code> table
+     * reference
      */
     public UsCmaq_12kmNationClipped(String alias) {
         this(DSL.name(alias), US_CMAQ_12KM_NATION_CLIPPED);
     }
 
     /**
-     * Create an aliased <code>grids.us_cmaq_12km_nation_clipped</code> table reference
+     * Create an aliased <code>grids.us_cmaq_12km_nation_clipped</code> table
+     * reference
      */
     public UsCmaq_12kmNationClipped(Name alias) {
         this(alias, US_CMAQ_12KM_NATION_CLIPPED);
@@ -182,12 +187,12 @@ public class UsCmaq_12kmNationClipped extends TableImpl<UsCmaq_12kmNationClipped
 
     @Override
     public Schema getSchema() {
-        return Grids.GRIDS;
+        return aliased() ? null : Grids.GRIDS;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.US_CMAQ_12KM_NATION_CLIPPED_GEOM_IDX);
+        return Arrays.asList(Indexes.US_CMAQ_12KM_NATION_CLIPPED_GEOM_IDX);
     }
 
     @Override
@@ -198,11 +203,6 @@ public class UsCmaq_12kmNationClipped extends TableImpl<UsCmaq_12kmNationClipped
     @Override
     public UniqueKey<UsCmaq_12kmNationClippedRecord> getPrimaryKey() {
         return Keys.US_CMAQ_12KM_NATION_CLIPPED_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<UsCmaq_12kmNationClippedRecord>> getKeys() {
-        return Arrays.<UniqueKey<UsCmaq_12kmNationClippedRecord>>asList(Keys.US_CMAQ_12KM_NATION_CLIPPED_PKEY);
     }
 
     @Override

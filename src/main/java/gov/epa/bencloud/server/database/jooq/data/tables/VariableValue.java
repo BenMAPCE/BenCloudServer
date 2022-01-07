@@ -102,7 +102,7 @@ public class VariableValue extends TableImpl<VariableValueRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override

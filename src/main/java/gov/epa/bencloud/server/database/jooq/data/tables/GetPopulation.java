@@ -71,7 +71,19 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
     public final TableField<GetPopulationRecord, Double> POP_VALUE = createField(DSL.name("pop_value"), SQLDataType.DOUBLE, this, "");
 
     private GetPopulation(Name alias, Table<GetPopulationRecord> aliased) {
-        this(alias, aliased, new Field[11]);
+        this(alias, aliased, new Field[] {
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.INTEGER)
+        });
     }
 
     private GetPopulation(Name alias, Table<GetPopulationRecord> aliased, Field<?>[] parameters) {
@@ -101,7 +113,7 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -156,17 +168,17 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
         , Integer _OutputGridDefinitionId
     ) {
         GetPopulation result = new GetPopulation(DSL.name("get_population"), null, new Field[] {
-              DSL.val(_DatasetId, SQLDataType.INTEGER)
-            , DSL.val(_Year, SQLDataType.INTEGER)
-            , DSL.val(_RaceId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_EthnicityId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_GenderId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_AgeRangeId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_GroupByRace, SQLDataType.BOOLEAN)
-            , DSL.val(_GroupByEthnicity, SQLDataType.BOOLEAN)
-            , DSL.val(_GroupByGender, SQLDataType.BOOLEAN)
-            , DSL.val(_GroupByAgeRange, SQLDataType.BOOLEAN)
-            , DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
+            DSL.val(_DatasetId, SQLDataType.INTEGER),
+            DSL.val(_Year, SQLDataType.INTEGER),
+            DSL.val(_RaceId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_EthnicityId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_GenderId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_AgeRangeId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_GroupByRace, SQLDataType.BOOLEAN),
+            DSL.val(_GroupByEthnicity, SQLDataType.BOOLEAN),
+            DSL.val(_GroupByGender, SQLDataType.BOOLEAN),
+            DSL.val(_GroupByAgeRange, SQLDataType.BOOLEAN),
+            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -189,17 +201,17 @@ public class GetPopulation extends TableImpl<GetPopulationRecord> {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         GetPopulation result = new GetPopulation(DSL.name("get_population"), null, new Field[] {
-              _DatasetId
-            , _Year
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _AgeRangeId
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _AgeRangeId,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;

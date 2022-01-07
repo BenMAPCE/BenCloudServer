@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionDatasetRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -67,14 +64,16 @@ public class ValuationFunctionDataset extends TableImpl<ValuationFunctionDataset
     }
 
     /**
-     * Create an aliased <code>data.valuation_function_dataset</code> table reference
+     * Create an aliased <code>data.valuation_function_dataset</code> table
+     * reference
      */
     public ValuationFunctionDataset(String alias) {
         this(DSL.name(alias), VALUATION_FUNCTION_DATASET);
     }
 
     /**
-     * Create an aliased <code>data.valuation_function_dataset</code> table reference
+     * Create an aliased <code>data.valuation_function_dataset</code> table
+     * reference
      */
     public ValuationFunctionDataset(Name alias) {
         this(alias, VALUATION_FUNCTION_DATASET);
@@ -93,7 +92,7 @@ public class ValuationFunctionDataset extends TableImpl<ValuationFunctionDataset
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -104,11 +103,6 @@ public class ValuationFunctionDataset extends TableImpl<ValuationFunctionDataset
     @Override
     public UniqueKey<ValuationFunctionDatasetRecord> getPrimaryKey() {
         return Keys.VALUATION_FUNCTION_DATASET_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<ValuationFunctionDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<ValuationFunctionDatasetRecord>>asList(Keys.VALUATION_FUNCTION_DATASET_PKEY);
     }
 
     @Override

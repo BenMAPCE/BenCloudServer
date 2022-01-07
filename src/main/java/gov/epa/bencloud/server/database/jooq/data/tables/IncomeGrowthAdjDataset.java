@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncomeGrowthAdjDatasetRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -67,14 +64,16 @@ public class IncomeGrowthAdjDataset extends TableImpl<IncomeGrowthAdjDatasetReco
     }
 
     /**
-     * Create an aliased <code>data.income_growth_adj_dataset</code> table reference
+     * Create an aliased <code>data.income_growth_adj_dataset</code> table
+     * reference
      */
     public IncomeGrowthAdjDataset(String alias) {
         this(DSL.name(alias), INCOME_GROWTH_ADJ_DATASET);
     }
 
     /**
-     * Create an aliased <code>data.income_growth_adj_dataset</code> table reference
+     * Create an aliased <code>data.income_growth_adj_dataset</code> table
+     * reference
      */
     public IncomeGrowthAdjDataset(Name alias) {
         this(alias, INCOME_GROWTH_ADJ_DATASET);
@@ -93,7 +92,7 @@ public class IncomeGrowthAdjDataset extends TableImpl<IncomeGrowthAdjDatasetReco
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -104,11 +103,6 @@ public class IncomeGrowthAdjDataset extends TableImpl<IncomeGrowthAdjDatasetReco
     @Override
     public UniqueKey<IncomeGrowthAdjDatasetRecord> getPrimaryKey() {
         return Keys.INCOME_GROWTH_ADJ_DATASET_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<IncomeGrowthAdjDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<IncomeGrowthAdjDatasetRecord>>asList(Keys.INCOME_GROWTH_ADJ_DATASET_PKEY);
     }
 
     @Override

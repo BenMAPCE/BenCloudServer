@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jooq.Catalog;
-import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 
@@ -72,22 +71,13 @@ public class Grids extends SchemaImpl {
     }
 
     @Override
-    public final List<Sequence<?>> getSequences() {
-        return Arrays.<Sequence<?>>asList(
-            Sequences.US_CMAQ_12KM_NATION_CLIPPED_GID_SEQ,
-            Sequences.US_CMAQ_12KM_NATION_GID_SEQ,
-            Sequences.US_COUNTY_GID_SEQ,
-            Sequences.US_NATION_GID_SEQ,
-            Sequences.US_STATE_GID_SEQ);
-    }
-
-    @Override
     public final List<Table<?>> getTables() {
-        return Arrays.<Table<?>>asList(
+        return Arrays.asList(
             UsCmaq_12kmNation.US_CMAQ_12KM_NATION,
             UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED,
             UsCounty.US_COUNTY,
             UsNation.US_NATION,
-            UsState.US_STATE);
+            UsState.US_STATE
+        );
     }
 }

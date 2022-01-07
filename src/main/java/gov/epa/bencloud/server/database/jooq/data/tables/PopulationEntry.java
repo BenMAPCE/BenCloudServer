@@ -119,22 +119,17 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.POPULATION_ENTRY_ID_IDX);
+        return Arrays.asList(Indexes.POPULATION_ENTRY_ID_IDX);
     }
 
     @Override
     public UniqueKey<PopulationEntryRecord> getPrimaryKey() {
         return Keys.POPULATION_ENTRY_PK;
-    }
-
-    @Override
-    public List<UniqueKey<PopulationEntryRecord>> getKeys() {
-        return Arrays.<UniqueKey<PopulationEntryRecord>>asList(Keys.POPULATION_ENTRY_PK);
     }
 
     @Override

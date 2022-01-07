@@ -33,14 +33,16 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     }
 
     /**
-     * Setter for <code>data.health_impact_function.health_impact_function_dataset_id</code>.
+     * Setter for
+     * <code>data.health_impact_function.health_impact_function_dataset_id</code>.
      */
     public void setHealthImpactFunctionDatasetId(Integer value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>data.health_impact_function.health_impact_function_dataset_id</code>.
+     * Getter for
+     * <code>data.health_impact_function.health_impact_function_dataset_id</code>.
      */
     public Integer getHealthImpactFunctionDatasetId() {
         return (Integer) get(1);
@@ -189,14 +191,14 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Setter for <code>data.health_impact_function.qualifier</code>.
      */
-    public void setQualifier(String value) {
+    public void setQualifier_(String value) {
         set(12, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.qualifier</code>.
      */
-    public String getQualifier() {
+    public String getQualifier_() {
         return (String) get(12);
     }
 
@@ -271,14 +273,16 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     }
 
     /**
-     * Setter for <code>data.health_impact_function.prevalence_dataset_id</code>.
+     * Setter for
+     * <code>data.health_impact_function.prevalence_dataset_id</code>.
      */
     public void setPrevalenceDatasetId(Integer value) {
         set(18, value);
     }
 
     /**
-     * Getter for <code>data.health_impact_function.prevalence_dataset_id</code>.
+     * Getter for
+     * <code>data.health_impact_function.prevalence_dataset_id</code>.
      */
     public Integer getPrevalenceDatasetId() {
         return (Integer) get(18);
@@ -439,14 +443,16 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     }
 
     /**
-     * Setter for <code>data.health_impact_function.baseline_function_text</code>.
+     * Setter for
+     * <code>data.health_impact_function.baseline_function_text</code>.
      */
     public void setBaselineFunctionText(String value) {
         set(30, value);
     }
 
     /**
-     * Getter for <code>data.health_impact_function.baseline_function_text</code>.
+     * Getter for
+     * <code>data.health_impact_function.baseline_function_text</code>.
      */
     public String getBaselineFunctionText() {
         return (String) get(30);
@@ -560,7 +566,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         setFunctionYear(functionYear);
         setLocation(location);
         setOtherPollutants(otherPollutants);
-        setQualifier(qualifier);
+        setQualifier_(qualifier);
         setReference(reference);
         setStartAge(startAge);
         setEndAge(endAge);

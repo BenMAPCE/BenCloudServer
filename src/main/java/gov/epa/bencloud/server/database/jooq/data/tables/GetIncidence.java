@@ -76,7 +76,21 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
     public final TableField<GetIncidenceRecord, Double> VALUE = createField(DSL.name("value"), SQLDataType.DOUBLE, this, "");
 
     private GetIncidence(Name alias, Table<GetIncidenceRecord> aliased) {
-        this(alias, aliased, new Field[13]);
+        this(alias, aliased, new Field[] {
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.SMALLINT),
+            DSL.val(null, SQLDataType.SMALLINT),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.BOOLEAN),
+            DSL.val(null, SQLDataType.INTEGER)
+        });
     }
 
     private GetIncidence(Name alias, Table<GetIncidenceRecord> aliased, Field<?>[] parameters) {
@@ -106,7 +120,7 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -163,19 +177,19 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
         , Integer _OutputGridDefinitionId
     ) {
         GetIncidence result = new GetIncidence(DSL.name("get_incidence"), null, new Field[] {
-              DSL.val(_DatasetId, SQLDataType.INTEGER)
-            , DSL.val(_Year, SQLDataType.INTEGER)
-            , DSL.val(_EndpointId, SQLDataType.INTEGER)
-            , DSL.val(_RaceId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_EthnicityId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_GenderId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_StartAge, SQLDataType.SMALLINT)
-            , DSL.val(_EndAge, SQLDataType.SMALLINT)
-            , DSL.val(_GroupByRace, SQLDataType.BOOLEAN)
-            , DSL.val(_GroupByEthnicity, SQLDataType.BOOLEAN)
-            , DSL.val(_GroupByGender, SQLDataType.BOOLEAN)
-            , DSL.val(_GroupByAgeRange, SQLDataType.BOOLEAN)
-            , DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
+            DSL.val(_DatasetId, SQLDataType.INTEGER),
+            DSL.val(_Year, SQLDataType.INTEGER),
+            DSL.val(_EndpointId, SQLDataType.INTEGER),
+            DSL.val(_RaceId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_EthnicityId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_GenderId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_StartAge, SQLDataType.SMALLINT),
+            DSL.val(_EndAge, SQLDataType.SMALLINT),
+            DSL.val(_GroupByRace, SQLDataType.BOOLEAN),
+            DSL.val(_GroupByEthnicity, SQLDataType.BOOLEAN),
+            DSL.val(_GroupByGender, SQLDataType.BOOLEAN),
+            DSL.val(_GroupByAgeRange, SQLDataType.BOOLEAN),
+            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -200,19 +214,19 @@ public class GetIncidence extends TableImpl<GetIncidenceRecord> {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         GetIncidence result = new GetIncidence(DSL.name("get_incidence"), null, new Field[] {
-              _DatasetId
-            , _Year
-            , _EndpointId
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _StartAge
-            , _EndAge
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _EndpointId,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _StartAge,
+            _EndAge,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;

@@ -128,7 +128,7 @@ public class PollutantMetric extends TableImpl<PollutantMetricRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -142,13 +142,8 @@ public class PollutantMetric extends TableImpl<PollutantMetricRecord> {
     }
 
     @Override
-    public List<UniqueKey<PollutantMetricRecord>> getKeys() {
-        return Arrays.<UniqueKey<PollutantMetricRecord>>asList(Keys.POLLUTANT_METRIC_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<PollutantMetricRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<PollutantMetricRecord, ?>>asList(Keys.POLLUTANT_METRIC__POLLUTANT_METRIC_POLLUTANT_ID_FKEY);
+        return Arrays.asList(Keys.POLLUTANT_METRIC__POLLUTANT_METRIC_POLLUTANT_ID_FKEY);
     }
 
     private transient Pollutant _pollutant;

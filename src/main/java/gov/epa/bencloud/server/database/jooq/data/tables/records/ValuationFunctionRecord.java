@@ -80,14 +80,14 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
     /**
      * Setter for <code>data.valuation_function.qualifier</code>.
      */
-    public void setQualifier(String value) {
+    public void setQualifier_(String value) {
         set(4, value);
     }
 
     /**
      * Getter for <code>data.valuation_function.qualifier</code>.
      */
-    public String getQualifier() {
+    public String getQualifier_() {
         return (String) get(4);
     }
 
@@ -446,7 +446,7 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
 
     @Override
     public String component5() {
-        return getQualifier();
+        return getQualifier_();
     }
 
     @Override
@@ -546,7 +546,7 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
 
     @Override
     public String value5() {
-        return getQualifier();
+        return getQualifier_();
     }
 
     @Override
@@ -650,7 +650,7 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
 
     @Override
     public ValuationFunctionRecord value5(String value) {
-        setQualifier(value);
+        setQualifier_(value);
         return this;
     }
 
@@ -790,7 +790,7 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
         setValuationDatasetId(valuationDatasetId);
         setEndpointGroupId(endpointGroupId);
         setEndpointId(endpointId);
-        setQualifier(qualifier);
+        setQualifier_(qualifier);
         setReference(reference);
         setStartAge(startAge);
         setEndAge(endAge);

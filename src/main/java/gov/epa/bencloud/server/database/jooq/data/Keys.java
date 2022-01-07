@@ -37,6 +37,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
 import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
+import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
@@ -77,6 +78,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.SeasonalMetricR
 import gov.epa.bencloud.server.database.jooq.data.tables.records.SeasonalMetricSeasonRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.StatisticTypeRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskQueueRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskWorkerRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionDatasetRecord;
@@ -93,7 +95,7 @@ import org.jooq.impl.Internal;
 
 
 /**
- * A class modelling foreign key relationships and constraints of tables in 
+ * A class modelling foreign key relationships and constraints of tables in
  * data.
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
@@ -131,6 +133,7 @@ public class Keys {
     public static final UniqueKey<SeasonalMetricSeasonRecord> SEASONAL_METRIC_SEASON_PKEY = Internal.createUniqueKey(SeasonalMetricSeason.SEASONAL_METRIC_SEASON, DSL.name("seasonal_metric_season_pkey"), new TableField[] { SeasonalMetricSeason.SEASONAL_METRIC_SEASON.ID }, true);
     public static final UniqueKey<StatisticTypeRecord> STATISTIC_TYPE_PKEY = Internal.createUniqueKey(StatisticType.STATISTIC_TYPE, DSL.name("statistic_type_pkey"), new TableField[] { StatisticType.STATISTIC_TYPE.ID }, true);
     public static final UniqueKey<TaskCompleteRecord> TASK_COMPLETE_PKEY = Internal.createUniqueKey(TaskComplete.TASK_COMPLETE, DSL.name("task_complete_pkey"), new TableField[] { TaskComplete.TASK_COMPLETE.TASK_ID }, true);
+    public static final UniqueKey<TaskConfigRecord> TASK_CONFIG_DATASET_PKEY = Internal.createUniqueKey(TaskConfig.TASK_CONFIG, DSL.name("task_config_dataset_pkey"), new TableField[] { TaskConfig.TASK_CONFIG.ID }, true);
     public static final UniqueKey<TaskQueueRecord> TASK_QUEUE_PKEY = Internal.createUniqueKey(TaskQueue.TASK_QUEUE, DSL.name("task_queue_pkey"), new TableField[] { TaskQueue.TASK_QUEUE.TASK_ID }, true);
     public static final UniqueKey<TaskWorkerRecord> TASK_WORKER_PKEY = Internal.createUniqueKey(TaskWorker.TASK_WORKER, DSL.name("task_worker_pkey"), new TableField[] { TaskWorker.TASK_WORKER.TASK_ID }, true);
     public static final UniqueKey<ValuationFunctionRecord> VALUATION_FUNCTION_PKEY = Internal.createUniqueKey(ValuationFunction.VALUATION_FUNCTION, DSL.name("valuation_function_pkey"), new TableField[] { ValuationFunction.VALUATION_FUNCTION.ID }, true);

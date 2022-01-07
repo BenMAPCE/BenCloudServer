@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionDatasetRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -36,7 +33,8 @@ public class HealthImpactFunctionDataset extends TableImpl<HealthImpactFunctionD
     private static final long serialVersionUID = 1L;
 
     /**
-     * The reference instance of <code>data.health_impact_function_dataset</code>
+     * The reference instance of
+     * <code>data.health_impact_function_dataset</code>
      */
     public static final HealthImpactFunctionDataset HEALTH_IMPACT_FUNCTION_DATASET = new HealthImpactFunctionDataset();
 
@@ -67,14 +65,16 @@ public class HealthImpactFunctionDataset extends TableImpl<HealthImpactFunctionD
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function_dataset</code> table reference
+     * Create an aliased <code>data.health_impact_function_dataset</code> table
+     * reference
      */
     public HealthImpactFunctionDataset(String alias) {
         this(DSL.name(alias), HEALTH_IMPACT_FUNCTION_DATASET);
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function_dataset</code> table reference
+     * Create an aliased <code>data.health_impact_function_dataset</code> table
+     * reference
      */
     public HealthImpactFunctionDataset(Name alias) {
         this(alias, HEALTH_IMPACT_FUNCTION_DATASET);
@@ -93,7 +93,7 @@ public class HealthImpactFunctionDataset extends TableImpl<HealthImpactFunctionD
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -104,11 +104,6 @@ public class HealthImpactFunctionDataset extends TableImpl<HealthImpactFunctionD
     @Override
     public UniqueKey<HealthImpactFunctionDatasetRecord> getPrimaryKey() {
         return Keys.HEALTH_IMPACT_FUNCTION_DATASET_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<HealthImpactFunctionDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<HealthImpactFunctionDatasetRecord>>asList(Keys.HEALTH_IMPACT_FUNCTION_DATASET_PKEY);
     }
 
     @Override

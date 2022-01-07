@@ -106,12 +106,12 @@ public class TaskWorker extends TableImpl<TaskWorkerRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.TASK_WORKER_ON_TASK_UUID, Indexes.TASK_WORKER_ON_UUID);
+        return Arrays.asList(Indexes.TASK_WORKER_ON_TASK_UUID, Indexes.TASK_WORKER_ON_UUID);
     }
 
     @Override
@@ -122,11 +122,6 @@ public class TaskWorker extends TableImpl<TaskWorkerRecord> {
     @Override
     public UniqueKey<TaskWorkerRecord> getPrimaryKey() {
         return Keys.TASK_WORKER_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<TaskWorkerRecord>> getKeys() {
-        return Arrays.<UniqueKey<TaskWorkerRecord>>asList(Keys.TASK_WORKER_PKEY);
     }
 
     @Override

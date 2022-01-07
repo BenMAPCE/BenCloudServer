@@ -108,17 +108,17 @@ public class IncidenceValue extends TableImpl<IncidenceValueRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.INCIDENCE_VALUE_INCIDENCE_ENTRY_ID_IDX);
+        return Arrays.asList(Indexes.INCIDENCE_VALUE_INCIDENCE_ENTRY_ID_IDX);
     }
 
     @Override
     public List<ForeignKey<IncidenceValueRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<IncidenceValueRecord, ?>>asList(Keys.INCIDENCE_VALUE__INCIDENCE_VALUE_INCIDENCE_ENTRY_ID_FKEY);
+        return Arrays.asList(Keys.INCIDENCE_VALUE__INCIDENCE_VALUE_INCIDENCE_ENTRY_ID_FKEY);
     }
 
     private transient IncidenceEntry _incidenceEntry;

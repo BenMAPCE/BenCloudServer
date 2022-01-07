@@ -46,8 +46,10 @@ import gov.epa.bencloud.server.database.jooq.data.tables.PopulationValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.Race;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
+import gov.epa.bencloud.server.database.jooq.data.tables.Settings;
 import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
+import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
@@ -155,9 +157,9 @@ public class Tables {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -170,9 +172,9 @@ public class Tables {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -236,19 +238,19 @@ public class Tables {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence.GET_INCIDENCE.call(
-              _DatasetId
-            , _Year
-            , _EndpointId
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _StartAge
-            , _EndAge
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _EndpointId,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _StartAge,
+            _EndAge,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -271,19 +273,19 @@ public class Tables {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence.GET_INCIDENCE.call(
-              _DatasetId
-            , _Year
-            , _EndpointId
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _StartAge
-            , _EndAge
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _EndpointId,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _StartAge,
+            _EndAge,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -341,17 +343,17 @@ public class Tables {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation.GET_POPULATION.call(
-              _DatasetId
-            , _Year
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _AgeRangeId
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _AgeRangeId,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -372,17 +374,17 @@ public class Tables {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation.GET_POPULATION.call(
-              _DatasetId
-            , _Year
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _AgeRangeId
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _AgeRangeId,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -419,10 +421,10 @@ public class Tables {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _VfId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _VfId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -436,10 +438,10 @@ public class Tables {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _VfId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _VfId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -473,9 +475,9 @@ public class Tables {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
-              _DatasetId
-            , _VariableName
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _VariableName,
+            _OutputGridDefinitionId
         );
     }
 
@@ -488,9 +490,9 @@ public class Tables {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
-              _DatasetId
-            , _VariableName
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _VariableName,
+            _OutputGridDefinitionId
         );
     }
 
@@ -630,6 +632,11 @@ public class Tables {
     public static final SeasonalMetricSeason SEASONAL_METRIC_SEASON = SeasonalMetricSeason.SEASONAL_METRIC_SEASON;
 
     /**
+     * The table <code>data.settings</code>.
+     */
+    public static final Settings SETTINGS = Settings.SETTINGS;
+
+    /**
      * The table <code>data.statistic_type</code>.
      */
     public static final StatisticType STATISTIC_TYPE = StatisticType.STATISTIC_TYPE;
@@ -638,6 +645,11 @@ public class Tables {
      * The table <code>data.task_complete</code>.
      */
     public static final TaskComplete TASK_COMPLETE = TaskComplete.TASK_COMPLETE;
+
+    /**
+     * The table <code>data.task_config</code>.
+     */
+    public static final TaskConfig TASK_CONFIG = TaskConfig.TASK_CONFIG;
 
     /**
      * The table <code>data.task_queue</code>.

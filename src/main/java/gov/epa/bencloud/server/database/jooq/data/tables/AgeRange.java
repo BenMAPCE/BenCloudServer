@@ -108,7 +108,7 @@ public class AgeRange extends TableImpl<AgeRangeRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -122,13 +122,8 @@ public class AgeRange extends TableImpl<AgeRangeRecord> {
     }
 
     @Override
-    public List<UniqueKey<AgeRangeRecord>> getKeys() {
-        return Arrays.<UniqueKey<AgeRangeRecord>>asList(Keys.AGE_RANGE_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<AgeRangeRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<AgeRangeRecord, ?>>asList(Keys.AGE_RANGE__AGE_RANGE_POP_CONFIG_ID_FKEY);
+        return Arrays.asList(Keys.AGE_RANGE__AGE_RANGE_POP_CONFIG_ID_FKEY);
     }
 
     private transient PopConfig _popConfig;

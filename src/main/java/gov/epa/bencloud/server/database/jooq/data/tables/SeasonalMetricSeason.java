@@ -87,14 +87,16 @@ public class SeasonalMetricSeason extends TableImpl<SeasonalMetricSeasonRecord> 
     }
 
     /**
-     * Create an aliased <code>data.seasonal_metric_season</code> table reference
+     * Create an aliased <code>data.seasonal_metric_season</code> table
+     * reference
      */
     public SeasonalMetricSeason(String alias) {
         this(DSL.name(alias), SEASONAL_METRIC_SEASON);
     }
 
     /**
-     * Create an aliased <code>data.seasonal_metric_season</code> table reference
+     * Create an aliased <code>data.seasonal_metric_season</code> table
+     * reference
      */
     public SeasonalMetricSeason(Name alias) {
         this(alias, SEASONAL_METRIC_SEASON);
@@ -113,7 +115,7 @@ public class SeasonalMetricSeason extends TableImpl<SeasonalMetricSeasonRecord> 
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -127,13 +129,8 @@ public class SeasonalMetricSeason extends TableImpl<SeasonalMetricSeasonRecord> 
     }
 
     @Override
-    public List<UniqueKey<SeasonalMetricSeasonRecord>> getKeys() {
-        return Arrays.<UniqueKey<SeasonalMetricSeasonRecord>>asList(Keys.SEASONAL_METRIC_SEASON_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<SeasonalMetricSeasonRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<SeasonalMetricSeasonRecord, ?>>asList(Keys.SEASONAL_METRIC_SEASON__SEASONAL_METRIC_SEASON_SEASONAL_METRIC_ID_FKEY);
+        return Arrays.asList(Keys.SEASONAL_METRIC_SEASON__SEASONAL_METRIC_SEASON_SEASONAL_METRIC_ID_FKEY);
     }
 
     private transient SeasonalMetric _seasonalMetric;

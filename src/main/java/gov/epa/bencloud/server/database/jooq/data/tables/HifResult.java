@@ -172,12 +172,12 @@ public class HifResult extends TableImpl<HifResultRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.HIF_RESULT_HIF_RESULT_DATASET_ID_IDX);
+        return Arrays.asList(Indexes.HIF_RESULT_HIF_RESULT_DATASET_ID_IDX);
     }
 
     @Override

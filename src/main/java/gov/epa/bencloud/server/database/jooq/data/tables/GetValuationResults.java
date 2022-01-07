@@ -91,7 +91,12 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
     public final TableField<GetValuationResultsRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
     private GetValuationResults(Name alias, Table<GetValuationResultsRecord> aliased) {
-        this(alias, aliased, new Field[4]);
+        this(alias, aliased, new Field[] {
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER)
+        });
     }
 
     private GetValuationResults(Name alias, Table<GetValuationResultsRecord> aliased, Field<?>[] parameters) {
@@ -121,7 +126,7 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -169,10 +174,10 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
         , Integer _OutputGridDefinitionId
     ) {
         GetValuationResults result = new GetValuationResults(DSL.name("get_valuation_results"), null, new Field[] {
-              DSL.val(_DatasetId, SQLDataType.INTEGER)
-            , DSL.val(_HifId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_VfId, SQLDataType.INTEGER.getArrayDataType())
-            , DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
+            DSL.val(_DatasetId, SQLDataType.INTEGER),
+            DSL.val(_HifId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_VfId, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -188,10 +193,10 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         GetValuationResults result = new GetValuationResults(DSL.name("get_valuation_results"), null, new Field[] {
-              _DatasetId
-            , _HifId
-            , _VfId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _VfId,
+            _OutputGridDefinitionId
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;

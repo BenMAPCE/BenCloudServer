@@ -8,15 +8,13 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row7;
+import org.jooq.Row8;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -83,6 +81,11 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
      */
     public final TableField<HifResultDatasetRecord, Integer> SCENARIO_AQ_LAYER_ID = createField(DSL.name("scenario_aq_layer_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>data.hif_result_dataset.task_log</code>.
+     */
+    public final TableField<HifResultDatasetRecord, JSON> TASK_LOG = createField(DSL.name("task_log"), SQLDataType.JSON, this, "");
+
     private HifResultDataset(Name alias, Table<HifResultDatasetRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -118,7 +121,7 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -129,11 +132,6 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
     @Override
     public UniqueKey<HifResultDatasetRecord> getPrimaryKey() {
         return Keys.HIF_RESULT_DATASET_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<HifResultDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<HifResultDatasetRecord>>asList(Keys.HIF_RESULT_DATASET_PKEY);
     }
 
     @Override
@@ -163,11 +161,11 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row7 type methods
+    // Row8 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Integer, String, String, Integer, Integer, Integer, Integer> fieldsRow() {
-        return (Row7) super.fieldsRow();
+    public Row8<Integer, String, String, Integer, Integer, Integer, Integer, JSON> fieldsRow() {
+        return (Row8) super.fieldsRow();
     }
 }

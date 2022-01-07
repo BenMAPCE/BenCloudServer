@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.LoggerContext;
 import freemarker.template.Configuration;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.jobs.JobsUtil;
 import gov.epa.bencloud.server.routes.AdminRoutes;
 import gov.epa.bencloud.server.routes.ApiRoutes;
@@ -103,10 +104,12 @@ public class BenCloudServer {
 		
 		JobsUtil.startJobScheduler();
 		
-//		QueueTest.startTaskCreateThreads(1000);
-//		QueueTest.startQueueReadThreads(10000);
-        
-		log.info("Starting BenCloud, version " + version);
+		// TODO: Add logic to check database version in settings table
+		// and log it as info below. 
+		// At some point, we might want to add a static final db version in here so we can throw an error if the db version is lower than exported.
+		int dbVersion = ApiUtil.getDatabaseVersion();
+		
+		log.info("Starting BenCloud, server version " + version + ", database version " + dbVersion);
 
 	}
 

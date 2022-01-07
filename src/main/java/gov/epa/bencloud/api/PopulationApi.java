@@ -23,7 +23,7 @@ import spark.Response;
 
 public class PopulationApi {
 
-	public static Map<Integer, Result<GetPopulationRecord>> getPopulationEntryGroups(ArrayList<HealthImpactFunctionRecord> hifDefinitionList, HIFTaskConfig hifTaskConfig) {
+	public static Map<Integer, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
 
 		//TODO: Need to grow the population using the selected popYear
 		//NOTE: For now, we're focusing on age groups and not dealing with race, gender, ethnicity
@@ -120,4 +120,18 @@ public class PopulationApi {
 			return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 
 	}
+	
+	public static Record3<String, Integer, String> getPopulationDatasetInfo(Integer id) {
+
+		Record3<String, Integer, String> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(POPULATION_DATASET.NAME,
+						POPULATION_DATASET.GRID_DEFINITION_ID,
+						GRID_DEFINITION.NAME)
+				.from(POPULATION_DATASET)
+				.join(GRID_DEFINITION).on(POPULATION_DATASET.GRID_DEFINITION_ID.eq(GRID_DEFINITION.ID))
+				.fetchOne();
+		
+		return record;
+
+}
 }

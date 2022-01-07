@@ -349,7 +349,7 @@ public class AirQualityApi {
 	
 	
 	@SuppressWarnings("unchecked")
-	private static Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id) {
+	public static Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id) {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
@@ -370,8 +370,8 @@ public class AirQualityApi {
 				AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL)
 				.from(AIR_QUALITY_LAYER_METRICS)
 				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
-				.join(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
-				.join(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID))
+				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
+				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID))
 				.asTable("metric_statistics");
 		
 

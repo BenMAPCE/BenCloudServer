@@ -51,9 +51,9 @@ public class Routines {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -66,9 +66,9 @@ public class Routines {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -127,19 +127,19 @@ public class Routines {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence.GET_INCIDENCE.call(
-              _DatasetId
-            , _Year
-            , _EndpointId
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _StartAge
-            , _EndAge
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _EndpointId,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _StartAge,
+            _EndAge,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -162,19 +162,19 @@ public class Routines {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence.GET_INCIDENCE.call(
-              _DatasetId
-            , _Year
-            , _EndpointId
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _StartAge
-            , _EndAge
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _EndpointId,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _StartAge,
+            _EndAge,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -227,17 +227,17 @@ public class Routines {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation.GET_POPULATION.call(
-              _DatasetId
-            , _Year
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _AgeRangeId
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _AgeRangeId,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -258,17 +258,17 @@ public class Routines {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation.GET_POPULATION.call(
-              _DatasetId
-            , _Year
-            , _RaceId
-            , _EthnicityId
-            , _GenderId
-            , _AgeRangeId
-            , _GroupByRace
-            , _GroupByEthnicity
-            , _GroupByGender
-            , _GroupByAgeRange
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _Year,
+            _RaceId,
+            _EthnicityId,
+            _GenderId,
+            _AgeRangeId,
+            _GroupByRace,
+            _GroupByEthnicity,
+            _GroupByGender,
+            _GroupByAgeRange,
+            _OutputGridDefinitionId
         );
     }
 
@@ -300,10 +300,10 @@ public class Routines {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _VfId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _VfId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -317,10 +317,10 @@ public class Routines {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
-              _DatasetId
-            , _HifId
-            , _VfId
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _HifId,
+            _VfId,
+            _OutputGridDefinitionId
         );
     }
 
@@ -349,9 +349,9 @@ public class Routines {
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
-              _DatasetId
-            , _VariableName
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _VariableName,
+            _OutputGridDefinitionId
         );
     }
 
@@ -364,9 +364,9 @@ public class Routines {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
-              _DatasetId
-            , _VariableName
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _VariableName,
+            _OutputGridDefinitionId
         );
     }
 }

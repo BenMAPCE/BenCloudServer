@@ -97,12 +97,12 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.POPULATION_VALUE_POP_ENTRY_ID_IDX);
+        return Arrays.asList(Indexes.POPULATION_VALUE_POP_ENTRY_ID_IDX);
     }
 
     @Override

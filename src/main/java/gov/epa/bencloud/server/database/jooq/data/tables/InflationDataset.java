@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationDatasetRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -93,7 +90,7 @@ public class InflationDataset extends TableImpl<InflationDatasetRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -104,11 +101,6 @@ public class InflationDataset extends TableImpl<InflationDatasetRecord> {
     @Override
     public UniqueKey<InflationDatasetRecord> getPrimaryKey() {
         return Keys.INFLATION_DATASET_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<InflationDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<InflationDatasetRecord>>asList(Keys.INFLATION_DATASET_PKEY);
     }
 
     @Override

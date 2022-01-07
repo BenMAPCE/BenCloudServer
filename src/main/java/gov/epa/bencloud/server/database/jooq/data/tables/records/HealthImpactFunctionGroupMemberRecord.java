@@ -21,28 +21,32 @@ public class HealthImpactFunctionGroupMemberRecord extends TableRecordImpl<Healt
     private static final long serialVersionUID = 1L;
 
     /**
-     * Setter for <code>data.health_impact_function_group_member.health_impact_function_group_id</code>.
+     * Setter for
+     * <code>data.health_impact_function_group_member.health_impact_function_group_id</code>.
      */
     public void setHealthImpactFunctionGroupId(Integer value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>data.health_impact_function_group_member.health_impact_function_group_id</code>.
+     * Getter for
+     * <code>data.health_impact_function_group_member.health_impact_function_group_id</code>.
      */
     public Integer getHealthImpactFunctionGroupId() {
         return (Integer) get(0);
     }
 
     /**
-     * Setter for <code>data.health_impact_function_group_member.health_impact_function_id</code>.
+     * Setter for
+     * <code>data.health_impact_function_group_member.health_impact_function_id</code>.
      */
     public void setHealthImpactFunctionId(Integer value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>data.health_impact_function_group_member.health_impact_function_id</code>.
+     * Getter for
+     * <code>data.health_impact_function_group_member.health_impact_function_id</code>.
      */
     public Integer getHealthImpactFunctionId() {
         return (Integer) get(1);

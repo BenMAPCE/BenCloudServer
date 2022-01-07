@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -53,7 +50,8 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     public final TableField<HealthImpactFunctionRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>data.health_impact_function.health_impact_function_dataset_id</code>.
+     * The column
+     * <code>data.health_impact_function.health_impact_function_dataset_id</code>.
      */
     public final TableField<HealthImpactFunctionRecord, Integer> HEALTH_IMPACT_FUNCTION_DATASET_ID = createField(DSL.name("health_impact_function_dataset_id"), SQLDataType.INTEGER, this, "");
 
@@ -138,7 +136,8 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     public final TableField<HealthImpactFunctionRecord, Integer> INCIDENCE_DATASET_ID = createField(DSL.name("incidence_dataset_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.health_impact_function.prevalence_dataset_id</code>.
+     * The column
+     * <code>data.health_impact_function.prevalence_dataset_id</code>.
      */
     public final TableField<HealthImpactFunctionRecord, Integer> PREVALENCE_DATASET_ID = createField(DSL.name("prevalence_dataset_id"), SQLDataType.INTEGER, this, "");
 
@@ -198,7 +197,8 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     public final TableField<HealthImpactFunctionRecord, String> NAME_C = createField(DSL.name("name_c"), SQLDataType.CLOB, this, "");
 
     /**
-     * The column <code>data.health_impact_function.baseline_function_text</code>.
+     * The column
+     * <code>data.health_impact_function.baseline_function_text</code>.
      */
     public final TableField<HealthImpactFunctionRecord, String> BASELINE_FUNCTION_TEXT = createField(DSL.name("baseline_function_text"), SQLDataType.CLOB, this, "");
 
@@ -236,14 +236,16 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function</code> table reference
+     * Create an aliased <code>data.health_impact_function</code> table
+     * reference
      */
     public HealthImpactFunction(String alias) {
         this(DSL.name(alias), HEALTH_IMPACT_FUNCTION);
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function</code> table reference
+     * Create an aliased <code>data.health_impact_function</code> table
+     * reference
      */
     public HealthImpactFunction(Name alias) {
         this(alias, HEALTH_IMPACT_FUNCTION);
@@ -262,7 +264,7 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -273,11 +275,6 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     @Override
     public UniqueKey<HealthImpactFunctionRecord> getPrimaryKey() {
         return Keys.HEALTH_IMPACT_FUNCTION_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<HealthImpactFunctionRecord>> getKeys() {
-        return Arrays.<UniqueKey<HealthImpactFunctionRecord>>asList(Keys.HEALTH_IMPACT_FUNCTION_PKEY);
     }
 
     @Override

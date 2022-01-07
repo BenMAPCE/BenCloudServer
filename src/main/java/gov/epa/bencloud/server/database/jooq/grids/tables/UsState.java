@@ -76,7 +76,10 @@ public class UsState extends TableImpl<UsStateRecord> {
     public final TableField<UsStateRecord, Short> ROW = createField(DSL.name("row"), SQLDataType.SMALLINT, this, "");
 
     /**
-     * @deprecated Unknown data type. Please define an explicit {@link org.jooq.Binding} to specify how this type should be handled. Deprecation can be turned off using {@literal <deprecationOnUnknownTypes/>} in your code generator configuration.
+     * @deprecated Unknown data type. Please define an explicit {@link
+     * org.jooq.Binding} to specify how this type should be handled. Deprecation
+     * can be turned off using {@literal <deprecationOnUnknownTypes/>} in your
+     * code generator configuration.
      */
     @Deprecated
     public final TableField<UsStateRecord, Object> GEOM = createField(DSL.name("geom"), org.jooq.impl.DefaultDataType.getDefaultDataType("\"public\".\"geometry\""), this, "");
@@ -116,12 +119,12 @@ public class UsState extends TableImpl<UsStateRecord> {
 
     @Override
     public Schema getSchema() {
-        return Grids.GRIDS;
+        return aliased() ? null : Grids.GRIDS;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.US_STATE_GEOM_IDX);
+        return Arrays.asList(Indexes.US_STATE_GEOM_IDX);
     }
 
     @Override
@@ -132,11 +135,6 @@ public class UsState extends TableImpl<UsStateRecord> {
     @Override
     public UniqueKey<UsStateRecord> getPrimaryKey() {
         return Keys.US_STATE_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<UsStateRecord>> getKeys() {
-        return Arrays.<UniqueKey<UsStateRecord>>asList(Keys.US_STATE_PKEY);
     }
 
     @Override

@@ -56,7 +56,11 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     public final TableField<GetVariableRecord, Double> VALUE = createField(DSL.name("value"), SQLDataType.DOUBLE, this, "");
 
     private GetVariable(Name alias, Table<GetVariableRecord> aliased) {
-        this(alias, aliased, new Field[3]);
+        this(alias, aliased, new Field[] {
+            DSL.val(null, SQLDataType.INTEGER),
+            DSL.val(null, SQLDataType.CLOB.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER)
+        });
     }
 
     private GetVariable(Name alias, Table<GetVariableRecord> aliased, Field<?>[] parameters) {
@@ -86,7 +90,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -133,9 +137,9 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
         , Integer _OutputGridDefinitionId
     ) {
         GetVariable result = new GetVariable(DSL.name("get_variable"), null, new Field[] {
-              DSL.val(_DatasetId, SQLDataType.INTEGER)
-            , DSL.val(_VariableName, SQLDataType.CLOB.getArrayDataType())
-            , DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
+            DSL.val(_DatasetId, SQLDataType.INTEGER),
+            DSL.val(_VariableName, SQLDataType.CLOB.getArrayDataType()),
+            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -150,9 +154,9 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
         , Field<Integer> _OutputGridDefinitionId
     ) {
         GetVariable result = new GetVariable(DSL.name("get_variable"), null, new Field[] {
-              _DatasetId
-            , _VariableName
-            , _OutputGridDefinitionId
+            _DatasetId,
+            _VariableName,
+            _OutputGridDefinitionId
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;

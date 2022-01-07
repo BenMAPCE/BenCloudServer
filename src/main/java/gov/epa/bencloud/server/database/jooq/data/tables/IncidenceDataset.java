@@ -98,7 +98,7 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -112,13 +112,8 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
     }
 
     @Override
-    public List<UniqueKey<IncidenceDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<IncidenceDatasetRecord>>asList(Keys.INCIDENCE_DATASET_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<IncidenceDatasetRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<IncidenceDatasetRecord, ?>>asList(Keys.INCIDENCE_DATASET__INCIDENCE_DATASET_GRID_DEFINITION_ID_FKEY);
+        return Arrays.asList(Keys.INCIDENCE_DATASET__INCIDENCE_DATASET_GRID_DEFINITION_ID_FKEY);
     }
 
     private transient GridDefinition _gridDefinition;
