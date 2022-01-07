@@ -43,7 +43,8 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
     }
 
     /**
-     * The column <code>data.hif_result_function_config.hif_result_dataset_id</code>.
+     * The column
+     * <code>data.hif_result_function_config.hif_result_dataset_id</code>.
      */
     public final TableField<HifResultFunctionConfigRecord, Integer> HIF_RESULT_DATASET_ID = createField(DSL.name("hif_result_dataset_id"), SQLDataType.INTEGER, this, "");
 
@@ -63,17 +64,20 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
     public final TableField<HifResultFunctionConfigRecord, Integer> END_AGE = createField(DSL.name("end_age"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.hif_result_function_config.incidence_dataset_id</code>.
+     * The column
+     * <code>data.hif_result_function_config.incidence_dataset_id</code>.
      */
     public final TableField<HifResultFunctionConfigRecord, Integer> INCIDENCE_DATASET_ID = createField(DSL.name("incidence_dataset_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.hif_result_function_config.prevalence_dataset_id</code>.
+     * The column
+     * <code>data.hif_result_function_config.prevalence_dataset_id</code>.
      */
     public final TableField<HifResultFunctionConfigRecord, Integer> PREVALENCE_DATASET_ID = createField(DSL.name("prevalence_dataset_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.hif_result_function_config.variable_dataset_id</code>.
+     * The column
+     * <code>data.hif_result_function_config.variable_dataset_id</code>.
      */
     public final TableField<HifResultFunctionConfigRecord, Integer> VARIABLE_DATASET_ID = createField(DSL.name("variable_dataset_id"), SQLDataType.INTEGER, this, "");
 
@@ -98,7 +102,8 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
     public final TableField<HifResultFunctionConfigRecord, Integer> METRIC_ID = createField(DSL.name("metric_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.hif_result_function_config.seasonal_metric_id</code>.
+     * The column
+     * <code>data.hif_result_function_config.seasonal_metric_id</code>.
      */
     public final TableField<HifResultFunctionConfigRecord, Integer> SEASONAL_METRIC_ID = createField(DSL.name("seasonal_metric_id"), SQLDataType.INTEGER, this, "");
 
@@ -116,14 +121,16 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
     }
 
     /**
-     * Create an aliased <code>data.hif_result_function_config</code> table reference
+     * Create an aliased <code>data.hif_result_function_config</code> table
+     * reference
      */
     public HifResultFunctionConfig(String alias) {
         this(DSL.name(alias), HIF_RESULT_FUNCTION_CONFIG);
     }
 
     /**
-     * Create an aliased <code>data.hif_result_function_config</code> table reference
+     * Create an aliased <code>data.hif_result_function_config</code> table
+     * reference
      */
     public HifResultFunctionConfig(Name alias) {
         this(alias, HIF_RESULT_FUNCTION_CONFIG);
@@ -142,7 +149,7 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override

@@ -8,15 +8,13 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row5;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -59,7 +57,8 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     public final TableField<ValuationResultDatasetRecord, String> TASK_UUID = createField(DSL.name("task_uuid"), SQLDataType.CLOB, this, "");
 
     /**
-     * The column <code>data.valuation_result_dataset.hif_result_dataset_id</code>.
+     * The column
+     * <code>data.valuation_result_dataset.hif_result_dataset_id</code>.
      */
     public final TableField<ValuationResultDatasetRecord, Integer> HIF_RESULT_DATASET_ID = createField(DSL.name("hif_result_dataset_id"), SQLDataType.INTEGER, this, "");
 
@@ -69,9 +68,15 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     public final TableField<ValuationResultDatasetRecord, String> NAME = createField(DSL.name("name"), SQLDataType.CLOB, this, "");
 
     /**
-     * The column <code>data.valuation_result_dataset.variable_dataset_id</code>.
+     * The column
+     * <code>data.valuation_result_dataset.variable_dataset_id</code>.
      */
     public final TableField<ValuationResultDatasetRecord, Integer> VARIABLE_DATASET_ID = createField(DSL.name("variable_dataset_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.valuation_result_dataset.task_log</code>.
+     */
+    public final TableField<ValuationResultDatasetRecord, JSON> TASK_LOG = createField(DSL.name("task_log"), SQLDataType.JSON, this, "");
 
     private ValuationResultDataset(Name alias, Table<ValuationResultDatasetRecord> aliased) {
         this(alias, aliased, null);
@@ -82,14 +87,16 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     }
 
     /**
-     * Create an aliased <code>data.valuation_result_dataset</code> table reference
+     * Create an aliased <code>data.valuation_result_dataset</code> table
+     * reference
      */
     public ValuationResultDataset(String alias) {
         this(DSL.name(alias), VALUATION_RESULT_DATASET);
     }
 
     /**
-     * Create an aliased <code>data.valuation_result_dataset</code> table reference
+     * Create an aliased <code>data.valuation_result_dataset</code> table
+     * reference
      */
     public ValuationResultDataset(Name alias) {
         this(alias, VALUATION_RESULT_DATASET);
@@ -108,7 +115,7 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -119,11 +126,6 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     @Override
     public UniqueKey<ValuationResultDatasetRecord> getPrimaryKey() {
         return Keys.VALUATION_RESULT_DATASET_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<ValuationResultDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<ValuationResultDatasetRecord>>asList(Keys.VALUATION_RESULT_DATASET_PKEY);
     }
 
     @Override
@@ -153,11 +155,11 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     }
 
     // -------------------------------------------------------------------------
-    // Row5 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, String, Integer, String, Integer> fieldsRow() {
-        return (Row5) super.fieldsRow();
+    public Row6<Integer, String, Integer, String, Integer, JSON> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

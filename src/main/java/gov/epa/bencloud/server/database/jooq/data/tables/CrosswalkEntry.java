@@ -122,12 +122,12 @@ public class CrosswalkEntry extends TableImpl<CrosswalkEntryRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.CROSSWALK_ENTRY_CROSSWALK_ID_IDX);
+        return Arrays.asList(Indexes.CROSSWALK_ENTRY_CROSSWALK_ID_IDX);
     }
 
     @Override

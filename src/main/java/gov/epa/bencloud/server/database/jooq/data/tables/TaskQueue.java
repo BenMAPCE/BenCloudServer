@@ -156,12 +156,12 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.TASK_QUEUE_ON_DATE, Indexes.TASK_QUEUE_ON_PRIORITY_SUBMITTED_DATE, Indexes.TASK_QUEUE_ON_UUID);
+        return Arrays.asList(Indexes.TASK_QUEUE_ON_DATE, Indexes.TASK_QUEUE_ON_PRIORITY_SUBMITTED_DATE, Indexes.TASK_QUEUE_ON_UUID);
     }
 
     @Override
@@ -172,11 +172,6 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     @Override
     public UniqueKey<TaskQueueRecord> getPrimaryKey() {
         return Keys.TASK_QUEUE_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<TaskQueueRecord>> getKeys() {
-        return Arrays.<UniqueKey<TaskQueueRecord>>asList(Keys.TASK_QUEUE_PKEY);
     }
 
     @Override

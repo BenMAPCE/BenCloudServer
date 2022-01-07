@@ -4,18 +4,28 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Vector;
 
+
 import org.jooq.DSLContext;
+import org.jooq.JSON;
+import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Result;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
@@ -23,6 +33,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultRecord
 import gov.epa.bencloud.server.tasks.model.Task;
 
 public class HIFUtil {
+
 
 	public static Expression[] getFunctionAndBaselineExpression(Integer id) {
 
@@ -57,13 +68,27 @@ public class HIFUtil {
 		return functionAndBaselineExpressions;
 	}
 
-	public static HealthImpactFunctionRecord getFunctionDefinition(Integer id) {
+	public static Record getFunctionDefinition(Integer id) {
 
 		// Load the function by id
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
-		HealthImpactFunctionRecord record = create
-				.selectFrom(HEALTH_IMPACT_FUNCTION)
+		Record record = create
+				.select(HEALTH_IMPACT_FUNCTION.asterisk()
+						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
+						,ENDPOINT.NAME.as("endpoint_name")
+						,POLLUTANT.NAME.as("pollutant_name")
+						,POLLUTANT_METRIC.NAME.as("metric_name")
+						,SEASONAL_METRIC.NAME.as("seasonal_metric_name")
+						,STATISTIC_TYPE.NAME.as("metric_statistic_name")
+						)
+				.from(HEALTH_IMPACT_FUNCTION)
+				.leftJoin(ENDPOINT_GROUP).on(ENDPOINT_GROUP.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID))
+				.leftJoin(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+				.leftJoin(POLLUTANT).on(POLLUTANT.ID.eq(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID))
+				.leftJoin(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_ID))
+				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.SEASONAL_METRIC_ID))
+				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))			
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(id))
 				.fetchOne();
 				
@@ -111,6 +136,7 @@ public class HIFUtil {
 			.fetchOne();
 			
 			hifResultDatasetId = hifResultDatasetRecord.getId();
+			hifTaskConfig.resultDatasetId = hifResultDatasetId;
 			
 			// Each HIF result function config contains the details of how the function was configured
 			for(HIFConfig hif : hifTaskConfig.hifs) {
@@ -304,6 +330,78 @@ public class HIFUtil {
 			}
 		}
 		 
+	}
+
+	public static void storeTaskLog(HIFTaskLog hifTaskLog) {
+		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		JSON taskLogJson = JSON.json(hifTaskLog.toJsonString());
+		
+		create.update(HIF_RESULT_DATASET)
+			.set(HIF_RESULT_DATASET.TASK_LOG, taskLogJson)
+			.where(HIF_RESULT_DATASET.ID.eq(hifTaskLog.getHifTaskConfig().resultDatasetId))
+			.execute();
+		
+	}
+	
+	public static HIFTaskLog getTaskLog(Integer datasetId) {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.registerModule(new JavaTimeModule());
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+		//JSON taskLogJson = JSON.json(hifTaskLog.toJsonString());
+		
+		Record1<JSON> taskLogJson = create.select(HIF_RESULT_DATASET.TASK_LOG)
+			.from(HIF_RESULT_DATASET)
+			.where(HIF_RESULT_DATASET.ID.eq(datasetId))
+			.fetchOne();
+		
+		try {
+			HIFTaskLog hifTaskLog = mapper.readValue(taskLogJson.value1().toString(), HIFTaskLog.class);
+			return hifTaskLog;
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+		
+	}
+
+	/*
+	 * Returns unique, sorted list of health effects included in a list of hifs
+	 */
+	public static String getHealthEffectsListFromHifs(List<HIFConfig> hifs) {
+		List<String> lst = new ArrayList<String>();
+		
+		for(HIFConfig hif : hifs) {
+			Object ep = hif.hifRecord.get("endpoint_name");
+			
+			if(ep != null && !lst.contains(ep.toString())) {
+				lst.add(ep.toString());
+			}
+		}
+		lst.sort(null);
+		return "- " + String.join("\n- ", lst);
+	}
+	
+	/*
+	 * Returns unique, sorted list of health effect groups included in a list of hifs
+	 */
+	public static String getHealthEffectGroupsListFromHifs(List<HIFConfig> hifs) {
+		List<String> lst = new ArrayList<String>();
+		
+		for(HIFConfig hif : hifs) {
+			Object ep = hif.hifRecord.get("endpoint_group_name");
+			
+			if(ep != null && !lst.contains(ep.toString())) {
+				lst.add(ep.toString());
+			}
+		}
+		lst.sort(null);
+		return "- " + String.join("\n- ", lst);
 	}
 	
 	

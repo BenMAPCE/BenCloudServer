@@ -102,7 +102,7 @@ public class InflationEntry extends TableImpl<InflationEntryRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override

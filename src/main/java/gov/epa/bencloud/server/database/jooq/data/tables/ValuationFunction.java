@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -183,7 +180,7 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -194,11 +191,6 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     @Override
     public UniqueKey<ValuationFunctionRecord> getPrimaryKey() {
         return Keys.VALUATION_FUNCTION_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<ValuationFunctionRecord>> getKeys() {
-        return Arrays.<UniqueKey<ValuationFunctionRecord>>asList(Keys.VALUATION_FUNCTION_PKEY);
     }
 
     @Override

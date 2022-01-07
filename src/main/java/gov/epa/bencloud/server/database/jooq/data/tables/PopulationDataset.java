@@ -108,7 +108,7 @@ public class PopulationDataset extends TableImpl<PopulationDatasetRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -122,13 +122,8 @@ public class PopulationDataset extends TableImpl<PopulationDatasetRecord> {
     }
 
     @Override
-    public List<UniqueKey<PopulationDatasetRecord>> getKeys() {
-        return Arrays.<UniqueKey<PopulationDatasetRecord>>asList(Keys.POPULATION_DATASET_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<PopulationDatasetRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<PopulationDatasetRecord, ?>>asList(Keys.POPULATION_DATASET__POPULATION_DATASET_POP_CONFIG_ID_FKEY);
+        return Arrays.asList(Keys.POPULATION_DATASET__POPULATION_DATASET_POP_CONFIG_ID_FKEY);
     }
 
     private transient PopConfig _popConfig;

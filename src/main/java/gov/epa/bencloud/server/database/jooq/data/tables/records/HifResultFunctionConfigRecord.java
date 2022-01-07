@@ -21,14 +21,16 @@ public class HifResultFunctionConfigRecord extends TableRecordImpl<HifResultFunc
     private static final long serialVersionUID = 1L;
 
     /**
-     * Setter for <code>data.hif_result_function_config.hif_result_dataset_id</code>.
+     * Setter for
+     * <code>data.hif_result_function_config.hif_result_dataset_id</code>.
      */
     public void setHifResultDatasetId(Integer value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>data.hif_result_function_config.hif_result_dataset_id</code>.
+     * Getter for
+     * <code>data.hif_result_function_config.hif_result_dataset_id</code>.
      */
     public Integer getHifResultDatasetId() {
         return (Integer) get(0);
@@ -77,42 +79,48 @@ public class HifResultFunctionConfigRecord extends TableRecordImpl<HifResultFunc
     }
 
     /**
-     * Setter for <code>data.hif_result_function_config.incidence_dataset_id</code>.
+     * Setter for
+     * <code>data.hif_result_function_config.incidence_dataset_id</code>.
      */
     public void setIncidenceDatasetId(Integer value) {
         set(4, value);
     }
 
     /**
-     * Getter for <code>data.hif_result_function_config.incidence_dataset_id</code>.
+     * Getter for
+     * <code>data.hif_result_function_config.incidence_dataset_id</code>.
      */
     public Integer getIncidenceDatasetId() {
         return (Integer) get(4);
     }
 
     /**
-     * Setter for <code>data.hif_result_function_config.prevalence_dataset_id</code>.
+     * Setter for
+     * <code>data.hif_result_function_config.prevalence_dataset_id</code>.
      */
     public void setPrevalenceDatasetId(Integer value) {
         set(5, value);
     }
 
     /**
-     * Getter for <code>data.hif_result_function_config.prevalence_dataset_id</code>.
+     * Getter for
+     * <code>data.hif_result_function_config.prevalence_dataset_id</code>.
      */
     public Integer getPrevalenceDatasetId() {
         return (Integer) get(5);
     }
 
     /**
-     * Setter for <code>data.hif_result_function_config.variable_dataset_id</code>.
+     * Setter for
+     * <code>data.hif_result_function_config.variable_dataset_id</code>.
      */
     public void setVariableDatasetId(Integer value) {
         set(6, value);
     }
 
     /**
-     * Getter for <code>data.hif_result_function_config.variable_dataset_id</code>.
+     * Getter for
+     * <code>data.hif_result_function_config.variable_dataset_id</code>.
      */
     public Integer getVariableDatasetId() {
         return (Integer) get(6);
@@ -175,14 +183,16 @@ public class HifResultFunctionConfigRecord extends TableRecordImpl<HifResultFunc
     }
 
     /**
-     * Setter for <code>data.hif_result_function_config.seasonal_metric_id</code>.
+     * Setter for
+     * <code>data.hif_result_function_config.seasonal_metric_id</code>.
      */
     public void setSeasonalMetricId(Integer value) {
         set(11, value);
     }
 
     /**
-     * Getter for <code>data.hif_result_function_config.seasonal_metric_id</code>.
+     * Getter for
+     * <code>data.hif_result_function_config.seasonal_metric_id</code>.
      */
     public Integer getSeasonalMetricId() {
         return (Integer) get(11);

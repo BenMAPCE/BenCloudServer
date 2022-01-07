@@ -91,12 +91,12 @@ public class PopConfigRace extends TableImpl<PopConfigRaceRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<ForeignKey<PopConfigRaceRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<PopConfigRaceRecord, ?>>asList(Keys.POP_CONFIG_RACE__POP_CONFIG_RACE_POP_CONFIG_ID_FKEY, Keys.POP_CONFIG_RACE__POP_CONFIG_RACE_RACE_ID_FKEY);
+        return Arrays.asList(Keys.POP_CONFIG_RACE__POP_CONFIG_RACE_POP_CONFIG_ID_FKEY, Keys.POP_CONFIG_RACE__POP_CONFIG_RACE_RACE_ID_FKEY);
     }
 
     private transient PopConfig _popConfig;

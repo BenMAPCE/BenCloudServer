@@ -12,6 +12,7 @@ import org.jooq.Record3;
 import org.jooq.Record4;
 import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
+import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.impl.DSL;
 
@@ -25,7 +26,7 @@ import spark.Response;
 
 public class IncidenceApi {
 
-	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, HealthImpactFunctionRecord hifRecord, ArrayList<Map<Integer, Map<Integer, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
+	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Integer, Map<Integer, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
 		
@@ -45,7 +46,7 @@ public class IncidenceApi {
 		Integer incPrevYear = isIncidence ? hifConfig.incidenceYear : hifConfig.prevalenceYear;
 		
 		// Now, check the incidenceOrPrevalenceLists to see if we already have data for this function config
-		String cacheKey = incPrevId + "~" + incPrevYear + "~" + hifRecord.getEndpointId() + "~" + hifConfig.startAge + "~" + hifConfig.endAge;
+		String cacheKey = incPrevId + "~" + incPrevYear + "~" + h.get("endpoint_id", Integer.class) + "~" + hifConfig.startAge + "~" + hifConfig.endAge;
 		
 		if(incidenceOrPrevalenceCacheMap.containsKey(cacheKey)) {
 			// Just add another reference to this map in the incidenceLists ArrayList
@@ -62,7 +63,7 @@ public class IncidenceApi {
 		Map<Integer, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
-				hifRecord.getEndpointId(), 
+				h.get("endpoint_id", Integer.class), 
 				null, 
 				null, 
 				null, 

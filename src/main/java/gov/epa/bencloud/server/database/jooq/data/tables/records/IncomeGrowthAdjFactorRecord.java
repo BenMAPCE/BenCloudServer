@@ -36,14 +36,16 @@ public class IncomeGrowthAdjFactorRecord extends UpdatableRecordImpl<IncomeGrowt
     }
 
     /**
-     * Setter for <code>data.income_growth_adj_factor.income_growth_adj_dataset_id</code>.
+     * Setter for
+     * <code>data.income_growth_adj_factor.income_growth_adj_dataset_id</code>.
      */
     public void setIncomeGrowthAdjDatasetId(Short value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>data.income_growth_adj_factor.income_growth_adj_dataset_id</code>.
+     * Getter for
+     * <code>data.income_growth_adj_factor.income_growth_adj_dataset_id</code>.
      */
     public Short getIncomeGrowthAdjDatasetId() {
         return (Short) get(1);

@@ -108,7 +108,7 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -122,13 +122,8 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     }
 
     @Override
-    public List<UniqueKey<AirQualityLayerRecord>> getKeys() {
-        return Arrays.<UniqueKey<AirQualityLayerRecord>>asList(Keys.AIR_QUALITY_LAYER_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<AirQualityLayerRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<AirQualityLayerRecord, ?>>asList(Keys.AIR_QUALITY_LAYER__AIR_QUALITY_LAYER_POLLUTANT_ID_FKEY, Keys.AIR_QUALITY_LAYER__AIR_QUALITY_LAYER_GRID_DEFINITION_ID_FKEY);
+        return Arrays.asList(Keys.AIR_QUALITY_LAYER__AIR_QUALITY_LAYER_POLLUTANT_ID_FKEY, Keys.AIR_QUALITY_LAYER__AIR_QUALITY_LAYER_GRID_DEFINITION_ID_FKEY);
     }
 
     private transient Pollutant _pollutant;

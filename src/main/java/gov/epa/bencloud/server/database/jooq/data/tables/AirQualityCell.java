@@ -121,12 +121,12 @@ public class AirQualityCell extends TableImpl<AirQualityCellRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<ForeignKey<AirQualityCellRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<AirQualityCellRecord, ?>>asList(Keys.AIR_QUALITY_CELL__AIR_QUALITY_CELL_AIR_QUALITY_LAYER_ID_FKEY, Keys.AIR_QUALITY_CELL__AIR_QUALITY_CELL_METRIC_ID_FKEY, Keys.AIR_QUALITY_CELL__AIR_QUALITY_CELL_SEASONAL_METRIC_ID_FKEY);
+        return Arrays.asList(Keys.AIR_QUALITY_CELL__AIR_QUALITY_CELL_AIR_QUALITY_LAYER_ID_FKEY, Keys.AIR_QUALITY_CELL__AIR_QUALITY_CELL_METRIC_ID_FKEY, Keys.AIR_QUALITY_CELL__AIR_QUALITY_CELL_SEASONAL_METRIC_ID_FKEY);
     }
 
     private transient AirQualityLayer _airQualityLayer;

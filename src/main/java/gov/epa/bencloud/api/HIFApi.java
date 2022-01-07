@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -272,7 +273,7 @@ public class HIFApi {
 					//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
 					.fetch();
 			
-					//If results are geing aggregated, recalc mean, variance, std deviation, and percent of baseline
+					//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
 					if(HIFApi.getBaselineGridForHifResults(id) != gridIds[i]) {
 						for(Record res : hifRecords) {
 							DescriptiveStatistics stats = new DescriptiveStatistics();
@@ -290,14 +291,14 @@ public class HIFApi {
 							
 							res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 						}
-						
 					}
-					
-					//TODO: Can we remove percentiles?
-			
+					//Remove percentiles by keeping all other fields
+					Result<?> hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
 			try {
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-					hifRecords.formatCSV(zipStream);
+					hifRecordsClean.formatCSV(zipStream);
+					zipStream.closeEntry();
+					
 			} catch (Exception e) {
 				log.error("Error creating export file", e);
 			} finally {
@@ -308,10 +309,15 @@ public class HIFApi {
 		}
 		
 		try {
+			zipStream.putNextEntry(new ZipEntry(taskFileName + "_TaskLog.txt"));
+			HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(id);
+			zipStream.write(hifTaskLog.toString().getBytes());
+			zipStream.closeEntry();
+			
 			zipStream.close();
 			responseOutputStream.flush();
-		} catch (java.io.IOException e) {
-			log.error("Error closing and flushing export", e);
+		} catch (Exception e) {
+			log.error("Error writing task log, closing and flushing export", e);
 		}
 
 		

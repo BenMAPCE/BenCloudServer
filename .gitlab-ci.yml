@@ -7,7 +7,11 @@
 # https://gradle.org/
 # https://github.com/gradle/gradle
 
-image: gradle:alpine
+stages:
+  - build
+  - Image
+  - Non-Production Deployment
+
 
 # Disable the Gradle daemon for Continuous Integration servers as correctness
 # is usually a priority over speed in CI environments. Using a fresh
@@ -19,10 +23,11 @@ variables:
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
-build:
+Build BenCloudServer Jar:
   stage: build
+  image: gradle:alpine
   tags:
-    - gradle
+    - benmapdevgitlab
   script:
     - gradle fatJar
     - cp build/libs/BenCloudServer.jar BenCloudServer.jar
@@ -37,6 +42,49 @@ build:
     paths:
       - BenCloudServer.jar
       - bencloud-server.properties
+
+Build BenCloudServer Image:
+  stage: Image
+  tags:
+    - benmapdevgitlab
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
+  #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
+  dependencies:
+    - Build BenCloudServer Jar
+
+Development:
+  stage: Non-Production Deployment
+  tags:
+    - benmapdevgitlab
+  when: manual
+  image: dtzar/helm-kubectl
+  script:
+    - apk add gettext
+    - kubectl config set-cluster benmap-shared-dev00 --server="$KUBE_URL"
+    - kubectl config set-cluster benmap-shared-dev00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
+    - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
+    - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="$KUBE_NAMESPACE"
+    - kubectl config use-context default
+    - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
+  environment:
+    name: testdev
+    url: http://bencloud-dev.devsecops-eval.epa.gov
+    kubernetes:
+      namespace: bencloud-testdev
+  variables:
+    DB_CONNECTION: postgres
+    DB_HOST: bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
+    DB_PORT: 5432
+    DB_DATABASE: benmap
+    DB_USERNAME: benmap_system
+    DB_PASSWORD: secret
+
 
 #test:
 #  stage: test

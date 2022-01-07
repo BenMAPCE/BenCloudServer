@@ -122,7 +122,10 @@ public class UsCmaq_12kmNation extends TableImpl<UsCmaq_12kmNationRecord> {
     public final TableField<UsCmaq_12kmNationRecord, BigDecimal> WUSCR = createField(DSL.name("wuscr"), SQLDataType.NUMERIC, this, "");
 
     /**
-     * @deprecated Unknown data type. Please define an explicit {@link org.jooq.Binding} to specify how this type should be handled. Deprecation can be turned off using {@literal <deprecationOnUnknownTypes/>} in your code generator configuration.
+     * @deprecated Unknown data type. Please define an explicit {@link
+     * org.jooq.Binding} to specify how this type should be handled. Deprecation
+     * can be turned off using {@literal <deprecationOnUnknownTypes/>} in your
+     * code generator configuration.
      */
     @Deprecated
     public final TableField<UsCmaq_12kmNationRecord, Object> GEOM = createField(DSL.name("geom"), org.jooq.impl.DefaultDataType.getDefaultDataType("\"public\".\"geometry\""), this, "");
@@ -162,12 +165,12 @@ public class UsCmaq_12kmNation extends TableImpl<UsCmaq_12kmNationRecord> {
 
     @Override
     public Schema getSchema() {
-        return Grids.GRIDS;
+        return aliased() ? null : Grids.GRIDS;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.US_CMAQ_12KM_NATION_GEOM_IDX);
+        return Arrays.asList(Indexes.US_CMAQ_12KM_NATION_GEOM_IDX);
     }
 
     @Override
@@ -178,11 +181,6 @@ public class UsCmaq_12kmNation extends TableImpl<UsCmaq_12kmNationRecord> {
     @Override
     public UniqueKey<UsCmaq_12kmNationRecord> getPrimaryKey() {
         return Keys.US_CMAQ_12KM_NATION_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<UsCmaq_12kmNationRecord>> getKeys() {
-        return Arrays.<UniqueKey<UsCmaq_12kmNationRecord>>asList(Keys.US_CMAQ_12KM_NATION_PKEY);
     }
 
     @Override

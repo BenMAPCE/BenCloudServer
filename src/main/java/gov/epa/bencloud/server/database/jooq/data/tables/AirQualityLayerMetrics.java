@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerMetricsRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -54,7 +51,8 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     public final TableField<AirQualityLayerMetricsRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>data.air_quality_layer_metrics.air_quality_layer_id</code>.
+     * The column
+     * <code>data.air_quality_layer_metrics.air_quality_layer_id</code>.
      */
     public final TableField<AirQualityLayerMetricsRecord, Integer> AIR_QUALITY_LAYER_ID = createField(DSL.name("air_quality_layer_id"), SQLDataType.INTEGER, this, "");
 
@@ -64,12 +62,14 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     public final TableField<AirQualityLayerMetricsRecord, Integer> METRIC_ID = createField(DSL.name("metric_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.air_quality_layer_metrics.seasonal_metric_id</code>.
+     * The column
+     * <code>data.air_quality_layer_metrics.seasonal_metric_id</code>.
      */
     public final TableField<AirQualityLayerMetricsRecord, Integer> SEASONAL_METRIC_ID = createField(DSL.name("seasonal_metric_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.air_quality_layer_metrics.annual_statistic_id</code>.
+     * The column
+     * <code>data.air_quality_layer_metrics.annual_statistic_id</code>.
      */
     public final TableField<AirQualityLayerMetricsRecord, Integer> ANNUAL_STATISTIC_ID = createField(DSL.name("annual_statistic_id"), SQLDataType.INTEGER, this, "");
 
@@ -104,7 +104,8 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     public final TableField<AirQualityLayerMetricsRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
     /**
-     * The column <code>data.air_quality_layer_metrics.cell_count_above_lrl</code>.
+     * The column
+     * <code>data.air_quality_layer_metrics.cell_count_above_lrl</code>.
      */
     public final TableField<AirQualityLayerMetricsRecord, Integer> CELL_COUNT_ABOVE_LRL = createField(DSL.name("cell_count_above_lrl"), SQLDataType.INTEGER, this, "");
 
@@ -117,14 +118,16 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     }
 
     /**
-     * Create an aliased <code>data.air_quality_layer_metrics</code> table reference
+     * Create an aliased <code>data.air_quality_layer_metrics</code> table
+     * reference
      */
     public AirQualityLayerMetrics(String alias) {
         this(DSL.name(alias), AIR_QUALITY_LAYER_METRICS);
     }
 
     /**
-     * Create an aliased <code>data.air_quality_layer_metrics</code> table reference
+     * Create an aliased <code>data.air_quality_layer_metrics</code> table
+     * reference
      */
     public AirQualityLayerMetrics(Name alias) {
         this(alias, AIR_QUALITY_LAYER_METRICS);
@@ -143,7 +146,7 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -154,11 +157,6 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     @Override
     public UniqueKey<AirQualityLayerMetricsRecord> getPrimaryKey() {
         return Keys.AIR_QUALITY_LAYER_METRICS_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<AirQualityLayerMetricsRecord>> getKeys() {
-        return Arrays.<UniqueKey<AirQualityLayerMetricsRecord>>asList(Keys.AIR_QUALITY_LAYER_METRICS_PKEY);
     }
 
     @Override

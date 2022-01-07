@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jooq.Record;
+import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
@@ -75,7 +76,47 @@ public class ApiUtil {
 				.fetchMap(DSL.lower(STATISTIC_TYPE.NAME), STATISTIC_TYPE.ID);		
 		return statistics;	
 	}
+	
+	public static Map<Integer, String> getMetricNameLookup() {
+		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(POLLUTANT_METRIC.ID, POLLUTANT_METRIC.NAME)
+				.from(POLLUTANT_METRIC)
+				.fetchMap(POLLUTANT_METRIC.ID, POLLUTANT_METRIC.NAME);		
+		return map;	
+	}
 
+	public static Map<Integer, String> getSeasonalMetricNameLookup() {
+		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(SEASONAL_METRIC.ID, SEASONAL_METRIC.NAME)
+				.from(SEASONAL_METRIC)
+				.fetchMap(SEASONAL_METRIC.ID, SEASONAL_METRIC.NAME);		
+		return map;	
+	}
+	
+	public static Map<Integer, String> getRaceNameLookup() {
+		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(RACE.ID, RACE.NAME)
+				.from(RACE)
+				.fetchMap(RACE.ID, RACE.NAME);		
+		return map;	
+	}
+	
+	public static Map<Integer, String> getEthnicityNameLookup() {
+		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(ETHNICITY.ID, ETHNICITY.NAME)
+				.from(ETHNICITY)
+				.fetchMap(ETHNICITY.ID, ETHNICITY.NAME);		
+		return map;	
+	}
+	
+	public static Map<Integer, String> getGenderNameLookup() {
+		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(GENDER.ID, GENDER.NAME)
+				.from(GENDER)
+				.fetchMap(GENDER.ID, GENDER.NAME);		
+		return map;	
+	}
+	
 	public static Object deleteTaskResults(Request req, Response res) {
 		String uuid = req.params("uuid");
 		
@@ -144,5 +185,19 @@ public class ApiUtil {
 				.orderBy(VARIABLE_ENTRY.NAME)
 				.fetch(VARIABLE_ENTRY.NAME);
 		return allVariableNames;
+	}
+
+
+	public static int getDatabaseVersion() {
+		Record1<Integer> versionRecord = DSL.using(JooqUtil.getJooqConfiguration())
+		.select(SETTINGS.VALUE_INT)
+		.from(SETTINGS)
+		.where(SETTINGS.KEY.equalIgnoreCase("version"))
+		.fetchOne();
+		
+		if(versionRecord == null) {
+			return -999;
+		}
+		return versionRecord.value1().intValue();
 	}
 }

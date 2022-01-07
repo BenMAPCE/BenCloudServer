@@ -30,7 +30,8 @@ public class HealthImpactFunctionGroupMember extends TableImpl<HealthImpactFunct
     private static final long serialVersionUID = 1L;
 
     /**
-     * The reference instance of <code>data.health_impact_function_group_member</code>
+     * The reference instance of
+     * <code>data.health_impact_function_group_member</code>
      */
     public static final HealthImpactFunctionGroupMember HEALTH_IMPACT_FUNCTION_GROUP_MEMBER = new HealthImpactFunctionGroupMember();
 
@@ -43,12 +44,14 @@ public class HealthImpactFunctionGroupMember extends TableImpl<HealthImpactFunct
     }
 
     /**
-     * The column <code>data.health_impact_function_group_member.health_impact_function_group_id</code>.
+     * The column
+     * <code>data.health_impact_function_group_member.health_impact_function_group_id</code>.
      */
     public final TableField<HealthImpactFunctionGroupMemberRecord, Integer> HEALTH_IMPACT_FUNCTION_GROUP_ID = createField(DSL.name("health_impact_function_group_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.health_impact_function_group_member.health_impact_function_id</code>.
+     * The column
+     * <code>data.health_impact_function_group_member.health_impact_function_id</code>.
      */
     public final TableField<HealthImpactFunctionGroupMemberRecord, Integer> HEALTH_IMPACT_FUNCTION_ID = createField(DSL.name("health_impact_function_id"), SQLDataType.INTEGER, this, "");
 
@@ -61,21 +64,24 @@ public class HealthImpactFunctionGroupMember extends TableImpl<HealthImpactFunct
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function_group_member</code> table reference
+     * Create an aliased <code>data.health_impact_function_group_member</code>
+     * table reference
      */
     public HealthImpactFunctionGroupMember(String alias) {
         this(DSL.name(alias), HEALTH_IMPACT_FUNCTION_GROUP_MEMBER);
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function_group_member</code> table reference
+     * Create an aliased <code>data.health_impact_function_group_member</code>
+     * table reference
      */
     public HealthImpactFunctionGroupMember(Name alias) {
         this(alias, HEALTH_IMPACT_FUNCTION_GROUP_MEMBER);
     }
 
     /**
-     * Create a <code>data.health_impact_function_group_member</code> table reference
+     * Create a <code>data.health_impact_function_group_member</code> table
+     * reference
      */
     public HealthImpactFunctionGroupMember() {
         this(DSL.name("health_impact_function_group_member"), null);
@@ -87,7 +93,7 @@ public class HealthImpactFunctionGroupMember extends TableImpl<HealthImpactFunct
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override

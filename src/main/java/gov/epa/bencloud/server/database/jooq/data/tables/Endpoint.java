@@ -98,7 +98,7 @@ public class Endpoint extends TableImpl<EndpointRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -112,13 +112,8 @@ public class Endpoint extends TableImpl<EndpointRecord> {
     }
 
     @Override
-    public List<UniqueKey<EndpointRecord>> getKeys() {
-        return Arrays.<UniqueKey<EndpointRecord>>asList(Keys.ENDPOINT_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<EndpointRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<EndpointRecord, ?>>asList(Keys.ENDPOINT__ENDPOINT_ENDPOINT_GROUP_ID_FKEY);
+        return Arrays.asList(Keys.ENDPOINT__ENDPOINT_ENDPOINT_GROUP_ID_FKEY);
     }
 
     private transient EndpointGroup _endpointGroup;

@@ -36,14 +36,16 @@ public class AirQualityLayerMetricsRecord extends UpdatableRecordImpl<AirQuality
     }
 
     /**
-     * Setter for <code>data.air_quality_layer_metrics.air_quality_layer_id</code>.
+     * Setter for
+     * <code>data.air_quality_layer_metrics.air_quality_layer_id</code>.
      */
     public void setAirQualityLayerId(Integer value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>data.air_quality_layer_metrics.air_quality_layer_id</code>.
+     * Getter for
+     * <code>data.air_quality_layer_metrics.air_quality_layer_id</code>.
      */
     public Integer getAirQualityLayerId() {
         return (Integer) get(1);
@@ -64,28 +66,32 @@ public class AirQualityLayerMetricsRecord extends UpdatableRecordImpl<AirQuality
     }
 
     /**
-     * Setter for <code>data.air_quality_layer_metrics.seasonal_metric_id</code>.
+     * Setter for
+     * <code>data.air_quality_layer_metrics.seasonal_metric_id</code>.
      */
     public void setSeasonalMetricId(Integer value) {
         set(3, value);
     }
 
     /**
-     * Getter for <code>data.air_quality_layer_metrics.seasonal_metric_id</code>.
+     * Getter for
+     * <code>data.air_quality_layer_metrics.seasonal_metric_id</code>.
      */
     public Integer getSeasonalMetricId() {
         return (Integer) get(3);
     }
 
     /**
-     * Setter for <code>data.air_quality_layer_metrics.annual_statistic_id</code>.
+     * Setter for
+     * <code>data.air_quality_layer_metrics.annual_statistic_id</code>.
      */
     public void setAnnualStatisticId(Integer value) {
         set(4, value);
     }
 
     /**
-     * Getter for <code>data.air_quality_layer_metrics.annual_statistic_id</code>.
+     * Getter for
+     * <code>data.air_quality_layer_metrics.annual_statistic_id</code>.
      */
     public Integer getAnnualStatisticId() {
         return (Integer) get(4);
@@ -176,14 +182,16 @@ public class AirQualityLayerMetricsRecord extends UpdatableRecordImpl<AirQuality
     }
 
     /**
-     * Setter for <code>data.air_quality_layer_metrics.cell_count_above_lrl</code>.
+     * Setter for
+     * <code>data.air_quality_layer_metrics.cell_count_above_lrl</code>.
      */
     public void setCellCountAboveLrl(Integer value) {
         set(11, value);
     }
 
     /**
-     * Getter for <code>data.air_quality_layer_metrics.cell_count_above_lrl</code>.
+     * Getter for
+     * <code>data.air_quality_layer_metrics.cell_count_above_lrl</code>.
      */
     public Integer getCellCountAboveLrl() {
         return (Integer) get(11);

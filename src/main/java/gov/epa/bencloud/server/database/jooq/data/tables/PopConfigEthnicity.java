@@ -91,12 +91,12 @@ public class PopConfigEthnicity extends TableImpl<PopConfigEthnicityRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<ForeignKey<PopConfigEthnicityRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<PopConfigEthnicityRecord, ?>>asList(Keys.POP_CONFIG_ETHNICITY__POP_CONFIG_ETHNICITY_POP_CONFIG_ID_FKEY, Keys.POP_CONFIG_ETHNICITY__POP_CONFIG_ETHNICITY_ETHNICITY_ID_FKEY);
+        return Arrays.asList(Keys.POP_CONFIG_ETHNICITY__POP_CONFIG_ETHNICITY_POP_CONFIG_ID_FKEY, Keys.POP_CONFIG_ETHNICITY__POP_CONFIG_ETHNICITY_ETHNICITY_ID_FKEY);
     }
 
     private transient PopConfig _popConfig;

@@ -1,6 +1,7 @@
 package gov.epa.bencloud.server.tasks.local;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.Vector;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jooq.Record;
 import org.jooq.Record3;
 import org.jooq.Result;
 import org.mariuszgromada.math.mxparser.Expression;
@@ -31,6 +33,7 @@ import gov.epa.bencloud.api.model.AirQualityCell;
 import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.PooledDataSource;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
@@ -66,7 +69,11 @@ public class HIFTaskRunnable implements Runnable {
 		int rowsSaved = 0;
 		
 		try {
-			HIFTaskConfig hifTaskConfig = parseTaskParameters(task);
+			HIFTaskConfig hifTaskConfig = new HIFTaskConfig(task);
+			HIFTaskLog hifTaskLog = new HIFTaskLog(hifTaskConfig);
+			hifTaskLog.setDtStart(LocalDateTime.now());
+			
+			hifTaskLog.addMessage("Starting HIF analysis");
 			messages.add(new TaskMessage("active", "Loading air quality data"));
 			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			
@@ -77,7 +84,6 @@ public class HIFTaskRunnable implements Runnable {
 			
 			ArrayList<Expression> hifFunctionExpressionList = new ArrayList<Expression>();
 			ArrayList<Expression> hifBaselineExpressionList = new ArrayList<Expression>();
-			ArrayList<HealthImpactFunctionRecord> hifDefinitionList = new ArrayList<HealthImpactFunctionRecord>();
 			
 			// incidenceLists contains an array of incidence maps for each HIF
 			ArrayList<Map<Integer, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
@@ -89,6 +95,7 @@ public class HIFTaskRunnable implements Runnable {
 			
 			ArrayList<double[]> hifBetaDistributionLists = new ArrayList<double[]>();
 						
+			hifTaskLog.addMessage("Loaded air quality data");
 			messages.get(messages.size()-1).setStatus("complete");
 			
 			// Inspect each selected HIF and create parallel lists of math expressions and
@@ -106,8 +113,8 @@ public class HIFTaskRunnable implements Runnable {
 				hifFunctionExpressionList.add(e[0]);
 				hifBaselineExpressionList.add(e[1]);
 				
-				HealthImpactFunctionRecord h = HIFUtil.getFunctionDefinition(hif.hifId);
-				hifDefinitionList.add(h);
+				Record h = HIFUtil.getFunctionDefinition(hif.hifId);
+				hif.hifRecord = h.intoMap();
 
 				// Override hif config where user has not provided a value
 				updateHifConfigValues(hif, h);
@@ -128,19 +135,26 @@ public class HIFTaskRunnable implements Runnable {
 				
 				hifBetaDistributionLists.add(distBeta);
 			}
+			
+			
+			// Sort the hifs by endpoint_group and endpoint
+			hifTaskConfig.hifs.sort(HIFConfig.HifConfigEndpointGroupComparator);
+			//Reset the hifTaskConfig into the hifTaskLog now that it's sorted
+			hifTaskLog.setHifTaskConfig(hifTaskConfig);
+			
 			messages.get(messages.size()-1).setStatus("complete");
 			messages.get(messages.size()-1).setMessage("Loaded incidence and prevalence for " + hifTaskConfig.hifs.size() + " function" + (hifTaskConfig.hifs.size()==1 ? "" : "s"));
-			
+			hifTaskLog.addMessage(messages.get(messages.size()-1).getMessage());
 			messages.add(new TaskMessage("active", "Loading population data"));
 			TaskQueue.updateTaskPercentage(taskUuid, 3, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
 			// For each HIF, keep track of which age groups (and what percentage) apply
 			// Hashmap key is the population age range and the value is what percent of that range's population applies to the HIF
-			ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = getPopAgeRangeMapping(hifTaskConfig, hifDefinitionList);
+			ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = getPopAgeRangeMapping(hifTaskConfig);
 			
 			// Load the population dataset
-			Map<Integer, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifDefinitionList, hifTaskConfig);
+			Map<Integer, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig);
 
 			// Load data for the selected HIFs
 			// Determine the race/gender/ethnicity groups and age ranges needed for the
@@ -162,6 +176,7 @@ public class HIFTaskRunnable implements Runnable {
 			mXparser.disableUlpRounding();
 
 			messages.get(messages.size()-1).setStatus("complete");
+			hifTaskLog.addMessage("Loaded population data");
 			messages.add(new TaskMessage("active", "Running health impact functions"));
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
@@ -196,8 +211,8 @@ public class HIFTaskRunnable implements Runnable {
 				hifTaskConfig.hifs.parallelStream().forEach((hifConfig) -> {
 					Expression hifFunctionExpression = hifFunctionExpressionList.get(hifConfig.arrayIdx);
 					Expression hifBaselineExpression = hifBaselineExpressionList.get(hifConfig.arrayIdx);
-					//HIFConfig hifConfig = hifTaskConfig.hifs.get(hifConfig.arrayIdx);
-					HealthImpactFunctionRecord hifDefinition = hifDefinitionList.get(hifConfig.arrayIdx);
+
+					Map<String, Object> hifRecord = hifConfig.hifRecord;
 					double[] betaDist = hifBetaDistributionLists.get(hifConfig.arrayIdx);
 					
 					Map<Integer, Map<Integer, AirQualityCellMetric>> baselineCellMetrics = baselineCell.getCellMetrics();
@@ -213,7 +228,7 @@ public class HIFTaskRunnable implements Runnable {
 					double scenarioValue = scenarioCellFirstMetric.get(scenarioCellFirstMetric.keySet().toArray()[0]).getValue();
 					
 					double seasonalScalar = 1.0;
-					if(hifDefinition.getMetricStatistic() == 0) { // NONE
+					if((int)hifRecord.get("metric_statistic") == 0) { // NONE
 						seasonalScalar = hifConfig.totalDays.doubleValue();
 					}
 					// If we have variable values, grab them for use in the standard deviation calc below. 
@@ -222,7 +237,7 @@ public class HIFTaskRunnable implements Runnable {
 					//Double varB = hifDefinition.getValB().doubleValue() != 0 ? hifDefinition.getValB().doubleValue() : 1.0;
 					//Double varC = hifDefinition.getValC().doubleValue() != 0 ? hifDefinition.getValC().doubleValue() : 1.0;
 					
-					double beta = hifDefinition.getBeta().doubleValue();
+					double beta = ((Double) hifRecord.get("beta")).doubleValue();
 
 					// BenMAP-CE stores air quality values as floats but performs HIF estimates using doubles.
 					// Testing has shown that float to double conversion can cause small changes in values 
@@ -338,6 +353,7 @@ public class HIFTaskRunnable implements Runnable {
 			}
 			rowsSaved += hifResults.size();
 			messages.get(messages.size()-1).setStatus("complete");
+			hifTaskLog.addMessage("Health impact function calculations complete");
 			messages.add(new TaskMessage("active", String.format("Saving %,d results", rowsSaved)));
 			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
@@ -345,6 +361,10 @@ public class HIFTaskRunnable implements Runnable {
 			messages.get(messages.size()-1).setStatus("complete");
 			
 			String completeMessage = String.format("Saved %,d results", rowsSaved);
+			hifTaskLog.addMessage(completeMessage);
+			hifTaskLog.setSuccess(true);
+			hifTaskLog.setDtEnd(LocalDateTime.now());
+			HIFUtil.storeTaskLog(hifTaskLog);
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
@@ -354,44 +374,44 @@ public class HIFTaskRunnable implements Runnable {
 		log.info("Task Complete: " + taskUuid);
 	}
 
-	private void updateHifConfigValues(HIFConfig hif, HealthImpactFunctionRecord h) {
+	private void updateHifConfigValues(HIFConfig hif, Record h) {
 		if(hif.startAge == null) {
-			hif.startAge = h.getStartAge();
+			hif.startAge = h.get("start_age", Integer.class);
 		}
 		if(hif.endAge == null) {
-			hif.endAge = h.getEndAge();	
+			hif.endAge = h.get("end_age", Integer.class);	
 		}
 		if(hif.race == null) {
-			hif.race = h.getRaceId();
+			hif.race = h.get("race_id", Integer.class);
 		}
 		if(hif.gender == null) {
-			hif.gender = h.getGenderId();
+			hif.gender = h.get("gender_id", Integer.class);
 		}
 		if(hif.ethnicity == null) {
-			hif.ethnicity = h.getEthnicityId();
+			hif.ethnicity = h.get("ethnicity_id", Integer.class);
 		}
 		if(hif.incidence == null) {
-			hif.incidence = h.getIncidenceDatasetId();
+			hif.incidence = h.get("incidence_dataset_id", Integer.class);
 		}
 		if(hif.prevalence == null) {
-			hif.prevalence = h.getPrevalenceDatasetId();
+			hif.prevalence = h.get("prevalence_dataset_id", Integer.class);
 		}
 		if(hif.metric == null) {
-			hif.metric = h.getMetricId();
+			hif.metric = h.get("metric_id", Integer.class);
 		}
 		if(hif.seasonalMetric == null) {
-			hif.seasonalMetric = h.getSeasonalMetricId();
+			hif.seasonalMetric = h.get("seasonal_metric_id", Integer.class);
 		}
 		if(hif.metricStatistic == null) {
-			hif.metricStatistic = h.getMetricStatistic();
+			hif.metricStatistic = h.get("metric_statistic", Integer.class);
 		}
 
 		//This is a temporary solution to the fact that user's can't select incidence and 
 		//the standard EPA functions don't have incidence assigned in the db
 		// If the UI passes the year and incidence hints to the methods that get health impact functions, these should already be set
-		if(h.getFunctionText().toLowerCase().contains("incidence")) {
+		if(h.get("function_text", String.class).toLowerCase().contains("incidence")) {
 			if(hif.incidence==null) {
-				if(h.getEndpointGroupId().equals(12)) {
+				if(h.get("endpoint_group_id").equals(12)) {
 					hif.incidence = 1; //Mortality Incidence
 					hif.incidenceYear = 2020;
 				} else {
@@ -399,7 +419,7 @@ public class HIFTaskRunnable implements Runnable {
 					hif.incidenceYear = 2014;
 				}
 			}			
-		} else if (h.getFunctionText().toLowerCase().contains("prevalence")) {
+		} else if (h.get("function_text", String.class).toLowerCase().contains("prevalence")) {
 			if(hif.prevalence==null) {
 					hif.prevalence = 19; //Prevalence
 					hif.prevalenceYear = 2008;
@@ -407,20 +427,20 @@ public class HIFTaskRunnable implements Runnable {
 		}
 
 		if(hif.variable == null) {
-			hif.variable = h.getVariableDatasetId();
+			hif.variable = h.get("variable_dataset_id", Integer.class);
 		}
 		if(hif.startDay == null) {
-			if(h.getStartDay() == null) {
+			if(h.get("start_day") == null) {
 				hif.startDay = 1;
 			} else {
-				hif.startDay = h.getStartDay();
+				hif.startDay = h.get("start_day", Integer.class);
 			}
 		}
 		if(hif.endDay == null) {
-			if(h.getEndDay() == null) {
+			if(h.get("end_day") == null) {
 				hif.endDay = 365;
 			} else {
-				hif.endDay = h.getEndDay();
+				hif.endDay = h.get("end_day", Integer.class);
 			}
 		}
 		
@@ -431,7 +451,7 @@ public class HIFTaskRunnable implements Runnable {
 		}
 	}
 
-	private ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig, ArrayList<HealthImpactFunctionRecord> hifDefinitionList) {
+	private ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
 		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = new ArrayList<HashMap<Integer, Double>>();
 		
 		// Get the full list of age ranges for the population
@@ -456,70 +476,12 @@ public class HIFTaskRunnable implements Runnable {
 		
 		return hifPopAgeRangeMapping;
 	}
-
-	public HIFTaskConfig parseTaskParameters(Task task) {
-
-		HIFTaskConfig hifTaskConfig = new HIFTaskConfig();
-
-		try {
-			String paramString = task.getParameters();
-
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode params = mapper.readTree(paramString);
-			JsonNode aqLayers = params.get("air_quality_data");
-
-			hifTaskConfig.name = task.getName();
-
-			for (JsonNode aqLayer : aqLayers) {
-				switch (aqLayer.get("type").asText().toLowerCase()) {
-				case "baseline":
-					hifTaskConfig.aqBaselineId = aqLayer.get("id").asInt();
-					break;
-				case "scenario":
-					hifTaskConfig.aqScenarioId = aqLayer.get("id").asInt();
-					break;
-				}
-			}
-			JsonNode popConfig = params.get("population");
-			hifTaskConfig.popId = popConfig.get("id").asInt();
-			hifTaskConfig.popYear = popConfig.get("year").asInt();
-			JsonNode functions = params.get("functions");
-			parseFunctions(functions, hifTaskConfig);
-			
-			hifTaskConfig.preserveLegacyBehavior = params.has("preserveLegacyBehavior") ? params.get("preserveLegacyBehavior").asBoolean(false) : false;
-			
-		} catch (JsonMappingException e) {
-			log.error("Error parsing task parameters", e);
-		} catch (JsonProcessingException e) {
-			log.error("Error processing task parameters", e);
-		}
-		return hifTaskConfig;
-	}
-
-	private void parseFunctions(JsonNode functions, HIFTaskConfig hifTaskConfig) {
-		for (JsonNode function : functions) {
-			HIFConfig hifConfig = new HIFConfig();
-			hifConfig.hifId = function.get("id").asInt();
-			hifConfig.startAge = function.has("start_age") ? function.get("start_age").asInt() : null;
-			hifConfig.endAge = function.has("end_age") ? function.get("end_age").asInt() : null;
-			hifConfig.race = function.has("race_id") ? function.get("race_id").asInt() : null;
-			hifConfig.ethnicity = function.has("ethnicity_id") ? function.get("ethnicity_id").asInt() : null;
-			hifConfig.gender = function.has("gender_id") ? function.get("gender_id").asInt() : null;
-			hifConfig.incidence = function.has("incidence_dataset_id") ? function.get("incidence_dataset_id").asInt() : null;
-			hifConfig.incidenceYear = function.has("incidence_year") ? function.get("incidence_year").asInt() : null;
-			hifConfig.prevalence = function.has("prevalence_dataset_id") ? function.get("prevalence_dataset_id").asInt() : null;
-			hifConfig.prevalenceYear = function.has("prevalence_year") ? function.get("prevalence_year").asInt() : null;
-			hifConfig.variable = function.has("variable") ? function.get("variable").asInt() : null;
-			//TODO: Add code to allow user to specific metric, seasonal metric, and metric statistic
-			hifTaskConfig.hifs.add(hifConfig);
-		}
-	}
 	
-	private double[] getDistributionSamples(HealthImpactFunctionRecord h) {
+	private double[] getDistributionSamples(Record h) {
 		//TODO: At the moment, all HIFs are normal distribution. Need to build this out to support other types.
 		double[] samples = new double[10000];
 		
-		RealDistribution distribution = new NormalDistribution(h.getBeta().doubleValue(), h.getP1Beta().doubleValue());
+		RealDistribution distribution = new NormalDistribution(h.get("beta", Double.class), h.get("p1_beta", Double.class));
 		
 		Random rng = new Random(1);
 		for (int i = 0; i < samples.length; i++)

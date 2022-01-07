@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PollutantRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -108,7 +105,7 @@ public class Pollutant extends TableImpl<PollutantRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -119,11 +116,6 @@ public class Pollutant extends TableImpl<PollutantRecord> {
     @Override
     public UniqueKey<PollutantRecord> getPrimaryKey() {
         return Keys.POLLUTANT_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<PollutantRecord>> getKeys() {
-        return Arrays.<UniqueKey<PollutantRecord>>asList(Keys.POLLUTANT_PKEY);
     }
 
     @Override

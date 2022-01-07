@@ -8,9 +8,6 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionGroupRecord;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -72,14 +69,16 @@ public class HealthImpactFunctionGroup extends TableImpl<HealthImpactFunctionGro
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function_group</code> table reference
+     * Create an aliased <code>data.health_impact_function_group</code> table
+     * reference
      */
     public HealthImpactFunctionGroup(String alias) {
         this(DSL.name(alias), HEALTH_IMPACT_FUNCTION_GROUP);
     }
 
     /**
-     * Create an aliased <code>data.health_impact_function_group</code> table reference
+     * Create an aliased <code>data.health_impact_function_group</code> table
+     * reference
      */
     public HealthImpactFunctionGroup(Name alias) {
         this(alias, HEALTH_IMPACT_FUNCTION_GROUP);
@@ -98,7 +97,7 @@ public class HealthImpactFunctionGroup extends TableImpl<HealthImpactFunctionGro
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -109,11 +108,6 @@ public class HealthImpactFunctionGroup extends TableImpl<HealthImpactFunctionGro
     @Override
     public UniqueKey<HealthImpactFunctionGroupRecord> getPrimaryKey() {
         return Keys.HEALTH_IMPACT_FUNCTION_GROUP_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<HealthImpactFunctionGroupRecord>> getKeys() {
-        return Arrays.<UniqueKey<HealthImpactFunctionGroupRecord>>asList(Keys.HEALTH_IMPACT_FUNCTION_GROUP_PKEY);
     }
 
     @Override

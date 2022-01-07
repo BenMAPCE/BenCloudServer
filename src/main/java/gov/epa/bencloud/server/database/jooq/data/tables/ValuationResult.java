@@ -48,7 +48,8 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     }
 
     /**
-     * The column <code>data.valuation_result.valuation_result_dataset_id</code>.
+     * The column
+     * <code>data.valuation_result.valuation_result_dataset_id</code>.
      */
     public final TableField<ValuationResultRecord, Integer> VALUATION_RESULT_DATASET_ID = createField(DSL.name("valuation_result_dataset_id"), SQLDataType.INTEGER, this, "");
 
@@ -152,12 +153,12 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.VALUATION_RESULT_VALUATION_RESULT_DATASET_ID_IDX);
+        return Arrays.asList(Indexes.VALUATION_RESULT_VALUATION_RESULT_DATASET_ID_IDX);
     }
 
     @Override

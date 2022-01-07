@@ -54,7 +54,8 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
     public final TableField<IncomeGrowthAdjFactorRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>data.income_growth_adj_factor.income_growth_adj_dataset_id</code>.
+     * The column
+     * <code>data.income_growth_adj_factor.income_growth_adj_dataset_id</code>.
      */
     public final TableField<IncomeGrowthAdjFactorRecord, Short> INCOME_GROWTH_ADJ_DATASET_ID = createField(DSL.name("income_growth_adj_dataset_id"), SQLDataType.SMALLINT.nullable(false), this, "");
 
@@ -82,14 +83,16 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
     }
 
     /**
-     * Create an aliased <code>data.income_growth_adj_factor</code> table reference
+     * Create an aliased <code>data.income_growth_adj_factor</code> table
+     * reference
      */
     public IncomeGrowthAdjFactor(String alias) {
         this(DSL.name(alias), INCOME_GROWTH_ADJ_FACTOR);
     }
 
     /**
-     * Create an aliased <code>data.income_growth_adj_factor</code> table reference
+     * Create an aliased <code>data.income_growth_adj_factor</code> table
+     * reference
      */
     public IncomeGrowthAdjFactor(Name alias) {
         this(alias, INCOME_GROWTH_ADJ_FACTOR);
@@ -108,7 +111,7 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
 
     @Override
     public Schema getSchema() {
-        return Data.DATA;
+        return aliased() ? null : Data.DATA;
     }
 
     @Override
@@ -122,13 +125,8 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
     }
 
     @Override
-    public List<UniqueKey<IncomeGrowthAdjFactorRecord>> getKeys() {
-        return Arrays.<UniqueKey<IncomeGrowthAdjFactorRecord>>asList(Keys.INCOME_GROWTH_ADJ_FACTOR_PKEY);
-    }
-
-    @Override
     public List<ForeignKey<IncomeGrowthAdjFactorRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<IncomeGrowthAdjFactorRecord, ?>>asList(Keys.INCOME_GROWTH_ADJ_FACTOR__INCOME_GROWTH_ADJ_FACTOR_INCOME_GROWTH_ADJ_DATASET_ID_FKEY, Keys.INCOME_GROWTH_ADJ_FACTOR__INCOME_GROWTH_ADJ_FACTOR_ENDPOINT_GROUP_ID_FKEY);
+        return Arrays.asList(Keys.INCOME_GROWTH_ADJ_FACTOR__INCOME_GROWTH_ADJ_FACTOR_INCOME_GROWTH_ADJ_DATASET_ID_FKEY, Keys.INCOME_GROWTH_ADJ_FACTOR__INCOME_GROWTH_ADJ_FACTOR_ENDPOINT_GROUP_ID_FKEY);
     }
 
     private transient IncomeGrowthAdjDataset _incomeGrowthAdjDataset;

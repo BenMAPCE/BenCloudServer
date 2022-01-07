@@ -21,14 +21,16 @@ public class ValuationResultFunctionConfigRecord extends TableRecordImpl<Valuati
     private static final long serialVersionUID = 1L;
 
     /**
-     * Setter for <code>data.valuation_result_function_config.valuation_result_dataset_id</code>.
+     * Setter for
+     * <code>data.valuation_result_function_config.valuation_result_dataset_id</code>.
      */
     public void setValuationResultDatasetId(Integer value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>data.valuation_result_function_config.valuation_result_dataset_id</code>.
+     * Getter for
+     * <code>data.valuation_result_function_config.valuation_result_dataset_id</code>.
      */
     public Integer getValuationResultDatasetId() {
         return (Integer) get(0);
