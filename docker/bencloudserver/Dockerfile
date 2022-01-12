@@ -1,4 +1,4 @@
-FROM amazoncorretto:8-alpine
+FROM amazoncorretto:17-alpine
 
 ENV postgresql_host bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
 ENV postgresql_port 5432
