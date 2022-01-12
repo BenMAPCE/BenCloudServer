@@ -69,7 +69,7 @@ Development:
     - kubectl config set-cluster benmap-shared-dev00 --server="$KUBE_URL"
     - kubectl config set-cluster benmap-shared-dev00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
     - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
-    - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="$KUBE_NAMESPACE"
+    - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="benmap-dev"
     - kubectl config use-context default
     - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
   environment:
