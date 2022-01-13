@@ -74,9 +74,9 @@ Development:
     - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
   environment:
     name: testdev
-    url: http://bencloud-dev.devsecops-eval.epa.gov
+    url: http://dev.bencloud-dev.aws.epa.gov
     kubernetes:
-      namespace: bencloud-testdev
+      namespace: benmap-dev
   variables:
     DB_CONNECTION: postgres
     DB_HOST: bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
@@ -84,17 +84,4 @@ Development:
     DB_DATABASE: benmap
     DB_USERNAME: benmap_system
     DB_PASSWORD: secret
-
-
-#test:
-#  stage: test
-#  script: gradle check
-#  tags:
-#    - gradle
-#  cache:
-#    key: "$CI_COMMIT_REF_NAME"
-#    policy: pull
-#    paths:
-#      - build
-
 

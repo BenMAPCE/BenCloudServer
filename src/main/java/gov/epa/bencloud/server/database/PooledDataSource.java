@@ -72,6 +72,7 @@ public class PooledDataSource {
 				databasePropertiesFound = false;
 			} else {
 				log.info("using environment variables");
+				log.info("DB_HOST: " + databaseHost);
 			}
 		}
 		
