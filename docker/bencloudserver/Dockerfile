@@ -12,6 +12,7 @@ COPY BenCloudServer.jar /bencloud/BenCloudServer.jar
 COPY bencloud-server.properties /bencloud/bencloud-server.properties
 ADD config /bencloud/config
 ADD www /bencloud/www
+RUN mkdir /bencloud/logs
 
 ENTRYPOINT java -jar /bencloud/BenCloudServer.jar
 
