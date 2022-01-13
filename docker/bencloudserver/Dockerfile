@@ -13,6 +13,7 @@ COPY bencloud-server.properties /bencloud/bencloud-server.properties
 ADD config /bencloud/config
 ADD www /bencloud/www
 RUN mkdir /bencloud/logs
+RUN chmod 777 /bencloud/logs
 
 ENTRYPOINT java -jar /bencloud/BenCloudServer.jar
 
