@@ -2,10 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bencloud-server
+  namespace: benmap-dev
   annotations:
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
-    eks.amazonaws.com/compute-type: fargate
 spec:
   replicas: 1
   selector:
@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        app: bencloudserver
+        app: bencloud-server
       annotations:
         app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
         app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}

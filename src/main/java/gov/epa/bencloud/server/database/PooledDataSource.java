@@ -56,11 +56,11 @@ public class PooledDataSource {
 
 			log.info("bencloud-local.properties not found");
 
-			databaseHost = System.getenv("postgresql_host");
-			databasePort = System.getenv("postgresql_port");
-			databaseName = System.getenv("postgresql_database");
-			databaseUser = System.getenv("postgresql_user");
-			databasePassword = System.getenv("postgresql_password");
+			databaseHost = System.getenv("DB_HOST");
+			databasePort = System.getenv("DB_PORT");
+			databaseName = System.getenv("DB_DATABASE");
+			databaseUser = System.getenv("DB_USERNAME");
+			databasePassword = System.getenv("DB_PASSWORD");
 
 			if ((null == databaseHost) || 
 					(null == databasePort) ||
@@ -72,6 +72,7 @@ public class PooledDataSource {
 				databasePropertiesFound = false;
 			} else {
 				log.info("using environment variables");
+				log.info("DB_HOST: " + databaseHost);
 			}
 		}
 		

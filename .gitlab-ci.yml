@@ -69,32 +69,19 @@ Development:
     - kubectl config set-cluster benmap-shared-dev00 --server="$KUBE_URL"
     - kubectl config set-cluster benmap-shared-dev00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
     - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
-    - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="$KUBE_NAMESPACE"
+    - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="benmap-dev"
     - kubectl config use-context default
     - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
   environment:
     name: testdev
-    url: http://bencloud-dev.devsecops-eval.epa.gov
+    url: http://dev.bencloud-dev.aws.epa.gov/api
     kubernetes:
-      namespace: bencloud-testdev
-  variables:
-    DB_CONNECTION: postgres
-    DB_HOST: bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
-    DB_PORT: 5432
-    DB_DATABASE: benmap
-    DB_USERNAME: benmap_system
-    DB_PASSWORD: secret
-
-
-#test:
-#  stage: test
-#  script: gradle check
-#  tags:
-#    - gradle
-#  cache:
-#    key: "$CI_COMMIT_REF_NAME"
-#    policy: pull
-#    paths:
-#      - build
-
+      namespace: benmap-dev
+#  variables:
+#    DB_CONNECTION: postgres
+#    DB_HOST: bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
+#    DB_PORT: 5432
+#    DB_DATABASE: benmap
+#    DB_USERNAME: benmap_system
+#    DB_PASSWORD: secret
 
