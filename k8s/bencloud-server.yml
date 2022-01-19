@@ -64,3 +64,39 @@ spec:
       imagePullSecrets:
       - name: glcr-auth
 
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: bencloud-server-service
+  annotations:
+    app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+    app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+spec:
+  ports:
+  - port: 4567
+  selector:
+    app: bencloud-server
+
+---
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: bencloudapp-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+    app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+#   nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+spec:
+  rules:
+    - host: dev.bencloud-dev.aws.epa.gov
+      http:
+        paths:
+        - path: /api
+          pathType: Prefix
+        - backend:
+          serviceName: bencloud-server-service
+          servicePort: 4567

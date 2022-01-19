@@ -77,11 +77,4 @@ Development:
     url: http://dev.bencloud-dev.aws.epa.gov/api
     kubernetes:
       namespace: benmap-dev
-#  variables:
-#    DB_CONNECTION: postgres
-#    DB_HOST: bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
-#    DB_PORT: 5432
-#    DB_DATABASE: benmap
-#    DB_USERNAME: benmap_system
-#    DB_PASSWORD: secret
 

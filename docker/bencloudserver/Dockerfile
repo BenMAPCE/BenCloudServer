@@ -17,7 +17,7 @@ RUN chmod 777 /bencloud/logs
 
 ENTRYPOINT java -jar /bencloud/BenCloudServer.jar
 
-
+EXPOSE 4567
 
 
 
