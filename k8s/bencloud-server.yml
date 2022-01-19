@@ -103,4 +103,4 @@ spec:
            service:
             name: bencloud-server-service
             port: 
-             number: 4567
+             number: 443
