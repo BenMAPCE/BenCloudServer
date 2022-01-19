@@ -99,6 +99,8 @@ spec:
         paths:
         - path: /api
           pathType: Prefix
-        - backend:
-          serviceName: bencloud-server-service
-          servicePort: 4567
+          backend:
+           service:
+            name: bencloud-server-service
+            port: 
+             number: 4567
