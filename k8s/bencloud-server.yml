@@ -75,13 +75,15 @@ metadata:
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
 spec:
   ports:
-  - port: 4567
+  - protocol: TCP
+    port: 443
+    targetPort: 4567
   selector:
     app: bencloud-server
 
 ---
 
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: bencloudapp-ingress
