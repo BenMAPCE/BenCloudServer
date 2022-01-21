@@ -97,8 +97,11 @@ public class ValuationTaskRunnable implements Runnable {
 					hifIdList.add(vfConfig.hifId);
 				}
 				valuationFunctionExpressionList.add(ValuationUtil.getFunctionExpression(vfConfig.vfId));
+				
 				ValuationFunctionRecord vfDefinition = ValuationUtil.getFunctionDefinition(vfConfig.vfId);
 				vfDefinitionList.add(vfDefinition);
+				
+				vfConfig.vfRecord = vfDefinition.intoMap();
 				
 				double[] distBetas = new double[100];
 				double[] distSamples = getDistributionSamples(vfDefinition);

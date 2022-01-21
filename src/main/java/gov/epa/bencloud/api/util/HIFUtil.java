@@ -4,7 +4,11 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.Vector;
 
 
@@ -78,6 +82,7 @@ public class HIFUtil {
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
 						,ENDPOINT.NAME.as("endpoint_name")
 						,POLLUTANT.NAME.as("pollutant_name")
+						,POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
 						,POLLUTANT_METRIC.NAME.as("metric_name")
 						,SEASONAL_METRIC.NAME.as("seasonal_metric_name")
 						,STATISTIC_TYPE.NAME.as("metric_statistic_name")
@@ -371,37 +376,45 @@ public class HIFUtil {
 	}
 
 	/*
-	 * Returns unique, sorted list of health effects included in a list of hifs
+	 * Returns unique, sorted list of health effects included in a list of hifs along with a count
 	 */
 	public static String getHealthEffectsListFromHifs(List<HIFConfig> hifs) {
-		List<String> lst = new ArrayList<String>();
-		
-		for(HIFConfig hif : hifs) {
+		Map<String, Integer> epMap = new TreeMap<String, Integer>();
+
+		for (HIFConfig hif : hifs) {
 			Object ep = hif.hifRecord.get("endpoint_name");
-			
-			if(ep != null && !lst.contains(ep.toString())) {
-				lst.add(ep.toString());
+
+			if (ep != null) {
+				epMap.put(ep.toString(), epMap.getOrDefault(ep.toString(), 0) + 1);
 			}
 		}
-		lst.sort(null);
-		return "- " + String.join("\n- ", lst);
+		
+		StringBuilder s = new StringBuilder();
+		for(Entry<String, Integer> ep : epMap.entrySet()) {
+			s.append("- ").append(ep.getKey()).append(" (").append(ep.getValue()).append(")\n");
+		}
+		return s.toString();
 	}
 	
 	/*
-	 * Returns unique, sorted list of health effect groups included in a list of hifs
+	 * Returns unique, sorted list of health effect groups included in a list of hifs along with a count
 	 */
 	public static String getHealthEffectGroupsListFromHifs(List<HIFConfig> hifs) {
-		List<String> lst = new ArrayList<String>();
-		
-		for(HIFConfig hif : hifs) {
+		Map<String, Integer> epMap = new TreeMap<String, Integer>();
+
+		for (HIFConfig hif : hifs) {
 			Object ep = hif.hifRecord.get("endpoint_group_name");
-			
-			if(ep != null && !lst.contains(ep.toString())) {
-				lst.add(ep.toString());
+
+			if (ep != null) {
+				epMap.put(ep.toString(), epMap.getOrDefault(ep.toString(), 0) + 1);
 			}
 		}
-		lst.sort(null);
-		return "- " + String.join("\n- ", lst);
+		
+		StringBuilder s = new StringBuilder();
+		for(Entry<String, Integer> ep : epMap.entrySet()) {
+			s.append("- ").append(ep.getKey()).append(" (").append(ep.getValue()).append(")\n");
+		}
+		return s.toString();
 	}
 	
 	

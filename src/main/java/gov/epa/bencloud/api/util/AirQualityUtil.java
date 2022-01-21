@@ -3,6 +3,7 @@ package gov.epa.bencloud.api.util;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +105,18 @@ public class AirQualityUtil {
 		}
 
 		return metricIds;
+	}
+
+	public static String getPollutantMetricList(Integer id) {
+		String[] pollutantMetrics = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(POLLUTANT_METRIC.NAME)
+				.from(POLLUTANT_METRIC)
+				.where(POLLUTANT_METRIC.POLLUTANT_ID.eq(id))
+				.orderBy(POLLUTANT_METRIC.NAME)
+				.fetchArray(POLLUTANT_METRIC.NAME);		
+		
+		
+		return String.join(", ", pollutantMetrics);
 	}
 
 }

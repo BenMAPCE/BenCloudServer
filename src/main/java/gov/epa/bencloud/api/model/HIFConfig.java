@@ -81,9 +81,9 @@ public class HIFConfig {
 		b.append("Ethnicity: ").append(ApiUtil.getEthnicityNameLookup().getOrDefault(ethnicity, "")).append("\n");
 		b.append("Gender: ").append(ApiUtil.getGenderNameLookup().getOrDefault(gender, "")).append("\n");
 		
-		b.append("Pollutant: ").append(hifRecord.getOrDefault("pollutant_name", "")).append("\n");
+		b.append("Pollutant: ").append(hifRecord.getOrDefault("pollutant_friendly_name", hifRecord.getOrDefault("pollutant_name", "Null"))).append("\n");
 		b.append("Metric: ").append(hifRecord.getOrDefault("metric_name", "")).append("\n");
-		b.append("Seasonal Metric: ").append(hifRecord.get("seasonal_metric_name") == null ? "" : hifRecord.get("seasonal_metric_name")).append("\n"); 
+		b.append("Seasonal Metric: ").append(hifRecord.get("seasonal_metric_name") == null ? "Null" : hifRecord.get("seasonal_metric_name")).append("\n"); 
 		b.append("Metric Statistic: ").append(hifRecord.getOrDefault("metric_statistic_name", "")).append("\n");
 		
 		if(hifRecord.get("other_pollutants") != null) {
@@ -100,10 +100,10 @@ public class HIFConfig {
 		b.append("Baseline Function: ").append(hifRecord.get("baseline_function_text")).append("\n");
 		
 		if(incidence != null && incidence != 0) {
-			b.append("Incidence: ").append(IncidenceApi.getIncidenceDatasetName(incidence)).append(" (").append(incidenceYear).append(")\n");
+			b.append("Incidence Dataset: ").append(IncidenceApi.getIncidenceDatasetName(incidence)).append(" (").append(incidenceYear).append(")\n");
 		}
 		if(prevalence != null && prevalence != 0) {
-			b.append("Prevalence: ").append(IncidenceApi.getIncidenceDatasetName(prevalence)).append(" (").append(prevalenceYear).append(")\n");
+			b.append("Prevalence Dataset: ").append(IncidenceApi.getIncidenceDatasetName(prevalence)).append(" (").append(prevalenceYear).append(")\n");
 		}
 		
 		b.append("Beta: ").append(hifRecord.get("beta")).append("\n");
@@ -139,11 +139,11 @@ public class HIFConfig {
 				return 0;
 			}
 			
-			String groupAndEndpoint1 = h1.hifRecord.get("endpoint_group_name") == null ? "" : h1.hifRecord.get("endpoint_group_name").toString() + "|" +
-					h1.hifRecord.get("endpoint_name") == null ? "" : h1.hifRecord.get("endpoint_name").toString();
+			String groupAndEndpoint1 = (h1.hifRecord.get("endpoint_group_name") == null ? "" : h1.hifRecord.get("endpoint_group_name").toString()) + "|" +
+					(h1.hifRecord.get("endpoint_name") == null ? "" : h1.hifRecord.get("endpoint_name").toString());
 			
-			String groupAndEndpoint2 = h2.hifRecord.get("endpoint_group_name") == null ? "" : h2.hifRecord.get("endpoint_group_name").toString() + "|" +
-					h2.hifRecord.get("endpoint_name") == null ? "" : h2.hifRecord.get("endpoint_name").toString();
+			String groupAndEndpoint2 = (h2.hifRecord.get("endpoint_group_name") == null ? "" : h2.hifRecord.get("endpoint_group_name").toString()) + "|" +
+					(h2.hifRecord.get("endpoint_name") == null ? "" : h2.hifRecord.get("endpoint_name").toString());
 			
 			return groupAndEndpoint1.compareTo(groupAndEndpoint2);
 		}

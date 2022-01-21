@@ -14,27 +14,27 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import gov.epa.bencloud.server.util.DataUtil;
 
-public class HIFTaskLog extends TaskLog {
-	private static final Logger log = LoggerFactory.getLogger(HIFTaskLog.class);
+public class ValuationTaskLog extends TaskLog {
+	private static final Logger log = LoggerFactory.getLogger(ValuationTaskLog.class);
 	private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
 	
-	private HIFTaskConfig hifTaskConfig = null;
+	private ValuationTaskConfig vfTaskConfig = null;
 	private List<String> logMessages = new ArrayList<String>();
 	
-	public HIFTaskLog() {
+	public ValuationTaskLog() {
 		super();
 	}
 	
-	public HIFTaskLog(HIFTaskConfig hifTaskConfig) {
+	public ValuationTaskLog(ValuationTaskConfig vfTaskConfig) {
 		super();
-		this.hifTaskConfig = hifTaskConfig;
+		this.vfTaskConfig = vfTaskConfig;
 	}
 	
-	public HIFTaskConfig getHifTaskConfig() {
-		return hifTaskConfig;
+	public ValuationTaskConfig getVfTaskConfig() {
+		return vfTaskConfig;
 	}
-	public void setHifTaskConfig(HIFTaskConfig hifTaskConfig) {
-		this.hifTaskConfig = hifTaskConfig;
+	public void setHifTaskConfig(ValuationTaskConfig vfTaskConfig) {
+		this.vfTaskConfig = vfTaskConfig;
 	}
 	public List<String> getLogMessages() {
 		return logMessages;
@@ -51,7 +51,7 @@ public class HIFTaskLog extends TaskLog {
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
-		b.append("HEALTH IMPACT FUNCTION TASK LOG\n");
+		b.append("Valuation Function Task Log\n");
 		b.append("BenMAP Cloud application version: ")
 			.append(getAppVersion())
 			.append(", database version: ")
@@ -68,9 +68,9 @@ public class HIFTaskLog extends TaskLog {
 			.append("\n");
 		b.append("\n");
 
-		b.append(hifTaskConfig.toString());
+		b.append(vfTaskConfig.toString());
 		
-		b.append("\nPROCESSING LOG\n\n");
+		b.append("\nProcessing Log\n");
 		for(String msg : logMessages) {
 			b.append(msg).append("\n");	
 		}
