@@ -417,6 +417,15 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
+		service.get(apiPrefix + "/admin-purge-results", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = CoreApi.getPurgeResults(req, res);
+			res.type("application/json");
+			return data;
+
+		});
 	}
 
 }
