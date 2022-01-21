@@ -15,7 +15,7 @@ ADD www /bencloud/www
 RUN mkdir /bencloud/logs
 RUN chmod 777 /bencloud/logs
 
-ENTRYPOINT java -XX:+UseG1GC -Xms2048m -Xmx2048m -jar /bencloud/BenCloudServer.jar
+ENTRYPOINT java -jar /bencloud/BenCloudServer.jar
 
 EXPOSE 4567
 
