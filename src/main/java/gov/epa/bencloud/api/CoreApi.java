@@ -75,6 +75,10 @@ public class CoreApi {
 		.execute();
 
 		create
+		.truncate(TASK_QUEUE)
+		.execute();
+		
+		create
 		.truncate(TASK_COMPLETE)
 		.execute();
 		
