@@ -51,6 +51,13 @@ spec:
       - name: api
         image:  registry.epa.gov/benmap/bencloudserver/bencloudserver:$CI_COMMIT_SHORT_SHA
         imagePullPolicy: Always
+        resources:
+         requests:
+          memory: "6Gi"
+          cpu: "1000m"
+         limits:
+          memory: "6Gi"
+          cpu: "1000m"
         livenessProbe:
          tcpSocket:
             port: 4567
