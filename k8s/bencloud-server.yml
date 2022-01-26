@@ -53,11 +53,8 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: "4Gi"
-          cpu: "2000m"
-         limits:
-          memory: "4Gi"
-          cpu: "2000m"
+          memory: "8Gi"
+          cpu: "2"
         livenessProbe:
          tcpSocket:
             port: 4567
@@ -100,6 +97,10 @@ metadata:
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
 #   nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
 spec:
+  tls:
+    - hosts:
+        - dev.bencloud-dev.aws.epa.gov
+      secretName: bencloud-tls-secret
   rules:
     - host: dev.bencloud-dev.aws.epa.gov
       http:
