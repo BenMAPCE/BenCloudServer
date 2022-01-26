@@ -53,7 +53,7 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: 8G
+          memory: 7G
           cpu: 4
         livenessProbe:
          tcpSocket:
