@@ -2,6 +2,7 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
@@ -64,5 +65,50 @@ public class CoreApi {
 		.fetchOne();
 		
 		return rec.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+	}
+
+	public static Object getPurgeResults(Request req, Response res) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		create
+		.truncate(TASK_WORKER)
+		.execute();
+
+		create
+		.truncate(TASK_QUEUE)
+		.execute();
+		
+		create
+		.truncate(TASK_COMPLETE)
+		.execute();
+		
+		create
+		.truncate(HIF_RESULT)
+		.execute();
+		
+		create
+		.truncate(HIF_RESULT_FUNCTION_CONFIG)
+		.execute();
+		
+		create
+		.truncate(HIF_RESULT_DATASET)
+		.execute();
+		
+		create
+		.truncate(VALUATION_RESULT)
+		.execute();
+		
+		create
+		.truncate(VALUATION_RESULT_FUNCTION_CONFIG)
+		.execute();
+		
+		create
+		.truncate(VALUATION_RESULT_DATASET)
+		.execute();
+		
+		create
+		.execute("vacuum analyze");
+		
+		return true;
 	}
 }

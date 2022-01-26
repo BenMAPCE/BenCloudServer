@@ -139,8 +139,6 @@ public class HIFTaskRunnable implements Runnable {
 			
 			// Sort the hifs by endpoint_group and endpoint
 			hifTaskConfig.hifs.sort(HIFConfig.HifConfigEndpointGroupComparator);
-			//Reset the hifTaskConfig into the hifTaskLog now that it's sorted
-			hifTaskLog.setHifTaskConfig(hifTaskConfig);
 			
 			messages.get(messages.size()-1).setStatus("complete");
 			messages.get(messages.size()-1).setMessage("Loaded incidence and prevalence for " + hifTaskConfig.hifs.size() + " function" + (hifTaskConfig.hifs.size()==1 ? "" : "s"));

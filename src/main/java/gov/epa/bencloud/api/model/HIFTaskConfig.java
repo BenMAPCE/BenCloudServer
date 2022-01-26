@@ -5,7 +5,10 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POPULATION_DATASET;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.jooq.JSON;
 import org.jooq.Record3;
@@ -21,8 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.GridDefinitionApi;
 import gov.epa.bencloud.api.PopulationApi;
+import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
+import io.vavr.collection.Array;
 
 public class HIFTaskConfig {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskConfig.class);
@@ -91,18 +96,31 @@ public class HIFTaskConfig {
 		Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId);
 		
 		b.append("Task Name: ").append(name).append("\n\n");
+		
+		Record3<String, Integer, String> populationInfo = PopulationApi.getPopulationDatasetInfo(popId);
+		b.append("Analysis Year: ").append(popYear).append("\n\n");
+		
 		/*
 		 * Pollutant
 		 */
-		b.append("Pollutant\n");
-		b.append(baselineAq.getValue("pollutant_friendly_name"))
+		String pollMetrics = AirQualityUtil.getPollutantMetricList((Integer)baselineAq.getValue("pollutant_id"));
+		
+		b.append("POLLUTANT\n\n");
+		b.append("Pollutant Name: ")
+			.append(baselineAq.getValue("pollutant_friendly_name"))
+			.append("\nDefined Metrics: ")
+			.append(pollMetrics)
 			.append("\n\n");
 
+		b.append("AIR QUALITY DATA\n\n");
 		/*
 		 * Pre-policy AQ
 		 */
 		b.append("Pre-policy Air Quality Surface\n");
 		b.append("Name: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
+		b.append("Source: ")
+			.append("Model")
+			.append("\n");		
 		Record3<String, Integer, Integer> gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(baselineAq.getValue(AIR_QUALITY_LAYER.GRID_DEFINITION_ID));
 		b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
 		//b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
@@ -116,8 +134,8 @@ public class HIFTaskConfig {
 			if(metricStats.isArray()) {
 				for(JsonNode stat : metricStats) {
 					b.append("Metric: ").append(stat.get("metric_name").asText()).append("\n");
-					b.append("- Seasonal Metric: ").append(stat.get("seasonal_metric_name").asText()).append("\n");
-					b.append("- Annual Statistic: ").append(stat.get("annual_statistic_name").asText()).append("\n");
+					b.append("- Seasonal Metric: ").append(stat.get("seasonal_metric_name").asText("Null")).append("\n");
+					b.append("- Annual Statistic: ").append(stat.get("annual_statistic_name").asText("Null")).append("\n");
 					b.append("- Cell Count: ").append(stat.get("cell_count").asInt()).append("\n");
 					b.append("- Min/Max/Mean: ")
 						.append(stat.get("min_value"))
@@ -142,6 +160,9 @@ public class HIFTaskConfig {
 		 */
 		b.append("\nPost-policy Air Quality Surface\n");
 		b.append("Name: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
+		b.append("Source: ")
+			.append("Model")
+			.append("\n");	
 		gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(scenarioAq.getValue(AIR_QUALITY_LAYER.GRID_DEFINITION_ID));
 		b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
 		//b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
@@ -154,8 +175,8 @@ public class HIFTaskConfig {
 			if(metricStats.isArray()) {
 				for(JsonNode stat : metricStats) {
 					b.append("Metric: ").append(stat.get("metric_name").asText()).append("\n");
-					b.append("- Seasonal Metric: ").append(stat.get("seasonal_metric_name").asText()).append("\n");
-					b.append("- Annual Statistic: ").append(stat.get("annual_statistic_name").asText()).append("\n");
+					b.append("- Seasonal Metric: ").append(stat.get("seasonal_metric_name").asText("Null")).append("\n");
+					b.append("- Annual Statistic: ").append(stat.get("annual_statistic_name").asText("Null")).append("\n");
 					b.append("- Cell Count: ").append(stat.get("cell_count").asInt()).append("\n");
 					b.append("- Min/Max/Mean: ")
 						.append(stat.get("min_value"))
@@ -177,16 +198,15 @@ public class HIFTaskConfig {
 		/*
 		 * Population
 		 */
-		Record3<String, Integer, String> populationInfo = PopulationApi.getPopulationDatasetInfo(popId);
-		b.append("\nPopulation\n");
-		b.append("Name: ").append(populationInfo.getValue(POPULATION_DATASET.NAME)).append("\n");
-		b.append("Year: ").append(popYear).append("\n");
+		b.append("\nPOPULATION DATA\n\n");
+		b.append("Population Dataset: ").append(populationInfo.getValue(POPULATION_DATASET.NAME)).append("\n");
+		b.append("Population Year: ").append(popYear).append("\n");
 		b.append("Grid Definition: ").append(populationInfo.getValue(GRID_DEFINITION.NAME)).append("\n\n");
 		
 		/*
 		 * Health Impact Functions
 		 */
-		b.append("Health Impact Functions\n\n");
+		b.append("HEALTH IMPACT FUNCTIONS\n\n");
 		b.append("Health Effect Groups Analyzed:\n")
 		.append(HIFUtil.getHealthEffectGroupsListFromHifs(hifs))
 		.append("\n");
@@ -196,12 +216,12 @@ public class HIFTaskConfig {
 		//hifs are sorted by endpoint group and endpoint by default
 		for(int i=0; i < hifs.size(); i++) {
 			HIFConfig hif = hifs.get(i);
-			b.append("Function ").append(i+1).append("\n");
+			b.append("Function ").append(i+1).append(":\n");
 			b.append(hif.toString());
 			b.append("\n");
 		}
 		
-		b.append("Advanced Settings\n");
+		b.append("ADVANCED SETTINGS\n\n");
 		b.append("BenMAP-CE Desktop Backward Compatibility Mode: ").append(preserveLegacyBehavior ? "Enabled" : "Disabled").append("\n");
 
 		return b.toString();

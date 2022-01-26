@@ -1,10 +1,10 @@
 FROM amazoncorretto:17-alpine
 
-#ENV postgresql_host bmapdev.cyf9mtuhnz9r.us-east-1.rds.amazonaws.com
+#ENV postgresql_host the_host
 #ENV postgresql_port 5432
 #ENV postgresql_database benmap
 #ENV postgresql_user benmap_system
-#ENV postgresql_password unknown_password
+#ENV postgresql_password the_password
 
 WORKDIR /bencloud
 
@@ -17,7 +17,7 @@ RUN chmod 777 /bencloud/logs
 
 ENTRYPOINT java -jar /bencloud/BenCloudServer.jar
 
-
+EXPOSE 4567
 
 
 
