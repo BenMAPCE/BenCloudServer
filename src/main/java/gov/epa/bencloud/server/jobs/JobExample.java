@@ -31,8 +31,7 @@ public class JobExample {
 	    	logger.debug("k8s base path: " + client.getBasePath());
 	    	
 	        CoreV1Api api = new CoreV1Api();
-	        V1PodList list =
-	            api.listPodForAllNamespaces(null, null, null, null, null, null, null, null, null);
+	        V1PodList list = api.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null);
 	        for (V1Pod item : list.getItems()) {
 	          logger.debug("pod: " + item.getMetadata().getName());
 	        }
