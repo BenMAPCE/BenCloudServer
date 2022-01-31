@@ -635,7 +635,7 @@ public class AirQualityApi {
 			
 			String errorMsg= ""; //stores more detailed info. Not used in report for now but may need in the future?
 			ValidationMessage validationMsg = new ValidationMessage();
-			ValidationMessage.Message msg = new ValidationMessage.Message();
+			
 			
 			//step 1: verify column names 
 			//(already done above.)
@@ -651,6 +651,7 @@ public class AirQualityApi {
 					}
 					else {
 						validationMsg.success = false;
+						ValidationMessage.Message msg = new ValidationMessage.Message();
 						msg.message = "File has both 'col' and 'column' fields";
 						msg.type = "error";
 						validationMsg.messages.add(msg);
@@ -662,6 +663,7 @@ public class AirQualityApi {
 					}
 					else {
 						validationMsg.success = false;
+						ValidationMessage.Message msg = new ValidationMessage.Message();
 						msg.message = "File has both 'col' and 'column' fields";
 						msg.type = "error";
 						validationMsg.messages.add(msg);
@@ -695,6 +697,7 @@ public class AirQualityApi {
 				//response.status(400);
 				log.debug("AQ dataset posted - columns are missing: " + tmp);
 				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following columns are missing: " + tmp;
 				msg.type = "error";
 				validationMsg.messages.add(msg);
@@ -761,9 +764,8 @@ public class AirQualityApi {
 				}
 				else if(!seasonalMetricIdLookup.containsKey(str) ) {
 					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Seasonal Metric value " + record[seasonalMetricIdx] + " is not defined."+ "\r\n";
-					String sm = str.substring(str.lastIndexOf('~') + 1);
-					if (!lstUndefinedSeasonalMetric.contains(String.valueOf(sm))) {
-						lstUndefinedSeasonalMetric.add(String.valueOf(sm));
+					if (!lstUndefinedSeasonalMetric.contains(String.valueOf(str))) {
+						lstUndefinedSeasonalMetric.add(String.valueOf(str));
 					}
 				}
 				
@@ -810,53 +812,103 @@ public class AirQualityApi {
 			//summarize validation message
 			if(countColTypeError>0) {
 				validationMsg.success = false;
-				msg.message = String.valueOf(countColTypeError) + " records have Column values not a valid integer";
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countColTypeError == 1) {
+					strRecord = String.valueOf(countColTypeError) + " record has";
+				}
+				else {
+					strRecord = String.valueOf(countColTypeError) + " records have";
+				}
+				msg.message = strRecord + " Column values not a valid integer";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(countRowTypeError>0) {
 				validationMsg.success = false;
-				msg.message = String.valueOf(countRowTypeError) + " records have Row values not a valid integer";
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countRowTypeError == 1) {
+					strRecord = String.valueOf(countRowTypeError) + " record has";
+				}
+				else {
+					strRecord = String.valueOf(countRowTypeError) + " records have";
+				}
+				msg.message = strRecord + " Row values not a valid integer";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(countValueTypeError > 0) {
 				validationMsg.success = false;
-				msg.message = String.valueOf(countValueTypeError) + " records have air quality values not a valid double float.";
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countValueTypeError == 1) {
+					strRecord = String.valueOf(countValueTypeError) + " record has";
+				}
+				else {
+					strRecord = String.valueOf(countValueTypeError) + " records have";
+				}
+				msg.message = strRecord + " air quality values not a valid double float.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(countValueError > 0) {
-				msg.message = String.valueOf(countValueTypeError) + " records have air quality values < 0";
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countValueError == 1) {
+					strRecord = String.valueOf(countValueError) + " record has";
+				}
+				else {
+					strRecord = String.valueOf(countValueError) + " records have";
+				}
+				msg.message = strRecord + " air quality values < 0";
 				msg.type = "warning";
 				validationMsg.messages.add(msg);
 			}
 			if(countMissingMetric>0) {
 				validationMsg.success = false;
-				msg.message = String.valueOf(countMissingMetric) + " records have Metric missing.";
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMissingMetric == 1) {
+					strRecord = String.valueOf(countMissingMetric) + " record has";
+				}
+				else {
+					strRecord = String.valueOf(countMissingMetric) + " records have";
+				}
+				msg.message = strRecord + " Metric missing.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(lstUndefinedMetric.size()>0) {
 				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Metrics are not defined: " + String.join(",", lstUndefinedMetric);
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(lstUndefinedSeasonalMetric.size()>0) {
+				//lstUndefinedSeasonalMetric currently contains Metric~SeasonalMetric. Extract Seasonal Metric
+				for (int i = 0; i < lstUndefinedSeasonalMetric.size();i++) {
+					String smold = lstUndefinedSeasonalMetric.get(i);					
+					lstUndefinedSeasonalMetric.set(i,smold.substring(smold.lastIndexOf('~') + 1));
+				}
+				
 				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Seasonal Metrics are not defined: " + String.join(",", lstUndefinedSeasonalMetric);
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(lstUndefinedStatistics.size()>0) {
 				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Annual Statistics are not valid: " + String.join(",", lstUndefinedStatistics);
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(lstDupMetricCombo.size()>0) {
 				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Metric combo are not unique: " + String.join(",", lstDupMetricCombo);
 				msg.type = "error";
 				validationMsg.messages.add(msg);
