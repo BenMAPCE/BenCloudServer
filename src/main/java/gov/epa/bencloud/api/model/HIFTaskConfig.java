@@ -32,8 +32,8 @@ import io.vavr.collection.Array;
 public class HIFTaskConfig {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskConfig.class);
 	
-	public Integer resultDatasetId = 0;
 	public String name;
+	public Integer resultDatasetId = 0;
 	public Integer aqBaselineId = 0;
 	public Integer aqScenarioId = 0;
 	public Integer popId = 0;

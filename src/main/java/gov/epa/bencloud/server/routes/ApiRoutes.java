@@ -18,6 +18,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.ParameterUtil;
+import gov.epa.bencloud.server.jobs.JobExample;
 import spark.Service;
 
 public class ApiRoutes extends RoutesBase {
@@ -422,6 +423,16 @@ public class ApiRoutes extends RoutesBase {
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
 			Object data = CoreApi.getPurgeResults(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
+		service.get(apiPrefix + "/job/run-test", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = JobExample.runJob(req, res);
 			res.type("application/json");
 			return data;
 

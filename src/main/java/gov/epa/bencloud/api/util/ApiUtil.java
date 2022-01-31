@@ -138,7 +138,7 @@ public class ApiUtil {
 		return null;
 	}
 
-	public static Map<String, Map<Integer, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<ValuationFunctionRecord> vfDefinitionList) {
+	public static Map<String, Map<Integer, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
 		 // Load list of functions from the database
 		
 		//TODO: Change this to only load what we need
@@ -155,8 +155,8 @@ public class ApiUtil {
 				28);
 		//Look at all valuation functions to determine which variables are needed
 		for(String variableName: allVariableNames) {
-			for(ValuationFunctionRecord function : vfDefinitionList) {
-				if(function.getFunctionText().toLowerCase().contains(variableName)) {
+			for(Record function : vfDefinitionList) {
+				if(function.get("function_text", String.class).toLowerCase().contains(variableName)) {
 					if(!variableMap.containsKey(variableName)) {
 						variableMap.put(variableName, new HashMap<Integer, Double>());
 					}

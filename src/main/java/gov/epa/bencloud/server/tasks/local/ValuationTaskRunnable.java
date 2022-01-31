@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.HIF_RESULT;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.HIF_RESULT_FUNCTION_CONFIG;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TriangularDistribution;
 import org.apache.commons.math3.distribution.WeibullDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jooq.Record;
 import org.jooq.Record13;
 import org.jooq.Record2;
 import org.jooq.Record7;
@@ -34,8 +36,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
+import gov.epa.bencloud.api.model.ValuationTaskLog;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
@@ -72,9 +76,12 @@ public class ValuationTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
-			ValuationTaskConfig valuationTaskConfig = parseTaskParameters(task);
+			ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig(task);
+			ValuationTaskLog valuationTaskLog = new ValuationTaskLog(valuationTaskConfig);
+			valuationTaskLog.setDtStart(LocalDateTime.now());
 			
 			messages.get(messages.size()-1).setStatus("complete");
+			
 			messages.add(new TaskMessage("active", "Preparing datasets for valuation"));
 			TaskQueue.updateTaskPercentage(taskUuid, 2, mapper.writeValueAsString(messages));
 			
@@ -87,7 +94,7 @@ public class ValuationTaskRunnable implements Runnable {
 			
 			List<Expression> valuationFunctionExpressionList = new ArrayList<Expression>();
 
-			List<ValuationFunctionRecord> vfDefinitionList = new ArrayList<ValuationFunctionRecord>();
+			List<Record> vfDefinitionList = new ArrayList<Record>();
 			ArrayList<double[]> vfBetaDistributionLists = new ArrayList<double[]>();
 			ArrayList<Integer> hifIdList = new ArrayList<Integer>();
 			
@@ -98,7 +105,7 @@ public class ValuationTaskRunnable implements Runnable {
 				}
 				valuationFunctionExpressionList.add(ValuationUtil.getFunctionExpression(vfConfig.vfId));
 				
-				ValuationFunctionRecord vfDefinition = ValuationUtil.getFunctionDefinition(vfConfig.vfId);
+				Record vfDefinition = ValuationUtil.getFunctionDefinition(vfConfig.vfId);
 				vfDefinitionList.add(vfDefinition);
 				
 				vfConfig.vfRecord = vfDefinition.intoMap();
@@ -119,8 +126,11 @@ public class ValuationTaskRunnable implements Runnable {
 			HIFTaskConfig hifTaskConfig = HIFApi.getHifTaskConfigFromDb(valuationTaskConfig.hifResultDatasetId);
 
 			int inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;
+			valuationTaskConfig.inflationYear = inflationYear;
+			
 			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, inflationYear);
 			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, hifTaskConfig.popYear);
+			valuationTaskConfig.incomeGrowthYear = hifTaskConfig.popYear;
 			
 			//<variableName, <gridCellId, value>>
 			Map<String, Map<Integer, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
@@ -140,6 +150,8 @@ public class ValuationTaskRunnable implements Runnable {
 			 */
 			
 			messages.get(messages.size()-1).setStatus("complete");
+			valuationTaskLog.addMessage("Loaded required datasets");
+
 			messages.add(new TaskMessage("active", "Running valuation functions"));
 			
 			for(Integer hifId : hifIdList) {
@@ -176,7 +188,7 @@ public class ValuationTaskRunnable implements Runnable {
 							
 							Expression valuationFunctionExpression = valuationFunctionExpressionList.get(vfIdx);
 
-							ValuationFunctionRecord vfDefinition = vfDefinitionList.get(vfIdx);
+							Record vfDefinition = vfDefinitionList.get(vfIdx);
 							double[] betaDist = vfBetaDistributionLists.get(vfIdx);
 
 							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
@@ -198,11 +210,11 @@ public class ValuationTaskRunnable implements Runnable {
 							for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
 								for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
 									//valuation estimate * hif percentiles * betaDist / hif point estimate * A
-									if(vfDefinition.getValA() == null || vfDefinition.getValA().doubleValue() == 0.0) {
+									if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
 										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
 										
 									} else {
-										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.getValA().doubleValue()));			
+										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
 									}
 								}
 							}
@@ -292,6 +304,8 @@ public class ValuationTaskRunnable implements Runnable {
 			rowsSaved += valuationResults.size();
 			
 			messages.get(messages.size()-1).setStatus("complete");
+			valuationTaskLog.addMessage("Valuation function calculations complete");
+			
 			messages.add(new TaskMessage("active", String.format("Saving %,d results", rowsSaved)));
 			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
 			
@@ -300,6 +314,10 @@ public class ValuationTaskRunnable implements Runnable {
 			messages.get(messages.size()-1).setStatus("complete");
 			
 			String completeMessage = String.format("Saved %,d results", rowsSaved);
+			valuationTaskLog.addMessage(completeMessage);
+			valuationTaskLog.setSuccess(true);
+			valuationTaskLog.setDtEnd(LocalDateTime.now());
+			ValuationUtil.storeTaskLog(valuationTaskLog);
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
@@ -308,64 +326,30 @@ public class ValuationTaskRunnable implements Runnable {
 		}
 	}
 
-	public ValuationTaskConfig parseTaskParameters(Task task) {
-
-		ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig();
-
-		try {
-			String paramString = task.getParameters();
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode params = mapper.readTree(paramString);
-
-			valuationTaskConfig.name = task.getName();
-			valuationTaskConfig.hifTaskUuid = params.get("parent_task_uuid").asText();
-			valuationTaskConfig.hifResultDatasetId = params.get("hif_result_dataset_id").asInt();
-			valuationTaskConfig.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
-
-			JsonNode functions = params.get("functions");
-			parseFunctions(functions, valuationTaskConfig);
-			
-		} catch (JsonMappingException e) {
-			log.error("Error parsing task parameters", e);
-		} catch (JsonProcessingException e) {
-			log.error("Error processing task parameters", e);
-		}
-		return valuationTaskConfig;
-	}
-
-	private void parseFunctions(JsonNode functions, ValuationTaskConfig valuationTaskConfig) {
-		for (JsonNode function : functions) {
-			ValuationConfig valuationConfig = new ValuationConfig();
-			valuationConfig.hifId = function.get("hif_id").asInt();
-			valuationConfig.vfId = function.get("vf_id").asInt();
-			valuationTaskConfig.valuationFunctions.add(valuationConfig);
-		}
-	}
-	
-	private double[] getDistributionSamples(ValuationFunctionRecord vfRecord) {
+	private double[] getDistributionSamples(Record vfRecord) {
 		double[] samples = new double[10000];
 		Random rng = new Random(1);
 		RealDistribution distribution;
 		
-		switch (vfRecord.getDistA().toLowerCase()) {
+		switch (vfRecord.get("dist_a", String.class).toLowerCase()) {
 		case "none":		
 			for (int i = 0; i < samples.length; i++)
 			{
-				samples[i]=vfRecord.getValA().doubleValue();
+				samples[i]=vfRecord.get("val_a", Double.class).doubleValue();
 			}
 			return samples;
 		case "normal":
-			distribution = new NormalDistribution(vfRecord.getValA().doubleValue(), vfRecord.getP1a().doubleValue());
+			distribution = new NormalDistribution(vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
 			break;
 		case "weibull":
-			distribution = new WeibullDistribution(vfRecord.getP2a().doubleValue(), vfRecord.getP1a().doubleValue());
+			distribution = new WeibullDistribution(vfRecord.get("p2a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
 			break;
 		case "lognormal":
-			distribution = new LogNormalDistribution(vfRecord.getP1a().doubleValue(), vfRecord.getP2a().doubleValue());
+			distribution = new LogNormalDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
 			break;
 		case "triangular":
 			//lower, mode, upper
-			distribution = new TriangularDistribution(vfRecord.getP1a().doubleValue(), vfRecord.getValA().doubleValue(), vfRecord.getP2a().doubleValue());
+			distribution = new TriangularDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
 			break;
 		default:
 			return null;

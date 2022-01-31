@@ -68,7 +68,7 @@ public class HIFConfig {
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
-
+		b.append("Unique ID: ").append(hifRecord.get("id")).append("\n");
 		b.append("Health Effect Group: ").append(hifRecord.get("endpoint_group_name")).append("\n");
 		b.append("Health Effect: ").append(hifRecord.get("endpoint_name")).append("\n");		
 		b.append("Author: ").append(hifRecord.getOrDefault("author", "")).append("\n");

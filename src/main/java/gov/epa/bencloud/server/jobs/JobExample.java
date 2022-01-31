@@ -9,6 +9,8 @@ import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
 import io.kubernetes.client.util.Config;
+import spark.Request;
+import spark.Response;
 
 /*
  * Creates a simple run to complete job that computes π to 2000 places and prints it out.
@@ -16,36 +18,45 @@ import io.kubernetes.client.util.Config;
 public class JobExample {
     private static final Logger logger = LoggerFactory.getLogger(JobExample.class);
 
-    public static void runJob() {
+    public static Object runJob(Request req, Response res) {
     	try {
 	    	ApiClient client  = Config.defaultClient();
+
+	    	logger.debug("k8s base path: " + client.getBasePath());
+	    	
 	    	BatchV1Api api = new BatchV1Api(client);
+	    	logger.debug("api: " + api.toString());
+
 	    	V1Job body = new V1JobBuilder()
 	    	  .withNewMetadata()
-	    	    .withNamespace("report-jobs")
-	    	    .withName("payroll-report-job")
+	    	    .withNamespace("bencloud-jobs")
+	    	    .withName("bencloud-job")
 	    	    .endMetadata()
 	    	  .withNewSpec()
 	    	    .withNewTemplate()
 	    	      .withNewMetadata()
-	    	        .addToLabels("name", "payroll-report")
+	    	        .addToLabels("name", "hif-analysis")
 	    	        .endMetadata()
 	    	      .editOrNewSpec()
 	    	        .addNewContainer()
 	    	          .withName("main")
-	    	          .withImage("report-runner")
-	    	          .addNewCommand("payroll")
-	    	          .addNewArg("--date")
-	    	          .addNewArg("2021-05-01")
+	    	          .withImage("task-runner")
+	    	          .addNewCommand("task")
+	    	          .addNewArg("--id")
+	    	          .addNewArg("ABC123")
 	    	          .endContainer()
 	    	        .withRestartPolicy("Never")
 	    	        .endSpec()
 	    	      .endTemplate()
 	    	    .endSpec()
 	    	  .build(); 
-	    	V1Job createdJob = api.createNamespacedJob("report-jobs", body, null, null, null);
+	    	V1Job createdJob = api.createNamespacedJob("bencloud-jobs", body, null, null, null);
+	    	return true;
+	    	
     	} catch (Exception e) {
     		logger.error("Failed creating job", e);
+    		return false;
     	}
+    	
     }
 }

@@ -51,7 +51,9 @@ public class ValuationTaskLog extends TaskLog {
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
-		b.append("Valuation Function Task Log\n");
+		b.append("---------------------------\n");
+		b.append("VALUATION FUNCTION TASK LOG\n");
+		b.append("---------------------------\n\n");
 		b.append("BenMAP Cloud application version: ")
 			.append(getAppVersion())
 			.append(", database version: ")
@@ -70,7 +72,7 @@ public class ValuationTaskLog extends TaskLog {
 
 		b.append(vfTaskConfig.toString());
 		
-		b.append("\nProcessing Log\n");
+		b.append("\nPROCESSING LOG\n\n");
 		for(String msg : logMessages) {
 			b.append(msg).append("\n");	
 		}

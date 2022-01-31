@@ -270,7 +270,6 @@ public class HIFApi {
 					.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 					.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 					.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-					//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
 					.fetch();
 			
 					//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
@@ -302,9 +301,7 @@ public class HIFApi {
 			} catch (Exception e) {
 				log.error("Error creating export file", e);
 			} finally {
-				//if(hifRecords != null && !hifRecords.isClosed()) {
-				//	hifRecords.close();
-				//}
+
 			}
 		}
 		

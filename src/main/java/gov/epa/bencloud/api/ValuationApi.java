@@ -25,7 +25,11 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
+import gov.epa.bencloud.api.model.ValuationTaskLog;
+import gov.epa.bencloud.api.util.HIFUtil;
+import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
@@ -191,7 +195,7 @@ public class ValuationApi {
 							gridIds[i]))
 					.asTable("vf_result_records");
 
-			Cursor<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords = create.select(
+			Result<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords = create.select(
 					vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 					vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
 					ENDPOINT.NAME.as("endpoint"),
@@ -233,26 +237,35 @@ public class ValuationApi {
 					.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 					.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 					.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-					//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
-					.fetchLazy();
+					.fetch();
 			try {
 				zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
 				vfRecords.formatCSV(zipStream);
 			} catch (Exception e) {
 				log.error("Error in Valuation export", e);
 			} finally {
-				if(vfRecords != null && !vfRecords.isClosed()) {
-					vfRecords.close();
-				}
+
 			}
 			
 		}
 		
 		try {
+			zipStream.putNextEntry(new ZipEntry(taskFileName + "_TaskLog.txt"));
+			
+			ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(id);
+			zipStream.write(vfTaskLog.toString().getBytes());
+			
+			//Get HifTaskLog and render below valuation log
+			zipStream.write("\n".getBytes());
+			HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(ValuationUtil.getHifResultDatasetIdForValuationResultDataset(id));
+			zipStream.write(hifTaskLog.toString().getBytes());
+			
+			zipStream.closeEntry();
+			
 			zipStream.close();
 			responseOutputStream.flush();
-		} catch (java.io.IOException e) {
-			log.error("Error closing and flushing export", e);
+		} catch (Exception e) {
+			log.error("Error writing task log, closing and flushing export", e);
 		}
 		
 	}

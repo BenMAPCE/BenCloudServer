@@ -51,7 +51,9 @@ public class HIFTaskLog extends TaskLog {
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
+		b.append("-------------------------------\n");
 		b.append("HEALTH IMPACT FUNCTION TASK LOG\n");
+		b.append("-------------------------------\n\n");
 		b.append("BenMAP Cloud application version: ")
 			.append(getAppVersion())
 			.append(", database version: ")
