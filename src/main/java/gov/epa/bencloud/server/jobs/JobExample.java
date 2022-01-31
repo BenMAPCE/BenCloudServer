@@ -1,6 +1,5 @@
 package gov.epa.bencloud.server.jobs;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,10 +26,11 @@ public class JobExample {
 	    	
 	    	BatchV1Api api = new BatchV1Api(client);
 	    	logger.debug("api: " + api.toString());
-
 	    	V1Job body = new V1JobBuilder()
+	    	  .withApiVersion("apps/v1")
+	    	  .withKind("Job")
 	    	  .withNewMetadata()
-	    	    .withNamespace("bencloud-jobs")
+	    	    .withNamespace("benmap-dev")
 	    	    .withName("bencloud-job")
 	    	    .endMetadata()
 	    	  .withNewSpec()
@@ -51,11 +51,13 @@ public class JobExample {
 	    	      .endTemplate()
 	    	    .endSpec()
 	    	  .build(); 
-	    	logger.debug("getApiVersion: " + body.getApiVersion());
-	    	logger.debug("getKind: " + body.getKind());
+	    	
 	    	logger.debug("body: " + body.toString());
 	    	
-	    	V1Job createdJob = api.createNamespacedJob("bencloud-jobs", body, "true", null, null);
+	    	V1Job createdJob = api.createNamespacedJob("benmap-dev", body, "true", null, null);
+	    	
+	    	logger.debug("Job status: " + createdJob.getStatus());
+	    	
 	    	return true;
 	    	
     	} catch (Exception e) {
