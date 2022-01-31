@@ -21,7 +21,8 @@ public class JobExample {
     public static Object runJob(Request req, Response res) {
     	try {
 	    	ApiClient client  = Config.defaultClient();
-
+	    	client.setDebugging(true);
+	    	
 	    	logger.debug("k8s base path: " + client.getBasePath());
 	    	
 	    	BatchV1Api api = new BatchV1Api(client);
@@ -50,7 +51,11 @@ public class JobExample {
 	    	      .endTemplate()
 	    	    .endSpec()
 	    	  .build(); 
-	    	V1Job createdJob = api.createNamespacedJob("bencloud-jobs", body, null, null, null);
+	    	logger.debug("getApiVersion: " + body.getApiVersion());
+	    	logger.debug("getKind: " + body.getKind());
+	    	logger.debug("body: " + body.toString());
+	    	
+	    	V1Job createdJob = api.createNamespacedJob("bencloud-jobs", body, "true", null, null);
 	    	return true;
 	    	
     	} catch (Exception e) {

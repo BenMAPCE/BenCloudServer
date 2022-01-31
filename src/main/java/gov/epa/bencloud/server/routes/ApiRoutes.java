@@ -428,7 +428,7 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		service.get(apiPrefix + "/job/run-test", (req, res) -> {
+		service.get(apiPrefix + "/jobs/test", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
