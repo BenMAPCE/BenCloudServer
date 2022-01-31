@@ -4,9 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Config;
 import spark.Request;
 import spark.Response;
@@ -20,11 +24,22 @@ public class JobExample {
     public static Object runJob(Request req, Response res) {
     	try {
 	    	ApiClient client  = Config.defaultClient();
+	    	Configuration.setDefaultApiClient(client);
+	    	
 	    	client.setDebugging(true);
 	    	
 	    	logger.debug("k8s base path: " + client.getBasePath());
 	    	
+	        CoreV1Api api = new CoreV1Api();
+	        V1PodList list =
+	            api.listPodForAllNamespaces(null, null, null, null, null, null, null, null, null);
+	        for (V1Pod item : list.getItems()) {
+	          logger.debug("pod: " + item.getMetadata().getName());
+	        }
+	    	
+	    	/*
 	    	BatchV1Api api = new BatchV1Api(client);
+	    	
 	    	logger.debug("api: " + api.toString());
 	    	V1Job body = new V1JobBuilder()
 	    	  .withApiVersion("apps/v1")
@@ -57,7 +72,7 @@ public class JobExample {
 	    	V1Job createdJob = api.createNamespacedJob("benmap-dev", body, "true", null, null);
 	    	
 	    	logger.debug("Job status: " + createdJob.getStatus());
-	    	
+	    	*/
 	    	return true;
 	    	
     	} catch (Exception e) {
