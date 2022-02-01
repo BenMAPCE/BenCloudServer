@@ -18,10 +18,10 @@ import spark.Response;
 /*
  * Creates a simple run to complete job that computes π to 2000 places and prints it out.
  */
-public class JobExample {
-    private static final Logger logger = LoggerFactory.getLogger(JobExample.class);
+public class K8sApiExample {
+    private static final Logger logger = LoggerFactory.getLogger(K8sApiExample.class);
 
-    public static Object runJob(Request req, Response res) {
+    public static Object runTest(Request req, Response res) {
     	try {
 	    	ApiClient client  = Config.defaultClient();
 	    	Configuration.setDefaultApiClient(client);
@@ -31,6 +31,7 @@ public class JobExample {
 	    	logger.debug("k8s base path: " + client.getBasePath());
 	    	
 	        CoreV1Api api = new CoreV1Api();
+
 	        V1PodList list = api.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null);
 	        for (V1Pod item : list.getItems()) {
 	          logger.debug("pod: " + item.getMetadata().getName());
@@ -75,7 +76,7 @@ public class JobExample {
 	    	return true;
 	    	
     	} catch (Exception e) {
-    		logger.error("Failed creating job", e);
+    		logger.error("Failed running test", e);
     		return false;
     	}
     	

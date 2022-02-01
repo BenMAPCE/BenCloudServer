@@ -8,9 +8,10 @@
 # https://github.com/gradle/gradle
 
 stages:
-  - build
+  - Build
   - Image
-  - Non-Production Deployment
+  - Image Scan
+  - Deployment
 
 
 # Disable the Gradle daemon for Continuous Integration servers as correctness
@@ -24,7 +25,7 @@ before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
 Build BenCloudServer Jar:
-  stage: build
+  stage: Build
   image: gradle:alpine
   tags:
     - benmapdevgitlab
@@ -58,8 +59,16 @@ Build BenCloudServer Image:
   dependencies:
     - Build BenCloudServer Jar
 
-Development:
-  stage: Non-Production Deployment
+Prisma Scan:
+  stage: Image Scan
+  tags:
+    - twistcli
+  when: manual
+  script:
+    - /public/server/apps/twistcli images scan --details --address https://prismacloud.gitlab-prod.aws.epa.gov $CI_REGISTRY_IMAGE/redis:$CI_COMMIT_SHORT_SHA
+
+Non-Production Development:
+  stage: Deployment
   tags:
     - benmapdevgitlab
   when: manual
