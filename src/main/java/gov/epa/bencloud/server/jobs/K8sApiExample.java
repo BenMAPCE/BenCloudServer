@@ -11,6 +11,7 @@ import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
 import spark.Request;
 import spark.Response;
@@ -23,7 +24,9 @@ public class K8sApiExample {
 
     public static Object runTest(Request req, Response res) {
     	try {
-	    	ApiClient client  = Config.defaultClient();
+	    	//ApiClient client  = Config.defaultClient();
+	    	ApiClient client = ClientBuilder.cluster().build();
+	    	
 	    	Configuration.setDefaultApiClient(client);
 	    	
 	    	client.setDebugging(true);
