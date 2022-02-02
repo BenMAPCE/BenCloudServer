@@ -17,6 +17,9 @@ dependencies {
        implementation('org.eclipse.jetty:jetty-webapp:9.4.44.v20210927') {
             because 'Previous versions have security vulnerabilities'
         }
+       implementation('commons-beanutils:commons-beanutils:1.9.4') {
+            because 'Previous versions have security vulnerabilities'
+        }
     }
     
 	implementation 'com.sparkjava:spark-template-freemarker:2.7.1'
