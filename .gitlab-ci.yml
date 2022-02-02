@@ -15,9 +15,9 @@ stages:
   - Deployment
 
 
-include:
-  - template: Security/SAST.gitlab-ci.yml
-  - template: Dependency-Scanning.gitlab-ci.yml
+#include:
+#  - template: Security/SAST.gitlab-ci.yml
+#  - template: Dependency-Scanning.gitlab-ci.yml
 
 # Disable the Gradle daemon for Continuous Integration servers as correctness
 # is usually a priority over speed in CI environments. Using a fresh
