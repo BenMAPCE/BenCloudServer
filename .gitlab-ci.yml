@@ -11,6 +11,7 @@ stages:
   - Build
   - Image
   - Image Scan
+  - Application Scan
   - Deployment
 
 
@@ -70,6 +71,16 @@ Prisma Scan:
   when: manual
   script:
     - /public/server/apps/twistcli images scan --details --address https://prismacloud.gitlab-prod.aws.epa.gov $CI_REGISTRY_IMAGE/redis:$CI_COMMIT_SHORT_SHA
+
+NetSparker:
+  stage: Application Scan
+  tags:
+    - devsecops-instance
+  when: manual
+  image: docker:20.10
+  # This needs a NetSparker image to invoke the scan.
+  script:
+    - echo "Simulate a NetSparker scan."
 
 Non-Production Development:
   stage: Deployment
