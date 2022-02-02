@@ -78,6 +78,21 @@ roleRef:
 
 ---
 
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: api-cluster-role-binding
+subjects:
+- namespace: benmap-dev 
+  kind: ServiceAccount
+  name: default 
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api-cluster-role 
+
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
