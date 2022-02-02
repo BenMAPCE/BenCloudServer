@@ -14,8 +14,8 @@ stages:
   - Application Scan
   - Deployment
 
-
-#include:
+include:
+  - remote: 'https://gitlab.com/prismacloud-public/shift-left/extension/-/raw/master/.pcs.gitlab-ci.yml'
 #  - template: Security/SAST.gitlab-ci.yml
 #  - template: Dependency-Scanning.gitlab-ci.yml
 
@@ -64,13 +64,24 @@ Build BenCloudServer Image:
   dependencies:
     - Build BenCloudServer Jar
 
-Prisma Scan:
+prisma-cloud-compute-scan:
   stage: Image Scan
+  extends:
+    - .pcs_compute_scan
   tags:
     - twistcli
   when: manual
+  allow_failure: false
+  parallel:
+    matrix:
+      - prisma_cloud_scan_image: ["$CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA"]
+  variables:
+      prisma_cloud_compute_url: "https://prismacloud.gitlab-prod.aws.epa.gov"
+      GIT_STRATEGY: clone
   script:
-    - /public/server/apps/twistcli images scan --details --address https://prismacloud.gitlab-prod.aws.epa.gov $CI_REGISTRY_IMAGE/redis:$CI_COMMIT_SHORT_SHA
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD registry.epa.gov
+    - docker pull $prisma_cloud_scan_image
+    - ./image_scan.sh  
 
 NetSparker:
   stage: Application Scan
@@ -82,7 +93,7 @@ NetSparker:
   script:
     - echo "Simulate a NetSparker scan."
 
-Non-Production Development:
+Deploy to Development:
   stage: Deployment
   tags:
     - benmapdevgitlab
