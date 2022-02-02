@@ -10,6 +10,15 @@ repositories {
 dependencies {
 
 	implementation 'com.sparkjava:spark-core:2.9.3'
+	constraints {
+        implementation('org.eclipse.jetty:jetty-server:9.4.44.v20210927') {
+            because 'Previous versions have security vulnerabilities'
+        }
+       implementation('org.eclipse.jetty:jetty-webapp:9.4.44.v20210927') {
+            because 'Previous versions have security vulnerabilities'
+        }
+    }
+    
 	implementation 'com.sparkjava:spark-template-freemarker:2.7.1'
 
 	implementation 'org.freemarker:freemarker:2.3.31'
@@ -46,7 +55,7 @@ dependencies {
     implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:4.4.2'
     
-    implementation 'io.kubernetes:client-java:10.0.0'
+    implementation 'io.kubernetes:client-java:14.0.0'
 
 }
 

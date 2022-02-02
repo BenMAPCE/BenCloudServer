@@ -5,10 +5,10 @@ import org.slf4j.LoggerFactory;
 
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.apis.BatchV1Api;
+import io.kubernetes.client.openapi.apis.BatchApi;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1Job;
-import io.kubernetes.client.openapi.models.V1JobBuilder;
+
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.ClientBuilder;
@@ -35,7 +35,7 @@ public class K8sApiExample {
 	    	
 	        CoreV1Api api = new CoreV1Api();
 
-	        V1PodList list = api.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null);
+	        V1PodList list = api.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
 	        for (V1Pod item : list.getItems()) {
 	          logger.debug("pod: " + item.getMetadata().getName());
 	        }
