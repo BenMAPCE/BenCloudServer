@@ -29,33 +29,15 @@ variables:
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
-Build BenCloudServer Jar:
+Build BenCloud Jars:
   stage: Build
   image: gradle:alpine
   tags:
     - benmapdevgitlab
   script:
     - gradle fatJar
-    - cp build/libs/BenCloudServer.jar BenCloudServer.jar
-  cache:
-    key: "$CI_COMMIT_REF_NAME"
-    policy: push
-    paths:
-      - build
-      - .gradle
-  artifacts:
-    name: "$CI_COMMIT_REF_NAME"
-    paths:
-      - BenCloudServer.jar
-      - bencloud-server.properties
-
-Build BenCloudTaskRunner Jar:
-  stage: Build
-  image: gradle:alpine
-  tags:
-    - benmapdevgitlab
-  script:
     - gradle taskRunnerFatJar
+    - cp build/libs/BenCloudServer.jar BenCloudServer.jar
     - cp build/libs/BenCloudTaskRunner.jar BenCloudTaskRunner.jar
   cache:
     key: "$CI_COMMIT_REF_NAME"
@@ -66,6 +48,7 @@ Build BenCloudTaskRunner Jar:
   artifacts:
     name: "$CI_COMMIT_REF_NAME"
     paths:
+      - BenCloudServer.jar
       - BenCloudTaskRunner.jar
       - bencloud-server.properties
 
@@ -82,7 +65,7 @@ Build BenCloudServer Image:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
   #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloudServer Jar
+    - Build BenCloud Jars
 
 Build BenCloudTaskRunner Image:
   stage: Image
@@ -97,7 +80,7 @@ Build BenCloudTaskRunner Image:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
   #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloudTaskRunner Jar
+    - Build BenCloud Jars
 
 prisma-cloud-compute-scan:
   stage: Image Scan
