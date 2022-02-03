@@ -58,7 +58,7 @@ dependencies {
     implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:4.4.2'
     
-    implementation 'io.kubernetes:client-java:14.0.0'
+    implementation 'io.kubernetes:client-java-extended:14.0.0'
 
 }
 
@@ -80,7 +80,7 @@ task taskRunnerFatJar(type: Jar) {
     duplicatesStrategy = 'include'
 
 	manifest {
-		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
+		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudTaskRunner'
     }
 	
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
