@@ -49,6 +49,26 @@ Build BenCloudServer Jar:
       - BenCloudServer.jar
       - bencloud-server.properties
 
+Build BenCloudTaskRunner Jar:
+  stage: Build
+  image: gradle:alpine
+  tags:
+    - benmapdevgitlab
+  script:
+    - gradle taskRunnerFatJar
+    - cp build/libs/BenCloudTaskRunner.jar BenCloudTaskRunner.jar
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: push
+    paths:
+      - build
+      - .gradle
+  artifacts:
+    name: "$CI_COMMIT_REF_NAME"
+    paths:
+      - BenCloudTaskRunner.jar
+      - bencloud-server.properties
+
 Build BenCloudServer Image:
   stage: Image
   tags:
@@ -59,10 +79,25 @@ Build BenCloudServer Image:
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloud-apiserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
   #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
     - Build BenCloudServer Jar
+
+Build BenCloudTaskRunner Image:
+  stage: Image
+  tags:
+    - benmapdevgitlab
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloud-taskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
+  #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
+  dependencies:
+    - Build BenCloudTaskrunner Jar
 
 prisma-cloud-compute-scan:
   stage: Image Scan
@@ -74,7 +109,7 @@ prisma-cloud-compute-scan:
   allow_failure: false
   parallel:
     matrix:
-      - prisma_cloud_scan_image: ["$CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA"]
+      - prisma_cloud_scan_image: ["$CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA","$CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA"]
   variables:
       prisma_cloud_compute_url: "https://prismacloud.gitlab-prod.aws.epa.gov"
       GIT_STRATEGY: clone

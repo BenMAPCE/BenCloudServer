@@ -75,3 +75,17 @@ task fatJar(type: Jar) {
 	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
 }
+
+task taskRunnerFatJar(type: Jar) {
+    duplicatesStrategy = 'include'
+
+	manifest {
+		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
+    }
+	
+	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+
+	baseName = "BenCloudTaskRunner"
+	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+	with jar
+}
