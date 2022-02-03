@@ -97,7 +97,7 @@ Build BenCloudTaskRunner Image:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloud-taskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
   #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloudTaskrunner Jar
+    - Build BenCloudTaskRunner Jar
 
 prisma-cloud-compute-scan:
   stage: Image Scan
