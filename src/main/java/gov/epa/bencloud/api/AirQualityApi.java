@@ -873,7 +873,7 @@ public class AirQualityApi {
 					strRecord = String.valueOf(countValueError) + " records have";
 				}
 				msg.message = strRecord + " air quality values < 0";
-				msg.type = "warning";
+				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(countMissingMetric>0) {
