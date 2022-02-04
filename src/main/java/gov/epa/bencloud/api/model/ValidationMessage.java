@@ -19,7 +19,14 @@ public class ValidationMessage {
 		public Message() {
 
 		}
+		public Message(String type, String message) {
+			this.type = type;
+			this.message = message;
+
+		}
 
 	}
+	
+	
 	
 }

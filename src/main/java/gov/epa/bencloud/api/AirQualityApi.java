@@ -613,6 +613,18 @@ public class AirQualityApi {
 			pollutantId = 6;
 		}
 		
+		//Validate csv file
+		String errorMsg= ""; //stores more detailed info. Not used in report for now but may need in the future?
+		ValidationMessage validationMsg = new ValidationMessage();
+		
+		//step 0: make sure layerName is not the same as any existing ones
+		List<String>layerNames = AirQualityUtil.getExistingLayerNames(pollutantId);
+		if (layerNames.contains(layerName)) {
+			validationMsg.messages.add(new ValidationMessage.Message("error","The layer name " + layerName + " already exists. Please enter a different one."));
+			response.type("application/json");
+			return transformValMsgToJSON(validationMsg);
+		}
+		
 		
 		AirQualityLayerRecord aqRecord=null;
 		int columnIdx=-999;
@@ -626,15 +638,14 @@ public class AirQualityApi {
 		Map<String, Integer> seasonalMetricIdLookup = new HashMap<>();		
 		Map<String, Integer> statisticIdLookup = new HashMap<>();
 		
-		//Validate csv file
+		
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			
 			CSVReader csvReader = new CSVReader (new InputStreamReader(is));				
 
 			String[] record;
 			
-			String errorMsg= ""; //stores more detailed info. Not used in report for now but may need in the future?
-			ValidationMessage validationMsg = new ValidationMessage();
+			
 			
 			
 			//step 1: verify column names 
@@ -709,7 +720,7 @@ public class AirQualityApi {
 			seasonalMetricIdLookup = AirQualityUtil.getSeasonalMetricIdLookup(pollutantId);
 			statisticIdLookup = ApiUtil.getStatisticIdLookup();
 			
-			//TODO: Validate each record and abort before the batch.execute() if there's a problem.
+			//TODO: Validate each record and abort before the batch.execute() if there's a problem. --- done
 			//We might also need to clean up the header. Or, maybe we should make this a transaction?
 			
 			//step 2: make sure file has > 0 rows. Check rowCount after while loop.
