@@ -189,7 +189,7 @@ public class K8sApiExample {
 			for (V1Pod item : list.getItems()) {
 				if(item.getMetadata().getName().startsWith("bencloud-job-")) {
 					V1Status response = batchApi.deleteNamespacedJob(
-							  item.getMetadata().getName(), 
+							  item.getMetadata().getLabels().get("job-name"),
 							  item.getMetadata().getNamespace(), 
 							  null, 
 							  null, 
