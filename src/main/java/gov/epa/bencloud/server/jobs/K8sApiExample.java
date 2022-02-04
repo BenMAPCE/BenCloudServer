@@ -1,5 +1,6 @@
 package gov.epa.bencloud.server.jobs;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +98,9 @@ public class K8sApiExample {
     		logger.error("Failed running test", e);
     		logger.error("Response body: " + e.getResponseBody());
     		return false;
-    	}
+    	} catch (IOException e) {
+    		logger.error("Failed running test", e);
+    		return false;		}
     	
     }
 }
