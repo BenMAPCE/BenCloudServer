@@ -18,6 +18,7 @@ import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.ClientBuilder;
 import spark.Request;
 import spark.Response;
@@ -137,7 +138,7 @@ public class K8sApiExample {
 		
 	}
 	
-	public static Object listPodLogs(Request req, Response res) {
+	public static Object listJobLogs(Request req, Response res) {
 		try {
 	    	ApiClient client = ClientBuilder.cluster().build();
 	    	
@@ -147,13 +148,61 @@ public class K8sApiExample {
 	
 	    	CoreV1Api coreApi = new CoreV1Api(client);
 	    	
-	
+	    	StringBuilder sb = new StringBuilder();
+	    	
 			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
 			for (V1Pod item : list.getItems()) {
-				String podLog = coreApi.readNamespacedPodLog(item.getMetadata().getName(), item.getMetadata().getNamespace(), null, null, null, null, "true", null, null, null, null);
+				if(item.getMetadata().getName().startsWith("bencloud-job-")) {
+					sb.append("\nName: " + item.getMetadata().getName());
+					sb.append("\nLog: " + coreApi.readNamespacedPodLog(item.getMetadata().getName(), item.getMetadata().getNamespace(), null, null, null, null, "true", null, null, null, null));
+				}
 			}
 	
-	    	return "see log";
+	    	return "no job found";
+	    	
+		} catch (ApiException e) {
+			logger.error("Failed running test", e);
+			logger.error("Response body: " + e.getResponseBody());
+			return false;
+		} catch (IOException e) {
+			logger.error("Failed running test", e);
+			return false;		
+		}
+		
+	}
+	
+	public static Object deleteJobs(Request req, Response res) {
+		try {
+	    	ApiClient client = ClientBuilder.cluster().build();
+	    	
+	    	Configuration.setDefaultApiClient(client);
+	    	
+	    	client.setDebugging(true);
+	
+	    	BatchV1Api batchApi = new BatchV1Api(client);
+	    	CoreV1Api coreApi = new CoreV1Api(client);
+	    	
+	    	StringBuilder sb = new StringBuilder();
+	    	int numDeleted = 0;
+	    	
+			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
+			for (V1Pod item : list.getItems()) {
+				if(item.getMetadata().getName().startsWith("bencloud-job-")) {
+					V1Status response = batchApi.deleteNamespacedJob(
+							  item.getMetadata().getName(), 
+							  item.getMetadata().getNamespace(), 
+							  null, 
+							  null, 
+							  null, 
+							  null, 
+							  null, 
+							  null ) ;
+					
+					numDeleted++;
+				}
+			}
+	
+	    	return "Deleted " + numDeleted + " jobs";
 	    	
 		} catch (ApiException e) {
 			logger.error("Failed running test", e);
