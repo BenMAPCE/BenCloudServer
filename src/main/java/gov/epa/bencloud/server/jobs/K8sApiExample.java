@@ -187,9 +187,10 @@ public class K8sApiExample {
 	    	
 			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
 			for (V1Pod item : list.getItems()) {
+				
 				if(item.getMetadata().getName().startsWith("bencloud-job-")) {
-					V1Status response = batchApi.deleteNamespacedJob(
-							  item.getMetadata().getLabels().get("job-name"),
+					V1Pod response = coreApi.deleteNamespacedPod(
+							  item.getMetadata().getName(),
 							  item.getMetadata().getNamespace(), 
 							  null, 
 							  null, 
@@ -197,11 +198,24 @@ public class K8sApiExample {
 							  null, 
 							  null, 
 							  null ) ;
+				logger.debug("DELETED: " + response.toString());
+//				if(item.getMetadata().getName().startsWith("bencloud-job-")) {
+//					V1Status response = batchApi.deleteNamespacedJob(
+//							  item.getMetadata().getLabels().get("job-name"),
+//							  item.getMetadata().getNamespace(), 
+//							  null, 
+//							  null, 
+//							  null, 
+//							  null, 
+//							  null, 
+//							  null ) ;
 					
 					numDeleted++;
 				}
 			}
 	
+			// Don't forget to try the Kubectl object
+			
 	    	return "Deleted " + numDeleted + " jobs";
 	    	
 		} catch (ApiException e) {
