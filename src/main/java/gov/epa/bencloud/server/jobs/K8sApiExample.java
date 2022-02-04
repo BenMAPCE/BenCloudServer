@@ -8,10 +8,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.models.V1EnvVar;
-import io.kubernetes.client.openapi.models.V1EnvVarBuilder;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
 import io.kubernetes.client.util.ClientBuilder;
@@ -34,16 +34,18 @@ public class K8sApiExample {
 
 	    	logger.debug("k8s base path: " + client.getBasePath());
 
-	    	BatchV1Api api = new BatchV1Api(client);
+	    	BatchV1Api batchApi = new BatchV1Api(client);
+	    	//CoreV1Api coreApi = new CoreV1Api(client);
+	    	
 	    	List<V1EnvVar> envVariables = new ArrayList<V1EnvVar>();
 	    	V1EnvVar envVar = new V1EnvVar();
 	    	envVar.setName("REDEPLOY_META");
 	    	envVar.setValue("$CI_JOB_ID-$CI_COMMIT_SHA");
 	    	envVariables.add(envVar);
 	    	
-	    	logger.debug("api: " + api.toString());
+	    	logger.debug("api: " + batchApi.toString());
 	    	V1Job body = new V1JobBuilder()
-	    	  .withApiVersion("apps/v1")
+	    	  .withApiVersion("batch/v1")
 	    	  .withKind("Job")
 	    	  .withNewMetadata()
 	    	    .withNamespace("benmap-dev")
@@ -84,15 +86,16 @@ public class K8sApiExample {
 	    	  .build(); 
 	    	
 	    	logger.debug("body: " + body.toString());
-	    	
-	    	V1Job createdJob = api.createNamespacedJob("benmap-dev", body, "true", null, null);
-	    	
+
+	    	V1Job createdJob = batchApi.createNamespacedJob("benmap-dev", body, "true", null, null);
+
 	    	logger.debug("Job status: " + createdJob.getStatus());
 
 	    	return true;
 	    	
-    	} catch (Exception e) {
+    	} catch (ApiException e) {
     		logger.error("Failed running test", e);
+    		logger.error("Response body: " + e.getResponseBody());
     		return false;
     	}
     	
