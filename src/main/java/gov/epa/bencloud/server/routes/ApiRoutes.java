@@ -441,11 +441,21 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		service.get(apiPrefix + "/admin/list-pods", (req, res) -> {
+		service.get(apiPrefix + "/admin/pods", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
 			Object data = K8sApiExample.listPods(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
+		service.get(apiPrefix + "/admin/pod-logs", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = K8sApiExample.listPodLogs(req, res);
 			res.type("application/json");
 			return data;
 

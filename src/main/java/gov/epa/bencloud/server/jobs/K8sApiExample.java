@@ -95,7 +95,7 @@ public class K8sApiExample {
 
 	    	logger.debug("Job status: " + createdJob.getStatus());
 
-	    	return true;
+	    	return createdJob.toString();
 	    	
     	} catch (ApiException e) {
     		logger.error("Failed running test", e);
@@ -119,12 +119,41 @@ public class K8sApiExample {
 	    	CoreV1Api coreApi = new CoreV1Api(client);
 	    	
 	
-			V1PodList list = coreApi.listPodForAllNamespaces(null, null, null, null, null, null, null, null, null, null);
+			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
+			//for (V1Pod item : list.getItems()) {
+				//logger.debug("pod: " + item.);
+			//}
+	
+	    	return list.toString();
+	    	
+		} catch (ApiException e) {
+			logger.error("Failed running test", e);
+			logger.error("Response body: " + e.getResponseBody());
+			return false;
+		} catch (IOException e) {
+			logger.error("Failed running test", e);
+			return false;		
+		}
+		
+	}
+	
+	public static Object listPodLogs(Request req, Response res) {
+		try {
+	    	ApiClient client = ClientBuilder.cluster().build();
+	    	
+	    	Configuration.setDefaultApiClient(client);
+	    	
+	    	client.setDebugging(true);
+	
+	    	CoreV1Api coreApi = new CoreV1Api(client);
+	    	
+	
+			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
 			for (V1Pod item : list.getItems()) {
-				logger.debug("pod: " + item.getMetadata().getName());
+				String podLog = coreApi.readNamespacedPodLog(item.getMetadata().getName(), item.getMetadata().getNamespace(), null, null, null, null, "true", null, null, null, null);
 			}
 	
-	    	return true;
+	    	return "see log";
 	    	
 		} catch (ApiException e) {
 			logger.error("Failed running test", e);
