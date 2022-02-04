@@ -15,6 +15,84 @@ spec:
 
 ---
 
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-service-account
+  namespace: benmap-dev
+
+---
+# Currently very permissive. Need to refine
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: api-cluster-role
+  namespace: benmap-dev
+rules:
+  - apiGroups:
+        - ""
+        - apps
+        - autoscaling
+        - batch
+        - extensions
+        - policy
+        - rbac.authorization.k8s.io
+    resources:
+      - pods
+      - componentstatuses
+      - configmaps
+      - daemonsets
+      - deployments
+      - events
+      - endpoints
+      - horizontalpodautoscalers
+      - ingress
+      - jobs
+      - limitranges
+      - namespaces
+      - nodes
+      - pods
+      - persistentvolumes
+      - persistentvolumeclaims
+      - resourcequotas
+      - replicasets
+      - replicationcontrollers
+      - serviceaccounts
+      - services
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: api-cluster-role-binding
+subjects:
+- namespace: benmap-dev 
+  kind: ServiceAccount
+  name: api-service-account 
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api-cluster-role 
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: api-cluster-role-binding
+subjects:
+- namespace: benmap-dev 
+  kind: ServiceAccount
+  name: default 
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api-cluster-role 
+
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -53,11 +131,8 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: "4Gi"
-          cpu: "2000m"
-         limits:
-          memory: "4Gi"
-          cpu: "2000m"
+          memory: 7G
+          cpu: 4
         livenessProbe:
          tcpSocket:
             port: 4567
@@ -100,6 +175,10 @@ metadata:
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
 #   nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
 spec:
+  tls:
+    - hosts:
+        - dev.bencloud-dev.aws.epa.gov
+      secretName: bencloud-tls-secret
   rules:
     - host: dev.bencloud-dev.aws.epa.gov
       http:

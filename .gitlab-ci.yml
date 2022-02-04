@@ -8,10 +8,16 @@
 # https://github.com/gradle/gradle
 
 stages:
-  - build
+  - Build
   - Image
-  - Non-Production Deployment
+  - Image Scan
+  - Application Scan
+  - Deployment
 
+include:
+  - remote: 'https://gitlab.com/prismacloud-public/shift-left/extension/-/raw/master/.pcs.gitlab-ci.yml'
+#  - template: Security/SAST.gitlab-ci.yml
+#  - template: Dependency-Scanning.gitlab-ci.yml
 
 # Disable the Gradle daemon for Continuous Integration servers as correctness
 # is usually a priority over speed in CI environments. Using a fresh
@@ -23,14 +29,16 @@ variables:
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
-Build BenCloudServer Jar:
-  stage: build
+Build BenCloud Jars:
+  stage: Build
   image: gradle:alpine
   tags:
     - benmapdevgitlab
   script:
     - gradle fatJar
+    - gradle taskRunnerFatJar
     - cp build/libs/BenCloudServer.jar BenCloudServer.jar
+    - cp build/libs/BenCloudTaskRunner.jar BenCloudTaskRunner.jar
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: push
@@ -41,6 +49,7 @@ Build BenCloudServer Jar:
     name: "$CI_COMMIT_REF_NAME"
     paths:
       - BenCloudServer.jar
+      - BenCloudTaskRunner.jar
       - bencloud-server.properties
 
 Build BenCloudServer Image:
@@ -56,10 +65,54 @@ Build BenCloudServer Image:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
   #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloudServer Jar
+    - Build BenCloud Jars
 
-Development:
-  stage: Non-Production Deployment
+Build BenCloudTaskRunner Image:
+  stage: Image
+  tags:
+    - benmapdevgitlab
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
+  #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
+  dependencies:
+    - Build BenCloud Jars
+
+prisma-cloud-compute-scan:
+  stage: Image Scan
+  extends:
+    - .pcs_compute_scan
+  tags:
+    - twistcli
+  when: manual
+  allow_failure: false
+  parallel:
+    matrix:
+      - prisma_cloud_scan_image: ["$CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA","$CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA"]
+  variables:
+      prisma_cloud_compute_url: "https://prismacloud.gitlab-prod.aws.epa.gov"
+      GIT_STRATEGY: clone
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD registry.epa.gov
+    - docker pull $prisma_cloud_scan_image
+    - ./image_scan.sh  
+
+NetSparker:
+  stage: Application Scan
+  tags:
+    - devsecops-instance
+  when: manual
+  image: docker:20.10
+  # This needs a NetSparker image to invoke the scan.
+  script:
+    - echo "Simulate a NetSparker scan."
+
+Deploy to Development:
+  stage: Deployment
   tags:
     - benmapdevgitlab
   when: manual

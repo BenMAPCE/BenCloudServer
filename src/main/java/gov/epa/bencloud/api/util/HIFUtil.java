@@ -416,6 +416,33 @@ public class HIFUtil {
 		}
 		return s.toString();
 	}
+
+	public static String getHifHeadingForVFTaskLog(Integer hifId) {
+		// Load the function by id
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		Record record = create
+				.select(HEALTH_IMPACT_FUNCTION.asterisk()
+						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
+						,ENDPOINT.NAME.as("endpoint_name")
+						,POLLUTANT.NAME.as("pollutant_name")
+						,POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
+						,POLLUTANT_METRIC.NAME.as("metric_name")
+						,SEASONAL_METRIC.NAME.as("seasonal_metric_name")
+						,STATISTIC_TYPE.NAME.as("metric_statistic_name")
+						)
+				.from(HEALTH_IMPACT_FUNCTION)
+				.leftJoin(ENDPOINT_GROUP).on(ENDPOINT_GROUP.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID))
+				.leftJoin(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+				.leftJoin(POLLUTANT).on(POLLUTANT.ID.eq(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID))
+				.leftJoin(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_ID))
+				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.SEASONAL_METRIC_ID))
+				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))			
+				.where(HEALTH_IMPACT_FUNCTION.ID.eq(hifId))
+				.fetchOne();
+				
+		return record.get(HEALTH_IMPACT_FUNCTION.AUTHOR) + " (Unique ID: " + record.get(HEALTH_IMPACT_FUNCTION.ID) + ")";
+	}
 	
 	
 }

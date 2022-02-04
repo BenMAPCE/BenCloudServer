@@ -10,6 +10,18 @@ repositories {
 dependencies {
 
 	implementation 'com.sparkjava:spark-core:2.9.3'
+	constraints {
+        implementation('org.eclipse.jetty:jetty-server:9.4.44.v20210927') {
+            because 'Previous versions have security vulnerabilities'
+        }
+       implementation('org.eclipse.jetty:jetty-webapp:9.4.44.v20210927') {
+            because 'Previous versions have security vulnerabilities'
+        }
+       implementation('commons-beanutils:commons-beanutils:1.9.4') {
+            because 'Previous versions have security vulnerabilities'
+        }
+    }
+    
 	implementation 'com.sparkjava:spark-template-freemarker:2.7.1'
 
 	implementation 'org.freemarker:freemarker:2.3.31'
@@ -46,6 +58,7 @@ dependencies {
     implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:4.4.2'
     
+    implementation 'io.kubernetes:client-java-extended:14.0.0'
 
 }
 
@@ -59,6 +72,20 @@ task fatJar(type: Jar) {
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
 	baseName = "BenCloudServer"
+	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+	with jar
+}
+
+task taskRunnerFatJar(type: Jar) {
+    duplicatesStrategy = 'include'
+
+	manifest {
+		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudTaskRunner'
+    }
+	
+	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+
+	baseName = "BenCloudTaskRunner"
 	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
 }

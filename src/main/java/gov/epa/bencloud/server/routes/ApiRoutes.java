@@ -18,6 +18,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.ParameterUtil;
+import gov.epa.bencloud.server.jobs.K8sApiExample;
 import spark.Service;
 
 public class ApiRoutes extends RoutesBase {
@@ -417,7 +418,10 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		service.get(apiPrefix + "/admin-purge-results", (req, res) -> {
+		/*
+		 * The following are temporary calls the facilitate testing. They will be removed in the future.
+		 */
+		service.get(apiPrefix + "/admin/purge-results", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
@@ -426,6 +430,17 @@ public class ApiRoutes extends RoutesBase {
 			return data;
 
 		});
+		
+		service.get(apiPrefix + "/admin/k8s-test", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = K8sApiExample.runTest(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
 	}
 
 }
