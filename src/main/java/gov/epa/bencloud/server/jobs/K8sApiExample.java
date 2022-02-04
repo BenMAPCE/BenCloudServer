@@ -12,9 +12,12 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.ClientBuilder;
 import spark.Request;
 import spark.Response;
@@ -25,7 +28,7 @@ import spark.Response;
 public class K8sApiExample {
     private static final Logger logger = LoggerFactory.getLogger(K8sApiExample.class);
 
-    public static Object runTest(Request req, Response res) {
+    public static Object runJob(Request req, Response res) {
     	try {
 	    	ApiClient client = ClientBuilder.cluster().build();
 	    	
@@ -46,8 +49,8 @@ public class K8sApiExample {
 	    	
 	    	logger.debug("api: " + batchApi.toString());
 	    	V1Job body = new V1JobBuilder()
-	    	  .withApiVersion("batch/v1")
-	    	  .withKind("Job")
+	    	  //.withApiVersion("batch/v1")
+	    	  //.withKind("Job")
 	    	  .withNewMetadata()
 	    	    .withNamespace("benmap-dev")
 	    	    .withGenerateName("bencloud-job-")
@@ -100,7 +103,37 @@ public class K8sApiExample {
     		return false;
     	} catch (IOException e) {
     		logger.error("Failed running test", e);
-    		return false;		}
+    		return false;		
+    	}
     	
     }
+
+	public static Object listPods(Request req, Response res) {
+		try {
+	    	ApiClient client = ClientBuilder.cluster().build();
+	    	
+	    	Configuration.setDefaultApiClient(client);
+	    	
+	    	client.setDebugging(true);
+	
+	    	CoreV1Api coreApi = new CoreV1Api(client);
+	    	
+	
+			V1PodList list = coreApi.listPodForAllNamespaces(null, null, null, null, null, null, null, null, null, null);
+			for (V1Pod item : list.getItems()) {
+				logger.debug("pod: " + item.getMetadata().getName());
+			}
+	
+	    	return true;
+	    	
+		} catch (ApiException e) {
+			logger.error("Failed running test", e);
+			logger.error("Response body: " + e.getResponseBody());
+			return false;
+		} catch (IOException e) {
+			logger.error("Failed running test", e);
+			return false;		
+		}
+		
+	}
 }
