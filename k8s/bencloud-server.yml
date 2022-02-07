@@ -146,6 +146,16 @@ spec:
         env:
           - name: REDEPLOY_META
             value: $CI_JOB_ID-$CI_COMMIT_SHA
+          - name: API_CI_JOB_ID
+            value: "$CI_JOB_ID"
+          - name: API_CI_COMMIT_SHA
+            value: "$CI_COMMIT_SHA"
+          - name: API_CI_COMMIT_SHORT_SHA
+            value: "$CI_COMMIT_SHORT_SHA"
+          - name: API_CI_PROJECT_PATH_SLUG
+            value: "$CI_PROJECT_PATH_SLUG"
+          - name: API_CI_ENVIRONMENT_SLUG
+            value: "$CI_ENVIRONMENT_SLUG"
           - name: DB_CONNECTION
             value: "$DB_CONNECTION"
           - name: DB_HOST

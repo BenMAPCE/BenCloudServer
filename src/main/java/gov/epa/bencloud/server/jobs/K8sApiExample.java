@@ -37,10 +37,26 @@ public class K8sApiExample {
 	    	
 	    	client.setDebugging(true);
 
-	    	logger.debug("k8s base path: " + client.getBasePath());
-
 	    	BatchV1Api batchApi = new BatchV1Api(client);
 	    	//CoreV1Api coreApi = new CoreV1Api(client);
+	    	
+	    	/*
+	      - name: API_CI_JOB_ID
+            value: "$CI_JOB_ID"
+          - name: API_CI_COMMIT_SHA
+            value: "$CI_COMMIT_SHA"
+          - name: API_CI_COMMIT_SHORT_SHA
+            value: "$CI_COMMIT_SHORT_SHA"
+          - name: API_CI_PROJECT_PATH_SLUG
+            value: "$CI_PROJECT_PATH_SLUG"
+          - name: API_CI_ENVIRONMENT_SLUG
+            value: "$CI_ENVIRONMENT_SLUG"
+	    	 */
+	    	
+	    	Map<String, String> envMap = System.getenv();
+	    	for(String envVar : envMap.keySet()) {
+	    		logger.debug(envVar + ": " + envMap.get(envVar));
+	    	}
 	    	
 	    	List<V1EnvVar> envVariables = new ArrayList<V1EnvVar>();
 	    	V1EnvVar envVar = new V1EnvVar();
@@ -119,11 +135,12 @@ public class K8sApiExample {
 	
 	    	CoreV1Api coreApi = new CoreV1Api(client);
 	    	
-	
+	    	Map<String, String> envMap = System.getenv();
+	    	for(String envVar : envMap.keySet()) {
+	    		logger.debug(envVar + ": " + envMap.get(envVar));
+	    	}
+	    	
 			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
-			//for (V1Pod item : list.getItems()) {
-				//logger.debug("pod: " + item.);
-			//}
 	
 	    	return list.toString();
 	    	
