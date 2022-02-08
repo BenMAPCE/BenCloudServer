@@ -54,9 +54,6 @@ public class K8sApiExample {
 	    	 */
 	    	
 	    	Map<String, String> envMap = System.getenv();
-	    	//for(String envVar : envMap.keySet()) {
-	    	//	logger.debug(envVar + ": " + envMap.get(envVar));
-	    	//}
 	    	
 	    	List<V1EnvVar> envVariables = new ArrayList<V1EnvVar>();
 	    	V1EnvVar envVar = new V1EnvVar();
@@ -69,6 +66,15 @@ public class K8sApiExample {
 	    	envVar.setValue("THIS IS A TEST UUID");
 	    	envVariables.add(envVar);
 	    	
+	    	//Pass all the db variables through to the job
+	    	for(String varKey : envMap.keySet()) {
+	    		if(varKey.startsWith("DB_")) {
+	    			envVar = new V1EnvVar();
+	    	    	envVar.setName(varKey);
+	    	    	envVar.setValue(envMap.get(varKey));
+	    	    	envVariables.add(envVar);
+	    		}
+	    	}
 	    	
 	    	logger.debug("api: " + batchApi.toString());
 	    	V1Job body = new V1JobBuilder()
