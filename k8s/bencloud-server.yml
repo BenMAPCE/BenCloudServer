@@ -131,8 +131,8 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: 7G
-          cpu: 4
+          memory: 5G
+          cpu: 2
         livenessProbe:
          tcpSocket:
             port: 4567

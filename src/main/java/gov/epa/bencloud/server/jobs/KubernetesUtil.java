@@ -8,6 +8,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -173,19 +174,44 @@ public class KubernetesUtil {
 			}
 
 			V1Job body = new V1JobBuilder()
-					.withNewMetadata().withNamespace("benmap-dev").withGenerateName("bencloud-job-")
-					.withAnnotations(Map.of("app.gitlab.com/app", envMap.get("API_CI_PROJECT_PATH_SLUG"),
+					.withNewMetadata()
+						.withNamespace("benmap-dev")
+						.withGenerateName("bencloud-job-")
+						.withAnnotations(
+							Map.of("app.gitlab.com/app", envMap.get("API_CI_PROJECT_PATH_SLUG"),
 							"app.gitlab.com/env", envMap.get("API_CI_ENVIRONMENT_SLUG")))
-					.endMetadata().withNewSpec().withNewTemplate().withNewMetadata()
-					.addToLabels("name", "bencloud-taskrunner")
-					.withAnnotations(Map.of("app.gitlab.com/app", envMap.get("API_CI_PROJECT_PATH_SLUG"),
-							"app.gitlab.com/env", envMap.get("API_CI_ENVIRONMENT_SLUG")))
-					.endMetadata().editOrNewSpec().addNewContainer().withName("taskrunner")
-					.withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner:"
-							+ envMap.get("API_CI_COMMIT_SHORT_SHA"))
-					.withImagePullPolicy("Always").withEnv(envVariables).endContainer().addNewImagePullSecret()
-					.withName("glcr-auth").endImagePullSecret().withRestartPolicy("Never").endSpec().endTemplate()
-					.endSpec().build();
+					.endMetadata()
+					.withNewSpec()
+						.withNewSelector()
+							.withMatchLabels(Map.of("app", "bencloud-taskrunner"))
+						.endSelector()
+						.withNewTemplate()
+							.withNewMetadata()
+								.addToLabels("app", "bencloud-taskrunner")
+								.withAnnotations(
+									Map.of("app.gitlab.com/app", envMap.get("API_CI_PROJECT_PATH_SLUG"),
+									"app.gitlab.com/env", envMap.get("API_CI_ENVIRONMENT_SLUG")))
+							.endMetadata()
+							.editOrNewSpec()
+								.addNewContainer()
+									.withName("taskrunner")
+									.withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner:" + envMap.get("API_CI_COMMIT_SHORT_SHA"))
+									.withImagePullPolicy("Always")
+									.withNewResources()
+									.withRequests(
+										Map.of("memory", new Quantity("6G"),
+										"cpu", new Quantity("4")))
+									.endResources()
+									.withEnv(envVariables)
+								.endContainer()
+								.addNewImagePullSecret()
+									.withName("glcr-auth")
+								.endImagePullSecret()
+								.withRestartPolicy("Never")
+							.endSpec()
+						.endTemplate()
+					.endSpec()
+					.build();
 
 			V1Job createdJob = batchApi.createNamespacedJob("benmap-dev", body, "true", null, null);
 
