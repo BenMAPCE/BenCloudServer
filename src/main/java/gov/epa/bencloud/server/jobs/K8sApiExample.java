@@ -54,15 +54,21 @@ public class K8sApiExample {
 	    	 */
 	    	
 	    	Map<String, String> envMap = System.getenv();
-	    	for(String envVar : envMap.keySet()) {
-	    		logger.debug(envVar + ": " + envMap.get(envVar));
-	    	}
+	    	//for(String envVar : envMap.keySet()) {
+	    	//	logger.debug(envVar + ": " + envMap.get(envVar));
+	    	//}
 	    	
 	    	List<V1EnvVar> envVariables = new ArrayList<V1EnvVar>();
 	    	V1EnvVar envVar = new V1EnvVar();
 	    	envVar.setName("REDEPLOY_META");
-	    	envVar.setValue("$CI_JOB_ID-$CI_COMMIT_SHA");
+	    	envVar.setValue(envMap.get("REDEPLOY_META"));
 	    	envVariables.add(envVar);
+	    	
+	    	envVar = new V1EnvVar();
+	    	envVar.setName("TASK_UUID");
+	    	envVar.setValue("THIS IS A TEST UUID");
+	    	envVariables.add(envVar);
+	    	
 	    	
 	    	logger.debug("api: " + batchApi.toString());
 	    	V1Job body = new V1JobBuilder()
@@ -73,8 +79,8 @@ public class K8sApiExample {
 	    	    .withGenerateName("bencloud-job-")
 	    	    .withAnnotations(
 	    	    	Map.of(
-	    	    		"app.gitlab.com/app", "${CI_PROJECT_PATH_SLUG}", 
-	    	    		"app.gitlab.com/env", "${CI_ENVIRONMENT_SLUG}"
+	    	    		"app.gitlab.com/app", envMap.get("API_CI_PROJECT_PATH_SLUG"), 
+	    	    		"app.gitlab.com/env", envMap.get("API_CI_ENVIRONMENT_SLUG")
 	    	    	))
 	    	    .endMetadata()
 	    	  .withNewSpec()
@@ -83,19 +89,16 @@ public class K8sApiExample {
 	    	        .addToLabels("name", "bencloud-taskrunner")
 		    	    .withAnnotations(
 		    	    	Map.of(
-		    	    		"app.gitlab.com/app", "${CI_PROJECT_PATH_SLUG}", 
-		    	    		"app.gitlab.com/env", "${CI_ENVIRONMENT_SLUG}"
+		    	    		"app.gitlab.com/app", envMap.get("API_CI_PROJECT_PATH_SLUG"), 
+		    	    		"app.gitlab.com/env", envMap.get("API_CI_ENVIRONMENT_SLUG")
 		    	    	))
 	    	        .endMetadata()
 	    	      .editOrNewSpec()
 	    	        .addNewContainer()
 	    	          .withName("taskrunner")
-	    	          .withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA")
+	    	          .withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner:" + envMap.get("API_CI_COMMIT_SHORT_SHA"))
 	    	          .withImagePullPolicy("Always")
 	    	          .withEnv(envVariables)
-	    	          .addNewCommand("task")
-	    	          .addNewArg("--id")
-	    	          .addNewArg("ABC123")
 	    	        .endContainer()
 	    	        .addNewImagePullSecret()
 	    	        	.withName("glcr-auth")
@@ -134,11 +137,6 @@ public class K8sApiExample {
 	    	client.setDebugging(true);
 	
 	    	CoreV1Api coreApi = new CoreV1Api(client);
-	    	
-	    	Map<String, String> envMap = System.getenv();
-	    	for(String envVar : envMap.keySet()) {
-	    		logger.debug(envVar + ": " + envMap.get(envVar));
-	    	}
 	    	
 			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
 	

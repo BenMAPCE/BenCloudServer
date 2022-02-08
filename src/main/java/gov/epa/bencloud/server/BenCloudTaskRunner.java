@@ -50,7 +50,9 @@ public class BenCloudTaskRunner {
 			log.error("Unable to set application path", e1);
 		}
 		
-
+		String taskUuid = System.getenv("TASK_UUID");
+		
+		log.debug("TASK UUID: " + taskUuid);
 		
 		//JobsUtil.startJobScheduler();
 		
@@ -62,6 +64,7 @@ public class BenCloudTaskRunner {
 		log.info("Starting BenCloud, Task Runner version " + version + ", database version " + dbVersion);
 		log.info("Received arguments: " + String.join(", ",  args));
 
+		System.exit(0);
 	}
 
 	public static String getApplicationPath() {
