@@ -182,9 +182,6 @@ public class KubernetesUtil {
 							"app.gitlab.com/env", envMap.get("API_CI_ENVIRONMENT_SLUG")))
 					.endMetadata()
 					.withNewSpec()
-						.withNewSelector()
-							.withMatchLabels(Map.of("app", "bencloud-taskrunner"))
-						.endSelector()
 						.withNewTemplate()
 							.withNewMetadata()
 								.addToLabels("app", "bencloud-taskrunner")
@@ -220,11 +217,11 @@ public class KubernetesUtil {
 			return true;
 
 		} catch (ApiException e) {
-			logger.error("Failed running test", e);
+			logger.error("Failed running task " + taskUuid, e);
 			logger.error("Response body: " + e.getResponseBody());
 			return false;
 		} catch (IOException e) {
-			logger.error("Failed running test", e);
+			logger.error("Failed running task " + taskUuid, e);
 			return false;
 		}
 	}
