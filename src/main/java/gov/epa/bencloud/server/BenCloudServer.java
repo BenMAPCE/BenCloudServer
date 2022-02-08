@@ -109,7 +109,7 @@ public class BenCloudServer {
 		// At some point, we might want to add a static final db version in here so we can throw an error if the db version is lower than exported.
 		int dbVersion = ApiUtil.getDatabaseVersion();
 		
-		log.info("Starting BenCloud, server version " + version + ", database version " + dbVersion);
+		log.info("*** BenCloud API Server. Code version " + version + ", database version " + dbVersion + " ***");
 
 	}
 

@@ -18,7 +18,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.ParameterUtil;
-import gov.epa.bencloud.server.jobs.K8sApiExample;
+import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import spark.Service;
 
 public class ApiRoutes extends RoutesBase {
@@ -435,7 +435,7 @@ public class ApiRoutes extends RoutesBase {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			Object data = K8sApiExample.runJob(req, res);
+			Object data = KubernetesUtil.runJob(req, res);
 			res.type("application/json");
 			return data;
 
@@ -445,7 +445,7 @@ public class ApiRoutes extends RoutesBase {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			Object data = K8sApiExample.listPods(req, res);
+			Object data = KubernetesUtil.listPods(req, res);
 			res.type("application/json");
 			return data;
 
@@ -455,7 +455,7 @@ public class ApiRoutes extends RoutesBase {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			Object data = K8sApiExample.listJobLogs(req, res);
+			Object data = KubernetesUtil.listJobLogs(req, res);
 			res.type("application/json");
 			return data;
 
@@ -465,7 +465,7 @@ public class ApiRoutes extends RoutesBase {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			Object data = K8sApiExample.deleteJobs(req, res);
+			Object data = KubernetesUtil.deleteJobs(req, res);
 			res.type("application/json");
 			return data;
 

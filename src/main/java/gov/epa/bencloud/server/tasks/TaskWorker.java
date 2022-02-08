@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.TaskWorkerRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
@@ -106,13 +107,21 @@ public class TaskWorker {
 			
 			switch (task.getType()) {
 			case "HIF":
-				 t = new Thread(new HIFTaskRunnable(task.getUuid(), taskWorkerUuid));
-				 t.start();
+				if(ApplicationUtil.usingLocalProperties()) {
+					t = new Thread(new HIFTaskRunnable(task.getUuid(), taskWorkerUuid));
+					t.start();	
+				} else {
+					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
+				}
 				break;
 				
 			case "Valuation":
-				 t = new Thread(new ValuationTaskRunnable(task.getUuid(), taskWorkerUuid));
-				 t.start();
+				if(ApplicationUtil.usingLocalProperties()) {
+					t = new Thread(new ValuationTaskRunnable(task.getUuid(), taskWorkerUuid));
+					t.start();	
+				} else {
+					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
+				}
 				break;
 
 			default:
