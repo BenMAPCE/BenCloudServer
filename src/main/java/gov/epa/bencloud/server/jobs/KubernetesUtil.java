@@ -207,6 +207,7 @@ public class KubernetesUtil {
 								.withRestartPolicy("Never")
 							.endSpec()
 						.endTemplate()
+						.withTtlSecondsAfterFinished(60)
 					.endSpec()
 					.build();
 
@@ -314,18 +315,7 @@ public class KubernetesUtil {
 							  null, 
 							  null, 
 							  null ) ;
-				logger.debug("DELETED: " + response.toString());
-//				if(item.getMetadata().getName().startsWith("bencloud-job-")) {
-//					V1Status response = batchApi.deleteNamespacedJob(
-//							  item.getMetadata().getLabels().get("job-name"),
-//							  item.getMetadata().getNamespace(), 
-//							  null, 
-//							  null, 
-//							  null, 
-//							  null, 
-//							  null, 
-//							  null ) ;
-					
+					logger.debug("DELETED: " + response.toString());
 					numDeleted++;
 				}
 			}
