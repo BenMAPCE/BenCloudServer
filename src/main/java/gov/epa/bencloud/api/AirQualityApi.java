@@ -618,12 +618,15 @@ public class AirQualityApi {
 		ValidationMessage validationMsg = new ValidationMessage();
 		
 		//step 0: make sure layerName is not the same as any existing ones
+		
 		List<String>layerNames = AirQualityUtil.getExistingLayerNames(pollutantId);
 		if (layerNames.contains(layerName.toLowerCase())) {
+			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","The layer name " + layerName + " already exists. Please enter a different one."));
 			response.type("application/json");
 			response.status(400);
 			return transformValMsgToJSON(validationMsg);
+			//TODO: maybe move all "return transformValMsgToJSON(validationMsg);" to "finally" so that it is not scattered multiple places
 		}
 		
 		
@@ -938,6 +941,11 @@ public class AirQualityApi {
 			
 		} catch (Exception e) {
 			log.error("Error validating AQ file", e);
+			response.type("application/json");
+			response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error happended during validating AQ file."));
+			return transformValMsgToJSON(validationMsg);
 		}
 		
 		//import data
