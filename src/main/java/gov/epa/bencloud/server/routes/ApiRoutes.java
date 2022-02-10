@@ -18,7 +18,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.ParameterUtil;
-import gov.epa.bencloud.server.jobs.K8sApiExample;
+import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import spark.Service;
 
 public class ApiRoutes extends RoutesBase {
@@ -431,11 +431,41 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		service.get(apiPrefix + "/admin/k8s-test", (req, res) -> {
+		service.get(apiPrefix + "/admin/run-job", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
 			
-			Object data = K8sApiExample.runTest(req, res);
+			Object data = KubernetesUtil.runJob(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
+		service.get(apiPrefix + "/admin/pods", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = KubernetesUtil.listPods(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
+		service.get(apiPrefix + "/admin/job-logs", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = KubernetesUtil.listJobLogs(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
+		service.get(apiPrefix + "/admin/delete-jobs", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = KubernetesUtil.deleteJobs(req, res);
 			res.type("application/json");
 			return data;
 

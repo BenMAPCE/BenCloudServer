@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.LoggerContext;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class BenCloudTaskRunner {
@@ -50,7 +51,10 @@ public class BenCloudTaskRunner {
 			log.error("Unable to set application path", e1);
 		}
 		
-
+		String taskUuid = System.getenv("TASK_UUID");
+		String taskRunnerUuid = System.getenv("TASK_RUNNER_UUID");
+		
+		log.debug("TASK UUID: " + taskUuid);
 		
 		//JobsUtil.startJobScheduler();
 		
@@ -59,9 +63,13 @@ public class BenCloudTaskRunner {
 		// At some point, we might want to add a static final db version in here so we can throw an error if the db version is lower than exported.
 		int dbVersion = ApiUtil.getDatabaseVersion();
 		
-		log.info("Starting BenCloud, Task Runner version " + version + ", database version " + dbVersion);
-		log.info("Received arguments: " + String.join(", ",  args));
+		log.info("*** BenCloud Task Runner. Code version " + version + ", database version " + dbVersion + " ***");
 
+		//TODO: Add logic to get the task from the db so we know if we should run HIF or valuation
+		HIFTaskRunnable t = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
+		t.run();
+		
+		System.exit(0);
 	}
 
 	public static String getApplicationPath() {

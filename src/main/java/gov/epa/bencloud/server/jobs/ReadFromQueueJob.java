@@ -20,11 +20,9 @@ public class ReadFromQueueJob implements Job {
 
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
-
-		//System.out.println("ReadFromQueueJob execute");
 		
 		String uuid = TaskQueue.getTaskFromQueue();
-		
+
 		if (null != uuid) {
 			TaskManager.processTask(uuid);
 		}
