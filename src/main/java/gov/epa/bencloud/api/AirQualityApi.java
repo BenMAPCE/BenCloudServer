@@ -619,9 +619,10 @@ public class AirQualityApi {
 		
 		//step 0: make sure layerName is not the same as any existing ones
 		List<String>layerNames = AirQualityUtil.getExistingLayerNames(pollutantId);
-		if (layerNames.contains(layerName)) {
+		if (layerNames.contains(layerName.toLowerCase())) {
 			validationMsg.messages.add(new ValidationMessage.Message("error","The layer name " + layerName + " already exists. Please enter a different one."));
 			response.type("application/json");
+			response.status(400);
 			return transformValMsgToJSON(validationMsg);
 		}
 		
@@ -705,7 +706,7 @@ public class AirQualityApi {
 			}
 			String tmp = AirQualityUtil.validateModelColumnHeadings(columnIdx, rowIdx, metricIdx, seasonalMetricIdx, annualMetricIdx, valuesIdx);
 			if(tmp.length() > 0) {
-				//response.status(400);
+				
 				log.debug("AQ dataset posted - columns are missing: " + tmp);
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -713,6 +714,7 @@ public class AirQualityApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 				response.type("application/json");
+				response.status(400);
 				return transformValMsgToJSON(validationMsg);
 			}
 			
@@ -927,6 +929,7 @@ public class AirQualityApi {
 			
 			if(!validationMsg.success) {
 				response.type("application/json");
+				response.status(400);
 				return transformValMsgToJSON(validationMsg); 
 			}
 							
@@ -1066,7 +1069,9 @@ public class AirQualityApi {
 		}
 		
 		response.type("application/json");
-		return getAirQualityLayerDefinition(aqRecord.value1()).formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+		//return getAirQualityLayerDefinition(aqRecord.value1()).formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+		validationMsg.success = true;
+		return transformValMsgToJSON(validationMsg); 
 	}
 	
 	public static boolean deleteAirQualityLayerDefinition(Request request, Response response) {

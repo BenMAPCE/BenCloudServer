@@ -121,12 +121,12 @@ public class AirQualityUtil {
 	
 	public static List<String> getExistingLayerNames(Integer id) {
 		List<String> layerNames = new ArrayList<String>();
-		// Return list of AQ layer names for this pollutant id.
+		// Return list of AQ layer names (converted to lower cases) for this pollutant id.
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());		
 		layerNames = create.select().from(AIR_QUALITY_LAYER)
 				.where(AIR_QUALITY_LAYER.POLLUTANT_ID.eq(id))
-				.fetch(AIR_QUALITY_LAYER.NAME);
+				.fetch(DSL.lower(AIR_QUALITY_LAYER.NAME));
 
 		return layerNames;
 	}
