@@ -113,6 +113,8 @@ NetSparker:
 
 Deploy to Development:
   stage: Deployment
+  only: 
+    - develop
   tags:
     - benmapdevgitlab
   when: manual
