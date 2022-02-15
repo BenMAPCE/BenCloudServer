@@ -303,7 +303,6 @@ public class TaskQueue {
 						task.put("task_status", record.getValue(TASK_QUEUE.TASK_IN_PROCESS));
 						task.put("task_percentage", record.getValue(TASK_QUEUE.TASK_PERCENTAGE));
 
-
 						tasks.add(task);
 						records++;
 
