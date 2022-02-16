@@ -62,13 +62,14 @@ public class PooledDataSource {
 			databaseUser = System.getenv("DB_USERNAME");
 			databasePassword = System.getenv("DB_PASSWORD");
 
-			if ((null == databaseHost) || 
-					(null == databasePort) ||
-					(null == databaseName) ||
-					(null == databaseUser) ||
-					(null == databasePassword)
-					) {
-				log.info("environment variables not found");
+			if (null == databaseHost || null == databasePort || null == databaseName || null == databaseUser || null == databasePassword
+					|| databaseHost.isEmpty() || databasePort.isEmpty() || databaseName.isEmpty() || databaseUser.isEmpty() || databasePassword.isEmpty()) {
+				log.info("One or more environment variables not found");
+				log.info("databaseHost: " + databaseHost);
+				log.info("databasePort: " + databasePort);
+				log.info("databaseName: " + databaseName);
+				log.info("databaseUser: " + databaseUser);
+				log.info("databasePassword: " + databasePassword);
 				databasePropertiesFound = false;
 			} else {
 				log.info("using environment variables");
