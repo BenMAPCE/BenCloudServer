@@ -76,20 +76,24 @@ public class BenCloudTaskRunner {
 	    log.info("Total memory available to JVM (MB): " + Runtime.getRuntime().totalMemory()/1024/1024);
 
 	    
-	    Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
-	    if(task == null || task.getType() == null) {
-	    	log.error("Task not found in queue");
-	    	
-	    } else if(task.getType().equalsIgnoreCase("HIF")) {
-	    	HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
-	    	ht.run();
-	    } else if(task.getType().equalsIgnoreCase("Valuation")) {
-	    	ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
-	    	vt.run();
-	    } else {
-	    	log.error("Unknown task type: " + task.getType());
-	    	TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskRunnerUuid, false, "Task Failed");
-	    }
+	    try {
+			Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
+			if(task == null || task.getType() == null) {
+				log.error("Task not found in queue");
+				
+			} else if(task.getType().equalsIgnoreCase("HIF")) {
+				HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
+				ht.run();
+			} else if(task.getType().equalsIgnoreCase("Valuation")) {
+				ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
+				vt.run();
+			} else {
+				log.error("Unknown task type: " + task.getType());
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskRunnerUuid, false, "Task Failed");
+			}
+		} catch (Exception e) {
+			log.error("Error running task", e);
+		}
 		
 		System.exit(0);
 	}
