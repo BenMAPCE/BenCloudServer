@@ -77,7 +77,10 @@ public class BenCloudTaskRunner {
 
 	    
 	    Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
-	    if(task.getType().equalsIgnoreCase("HIF")) {
+	    if(task == null || task.getType() == null) {
+	    	log.error("Task not found in queue");
+	    	
+	    } else if(task.getType().equalsIgnoreCase("HIF")) {
 	    	HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
 	    	ht.run();
 	    } else if(task.getType().equalsIgnoreCase("Valuation")) {
