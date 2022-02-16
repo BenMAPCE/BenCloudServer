@@ -64,7 +64,14 @@ public class BenCloudTaskRunner {
 		int dbVersion = ApiUtil.getDatabaseVersion();
 		
 		log.info("*** BenCloud Task Runner. Code version " + version + ", database version " + dbVersion + " ***");
+		log.info("Available processors (cores): " + Runtime.getRuntime().availableProcessors());
+		log.info("Free memory (bytes): " + Runtime.getRuntime().freeMemory());
+		
+	    long maxMemory = Runtime.getRuntime().maxMemory();
+	    log.info("Maximum memory (bytes): " + (maxMemory == Long.MAX_VALUE ? "no limit" : maxMemory));
+	    log.info("Total memory available to JVM (bytes): " + Runtime.getRuntime().totalMemory());
 
+	    
 		//TODO: Add logic to get the task from the db so we know if we should run HIF or valuation
 		HIFTaskRunnable t = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
 		t.run();

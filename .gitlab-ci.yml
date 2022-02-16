@@ -128,7 +128,7 @@ Deploy to Development:
     - kubectl config use-context default
     - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
   environment:
-    name: testdev
+    name: development
     url: https://dev.bencloud-dev.aws.epa.gov/api
     kubernetes:
       namespace: benmap-dev

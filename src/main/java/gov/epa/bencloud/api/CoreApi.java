@@ -127,6 +127,8 @@ public class CoreApi {
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode data = mapper.createObjectNode();
 		String h = req.headers("USER");
+
+		//Add other attributes once we figure out what's available
 		
 		data.put("userId", h);
 		return data;

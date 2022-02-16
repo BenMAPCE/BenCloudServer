@@ -196,7 +196,7 @@ public class KubernetesUtil {
 									.withImagePullPolicy("Always")
 									.withNewResources()
 									.withRequests(
-										Map.of("memory", new Quantity("6G"),
+										Map.of("memory", new Quantity("8G"),
 										"cpu", new Quantity("4")))
 									.endResources()
 									.withEnv(envVariables)
@@ -207,7 +207,7 @@ public class KubernetesUtil {
 								.withRestartPolicy("Never")
 							.endSpec()
 						.endTemplate()
-						.withTtlSecondsAfterFinished(60)
+						.withTtlSecondsAfterFinished(60*5) //Let the job hang around for 5 minutes so we can review the log. Can reduce this once we're capturing logs
 					.endSpec()
 					.build();
 
