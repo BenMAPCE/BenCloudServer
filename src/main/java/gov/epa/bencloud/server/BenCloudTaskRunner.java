@@ -8,7 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.LoggerContext;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.server.tasks.TaskComplete;
+import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
+import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
+import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class BenCloudTaskRunner {
@@ -72,9 +76,17 @@ public class BenCloudTaskRunner {
 	    log.info("Total memory available to JVM (MB): " + Runtime.getRuntime().totalMemory()/1024/1024);
 
 	    
-		//TODO: Add logic to get the task from the db so we know if we should run HIF or valuation
-		HIFTaskRunnable t = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
-		t.run();
+	    Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
+	    if(task.getType().equalsIgnoreCase("HIF")) {
+	    	HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
+	    	ht.run();
+	    } else if(task.getType().equalsIgnoreCase("Valuation")) {
+	    	ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
+	    	vt.run();
+	    } else {
+	    	log.error("Unknown task type: " + task.getType());
+	    	TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskRunnerUuid, false, "Task Failed");
+	    }
 		
 		System.exit(0);
 	}
