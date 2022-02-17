@@ -351,7 +351,10 @@ public class KubernetesUtil {
 
 			ObjectMapper mapper = new ObjectMapper();
 			ArrayNode ret = mapper.createArrayNode();
-
+	    	ApiClient client = ClientBuilder.cluster().build();
+	    	
+	    	Configuration.setDefaultApiClient(client);
+	    	
 			List<Pair<V1Node, NodeMetrics>> metrics = Kubectl.top(V1Node.class, NodeMetrics.class).metric("cpu")
 					.execute();
 
@@ -367,6 +370,10 @@ public class KubernetesUtil {
 			}
 			return ret;
 		} catch (KubectlException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return "Error: " + e.getMessage();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return "Error: " + e.getMessage();
