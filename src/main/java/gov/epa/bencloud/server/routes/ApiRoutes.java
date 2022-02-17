@@ -462,6 +462,16 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
+		service.get(apiPrefix + "/admin/top-pods", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = KubernetesUtil.getTopPods(req, res);
+			res.type("application/json");
+			return data;
+
+		});
+		
 		service.get(apiPrefix + "/admin/job-logs", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);

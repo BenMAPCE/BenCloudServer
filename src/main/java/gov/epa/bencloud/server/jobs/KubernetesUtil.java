@@ -5,10 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import io.kubernetes.client.custom.NodeMetrics;
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.extended.kubectl.Kubectl;
+import io.kubernetes.client.extended.kubectl.KubectlTop;
+import io.kubernetes.client.extended.kubectl.exception.KubectlException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -17,6 +26,7 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
+import io.kubernetes.client.openapi.models.V1Node;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1Status;
@@ -334,5 +344,32 @@ public class KubernetesUtil {
 			return false;		
 		}
 		
+	}
+	
+	public static Object getTopPods(Request req, Response res) {
+		try {
+
+			ObjectMapper mapper = new ObjectMapper();
+			ArrayNode ret = mapper.createArrayNode();
+
+			List<Pair<V1Node, NodeMetrics>> metrics = Kubectl.top(V1Node.class, NodeMetrics.class).metric("cpu")
+					.execute();
+
+			for (Pair<V1Node, NodeMetrics> metric : metrics) {
+				ObjectNode node = ret.addObject();
+				node.put("name", metric.getKey().getMetadata().getName());
+				ArrayNode metricArray = node.putArray("metrics");
+
+				for (String usageKey : metric.getValue().getUsage().keySet()) {
+					ObjectNode metricEntry = metricArray.addObject();
+					metricEntry.put(usageKey, metric.getValue().getUsage().get(usageKey).toString());
+				}
+			}
+			return ret;
+		} catch (KubectlException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return "Error: " + e.getMessage();
+		}
 	}
 }
