@@ -196,7 +196,7 @@ public class KubernetesUtil {
 									.withImagePullPolicy("Always")
 									.withNewResources()
 									.withRequests(
-										Map.of("memory", new Quantity("16G"),
+										Map.of("memory", new Quantity("10G"),
 										"cpu", new Quantity("4")))
 									.endResources()
 									.withEnv(envVariables)
