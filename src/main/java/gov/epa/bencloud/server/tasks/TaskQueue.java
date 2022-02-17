@@ -279,6 +279,8 @@ public class TaskQueue {
 
 							task.put("task_status_message", "Started at " + record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter) );
 							task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
+
+							
 							//task.put("task_wait_time", DataUtil.getHumanReadableTime(
 							//		record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
 							//		record.getValue(TASK_QUEUE.TASK_STARTED_DATE)));
@@ -292,16 +294,15 @@ public class TaskQueue {
 							
 							task.put("task_status_message", "Pending");
 							task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
-//							task.put("task_wait_time", DataUtil.getHumanReadableTime(
+							//							task.put("task_wait_time", DataUtil.getHumanReadableTime(
 //									record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
 //									now));
 //							
 //							task.put("task_active_time", "");
 //							task.put("task_started_date", "");
 						}
-
-						task.put("task_status", record.getValue(TASK_QUEUE.TASK_IN_PROCESS));
 						task.put("task_percentage", record.getValue(TASK_QUEUE.TASK_PERCENTAGE));
+						task.put("task_status", record.getValue(TASK_QUEUE.TASK_IN_PROCESS));
 
 						tasks.add(task);
 						records++;
