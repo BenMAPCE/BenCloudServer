@@ -622,7 +622,7 @@ public class AirQualityApi {
 		List<String>layerNames = AirQualityUtil.getExistingLayerNames(pollutantId);
 		if (layerNames.contains(layerName.toLowerCase())) {
 			validationMsg.success = false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","The layer name " + layerName + " already exists. Please enter a different one."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","The layer name " + layerName + " already exists. Please enter a different name."));
 			response.type("application/json");
 			response.status(400);
 			return transformValMsgToJSON(validationMsg);
@@ -667,7 +667,7 @@ public class AirQualityApi {
 					else {
 						validationMsg.success = false;
 						ValidationMessage.Message msg = new ValidationMessage.Message();
-						msg.message = "File has both 'col' and 'column' fields";
+						msg.message = "File has both 'col' and 'column' fields.";
 						msg.type = "error";
 						validationMsg.messages.add(msg);
 					}
@@ -831,12 +831,12 @@ public class AirQualityApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countColTypeError == 1) {
-					strRecord = String.valueOf(countColTypeError) + " record has";
+					strRecord = String.valueOf(countColTypeError) + " record has Column values not a valid integer.";
 				}
 				else {
-					strRecord = String.valueOf(countColTypeError) + " records have";
+					strRecord = String.valueOf(countColTypeError) + " records have Column values that are not valid integers.";
 				}
-				msg.message = strRecord + " Column values not a valid integer";
+				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -845,12 +845,12 @@ public class AirQualityApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countRowTypeError == 1) {
-					strRecord = String.valueOf(countRowTypeError) + " record has";
+					strRecord = String.valueOf(countRowTypeError) + " record has Row values not a valid integer.";
 				}
 				else {
-					strRecord = String.valueOf(countRowTypeError) + " records have";
+					strRecord = String.valueOf(countRowTypeError) + " records have Row values that are not valid integers.";
 				}
-				msg.message = strRecord + " Row values not a valid integer";
+				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -859,12 +859,12 @@ public class AirQualityApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countValueTypeError == 1) {
-					strRecord = String.valueOf(countValueTypeError) + " record has";
+					strRecord = String.valueOf(countValueTypeError) + " record has air quality values that is not a valid number.";
 				}
 				else {
-					strRecord = String.valueOf(countValueTypeError) + " records have";
+					strRecord = String.valueOf(countValueTypeError) + " records have  air quality values that are not valid numbers.";
 				}
-				msg.message = strRecord + " air quality values not a valid double float.";
+				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -877,7 +877,7 @@ public class AirQualityApi {
 				else {
 					strRecord = String.valueOf(countValueError) + " records have";
 				}
-				msg.message = strRecord + " air quality values < 0";
+				msg.message = strRecord + " air quality values below zero.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -886,19 +886,19 @@ public class AirQualityApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMissingMetric == 1) {
-					strRecord = String.valueOf(countMissingMetric) + " record has";
+					strRecord = String.valueOf(countMissingMetric) + " record is missing a Metric value.";
 				}
 				else {
-					strRecord = String.valueOf(countMissingMetric) + " records have";
+					strRecord = String.valueOf(countMissingMetric) + " records are missing Metric values.";
 				}
-				msg.message = strRecord + " Metric missing.";
+				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(lstUndefinedMetric.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Metrics are not defined: " + String.join(",", lstUndefinedMetric);
+				msg.message = "The following Metrics are not defined: " + String.join(",", lstUndefinedMetric) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -911,21 +911,21 @@ public class AirQualityApi {
 				
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Seasonal Metrics are not defined: " + String.join(",", lstUndefinedSeasonalMetric);
+				msg.message = "The following Seasonal Metrics are not defined: " + String.join(",", lstUndefinedSeasonalMetric)+ ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(lstUndefinedStatistics.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Annual Statistics are not valid: " + String.join(",", lstUndefinedStatistics);
+				msg.message = "The following Annual Statistics are not valid: " + String.join(",", lstUndefinedStatistics)+ ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(lstDupMetricCombo.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Metric combo are not unique: " + String.join(",", lstDupMetricCombo);
+				msg.message = "The following Metric combinations are not unique: " + String.join(",", lstDupMetricCombo)+ ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -944,7 +944,7 @@ public class AirQualityApi {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Error happended during validating AQ file."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
 			return transformValMsgToJSON(validationMsg);
 		}
 		
