@@ -417,6 +417,17 @@ public class ApiRoutes extends RoutesBase {
 			return ret;
 
 		});
+
+		service.get(apiPrefix + "/user", (req, res) -> {
+
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object ret = CoreApi.getUserInfo(req, res);
+
+			res.type("application/json");
+			return ret;
+
+		});
 		
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.

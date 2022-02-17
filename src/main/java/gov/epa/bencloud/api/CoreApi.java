@@ -2,6 +2,8 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.Set;
+
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
@@ -9,18 +11,24 @@ import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
+
 import spark.Request;
 import spark.Response;
 
 public class CoreApi {
-
+	private static final Logger log = LoggerFactory.getLogger(CoreApi.class);
+	
 	public static Object getTaskConfigs(Request request, Response response) {
 		//TODO: Add type filter to select HIF or Valuation
 		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
@@ -110,5 +118,17 @@ public class CoreApi {
 		.execute("vacuum analyze");
 		
 		return true;
+	}
+
+	public static Object getUserInfo(Request req, Response res) {
+		for(String header : req.headers()) {
+			log.debug(header + ": " + req.headers(header));
+		}
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode data = mapper.createObjectNode();
+		String h = req.headers("USER");
+		
+		data.put("userId", h);
+		return data;
 	}
 }
