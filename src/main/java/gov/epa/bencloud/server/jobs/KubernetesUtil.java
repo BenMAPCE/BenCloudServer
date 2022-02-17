@@ -196,7 +196,7 @@ public class KubernetesUtil {
 									.withImagePullPolicy("Always")
 									.withNewResources()
 									.withRequests(
-										Map.of("memory", new Quantity("8G"),
+										Map.of("memory", new Quantity("16G"),
 										"cpu", new Quantity("4")))
 									.endResources()
 									.withEnv(envVariables)
@@ -213,8 +213,9 @@ public class KubernetesUtil {
 
 			V1Job createdJob = batchApi.createNamespacedJob("benmap-dev", body, "true", null, null);
 
-			logger.debug("Job status: " + createdJob.getStatus());
-
+			//logger.debug("Job status: " + createdJob.getStatus());
+			logger.debug("Starting job for " + taskUuid);
+			
 			return true;
 
 		} catch (ApiException e) {
