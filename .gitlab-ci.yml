@@ -8,11 +8,11 @@
 # https://github.com/gradle/gradle
 
 stages:
-  - Build
-  - Image
-  - Image Scan
-  - Application Scan
-  - Deployment
+  - code_build
+  - image_build
+  - image_scan
+  - application_scan
+  - deploy
 
 include:
   - remote: 'https://gitlab.com/prismacloud-public/shift-left/extension/-/raw/master/.pcs.gitlab-ci.yml'
@@ -29,8 +29,8 @@ variables:
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
-Build BenCloud Jars:
-  stage: Build
+build_jars:
+  stage: code_build
   image: gradle:alpine
   tags:
     - benmapdevgitlab
@@ -52,8 +52,8 @@ Build BenCloud Jars:
       - BenCloudTaskRunner.jar
       - bencloud-server.properties
 
-Build BenCloudServer Image:
-  stage: Image
+build_server_image:
+  stage: image_build
   tags:
     - benmapdevgitlab
   image:
@@ -63,12 +63,11 @@ Build BenCloudServer Image:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
-  #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloud Jars
+    - build_jars
 
-Build BenCloudTaskRunner Image:
-  stage: Image
+build_runner_image:
+  stage: image_build
   tags:
     - benmapdevgitlab
   image:
@@ -78,12 +77,11 @@ Build BenCloudTaskRunner Image:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
-  #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloud Jars
+    - build_jars
 
-prisma-cloud-compute-scan:
-  stage: Image Scan
+prisma_cloud_compute_scan:
+  stage: image_scan
   extends:
     - .pcs_compute_scan
   tags:
@@ -101,8 +99,8 @@ prisma-cloud-compute-scan:
     - docker pull $prisma_cloud_scan_image
     - ./image_scan.sh  
 
-NetSparker:
-  stage: Application Scan
+net_sparker:
+  stage: application_scan
   tags:
     - devsecops-instance
   when: manual
@@ -111,8 +109,8 @@ NetSparker:
   script:
     - echo "Simulate a NetSparker scan."
 
-Deploy to Development:
-  stage: Deployment
+deploy_development:
+  stage: deploy
   only: 
     - develop
   tags:

@@ -9,9 +9,6 @@ ADD www /bencloud/www
 RUN mkdir /bencloud/logs
 RUN chmod 777 /bencloud/logs
 
-ENTRYPOINT java -Xms8G -Xmx8G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudTaskRunner.jar
+ENTRYPOINT java -Xms14G -Xmx14G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudTaskRunner.jar
 
 EXPOSE 4567
-
-
-
