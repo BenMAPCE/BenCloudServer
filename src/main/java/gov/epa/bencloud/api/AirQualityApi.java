@@ -624,7 +624,7 @@ public class AirQualityApi {
 			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","The layer name " + layerName + " already exists. Please enter a different name."));
 			response.type("application/json");
-			response.status(400);
+			//response.status(400);
 			return transformValMsgToJSON(validationMsg);
 			//TODO: maybe move all "return transformValMsgToJSON(validationMsg);" to "finally" so that it is not scattered multiple places
 		}
@@ -717,7 +717,7 @@ public class AirQualityApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 				response.type("application/json");
-				response.status(400);
+				//response.status(400);
 				return transformValMsgToJSON(validationMsg);
 			}
 			
@@ -932,7 +932,7 @@ public class AirQualityApi {
 			
 			if(!validationMsg.success) {
 				response.type("application/json");
-				response.status(400);
+				//response.status(400);
 				return transformValMsgToJSON(validationMsg); 
 			}
 							
@@ -942,7 +942,7 @@ public class AirQualityApi {
 		} catch (Exception e) {
 			log.error("Error validating AQ file", e);
 			response.type("application/json");
-			response.status(400);
+			//response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
 			return transformValMsgToJSON(validationMsg);
