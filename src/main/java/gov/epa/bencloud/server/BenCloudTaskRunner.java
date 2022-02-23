@@ -67,7 +67,7 @@ public class BenCloudTaskRunner {
 		// At some point, we might want to add a static final db version in here so we can throw an error if the db version is lower than exported.
 		int dbVersion = ApiUtil.getDatabaseVersion();
 		
-		log.info("*** BenCloud Task Runner. Code version " + version + ", database version " + dbVersion + " ***");
+		log.info("*** BenMAP Task Runner. Code version " + version + ", database version " + dbVersion + " ***");
 		log.info("Available processors (cores): " + Runtime.getRuntime().availableProcessors());
 		log.info("Free memory (MB): " + Runtime.getRuntime().freeMemory()/1024/1024);
 		

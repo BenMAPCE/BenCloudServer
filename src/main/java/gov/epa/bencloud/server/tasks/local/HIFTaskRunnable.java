@@ -371,7 +371,7 @@ public class HIFTaskRunnable implements Runnable {
 			// 1. Mark the val job as started
 			// 2. Mark this hif job as complete
 			// 3. Run the val job inside it's own try/catch so any error can be used to just fail the val job
-			
+			// ACTUALLY, when the time comes, look at chaining tasks in the BenCloudTaskRunner instead of here.
 			
 			
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
