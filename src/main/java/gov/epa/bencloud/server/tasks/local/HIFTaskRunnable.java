@@ -179,6 +179,10 @@ public class HIFTaskRunnable implements Runnable {
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
+			//TODO: Can we improve performance by moving parallelism to the outer loop?
+			// Maybe for each HIF, for each cell...
+			// That will make it more challenging to track progress. Maybe maintain a process counter in each hifConfig
+			// and then put hif at idx=1 in charge of updating the task queue?
 			for (Entry<Long, AirQualityCell> baselineEntry : baseline.entrySet()) {
 				// updating task percentage
 				int currentPct = Math.round(currentCell * 100 / totalCells);

@@ -249,7 +249,7 @@ public class HIFApi {
 					hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
 					hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
 					hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
-					hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
+					//hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
 					hifResultRecords.field(GET_HIF_RESULTS.MEAN),
 					hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
 					DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
@@ -292,7 +292,7 @@ public class HIFApi {
 						}
 					}
 					//Remove percentiles by keeping all other fields
-					Result<?> hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
+					Result<?> hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26));
 			try {
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
 					hifRecordsClean.formatCSV(zipStream);

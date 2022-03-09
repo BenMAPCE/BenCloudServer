@@ -248,6 +248,7 @@ public class ValuationTaskRunnable implements Runnable {
 									for (int i = 0; i < percentiles.length; i++) {
 										// Grab the median from each of the 100 slices of distStats
 										percentiles[i] = (distValues[idxMedian] + distValues[idxMedian - 1]) / 2.0;
+										//TODO: Maybe it would be faster to create statsPercentiles below and use the other constructor: new DescriptiveStatistics(percentiles);
 										statsPercentiles.addValue(percentiles[i]);
 										idxMedian += distValues.length / percentiles.length;
 									}
