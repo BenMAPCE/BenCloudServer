@@ -48,7 +48,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     /**
      * The column <code>data.get_variable.grid_cell_id</code>.
      */
-    public final TableField<GetVariableRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<GetVariableRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.get_variable.value</code>.
@@ -124,7 +124,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<String, Integer, Double> fieldsRow() {
+    public Row3<String, Long, Double> fieldsRow() {
         return (Row3) super.fieldsRow();
     }
 

@@ -17,7 +17,7 @@ import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class BenCloudTaskRunner {
 
-	public static final String version = "0.1";
+	public static final String version = "0.2";
 	
 	private static final Logger log = LoggerFactory.getLogger(BenCloudTaskRunner.class);
     

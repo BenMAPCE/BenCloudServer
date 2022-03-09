@@ -38,8 +38,8 @@ public class ApiUtil {
 	 * @return unique integer using the Cantor pairing function to combine column and row indices
 	 * https://en.wikipedia.org/wiki/Pairing_function
 	 */
-	public static int getCellId(int columnIdx, int rowIdx) {
-		return (int)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
+	public static long getCellId(int columnIdx, int rowIdx) {
+		return (long)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
 	}
 
 
@@ -138,7 +138,7 @@ public class ApiUtil {
 		return null;
 	}
 
-	public static Map<String, Map<Integer, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
+	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
 		 // Load list of functions from the database
 		
 		//TODO: Change this to only load what we need
@@ -147,7 +147,7 @@ public class ApiUtil {
 		//TODO: Temp override until we can improve variable selection
 		allVariableNames.removeIf(n -> (!n.equals("median_income")));
 		
-		HashMap<String, Map<Integer, Double>> variableMap = new HashMap<String, Map<Integer, Double>>();
+		HashMap<String, Map<Long, Double>> variableMap = new HashMap<String, Map<Long, Double>>();
 		
 		Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 				1, 
@@ -158,7 +158,7 @@ public class ApiUtil {
 			for(Record function : vfDefinitionList) {
 				if(function.get("function_text", String.class).toLowerCase().contains(variableName)) {
 					if(!variableMap.containsKey(variableName)) {
-						variableMap.put(variableName, new HashMap<Integer, Double>());
+						variableMap.put(variableName, new HashMap<Long, Double>());
 					}
 				}
 			}

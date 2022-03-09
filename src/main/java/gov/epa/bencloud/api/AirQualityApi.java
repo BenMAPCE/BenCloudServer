@@ -541,7 +541,7 @@ public class AirQualityApi {
 	/*
 	 * Returns Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
 	 */
-	public static Map<Integer, AirQualityCell> getAirQualityLayerMap(Integer id) {
+	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id) {
 /*
 		Map<Integer, AirQualityCellRecord> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.selectFrom(AIR_QUALITY_CELL)
@@ -550,7 +550,7 @@ public class AirQualityApi {
 				.fetchMap(AIR_QUALITY_CELL.GRID_CELL_ID);	
 */
 		
-		Result<Record7<Integer, Integer, Integer, Integer, Integer, Integer, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record7<Long, Integer, Integer, Integer, Integer, Integer, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(AIR_QUALITY_CELL.GRID_CELL_ID
 						, AIR_QUALITY_CELL.GRID_COL
 						, AIR_QUALITY_CELL.GRID_ROW
@@ -563,12 +563,12 @@ public class AirQualityApi {
 				.fetch();
 		
 		
-		Map<Integer, AirQualityCell> aqMap = new HashMap<Integer, AirQualityCell>();
+		Map<Long, AirQualityCell> aqMap = new HashMap<Long, AirQualityCell>();
 		
-		for(Record7<Integer, Integer, Integer, Integer, Integer, Integer, Double> r : aqRecords) {
+		for(Record7<Long, Integer, Integer, Integer, Integer, Integer, Double> r : aqRecords) {
 			//Do we have a top-level entry in aqMap for this cell?
 			// If not, add it
-			Integer cellId = r.get(AIR_QUALITY_CELL.GRID_CELL_ID);
+			Long cellId = r.get(AIR_QUALITY_CELL.GRID_CELL_ID);
 			
 			//Get the cellAqMetrics from the map (or add it to the map)
 			AirQualityCell cellAq = aqMap.get(cellId);
@@ -774,6 +774,8 @@ public class AirQualityApi {
 				}
 				
 				//seasonal metric is not required and should be defined (seasonalMetricIdLookup = pollutant metric + "~" + seasonal metric).
+				//SKIP THIS VALIDATION FOR NOW SINCE WE'LL CREATE IT DYNAMICALLY BELOW
+				/*
 				str = record[metricIdx].toLowerCase() + "~" + record[seasonalMetricIdx].toLowerCase();
 				if("".equals(str)) {
 					//Seasonal metric is not required.
@@ -784,7 +786,7 @@ public class AirQualityApi {
 						lstUndefinedSeasonalMetric.add(String.valueOf(str));
 					}
 				}
-				
+				*/
 				//annual metric aka annual statistic can be either blank or a valid value
 				str = record[annualMetricIdx].toLowerCase();
 				if(!statisticIdLookup.containsKey(str) && str !="") {
@@ -962,7 +964,7 @@ public class AirQualityApi {
 			.fetchOne();
 			
 			// Read the data rows and write to the db	
-			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Double> batch = DSL.using(JooqUtil.getJooqConfiguration())
+			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Long, Integer, Integer, Integer, Double> batch = DSL.using(JooqUtil.getJooqConfiguration())
 					.insertInto(
 							AIR_QUALITY_CELL, 
 							AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID,

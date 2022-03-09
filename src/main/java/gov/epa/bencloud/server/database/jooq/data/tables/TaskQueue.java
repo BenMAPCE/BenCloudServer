@@ -54,7 +54,7 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     /**
      * The column <code>data.task_queue.task_id</code>.
      */
-    public final TableField<TaskQueueRecord, Long> TASK_ID = createField(DSL.name("task_id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
+    public final TableField<TaskQueueRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
      * The column <code>data.task_queue.task_user_identifier</code>.
@@ -70,6 +70,11 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
      * The column <code>data.task_queue.task_uuid</code>.
      */
     public final TableField<TaskQueueRecord, String> TASK_UUID = createField(DSL.name("task_uuid"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.task_queue.task_parent_uuid</code>.
+     */
+    public final TableField<TaskQueueRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
 
     /**
      * The column <code>data.task_queue.task_name</code>.
@@ -116,11 +121,6 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
      */
     public final TableField<TaskQueueRecord, LocalDateTime> TASK_STARTED_DATE = createField(DSL.name("task_started_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
-    /**
-     * The column <code>data.task_queue.task_parent_uuid</code>.
-     */
-    public final TableField<TaskQueueRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
-
     private TaskQueue(Name alias, Table<TaskQueueRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -165,8 +165,8 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     }
 
     @Override
-    public Identity<TaskQueueRecord, Long> getIdentity() {
-        return (Identity<TaskQueueRecord, Long>) super.getIdentity();
+    public Identity<TaskQueueRecord, Integer> getIdentity() {
+        return (Identity<TaskQueueRecord, Integer>) super.getIdentity();
     }
 
     @Override
@@ -205,7 +205,7 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Long, String, Integer, String, String, String, String, String, Integer, String, Boolean, LocalDateTime, LocalDateTime, String> fieldsRow() {
+    public Row14<Integer, String, Integer, String, String, String, String, String, String, Integer, String, Boolean, LocalDateTime, LocalDateTime> fieldsRow() {
         return (Row14) super.fieldsRow();
     }
 }

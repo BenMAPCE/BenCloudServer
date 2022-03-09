@@ -79,15 +79,15 @@ public class HIFTaskRunnable implements Runnable {
 			
 			//TODO: This will need to change as we start supporting more metrics within a single AQ layer.
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
-			Map<Integer, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
-			Map<Integer, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
+			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
+			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
 			
 			ArrayList<Expression> hifFunctionExpressionList = new ArrayList<Expression>();
 			ArrayList<Expression> hifBaselineExpressionList = new ArrayList<Expression>();
 			
 			// incidenceLists contains an array of incidence maps for each HIF
-			ArrayList<Map<Integer, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
-			ArrayList<Map<Integer, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
+			ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			ArrayList<Map<Long, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
 			
 			// incidenceCachepMap is used inside addIncidenceEntryGroups to avoid querying for datasets we already have
 			Map<String, Integer> incidenceCacheMap = new HashMap<String, Integer>();
@@ -152,7 +152,7 @@ public class HIFTaskRunnable implements Runnable {
 			ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = getPopAgeRangeMapping(hifTaskConfig);
 			
 			// Load the population dataset
-			Map<Integer, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig);
+			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig);
 
 			// Load data for the selected HIFs
 			// Determine the race/gender/ethnicity groups and age ranges needed for the
@@ -179,7 +179,7 @@ public class HIFTaskRunnable implements Runnable {
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
-			for (Entry<Integer, AirQualityCell> baselineEntry : baseline.entrySet()) {
+			for (Entry<Long, AirQualityCell> baselineEntry : baseline.entrySet()) {
 				// updating task percentage
 				int currentPct = Math.round(currentCell * 100 / totalCells);
 				currentCell++;
@@ -253,8 +253,8 @@ public class HIFTaskRunnable implements Runnable {
 					hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
-					Map<Integer, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
-					Map<Integer, Map<Integer, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
+					Map<Long, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
+					Map<Long, Map<Integer, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
 					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
 					Map<Integer, Double> prevalenceCell = prevalenceMap.get(baselineEntry.getKey());
 
@@ -275,6 +275,7 @@ public class HIFTaskRunnable implements Runnable {
 						Integer popAgeRange = popCategory.getAgeRangeId();
 						
 						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
+							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
 							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
 							prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popAgeRange, 0.0);
@@ -467,22 +468,48 @@ public class HIFTaskRunnable implements Runnable {
 		// for each hif, add a map of the relevant age ranges and percentages
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 		
-		for(HIFConfig hif : hifTaskConfig.hifs) {
+		// We're getting the hifs from hifTaskConfig in the order they were originally placed
+		for(int idx = 0; idx < hifTaskConfig.hifs.size(); idx++) {
+			HIFConfig hif = null;
+			
+			// Find the hif with arrayIdx = idx
+			for(int i = 0; i < hifTaskConfig.hifs.size(); i ++) {
+				if(hifTaskConfig.hifs.get(i).arrayIdx == idx) {
+					hif = hifTaskConfig.hifs.get(i);
+					break;
+				}
+			}
+			
 			HashMap<Integer, Double> hifPopAgeRanges = new HashMap<Integer, Double>();
 			for(Record3<Integer, Short, Short> ageRange : popAgeRanges) {
 				Integer ageRangeId = ageRange.value1();
 				Short startAge = ageRange.value2();
 				Short endAge = ageRange.value3();
 				
-				if(hif.startAge <= startAge && hif.endAge >= endAge) {
-					// population age range is fully contained in the HIF age range
-					hifPopAgeRanges.put(ageRangeId, 1.0);
+				if(hif.startAge <= endAge && hif.endAge >= startAge) {
+					if ((startAge >= hif.startAge || hif.startAge == -1) && (endAge <= hif.endAge || hif.endAge == -1)) {
+						// The population age range is fully contained in the hif's age range
+						hifPopAgeRanges.put(ageRangeId, 1.0);
+					}
+					else
+					{
+						// calculate the percentage of the population age range that falls within the hif's age range
+						double dDiv = 1;
+						if (startAge < hif.startAge) {
+							dDiv = (double)(endAge - hif.startAge + 1) / (double)(endAge - startAge + 1);
+							if (endAge > hif.endAge) {
+								dDiv = (double)(hif.endAge - hif.startAge + 1) / (double)(endAge - startAge + 1);
+							}
+						} else if (endAge > hif.endAge) {
+							dDiv = (double)(hif.endAge - startAge + 1) / (double)(endAge - startAge + 1);
+						}
+						hifPopAgeRanges.put(ageRangeId, dDiv);
+					}
 				}
-				//TODO: Handle partial overlap here
 			}
-			hifPopAgeRangeMapping.add(hifPopAgeRanges);
+			hifPopAgeRangeMapping.add(hifPopAgeRanges);	
 		}
-		
+
 		return hifPopAgeRangeMapping;
 	}
 	

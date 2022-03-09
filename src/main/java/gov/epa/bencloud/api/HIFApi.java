@@ -320,9 +320,9 @@ public class HIFApi {
 		
 	}
 
-	public static Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
+	public static Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
+		Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
 				HIF_RESULT.GRID_CELL_ID,
 				HIF_RESULT.GRID_COL,
 				HIF_RESULT.GRID_ROW,

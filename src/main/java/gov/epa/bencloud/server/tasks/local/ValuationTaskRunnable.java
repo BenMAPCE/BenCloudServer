@@ -133,9 +133,9 @@ public class ValuationTaskRunnable implements Runnable {
 			valuationTaskConfig.incomeGrowthYear = hifTaskConfig.popYear;
 			
 			//<variableName, <gridCellId, value>>
-			Map<String, Map<Integer, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
+			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
 			
-			Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
+			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
 
 			ArrayList<ValuationResultRecord> valuationResults = new ArrayList<ValuationResultRecord>(maxRowsInMemory);
 			mXparser.setToOverrideBuiltinTokens();
@@ -161,7 +161,7 @@ public class ValuationTaskRunnable implements Runnable {
 				/*
 				 * FOR EACH ROW IN THE HIF RESULTS
 				 */
-				for (Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]> hifResult : hifResults) {
+				for (Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]> hifResult : hifResults) {
 					
 					// updating task percentage
 					int currentPct = Math.round(currentCell * 100 / totalCells);
@@ -192,7 +192,7 @@ public class ValuationTaskRunnable implements Runnable {
 							double[] betaDist = vfBetaDistributionLists.get(vfIdx);
 
 							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
-							for(Entry<String, Map<Integer, Double>> variable  : variables.entrySet()) {
+							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
 								if(valuationFunctionExpression.getArgument(variable.getKey()) != null) {
 									valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(HIF_RESULT.GRID_CELL_ID), 0.0));		
 								}
@@ -264,8 +264,14 @@ public class ValuationTaskRunnable implements Runnable {
 									
 									//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop version
 									statsPercentiles.addValue(valuationFunctionEstimate);
+									
 									rec.setStandardDev(statsPercentiles.getStandardDeviation());
 									rec.setResultVariance(statsPercentiles.getVariance());
+									//rec.setStandardDev(distStats.getStandardDeviation());
+									//rec.setResultVariance(distStats.getPopulationVariance());
+									//log.debug("Pop Var: " + distStats.getPopulationVariance());
+									//log.debug("Var: " + distStats.getVariance());
+
 								}
 							} catch (Exception e) {
 								rec.setPct_2_5(0.0);

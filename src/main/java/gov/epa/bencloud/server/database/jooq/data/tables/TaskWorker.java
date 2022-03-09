@@ -54,7 +54,7 @@ public class TaskWorker extends TableImpl<TaskWorkerRecord> {
     /**
      * The column <code>data.task_worker.task_id</code>.
      */
-    public final TableField<TaskWorkerRecord, Long> TASK_ID = createField(DSL.name("task_id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
+    public final TableField<TaskWorkerRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
      * The column <code>data.task_worker.task_worker_uuid</code>.
@@ -115,8 +115,8 @@ public class TaskWorker extends TableImpl<TaskWorkerRecord> {
     }
 
     @Override
-    public Identity<TaskWorkerRecord, Long> getIdentity() {
-        return (Identity<TaskWorkerRecord, Long>) super.getIdentity();
+    public Identity<TaskWorkerRecord, Integer> getIdentity() {
+        return (Identity<TaskWorkerRecord, Integer>) super.getIdentity();
     }
 
     @Override
@@ -155,7 +155,7 @@ public class TaskWorker extends TableImpl<TaskWorkerRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<Long, String, String, LocalDateTime> fieldsRow() {
+    public Row4<Integer, String, String, LocalDateTime> fieldsRow() {
         return (Row4) super.fieldsRow();
     }
 }

@@ -23,7 +23,7 @@ import spark.Response;
 
 public class PopulationApi {
 
-	public static Map<Integer, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
+	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
 
 		//TODO: Need to grow the population using the selected popYear
 		//NOTE: For now, we're focusing on age groups and not dealing with race, gender, ethnicity
@@ -33,7 +33,7 @@ public class PopulationApi {
         Integer arrAgeRangeIds[] = new Integer[ageRangeIds.size()];
         arrAgeRangeIds = ageRangeIds.toArray(arrAgeRangeIds);
         
-		Map<Integer, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
+		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
 				null, 

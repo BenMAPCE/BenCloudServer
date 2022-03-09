@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -52,7 +53,7 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
     /**
      * The column <code>data.population_entry.id</code>.
      */
-    public final TableField<PopulationEntryRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false), this, "");
+    public final TableField<PopulationEntryRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
      * The column <code>data.population_entry.pop_dataset_id</code>.
@@ -128,8 +129,27 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
     }
 
     @Override
+    public Identity<PopulationEntryRecord, Integer> getIdentity() {
+        return (Identity<PopulationEntryRecord, Integer>) super.getIdentity();
+    }
+
+    @Override
     public UniqueKey<PopulationEntryRecord> getPrimaryKey() {
-        return Keys.POPULATION_ENTRY_PK;
+        return Keys.POPULATION_ENTRY_PKEY;
+    }
+
+    @Override
+    public List<ForeignKey<PopulationEntryRecord, ?>> getReferences() {
+        return Arrays.asList(Keys.POPULATION_ENTRY__POPULATION_ENTRY_POP_DATASET_ID_FKEY);
+    }
+
+    private transient PopulationDataset _populationDataset;
+
+    public PopulationDataset populationDataset() {
+        if (_populationDataset == null)
+            _populationDataset = new PopulationDataset(this, Keys.POPULATION_ENTRY__POPULATION_ENTRY_POP_DATASET_ID_FKEY);
+
+        return _populationDataset;
     }
 
     @Override

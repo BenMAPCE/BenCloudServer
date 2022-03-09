@@ -26,11 +26,11 @@ import spark.Response;
 
 public class IncidenceApi {
 
-	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Integer, Map<Integer, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
+	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<Integer, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
 		
-		Map<Integer, Map<Integer, Double>> incidenceOrPrevalenceMap = new HashMap<Integer, Map<Integer, Double>>();
+		Map<Long, Map<Integer, Double>> incidenceOrPrevalenceMap = new HashMap<Long, Map<Integer, Double>>();
 		
 		//Some functions don't use incidence or prevalence. Just return an empty map for those.
 		if(isIncidence==true && (hifConfig.incidence == null || hifConfig.incidence == 0)) {
@@ -58,9 +58,10 @@ public class IncidenceApi {
 		incidenceOrPrevalenceCacheMap.put(cacheKey, incidenceOrPrevalenceLists.size());
 		
 		//Return an average incidence for each population age range for a given hif
-		//TODO: Need to add in handling for race, ethnicity, gender
+		//TODO: Need to add in handling for race, ethnicity, gender. 
+		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revised.
 		
-		Map<Integer, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
+		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
 				h.get("endpoint_id", Integer.class), 
@@ -73,7 +74,8 @@ public class IncidenceApi {
 				null, 
 				null,
 				true, 
-				AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId)).intoGroups(GET_INCIDENCE.GRID_CELL_ID);
+				AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId))
+				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
 		
 		
 		// Get the age groups for the population dataset
@@ -82,7 +84,7 @@ public class IncidenceApi {
 		// Build a nested map like <grid_cell_id, <age_group_id, incidence_value>>
 		
 		// FOR EACH GRID CELL
-		for (Entry<Integer, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
+		for (Entry<Long, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
 			HashMap<Integer, Double> incidenceOrPrevalenceCellMap = new HashMap<Integer, Double>();
 
 			// FOR EACH POPULATION AGE RANGE
@@ -95,14 +97,15 @@ public class IncidenceApi {
 					Short popAgeEnd = popAgeRange.value3();
 					Short incAgeStart = incidenceOrPrevalenceAgeRange.getStartAge();
 					Short incAgeEnd = incidenceOrPrevalenceAgeRange.getEndAge();
-					//If the full population age range fits within the incidence age range, then apply this incidence rate to the population age range
-					if (popAgeStart >= incAgeStart && popAgeEnd <= incAgeEnd) {
+
+					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
 						incidenceOrPrevalenceCellMap.put(popAgeRange.value1(), incidenceOrPrevalenceCellMap.getOrDefault(popAgeRange.value1(), 0.0) + incidenceOrPrevalenceAgeRange.getValue().doubleValue());
 						count++;
-					} //TODO: add more intricate checks here to handle overlap with appropriate weighting
+					} 
 					
 				}
 				//Now calculate the average (if more than one incidence rate was applied to this population age range
+				//TODO: Do we need to improve our averaging here to handle partial overlaps better
 				if(count > 0) {
 					incidenceOrPrevalenceCellMap.put(popAgeRange.value1(), incidenceOrPrevalenceCellMap.getOrDefault(popAgeRange.value1(), 0.0)/count);
 				}

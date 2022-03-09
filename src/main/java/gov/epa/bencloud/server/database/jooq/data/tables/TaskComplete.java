@@ -54,12 +54,17 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     /**
      * The column <code>data.task_complete.task_id</code>.
      */
-    public final TableField<TaskCompleteRecord, Long> TASK_ID = createField(DSL.name("task_id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
+    public final TableField<TaskCompleteRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
      * The column <code>data.task_complete.task_uuid</code>.
      */
     public final TableField<TaskCompleteRecord, String> TASK_UUID = createField(DSL.name("task_uuid"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.task_complete.task_parent_uuid</code>.
+     */
+    public final TableField<TaskCompleteRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
 
     /**
      * The column <code>data.task_complete.task_user_identifier</code>.
@@ -121,11 +126,6 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
      */
     public final TableField<TaskCompleteRecord, LocalDateTime> TASK_COMPLETED_DATE = createField(DSL.name("task_completed_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
-    /**
-     * The column <code>data.task_complete.task_parent_uuid</code>.
-     */
-    public final TableField<TaskCompleteRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
-
     private TaskComplete(Name alias, Table<TaskCompleteRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -170,8 +170,8 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     }
 
     @Override
-    public Identity<TaskCompleteRecord, Long> getIdentity() {
-        return (Identity<TaskCompleteRecord, Long>) super.getIdentity();
+    public Identity<TaskCompleteRecord, Integer> getIdentity() {
+        return (Identity<TaskCompleteRecord, Integer>) super.getIdentity();
     }
 
     @Override
@@ -210,7 +210,7 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row15<Long, String, String, Integer, String, String, String, String, String, Boolean, String, LocalDateTime, LocalDateTime, LocalDateTime, String> fieldsRow() {
+    public Row15<Integer, String, String, String, Integer, String, String, String, String, String, Boolean, String, LocalDateTime, LocalDateTime, LocalDateTime> fieldsRow() {
         return (Row15) super.fieldsRow();
     }
 }

@@ -9,11 +9,13 @@ import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipp
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsState;
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsaCtGridsDissolve;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCmaq_12kmNationClippedRecord;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCmaq_12kmNationRecord;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCountyRecord;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsNationRecord;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsStateRecord;
+import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsaCtGridsDissolveRecord;
 
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
@@ -37,4 +39,5 @@ public class Keys {
     public static final UniqueKey<UsCountyRecord> US_COUNTY_PKEY = Internal.createUniqueKey(UsCounty.US_COUNTY, DSL.name("us_county_pkey"), new TableField[] { UsCounty.US_COUNTY.GID }, true);
     public static final UniqueKey<UsNationRecord> US_NATION_PKEY = Internal.createUniqueKey(UsNation.US_NATION, DSL.name("us_nation_pkey"), new TableField[] { UsNation.US_NATION.GID }, true);
     public static final UniqueKey<UsStateRecord> US_STATE_PKEY = Internal.createUniqueKey(UsState.US_STATE, DSL.name("us_state_pkey"), new TableField[] { UsState.US_STATE.GID }, true);
+    public static final UniqueKey<UsaCtGridsDissolveRecord> USA_CT_GRIDS_DISSOLVE_PKEY = Internal.createUniqueKey(UsaCtGridsDissolve.USA_CT_GRIDS_DISSOLVE, DSL.name("usa_ct_grids_dissolve_pkey"), new TableField[] { UsaCtGridsDissolve.USA_CT_GRIDS_DISSOLVE.GID }, true);
 }
