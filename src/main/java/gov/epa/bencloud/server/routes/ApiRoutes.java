@@ -432,6 +432,15 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */
+		service.get(apiPrefix + "/admin/fix-health-effect-group-name", (req, res) -> {
+			
+			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
+			
+			Object data = CoreApi.getFixHealthEffectGroupName(req, res);
+			res.type("application/json");
+			return data;
+
+		});
 		service.get(apiPrefix + "/admin/purge-results", (req, res) -> {
 			
 			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);

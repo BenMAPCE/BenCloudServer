@@ -133,4 +133,24 @@ public class CoreApi {
 		data.put("userId", h);
 		return data;
 	}
+
+	public static Object getFixHealthEffectGroupName(Request req, Response res) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		create.update(HEALTH_IMPACT_FUNCTION_GROUP)
+			.set(HEALTH_IMPACT_FUNCTION_GROUP.NAME, "Results for Regulatory Analysis")
+			.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(7))
+			.execute();
+		
+		create.update(AIR_QUALITY_LAYER)
+		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Baseline")
+		.where(AIR_QUALITY_LAYER.ID.eq(6))
+		.execute();	
+		
+		create.update(AIR_QUALITY_LAYER)
+		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Implementation")
+		.where(AIR_QUALITY_LAYER.ID.eq(7))
+		.execute();			
+		
+		return "done";
+	}
 }
