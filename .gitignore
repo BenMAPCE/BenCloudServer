@@ -166,3 +166,4 @@ bencloud-local.properties
 .java-version
 *.log
 *.log.zip
+settings.json
