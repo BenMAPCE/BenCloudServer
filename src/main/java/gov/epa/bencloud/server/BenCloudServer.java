@@ -21,7 +21,7 @@ import spark.Spark;
 
 public class BenCloudServer {
 
-	public static final String version = "0.2";
+	public static final String version = "0.2.0";
 	
 	private static final Logger log = LoggerFactory.getLogger(BenCloudServer.class);
     

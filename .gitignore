@@ -167,3 +167,4 @@ bencloud-local.properties
 *.log
 *.log.zip
 settings.json
+.vscode
