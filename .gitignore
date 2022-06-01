@@ -168,3 +168,4 @@ bencloud-local.properties
 *.log.zip
 settings.json
 .vscode
+BENMAP50.FDB
