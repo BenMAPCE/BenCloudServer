@@ -111,10 +111,10 @@ public class BenCloudServer {
 		JobsUtil.startJobScheduler();
 		
 		int dbVersion = ApiUtil.getDatabaseVersion();
-		if(ApiUtil.minimumDbVersion > dbVersion) {
-			log.error("STARTUP FAILED: Database version is " + dbVersion + " but must be at least " + ApiUtil.minimumDbVersion);
-			System.exit(-1);
-		}
+		// if(ApiUtil.minimumDbVersion > dbVersion) {
+			// log.error("STARTUP FAILED: Database version is " + dbVersion + " but must be at least " + ApiUtil.minimumDbVersion);
+			// System.exit(-1);
+		//}
 
 		log.info("*** BenMAP API Server. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 
