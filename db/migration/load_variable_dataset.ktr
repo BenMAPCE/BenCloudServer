@@ -591,7 +591,6 @@
     <sql>SELECT
   SETUPVARIABLEDATASETID
 , SETUPVARIABLEDATASETNAME
-, 18 as grid_definition_id
 FROM SETUPVARIABLEDATASETS</sql>
     <limit>0</limit>
     <lookup/>
@@ -720,10 +719,6 @@ FROM SETUPVARIABLEDATASETS</sql>
       <field>
         <column_name>name</column_name>
         <stream_name>SETUPVARIABLEDATASETNAME</stream_name>
-      </field>
-      <field>
-        <column_name>grid_definition_id</column_name>
-        <stream_name>Field4</stream_name>
       </field>
     </fields>
     <attributes/>

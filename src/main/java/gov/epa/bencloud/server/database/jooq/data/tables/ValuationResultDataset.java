@@ -14,7 +14,7 @@ import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row8;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -77,6 +77,16 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
      * The column <code>data.valuation_result_dataset.task_log</code>.
      */
     public final TableField<ValuationResultDatasetRecord, JSON> TASK_LOG = createField(DSL.name("task_log"), SQLDataType.JSON, this, "");
+
+    /**
+     * The column <code>data.valuation_result_dataset.user_id</code>.
+     */
+    public final TableField<ValuationResultDatasetRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.valuation_result_dataset.sharing_scope</code>.
+     */
+    public final TableField<ValuationResultDatasetRecord, Short> SHARING_SCOPE = createField(DSL.name("sharing_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     private ValuationResultDataset(Name alias, Table<ValuationResultDatasetRecord> aliased) {
         this(alias, aliased, null);
@@ -155,11 +165,11 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row8 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Integer, String, Integer, String, Integer, JSON> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row8<Integer, String, Integer, String, Integer, JSON, String, Short> fieldsRow() {
+        return (Row8) super.fieldsRow();
     }
 }

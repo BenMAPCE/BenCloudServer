@@ -26,7 +26,8 @@ dependencies {
     }
     
 	implementation 'com.sparkjava:spark-template-freemarker:2.7.1'
-
+	implementation 'org.pac4j:spark-pac4j:5.0.0'
+	implementation 'org.pac4j:pac4j-http:5.4.3'
 	implementation 'org.freemarker:freemarker:2.3.31'
 
 	// database related

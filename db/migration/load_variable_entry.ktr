@@ -588,7 +588,7 @@
       <schema_name/>
     </partitioning>
     <connection>benmap_firebird</connection>
-    <sql>SELECT a.SETUPVARIABLEID, a.SETUPVARIABLEDATASETID, a.SETUPVARIABLENAME
+    <sql>SELECT a.SETUPVARIABLEID, a.SETUPVARIABLEDATASETID, a.SETUPVARIABLENAME, a.GRIDDEFINITIONID
 FROM SETUPVARIABLES a</sql>
     <limit>0</limit>
     <lookup/>
@@ -666,6 +666,29 @@ FROM SETUPVARIABLES a</sql>
         <date_format_timezone>America/Los_Angeles</date_format_timezone>
         <lenient_string_to_number>N</lenient_string_to_number>
       </value-meta>
+      <value-meta>
+        <type>Integer</type>
+        <storagetype>normal</storagetype>
+        <name>GRIDDEFINITIONID</name>
+        <length>4</length>
+        <precision>0</precision>
+        <origin>Table input</origin>
+        <comments>GRIDDEFINITIONID</comments>
+        <conversion_Mask>####0;-####0</conversion_Mask>
+        <decimal_symbol>.</decimal_symbol>
+        <grouping_symbol>,</grouping_symbol>
+        <currency_symbol/>
+        <trim_type>none</trim_type>
+        <case_insensitive>N</case_insensitive>
+        <collator_disabled>Y</collator_disabled>
+        <collator_strength>0</collator_strength>
+        <sort_descending>N</sort_descending>
+        <output_padding>N</output_padding>
+        <date_format_lenient>N</date_format_lenient>
+        <date_format_locale>en_US</date_format_locale>
+        <date_format_timezone>America/Los_Angeles</date_format_timezone>
+        <lenient_string_to_number>N</lenient_string_to_number>
+      </value-meta>
     </row-meta>
     <attributes/>
     <cluster_schema/>
@@ -721,6 +744,10 @@ FROM SETUPVARIABLES a</sql>
       <field>
         <column_name>name</column_name>
         <stream_name>SETUPVARIABLENAME</stream_name>
+      </field>
+      <field>
+        <column_name>grid_definition_id</column_name>
+        <stream_name>GRIDDEFINITIONID</stream_name>
       </field>
     </fields>
     <attributes/>

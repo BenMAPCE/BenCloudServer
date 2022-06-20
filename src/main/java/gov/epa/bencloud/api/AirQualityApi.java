@@ -11,7 +11,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -22,10 +25,12 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record10;
 import org.jooq.Record12;
 import org.jooq.Record13;
 import org.jooq.Record14;
 import org.jooq.Record21;
+import org.jooq.Record22;
 import org.jooq.Record5;
 import org.jooq.Record6;
 import org.jooq.Record7;
@@ -36,6 +41,7 @@ import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.tools.csv.CSVReader;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +54,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.AirQualityCell;
 import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.ValidationMessage;
@@ -64,7 +71,7 @@ import spark.Response;
 public class AirQualityApi {
 	private static final Logger log = LoggerFactory.getLogger(AirQualityApi.class);
 
-	public static Object getAirQualityLayerDefinitions(Request request, Response response) {
+	public static Object getAirQualityLayerDefinitions(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		int pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 		
@@ -74,6 +81,8 @@ public class AirQualityApi {
 		boolean descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 		String filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
 		
+		String userId = userProfile.get().getId();
+
 //		System.out.println("");
 //		System.out.println("page: " + page);
 //		System.out.println("pollutantId: " + pollutantId);
@@ -101,7 +110,8 @@ public class AirQualityApi {
 
 			// System.out.println(filterCondition);
 		}
-		
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+
 		//System.out.println(orderFields);
 	
 
@@ -140,11 +150,12 @@ public class AirQualityApi {
 				.asTable("metric_statistics");
 		
 		@SuppressWarnings("unchecked")
-		Result<Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON>> aqRecords = 
+		@NotNull Result<Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON>> aqRecords = 
 			create.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
-						AIR_QUALITY_LAYER.LOCKED,
+						AIR_QUALITY_LAYER.USER_ID,
+						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 						AIR_QUALITY_LAYER.POLLUTANT_ID,
 						POLLUTANT.NAME.as("pollutant_name"), 
@@ -173,7 +184,8 @@ public class AirQualityApi {
 				.where(filterCondition)
 				.groupBy(AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
-						AIR_QUALITY_LAYER.LOCKED,
+						AIR_QUALITY_LAYER.USER_ID,
+						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 						AIR_QUALITY_LAYER.POLLUTANT_ID,
 						POLLUTANT.NAME, 
@@ -213,8 +225,9 @@ public class AirQualityApi {
 		return data;
 	}
 	
-	public static Object getAirQualityLayerDefinitionsByMetric(Request request, Response response) {
+	public static Object getAirQualityLayerDefinitionsByMetric(Request request, Response response, Optional<UserProfile> userProfile) {
 		
+		String userId = userProfile.get().getId();
 		int pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 		
 		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -250,7 +263,8 @@ public class AirQualityApi {
 
 			// System.out.println(filterCondition);
 		}
-		
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+
 		//System.out.println(orderFields);
 	
 
@@ -266,7 +280,7 @@ public class AirQualityApi {
 		
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 		
-		Result<Record21<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer, Boolean, Integer, String, Integer, String, String>> aqRecords = 
+		@NotNull Result<Record22<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer, String, Short, Integer, String, Integer, String, String>> aqRecords = 
 			DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
 						AIR_QUALITY_LAYER.ID, 
@@ -284,7 +298,8 @@ public class AirQualityApi {
 						AIR_QUALITY_LAYER_METRICS.PCT_2_5,
 						AIR_QUALITY_LAYER_METRICS.PCT_97_5,
 						AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL,
-						AIR_QUALITY_LAYER.LOCKED,
+						AIR_QUALITY_LAYER.USER_ID,
+						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 						GRID_DEFINITION.NAME.as("grid_definition_name"),
 						AIR_QUALITY_LAYER.POLLUTANT_ID,
@@ -337,12 +352,13 @@ public class AirQualityApi {
 	/**
 	 * @param request - expected to contain id param
 	 * @param response
+	 * @param optional
 	 * @return Single air quality layer definition as json string 
 	 */
-	public static Object getAirQualityLayerDefinition(Request request, Response response) {
+	public static Object getAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
 		Integer id = Integer.valueOf(request.params("id"));
 		
-		Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id);
+		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id, userProfile);
 		response.type("application/json");
 		return aqRecord.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
@@ -350,8 +366,8 @@ public class AirQualityApi {
 	
 	
 	@SuppressWarnings("unchecked")
-	public static Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id) {
-		
+	public static @Nullable Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
+		String userId = userProfile.get().getId();
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
 		Table<Record14<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer>> metricStatistics = create.select(
@@ -379,7 +395,8 @@ public class AirQualityApi {
 		return create.select(
 				AIR_QUALITY_LAYER.ID, 
 				AIR_QUALITY_LAYER.NAME,
-				AIR_QUALITY_LAYER.LOCKED,
+				AIR_QUALITY_LAYER.USER_ID,
+				AIR_QUALITY_LAYER.SHARE_SCOPE,
 				AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 				AIR_QUALITY_LAYER.POLLUTANT_ID,
 				POLLUTANT.NAME.as("pollutant_name"), 
@@ -406,9 +423,11 @@ public class AirQualityApi {
 		.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
 		.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
 		.where(AIR_QUALITY_LAYER.ID.eq(id))
+		.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)))
 		.groupBy(AIR_QUALITY_LAYER.ID
 				, AIR_QUALITY_LAYER.NAME
-				, AIR_QUALITY_LAYER.LOCKED
+				, AIR_QUALITY_LAYER.USER_ID
+				, AIR_QUALITY_LAYER.SHARE_SCOPE
 				, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
 				, AIR_QUALITY_LAYER.POLLUTANT_ID
 				, POLLUTANT.NAME
@@ -427,10 +446,10 @@ public class AirQualityApi {
 		.fetchOne().value1();
 	}
 	
-	public static Object getAirQualityLayerDetails(Request request, Response response) {
+	public static Object getAirQualityLayerDetails(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		Integer id = Integer.valueOf(request.params("id"));
-		
+		String userId = userProfile.get().getId();
 		//System.out.println("in getAirQualityLayerDetails");
 		
 		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -454,7 +473,7 @@ public class AirQualityApi {
 		if (!"".equals(filter)) {
 			filterCondition = filterCondition.and(buildAirQualityCellsFilterCondition(filter));
 		}
-
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
 	
 		List<OrderField<?>> orderFields = new ArrayList<>();
 		
@@ -604,7 +623,7 @@ public class AirQualityApi {
 		return aqMap;
 	}
 	
-	public static Object postAirQualityLayer(Request request, String layerName, Integer pollutantId, Integer gridId, String layerType, Response response) {
+	public static Object postAirQualityLayer(Request request, String layerName, Integer pollutantId, Integer gridId, String layerType, Response response, Optional<UserProfile> userProfile) {
 
 		//System.out.println("postAirQualityLayer");
 
@@ -958,8 +977,8 @@ public class AirQualityApi {
 			
 			//Create the air_quality_layer record
 			aqRecord = DSL.using(JooqUtil.getJooqConfiguration())
-			.insertInto(AIR_QUALITY_LAYER, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID, AIR_QUALITY_LAYER.LOCKED)
-			.values(layerName, pollutantId, gridId, false)
+			.insertInto(AIR_QUALITY_LAYER, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID, AIR_QUALITY_LAYER.USER_ID, AIR_QUALITY_LAYER.SHARE_SCOPE)
+			.values(layerName, pollutantId, gridId, userProfile.get().getId(), Constants.SHARING_NONE)
 			.returning(AIR_QUALITY_LAYER.ID, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
 			.fetchOne();
 			
@@ -1084,7 +1103,7 @@ public class AirQualityApi {
 		return transformValMsgToJSON(validationMsg); 
 	}
 	
-	public static boolean deleteAirQualityLayerDefinition(Request request, Response response) {
+	public static boolean deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
 		Integer id = Integer.valueOf(request.params("id"));
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		

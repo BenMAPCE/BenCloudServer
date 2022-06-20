@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 
 import org.jooq.JSONFormat;
@@ -15,6 +16,7 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
@@ -22,6 +24,7 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
+import spark.Request;
 import spark.Response;
 
 public class IncidenceApi {
@@ -116,11 +119,11 @@ public class IncidenceApi {
 		return true;
 	}
 	
-	public static Object getAllIncidenceDatasets(Response response) {
+	public static Object getAllIncidenceDatasets(Response response, Optional<UserProfile> userProfile) {
 		return getAllIncidencePrevalenceDatasets(response, false);
 	}
 
-	public static Object getAllPrevalenceDatasets(Response response) {
+	public static Object getAllPrevalenceDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 		return getAllIncidencePrevalenceDatasets(response, true);
 	}
 	

@@ -3,6 +3,8 @@ package gov.epa.bencloud.server;
 import java.io.File;
 import java.io.IOException;
 
+import org.pac4j.core.config.Config;
+import org.pac4j.sparkjava.SecurityFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,11 +22,8 @@ import spark.Service;
 import spark.Spark;
 
 public class BenCloudServer {
-
-	public static final String version = "0.2.0";
 	
 	private static final Logger log = LoggerFactory.getLogger(BenCloudServer.class);
-    
 	private static String applicationPath;
 	
 	public static void main(String[] args) {
@@ -52,8 +51,6 @@ public class BenCloudServer {
 		log.debug("max Task Workers: " + TaskWorker.getMaxTaskWorkers());
 		
 		ApplicationUtil.configureLogging();
-		LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
-		Logger logger = loggerContext.getLogger("gov.epa.bencloud");
 			
 		try {
 			applicationPath = new File(".").getCanonicalPath();
@@ -65,6 +62,8 @@ public class BenCloudServer {
 				applicationPath + ApplicationUtil.getProperties().getProperty(
 						"template.files.directory"));
 
+
+
 		Service benCloudService = Service.ignite()
 				.port(Integer.parseInt(ApplicationUtil.getProperty("server.port")))
 				.threadPool(20);
@@ -75,41 +74,49 @@ public class BenCloudServer {
 		benCloudService.options("/*",
 		        (request, response) -> {
 
-		            String accessControlRequestHeaders = request
-		                    .headers("Access-Control-Request-Headers");
+		            String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
 		            if (accessControlRequestHeaders != null) {
-		                response.header("Access-Control-Allow-Headers",
-		                        accessControlRequestHeaders);
+		                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
 		            }
 
-		            String accessControlRequestMethod = request
-		                    .headers("Access-Control-Request-Method");
+		            String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
 		            if (accessControlRequestMethod != null) {
-		                response.header("Access-Control-Allow-Methods",
-		                        accessControlRequestMethod);
+		                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
 		            }
 
 		            return "OK";
 		        });
 
-		benCloudService.before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
+		benCloudService.before((request, response) -> {
+			//Loosen up CORS; perhaps a bit too much?
+			response.header("Access-Control-Allow-Origin", "*");
+
+		});
 		
+		// Handle authentication and authorization (Passed in via headers from EPA WAM)
+
+		if( ! ApplicationUtil.usingLocalProperties()) {
+			final Config config = new BenCloudConfigFactory().build();
+			benCloudService.before(new SecurityFilter(config, "HeaderClient"));
+		}
+
 		Spark.exception(Exception.class, (exception, request, response) -> {
 		    log.error("Spark exception thrown", exception);
 		});
-		
+
 		new PublicRoutes(benCloudService, freeMarkerConfiguration);
 		new AdminRoutes(benCloudService, freeMarkerConfiguration);
 		new ApiRoutes(benCloudService, freeMarkerConfiguration);
 		
 		JobsUtil.startJobScheduler();
 		
-		// TODO: Add logic to check database version in settings table
-		// and log it as info below. 
-		// At some point, we might want to add a static final db version in here so we can throw an error if the db version is lower than exported.
 		int dbVersion = ApiUtil.getDatabaseVersion();
-		
-		log.info("*** BenMAP API Server. Code version " + version + ", database version " + dbVersion + " ***");
+		if(ApiUtil.minimumDbVersion > dbVersion) {
+			log.error("STARTUP FAILED: Database version is " + dbVersion + " but must be at least " + ApiUtil.minimumDbVersion);
+			System.exit(-1);
+		}
+
+		log.info("*** BenMAP API Server. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 
 	}
 

@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ import spark.Response;
 public class KubernetesUtil {
     private static final Logger logger = LoggerFactory.getLogger(KubernetesUtil.class);
 
-    public static Object runJob(Request req, Response res) {
+    public static Object runJob(Request req, Response res, Optional<UserProfile> userProfile) {
     	try {
 	    	ApiClient client = ClientBuilder.cluster().build();
 	    	
@@ -238,7 +240,7 @@ public class KubernetesUtil {
 		}
 	}
 
-	public static Object listPods(Request req, Response res) {
+	public static Object listPods(Request req, Response res, Optional<UserProfile> userProfile) {
 		try {
 			ApiClient client = ClientBuilder.cluster().build();
 
@@ -264,7 +266,7 @@ public class KubernetesUtil {
 
 	}
 
-	public static Object listJobLogs(Request req, Response res) {
+	public static Object listJobLogs(Request req, Response res, Optional<UserProfile> userProfile) {
 		try {
 			ApiClient client = ClientBuilder.cluster().build();
 
@@ -299,7 +301,7 @@ public class KubernetesUtil {
 
 	}
 
-	public static Object deleteJobs(Request req, Response res) {
+	public static Object deleteJobs(Request req, Response res, Optional<UserProfile> userProfile) {
 		try {
 	    	ApiClient client = ClientBuilder.cluster().build();
 	    	
@@ -346,7 +348,7 @@ public class KubernetesUtil {
 		
 	}
 	
-	public static Object getTopPods(Request req, Response res) {
+	public static Object getTopPods(Request req, Response res, Optional<UserProfile> userProfile) {
 		try {
 
 			ObjectMapper mapper = new ObjectMapper();

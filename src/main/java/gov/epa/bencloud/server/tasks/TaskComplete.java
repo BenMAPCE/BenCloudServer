@@ -8,11 +8,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +53,7 @@ public class TaskComplete {
 				}
 
 				DSL.using(ctx).insertInto(TASK_COMPLETE,
-						TASK_COMPLETE.TASK_USER_IDENTIFIER,
+						TASK_COMPLETE.USER_ID,
 						TASK_COMPLETE.TASK_PRIORITY,
 						TASK_COMPLETE.TASK_UUID,
 						TASK_COMPLETE.TASK_PARENT_UUID,
@@ -94,7 +96,7 @@ public class TaskComplete {
 
 	}
 
-	public static ObjectNode getCompletedTasks(String userIdentifier, Map<String, String[]> postParameters) {
+	public static ObjectNode getCompletedTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
 //		System.out.println("getCompletedTasks");
 //		System.out.println("userIdentifier: " + userIdentifier);
@@ -104,6 +106,8 @@ public class TaskComplete {
 //		System.out.println("searchValue: " + postParameters.get("searchValue")[0]);
 //		System.out.println("sortColumn: " + postParameters.get("sortColumn")[0]);
 //		System.out.println("sortDirection: " + postParameters.get("sortDirection")[0]);
+
+		String userId = userProfile.get().getId();
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -121,7 +125,7 @@ public class TaskComplete {
 			try {
 
 				Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
-						//.where(TASK_COMPLETE.TASK_USER_IDENTIFIER.eq(userIdentifier))
+						.where(TASK_COMPLETE.USER_ID.eq(userId))
 						.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
 						.fetch();
 
@@ -211,7 +215,7 @@ public class TaskComplete {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_COMPLETE.TASK_NAME));
 				task.setDescription(record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
-				task.setUserIdentifier(record.getValue(TASK_COMPLETE.TASK_USER_IDENTIFIER));
+				task.setUserIdentifier(record.getValue(TASK_COMPLETE.USER_ID));
 				task.setPriority(record.getValue(TASK_COMPLETE.TASK_PRIORITY));
 				task.setUuid(record.getValue(TASK_COMPLETE.TASK_UUID));
 				task.setParentUuid(record.getValue(TASK_COMPLETE.TASK_PARENT_UUID));

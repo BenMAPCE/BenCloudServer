@@ -1,9 +1,14 @@
 package gov.epa.bencloud.server.routes;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.servlet.MultipartConfigElement;
 
+import org.pac4j.core.profile.ProfileManager;
+import org.pac4j.core.profile.UserProfile;
+import org.pac4j.jee.context.session.JEESessionStore;
+import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +43,14 @@ public class ApiRoutes extends RoutesBase {
 		 * GET array of all grid definitions
 		 */
 		service.get(apiPrefix + "/grid-definitions", (request, response) -> {
-			return GridDefinitionApi.getAllGridDefinitions(response);
+			return GridDefinitionApi.getAllGridDefinitions(request, response, getUserProfile(request, response));
 		});
 		
 		/*
 		 * GET array of all pollutant definitions
 		 */
 		service.get(apiPrefix + "/pollutants", (request, response) -> {
-			return PollutantApi.getAllPollutantDefinitions(response);
+			return PollutantApi.getAllPollutantDefinitions(request, response, getUserProfile(request, response));
 		});
 
 		/*
@@ -59,7 +64,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  filter=
 		 */
 		service.get(apiPrefix + "/air-quality-data", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDefinitions(request, response);
+			return AirQualityApi.getAirQualityLayerDefinitions(request, response, getUserProfile(request, response));
 		});
 		
 		/*
@@ -73,7 +78,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  filter=
 		 */
 		service.get(apiPrefix + "/air-quality-data-by-metric", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDefinitionsByMetric(request, response);
+			return AirQualityApi.getAirQualityLayerDefinitionsByMetric(request, response, getUserProfile(request, response));
 		});
 
 		/*
@@ -82,7 +87,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  :id
 		 */
 		service.get(apiPrefix + "/air-quality-data/:id", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDefinition(request, response);
+			return AirQualityApi.getAirQualityLayerDefinition(request, response, getUserProfile(request, response));
 		});
 
 		/*
@@ -99,7 +104,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  else, application/json response
 		 */
 		service.get(apiPrefix + "/air-quality-data/:id/contents", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDetails(request, response);
+			return AirQualityApi.getAirQualityLayerDetails(request, response, getUserProfile(request, response));
 		});
 
 		/*
@@ -119,7 +124,7 @@ public class ApiRoutes extends RoutesBase {
 			Integer gridId = Integer.valueOf(getPostParameterValue(request, "gridId"));
 			String layerType = getPostParameterValue(request, "type");
 			
-			return AirQualityApi.postAirQualityLayer(request, layerName, pollutantId, gridId, layerType, response);
+			return AirQualityApi.postAirQualityLayer(request, layerName, pollutantId, gridId, layerType, response, getUserProfile(request, response));
 		});
 
 		/*
@@ -129,7 +134,7 @@ public class ApiRoutes extends RoutesBase {
 		 */
 		service.delete(apiPrefix + "/air-quality-data/:id", (request, response) -> {
 
-			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response)) {
+			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response, getUserProfile(request, response))) {
 				response.status(204);
 			} else {
 				response.status(404);
@@ -142,21 +147,21 @@ public class ApiRoutes extends RoutesBase {
 		 * GET array of all population dataset definitions
 		 */
 		service.get(apiPrefix + "/population", (request, response) -> {
-			return PopulationApi.getAllPopulationDatasets(response);
+			return PopulationApi.getAllPopulationDatasets(request, response, getUserProfile(request, response));
 		});
 		
 		/*
 		 * GET array of all health impact function definitions
 		 */
 		service.get(apiPrefix + "/health-impact-functions", (request, response) -> {
-			return HIFApi.getAllHealthImpactFunctions(request, response);
+			return HIFApi.getAllHealthImpactFunctions(request, response, getUserProfile(request, response));
 		});
 
 		/*
 		 * GET a health impact function definition
 		 */
 		service.get(apiPrefix + "/health-impact-functions/:id", (request, response) -> {
-			return HIFApi.getHealthImpactFunction(request, response);
+			return HIFApi.getHealthImpactFunction(request, response, getUserProfile(request, response));
 		});
 		
 		/*
@@ -167,7 +172,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  Response will include array of function ids within each group
 		 */	
 		service.get(apiPrefix + "/health-impact-function-groups", (request, response) -> {
-			return HIFApi.getAllHifGroups(request, response);
+			return HIFApi.getAllHifGroups(request, response, getUserProfile(request, response));
 		});
 		
 		/*
@@ -185,36 +190,33 @@ public class ApiRoutes extends RoutesBase {
 		 *  Response will include array of complete function definitions within each group
 		 */	
 		service.get(apiPrefix + "/health-impact-function-groups/:ids", (request, response) -> {
-			return HIFApi.getSelectedHifGroups(request, response);
+			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
 		
 		/*
 		 * GET a list of incidence datasets
 		 */
 		service.get(apiPrefix + "/incidence", (request, response) -> {
-			return IncidenceApi.getAllIncidenceDatasets(response);
+			return IncidenceApi.getAllIncidenceDatasets(response, getUserProfile(request, response));
 		});
 		
 		/*
 		 * GET a list of prevalence datasets
 		 */
 		service.get(apiPrefix + "/prevalence", (request, response) -> {
-			return IncidenceApi.getAllPrevalenceDatasets(response);
+			return IncidenceApi.getAllPrevalenceDatasets(request, response, getUserProfile(request, response));
 		});
 
 		service.get(apiPrefix + "/valuation-functions", (request, response) -> {
-			return ValuationApi.getAllValuationFunctions(request, response);
+			return ValuationApi.getAllValuationFunctions(request, response, getUserProfile(request, response));
 		});
 
 
 		/*
 		 * GET array of all health impact function result datasets
 		 */	
-		service.get(apiPrefix + "/health-impact-result-datasets", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			return HIFApi.getHifResultDatasets(req, res);
+		service.get(apiPrefix + "/health-impact-result-datasets", (request, response) -> {
+			return HIFApi.getHifResultDatasets(request, response, getUserProfile(request, response));
 
 		});
 		
@@ -222,11 +224,8 @@ public class ApiRoutes extends RoutesBase {
 		 * GET array of all health impact function definitions that are part of a hif result dataset
 		 * id can be the hifResultDataset.id OR the task UUID
 		 */	
-		service.get(apiPrefix + "/health-impact-result-datasets/:id", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			return HIFApi.getHifResultDatasetFunctions(req, res);
+		service.get(apiPrefix + "/health-impact-result-datasets/:id", (request, response) -> {	
+			return HIFApi.getHifResultDatasetFunctions(request, response, getUserProfile(request, response));
 
 		});
 		
@@ -244,12 +243,9 @@ public class ApiRoutes extends RoutesBase {
 		 *  
 		 *  application/json response
 		 */	
-		service.get(apiPrefix + "/health-impact-result-datasets/:id/contents", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
+		service.get(apiPrefix + "/health-impact-result-datasets/:id/contents", (request, response) -> {
 			//TODO: Implement a new version of this that supports filtering, etc
-			HIFApi.getHifResultContents(req, res);
+			HIFApi.getHifResultContents(request, response, getUserProfile(request, response));
 			
 			return null;
 
@@ -262,12 +258,9 @@ public class ApiRoutes extends RoutesBase {
 		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
 		 *  
 		 */	
-		service.get(apiPrefix + "/health-impact-result-datasets/:id/export", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
+		service.get(apiPrefix + "/health-impact-result-datasets/:id/export", (request, response) -> {
 			//TODO: Implement a new version of this that supports filtering, etc
-			HIFApi.getHifResultExport(req, res);
+			HIFApi.getHifResultExport(request, response, getUserProfile(request, response));
 			
 			return null;
 
@@ -276,11 +269,8 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET array of all health impact function result datasets
 		 */	
-		service.get(apiPrefix + "/valuation-result-datasets", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			return ValuationApi.getValuationResultDatasets(req, res);
+		service.get(apiPrefix + "/valuation-result-datasets", (request, response) -> {
+			return ValuationApi.getValuationResultDatasets(request, response, getUserProfile(request, response));
 
 		});
 		
@@ -288,11 +278,8 @@ public class ApiRoutes extends RoutesBase {
 		 * GET array of all health impact function definitions that are part of a hif result dataset
 		 * id can be the valuationResultDataset.id OR the task UUID
 		 */	
-		service.get(apiPrefix + "/valuation-result-datasets/:id", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			return ValuationApi.getValuationResultDatasetFunctions(req, res);
+		service.get(apiPrefix + "/valuation-result-datasets/:id", (request, response) -> {
+			return ValuationApi.getValuationResultDatasetFunctions(request, response, getUserProfile(request, response));
 
 		});
 		
@@ -312,11 +299,8 @@ public class ApiRoutes extends RoutesBase {
 		 *  
 		 *   application/json response
 		 */	
-		service.get(apiPrefix + "/valuation-result-datasets/:id/contents", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			ValuationApi.getValuationResultContents(req, res);
+		service.get(apiPrefix + "/valuation-result-datasets/:id/contents", (request, response) -> {
+			ValuationApi.getValuationResultContents(request, response, getUserProfile(request, response));
 			
 			return null;
 
@@ -328,48 +312,36 @@ public class ApiRoutes extends RoutesBase {
 		 *  :id (valuation results dataset id or task UUID)
 		 *  gridId= (comma delimited list. aggregate the results to one or more grid definitions)
 		 */	
-		service.get(apiPrefix + "/valuation-result-datasets/:id/export", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			ValuationApi.getValuationResultExport(req, res);
+		service.get(apiPrefix + "/valuation-result-datasets/:id/export", (request, response) -> {
+			ValuationApi.getValuationResultExport(request, response, getUserProfile(request, response));
 			
 			return null;
 
 		});
 		
-		service.delete(apiPrefix + "/tasks/:uuid", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			return ApiUtil.deleteTaskResults(req, res);
+		service.delete(apiPrefix + "/tasks/:uuid", (request, response) -> {
+			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
 
 		});
 		
-		service.get(apiPrefix + "/tasks/pending", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			ObjectNode data = TaskQueue.getPendingTasks(bcoUserIdentifier, getPostParametersAsMap(req));
-			res.type("application/json");
+		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
+			ObjectNode data = TaskQueue.getPendingTasks(getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.get(apiPrefix + "/tasks/completed", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			ObjectNode data = TaskComplete.getCompletedTasks(bcoUserIdentifier, getPostParametersAsMap(req));
-			res.type("application/json");
+		service.get(apiPrefix + "/tasks/completed", (request, response) -> {
+
+			ObjectNode data = TaskComplete.getCompletedTasks(getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.post(apiPrefix + "/tasks", (req, res) -> {
+		service.post(apiPrefix + "/tasks", (request, response) -> {
 
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			String body = req.body();
+			String body = request.body();
 			
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode params = mapper.readTree(body);
@@ -385,46 +357,37 @@ public class ApiRoutes extends RoutesBase {
 				task.setParentUuid(params.get("parent_task_uuid").asText());
 				
 			}
-			task.setUserIdentifier(bcoUserIdentifier);
+			task.setUserIdentifier(getUserProfile(request, response).get().getId());
 			task.setType(params.get("type").asText());
 			
 			TaskQueue.writeTaskToQueue(task);
 
 			ObjectNode ret = mapper.createObjectNode();
 			ret.put("task_uuid", task.getUuid());
-			res.type("application/json");
+			response.type("application/json");
 			return ret;
 
 		});
 		
-		service.get(apiPrefix + "/task-configs", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = CoreApi.getTaskConfigs(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/task-configs", (request, response) -> {
+			Object data = CoreApi.getTaskConfigs(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.post(apiPrefix + "/task-configs", (req, res) -> {
+		service.post(apiPrefix + "/task-configs", (request, response) -> {
+			String ret = CoreApi.postTaskConfig(request, response, getUserProfile(request, response));
 
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			String ret = CoreApi.postTaskConfig(req, res);
-
-			res.type("application/json");
+			response.type("application/json");
 			return ret;
 
 		});
 
-		service.get(apiPrefix + "/user", (req, res) -> {
+		service.get(apiPrefix + "/user", (request, response) -> {
+			Object ret = CoreApi.getUserInfo(request, response, getUserProfile(request, response));
 
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object ret = CoreApi.getUserInfo(req, res);
-
-			res.type("application/json");
+			response.type("application/json");
 			return ret;
 
 		});
@@ -432,71 +395,50 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */
-		service.get(apiPrefix + "/admin/fix-health-effect-group-name", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = CoreApi.getFixHealthEffectGroupName(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/admin/fix-health-effect-group-name", (request, response) -> {
+			Object data = CoreApi.getFixHealthEffectGroupName(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});
-		service.get(apiPrefix + "/admin/purge-results", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = CoreApi.getPurgeResults(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/admin/purge-results", (request, response) -> {
+			Object data = CoreApi.getPurgeResults(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.get(apiPrefix + "/admin/run-job", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = KubernetesUtil.runJob(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/admin/run-job", (request, response) -> {
+			Object data = KubernetesUtil.runJob(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.get(apiPrefix + "/admin/pods", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = KubernetesUtil.listPods(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/admin/pods", (request, response) -> {
+			Object data = KubernetesUtil.listPods(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.get(apiPrefix + "/admin/top-pods", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = KubernetesUtil.getTopPods(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/admin/top-pods", (request, response) -> {
+			Object data = KubernetesUtil.getTopPods(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.get(apiPrefix + "/admin/job-logs", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = KubernetesUtil.listJobLogs(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/admin/job-logs", (request, response) -> {
+			Object data = KubernetesUtil.listJobLogs(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});
 		
-		service.get(apiPrefix + "/admin/delete-jobs", (req, res) -> {
-			
-			String bcoUserIdentifier = getOrSetOrExtendCookie(req, res);
-			
-			Object data = KubernetesUtil.deleteJobs(req, res);
-			res.type("application/json");
+		service.get(apiPrefix + "/admin/delete-jobs", (request, response) -> {
+			Object data = KubernetesUtil.deleteJobs(request, response, getUserProfile(request, response));
+			response.type("application/json");
 			return data;
 
 		});

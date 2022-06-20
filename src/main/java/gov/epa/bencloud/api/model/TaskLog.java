@@ -17,7 +17,7 @@ public class TaskLog {
 	public TaskLog() {
 		super();
 		
-		this.appVersion = BenCloudServer.version;
+		this.appVersion = ApiUtil.appVersion;
 		this.dbVersion = ApiUtil.getDatabaseVersion();
 		
 	}

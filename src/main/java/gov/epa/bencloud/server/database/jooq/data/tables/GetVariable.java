@@ -58,7 +58,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     private GetVariable(Name alias, Table<GetVariableRecord> aliased) {
         this(alias, aliased, new Field[] {
             DSL.val(null, SQLDataType.INTEGER),
-            DSL.val(null, SQLDataType.CLOB.getArrayDataType()),
+            DSL.val(null, SQLDataType.CLOB),
             DSL.val(null, SQLDataType.INTEGER)
         });
     }
@@ -133,12 +133,12 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
      */
     public GetVariable call(
           Integer _DatasetId
-        , String[] _VariableName
+        , String _VariableName
         , Integer _OutputGridDefinitionId
     ) {
         GetVariable result = new GetVariable(DSL.name("get_variable"), null, new Field[] {
             DSL.val(_DatasetId, SQLDataType.INTEGER),
-            DSL.val(_VariableName, SQLDataType.CLOB.getArrayDataType()),
+            DSL.val(_VariableName, SQLDataType.CLOB),
             DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
         });
 
@@ -150,7 +150,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
      */
     public GetVariable call(
           Field<Integer> _DatasetId
-        , Field<String[]> _VariableName
+        , Field<String> _VariableName
         , Field<Integer> _OutputGridDefinitionId
     ) {
         GetVariable result = new GetVariable(DSL.name("get_variable"), null, new Field[] {

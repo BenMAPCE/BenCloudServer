@@ -1,5 +1,5 @@
-CREATE OR REPLACE FUNCTION data.get_variable(_dataset_id integer, _variable_name text[], _output_grid_definition_id integer)
- RETURNS TABLE(variable_name text, grid_cell_id int8, value double precision)
+CREATE OR REPLACE FUNCTION data.get_variable(_dataset_id integer, _variable_name text, _output_grid_definition_id integer)
+ RETURNS TABLE(variable_name text, grid_cell_id bigint, value double precision)
  LANGUAGE plpgsql
 AS $function$
 declare
@@ -17,10 +17,10 @@ begin
 			USING HINT = 'Parameter cannot be NULL';
 	end if;
 -- Throw exception if data_set_id is not found in data.variable_dataset.id
-	SELECT grid_definition_id FROM data.incidence_dataset WHERE id = _dataset_id LIMIT 1
+	SELECT grid_definition_id FROM data.variable_entry WHERE variable_dataset_id = _dataset_id and name = _variable_name LIMIT 1
 		into _source_grid_definition_id;
 	if _source_grid_definition_id IS NULL then
-		RAISE EXCEPTION 'Invalid Parameter - dataset_id = %', _dataset_id USING HINT = 'Value not found in variable_dataset';
+		RAISE EXCEPTION 'Invalid Parameter - dataset_id = %', _dataset_id USING HINT = 'Value not found in variable_entry';
 	end if;
 -- Throw exception if source data set grid ID is != output grid definition ID AND
 -- there is no mapping in crosswalk_dataset to do a conversion
@@ -49,7 +49,7 @@ begin
 		  join data.crosswalk_entry ce on vv.grid_cell_id = ce.target_grid_cell_id and ce.crosswalk_id = _crosswalk_dataset_id
 		where (
 		  ve.variable_dataset_id = _dataset_id
-		  and (_variable_name is null or ve."name" = any(_variable_name))
+		  and ve."name" = _variable_name
 		)
 		group by
    		  ve."name",
@@ -68,7 +68,7 @@ begin
 		  join data.variable_value vv on vv.variable_entry_id = ve.id
 		where (
 		  ve.variable_dataset_id = _dataset_id
-		  and (_variable_name is null or ve."name" = any(_variable_name))
+		  and ve."name" = _variable_name
 		)
 		order by
 			ve.name,

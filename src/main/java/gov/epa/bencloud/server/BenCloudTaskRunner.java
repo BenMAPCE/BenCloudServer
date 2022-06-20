@@ -16,8 +16,6 @@ import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class BenCloudTaskRunner {
-
-	public static final String version = "0.2";
 	
 	private static final Logger log = LoggerFactory.getLogger(BenCloudTaskRunner.class);
     
@@ -60,14 +58,13 @@ public class BenCloudTaskRunner {
 		
 		log.debug("TASK UUID: " + taskUuid);
 		
-		//JobsUtil.startJobScheduler();
-		
-		// TODO: Add logic to check database version in settings table
-		// and log it as info below. 
-		// At some point, we might want to add a static final db version in here so we can throw an error if the db version is lower than exported.
 		int dbVersion = ApiUtil.getDatabaseVersion();
-		
-		log.info("*** BenMAP Task Runner. Code version " + version + ", database version " + dbVersion + " ***");
+		if(ApiUtil.minimumDbVersion > dbVersion) {
+			log.error("STARTUP FAILED: Database version is " + dbVersion + " but must be at least " + ApiUtil.minimumDbVersion);
+			System.exit(-1);
+		}
+
+		log.info("*** BenMAP Task Runner. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 		log.info("Available processors (cores): " + Runtime.getRuntime().availableProcessors());
 		log.info("Free memory (MB): " + Runtime.getRuntime().freeMemory()/1024/1024);
 		

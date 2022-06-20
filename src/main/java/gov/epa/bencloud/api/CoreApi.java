@@ -2,6 +2,7 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.jooq.DSLContext;
@@ -11,6 +12,7 @@ import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -18,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -29,11 +32,12 @@ import spark.Response;
 public class CoreApi {
 	private static final Logger log = LoggerFactory.getLogger(CoreApi.class);
 	
-	public static Object getTaskConfigs(Request request, Response response) {
+	public static Object getTaskConfigs(Request request, Response response, Optional<UserProfile> userProfile) {
 		//TODO: Add type filter to select HIF or Valuation
 		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(TASK_CONFIG.asterisk())
 				.from(TASK_CONFIG)
+				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
 				.orderBy(TASK_CONFIG.NAME)
 				.fetch();
 		
@@ -42,7 +46,7 @@ public class CoreApi {
 	}
 	
 	//TODO: Add deleteTaskConfig, update?
-	public static String postTaskConfig(Request request, Response response) {
+	public static String postTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
 		ObjectMapper mapper = new ObjectMapper();
 		String body = request.body();
 		
@@ -67,15 +71,15 @@ public class CoreApi {
 		JSON params = JSON.json(jsonPost.get("parameters").toString());
 		
 		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
-		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS)
-		.values(name, type, params)
+		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
+		.values(name, type, params, userProfile.get().getId())
 		.returning(TASK_CONFIG.asterisk())
 		.fetchOne();
 		
 		return rec.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
-	public static Object getPurgeResults(Request req, Response res) {
+	public static Object getPurgeResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
 		create
@@ -90,6 +94,10 @@ public class CoreApi {
 		.truncate(TASK_COMPLETE)
 		.execute();
 		
+		create
+		.truncate(TASK_CONFIG)
+		.execute();
+
 		create
 		.truncate(HIF_RESULT)
 		.execute();
@@ -120,21 +128,22 @@ public class CoreApi {
 		return true;
 	}
 
-	public static Object getUserInfo(Request req, Response res) {
+	public static Object getUserInfo(Request req, Response res, Optional<UserProfile> userProfile) {
 		for(String header : req.headers()) {
 			log.debug(header + ": " + req.headers(header));
 		}
 		ObjectMapper mapper = new ObjectMapper();
-		ObjectNode data = mapper.createObjectNode();
-		String h = req.headers("USER");
-
-		//Add other attributes once we figure out what's available
+		ObjectNode userNode = mapper.createObjectNode();
 		
-		data.put("userId", h);
-		return data;
+		userNode.put("userId", userProfile.get().getId());
+		ArrayNode rolesNode = userNode.putArray("roles");
+		for (String role : userProfile.get().getRoles()) {
+			rolesNode.add(role);
+		}
+		return userNode;
 	}
 
-	public static Object getFixHealthEffectGroupName(Request req, Response res) {
+	public static Object getFixHealthEffectGroupName(Request req, Response res, Optional<UserProfile> userProfile) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		create.update(HEALTH_IMPACT_FUNCTION_GROUP)
 			.set(HEALTH_IMPACT_FUNCTION_GROUP.NAME, "Results for Regulatory Analysis")

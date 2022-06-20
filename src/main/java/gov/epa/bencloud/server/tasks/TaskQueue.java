@@ -5,10 +5,13 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_QUEUE;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Optional;
+
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,7 +211,7 @@ public class TaskQueue {
 
 		try {
 			DSL.using(JooqUtil.getJooqConfiguration()).insertInto(TASK_QUEUE,
-					TASK_QUEUE.TASK_USER_IDENTIFIER,
+					TASK_QUEUE.USER_ID,
 					TASK_QUEUE.TASK_PRIORITY,
 					TASK_QUEUE.TASK_UUID,
 					TASK_QUEUE.TASK_PARENT_UUID,
@@ -236,10 +239,11 @@ public class TaskQueue {
 		}
 	}
 
-	public static ObjectNode getPendingTasks(String userIdentifier, Map<String, String[]> postParameters) {
+	public static ObjectNode getPendingTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
 		//System.out.println("getPendingTasks");
 //		System.out.println("userIdentifier: " + userIdentifier);
+		String userId = userProfile.get().getId();
 
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -259,7 +263,7 @@ public class TaskQueue {
 				try {
 
 					Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
-							//.where(TASK_QUEUE.TASK_USER_IDENTIFIER.eq(userIdentifier))
+							.where(TASK_QUEUE.USER_ID.eq(userId))
 							.orderBy(TASK_QUEUE.TASK_SUBMITTED_DATE.asc())
 							.fetch();
 
@@ -350,7 +354,7 @@ public class TaskQueue {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_QUEUE.TASK_NAME));
 				task.setDescription(record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
-				task.setUserIdentifier(record.getValue(TASK_QUEUE.TASK_USER_IDENTIFIER));
+				task.setUserIdentifier(record.getValue(TASK_QUEUE.USER_ID));
 				task.setPriority(record.getValue(TASK_QUEUE.TASK_PRIORITY));
 				task.setUuid(record.getValue(TASK_QUEUE.TASK_UUID));
 				task.setParentUuid(record.getValue(TASK_QUEUE.TASK_PARENT_UUID));

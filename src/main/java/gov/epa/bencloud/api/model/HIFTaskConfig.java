@@ -8,11 +8,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import org.jooq.JSON;
+import org.jooq.Record10;
 import org.jooq.Record3;
 import org.jooq.Record9;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,12 +91,11 @@ public class HIFTaskConfig {
 		}
 	}
 
-	@Override
-	public String toString() {
+	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		
-		Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId);
-		Record9<Integer, String, Boolean, Integer, Integer, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId);
+		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
+		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
 		
 		b.append("Task Name: ").append(name).append("\n\n");
 		

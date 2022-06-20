@@ -704,15 +704,15 @@ CREATE TABLE "data".valuation_function
 CREATE TABLE "data".variable_dataset
 (
   "id" SERIAL PRIMARY KEY NOT NULL,
-  "name" text NOT NULL,
-  grid_definition_id INTEGER
+  "name" text NOT NULL
 );
 
 CREATE TABLE "data".variable_entry
 (
   "id" SERIAL PRIMARY KEY NOT NULL,
   variable_dataset_id INTEGER,
-  "name" text NOT NULL
+  "name" text NOT NULL,
+  grid_definition_id INTEGER
 );
 
 CREATE TABLE "data".variable_value

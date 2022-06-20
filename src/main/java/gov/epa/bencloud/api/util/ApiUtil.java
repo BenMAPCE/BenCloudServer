@@ -3,12 +3,15 @@ package gov.epa.bencloud.api.util;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
+
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import gov.epa.bencloud.api.HIFApi;
@@ -31,6 +34,8 @@ import spark.Response;
  */
 public class ApiUtil {
 
+	public static final String appVersion = "0.3.0";
+	public static final int minimumDbVersion = 3;
 	
 	/**
 	 * @param columnIdx
@@ -117,7 +122,7 @@ public class ApiUtil {
 		return map;	
 	}
 	
-	public static Object deleteTaskResults(Request req, Response res) {
+	public static Object deleteTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		String uuid = req.params("uuid");
 		
 		Result<Record> completedTasks = 
@@ -138,6 +143,9 @@ public class ApiUtil {
 		return null;
 	}
 
+	// Note that this implementation is currently incomplete. 
+	// It will currently ONLY return data for the median_income variable. 
+	// It needs to be extended so it will look up each variable that is required.
 	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
 		 // Load list of functions from the database
 		
@@ -151,7 +159,7 @@ public class ApiUtil {
 		
 		Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 				1, 
-				allVariableNames.toArray(new String[0]), 
+				allVariableNames.get(0), 
 				28);
 		//Look at all valuation functions to determine which variables are needed
 		for(String variableName: allVariableNames) {
