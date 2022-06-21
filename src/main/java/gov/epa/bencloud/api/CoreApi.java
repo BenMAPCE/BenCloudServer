@@ -129,18 +129,19 @@ public class CoreApi {
 		return true;
 	}
 
-	public static Object getUserInfo(Request req, Response res, Optional<UserProfile> userProfile) {
-		for(String header : req.headers()) {
-			log.debug(header + ": " + req.headers(header));
-		}
+	public static Object getUserInfo(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
+
+		UserProfile userProfile = userOptionalProfile.get();
+
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode userNode = mapper.createObjectNode();
 		
-		userNode.put(Constants.HEADER_USER_ID, userProfile.get().getId());
-		userNode.put(Constants.HEADER_DISPLAY_NAME, userProfile.get().getAttribute(Constants.HEADER_DISPLAY_NAME).toString());
-		userNode.put(Constants.HEADER_MAIL, userProfile.get().getAttribute(Constants.HEADER_MAIL).toString());
+		userNode.put(Constants.HEADER_USER_ID, userProfile.getId());
+
+		userNode.put(Constants.HEADER_DISPLAY_NAME, userProfile.getAttribute(Constants.HEADER_DISPLAY_NAME).toString());
+		userNode.put(Constants.HEADER_MAIL, userProfile.getAttribute(Constants.HEADER_MAIL).toString());
 		ArrayNode rolesNode = userNode.putArray(Constants.HEADER_GROUPS);
-		for (String role : userProfile.get().getRoles()) {
+		for (String role : userProfile.getRoles()) {
 			rolesNode.add(role);
 		}
 		return userNode;

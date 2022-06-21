@@ -38,12 +38,14 @@ public class BenCloudConfigFactory implements ConfigFactory {
                 if(roleHeader.isPresent()) {
                     roles = roleHeader.get().split(";");
                     for (String role : roles) {
-                        profile.addRole(role);                        
+                        if(!role.equalsIgnoreCase("null")) {
+                            profile.addRole(role);
+                        }
                     }
                 }
 
-                profile.addAttribute(Constants.HEADER_DISPLAY_NAME, ctx.getRequestHeader(Constants.HEADER_DISPLAY_NAME));
-                profile.addAttribute(Constants.HEADER_MAIL, ctx.getRequestHeader(Constants.HEADER_MAIL));
+                profile.addAttribute(Constants.HEADER_DISPLAY_NAME, ctx.getRequestHeader(Constants.HEADER_DISPLAY_NAME).get());
+                profile.addAttribute(Constants.HEADER_MAIL, ctx.getRequestHeader(Constants.HEADER_MAIL).get());
                 credentials.setUserProfile(profile);
             }
         });
