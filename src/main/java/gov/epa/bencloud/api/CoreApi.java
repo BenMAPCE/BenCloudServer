@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 
@@ -135,8 +136,10 @@ public class CoreApi {
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode userNode = mapper.createObjectNode();
 		
-		userNode.put("userId", userProfile.get().getId());
-		ArrayNode rolesNode = userNode.putArray("roles");
+		userNode.put(Constants.HEADER_USER_ID, userProfile.get().getId());
+		userNode.put(Constants.HEADER_DISPLAY_NAME, userProfile.get().getAttribute(Constants.HEADER_DISPLAY_NAME).toString());
+		userNode.put(Constants.HEADER_MAIL, userProfile.get().getAttribute(Constants.HEADER_MAIL).toString());
+		ArrayNode rolesNode = userNode.putArray(Constants.HEADER_GROUPS);
 		for (String role : userProfile.get().getRoles()) {
 			rolesNode.add(role);
 		}

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.ProfileManager;
@@ -12,6 +11,7 @@ import org.pac4j.core.profile.UserProfile;
 import org.pac4j.jee.context.session.JEESessionStore;
 import org.pac4j.sparkjava.SparkWebContext;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import spark.Request;
 import spark.Response;
@@ -20,13 +20,15 @@ public class RoutesBase {
 
 	protected Optional<UserProfile> getUserProfile(Request request, Response response) {
 
+		//If we're running in a local dev environment, allow the UI to pass in uid and group info
+		//These are set automatically in the EPA environment and true authentication and authorization are active there
 		if(ApplicationUtil.usingLocalProperties()) {
 			Optional<UserProfile> profile = Optional.of(new CommonProfile());
-			String userId = request.headers("uid");
+			String userId = request.headers(Constants.HEADER_USER_ID);
 			if(userId == null || userId.isBlank()) {
 				userId = "TESTING";
 			}
-			String roleHeader = request.headers("OAM_REMOTE_USER_GROUPS");
+			String roleHeader = request.headers(Constants.HEADER_GROUPS);
 			String[] roles = null;
 			if(roleHeader != null) {
 				roles = roleHeader.split(";");
@@ -35,6 +37,9 @@ public class RoutesBase {
 				}
 			}
 			profile.get().setId(userId);
+			profile.get().addAttribute(Constants.HEADER_DISPLAY_NAME, request.headers(Constants.HEADER_DISPLAY_NAME));
+			profile.get().addAttribute(Constants.HEADER_MAIL, request.headers(Constants.HEADER_MAIL));
+
 			return profile;
 		} else {
 			final SparkWebContext context = new SparkWebContext(request, response);

@@ -11,6 +11,9 @@ import org.pac4j.core.credentials.TokenCredentials;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.util.CommonHelper;
 import org.pac4j.http.client.direct.HeaderClient;
+
+import gov.epa.bencloud.Constants;
+
 import org.pac4j.core.matching.checker.DefaultMatchingChecker;
 import org.pac4j.core.matching.matcher.HttpMethodMatcher;
 
@@ -23,14 +26,14 @@ public class BenCloudConfigFactory implements ConfigFactory {
     @Override
     public Config build(final Object... parameters) {
         //x-wam-id is a temporary header being added manually during implementation to stub out the auth code
-        final HeaderClient headerClient = new HeaderClient("uid", (credentials, ctx, sessionStore) -> {           
+        final HeaderClient headerClient = new HeaderClient(Constants.HEADER_USER_ID, (credentials, ctx, sessionStore) -> {           
             final String token = ((TokenCredentials) credentials).getToken();
             if (CommonHelper.isNotBlank(token)) {
                 final CommonProfile profile = new CommonProfile();
                 profile.setId(token);
 
                 //This allows fake roles for now. Waiting on WAM implementation.
-                Optional<String> roleHeader = ctx.getRequestHeader("OAM_REMOTE_USER_GROUPS");
+                Optional<String> roleHeader = ctx.getRequestHeader(Constants.HEADER_GROUPS);
                 String[] roles = null;
                 if(roleHeader.isPresent()) {
                     roles = roleHeader.get().split(";");
@@ -39,6 +42,8 @@ public class BenCloudConfigFactory implements ConfigFactory {
                     }
                 }
 
+                profile.addAttribute(Constants.HEADER_DISPLAY_NAME, ctx.getRequestHeader(Constants.HEADER_DISPLAY_NAME));
+                profile.addAttribute(Constants.HEADER_MAIL, ctx.getRequestHeader(Constants.HEADER_MAIL));
                 credentials.setUserProfile(profile);
             }
         });
