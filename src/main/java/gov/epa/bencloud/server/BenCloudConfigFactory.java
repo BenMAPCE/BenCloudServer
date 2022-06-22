@@ -43,9 +43,11 @@ public class BenCloudConfigFactory implements ConfigFactory {
                         }
                     }
                 }
+                String tmp = ctx.getRequestHeader(Constants.HEADER_DISPLAY_NAME).get();
+                profile.addAttribute(Constants.HEADER_DISPLAY_NAME, tmp==null || tmp.equalsIgnoreCase("NOT_FOUND") ? "" : tmp);
 
-                profile.addAttribute(Constants.HEADER_DISPLAY_NAME, ctx.getRequestHeader(Constants.HEADER_DISPLAY_NAME).get());
-                profile.addAttribute(Constants.HEADER_MAIL, ctx.getRequestHeader(Constants.HEADER_MAIL).get());
+                tmp = ctx.getRequestHeader(Constants.HEADER_MAIL).get();
+                profile.addAttribute(Constants.HEADER_MAIL, tmp==null || tmp.equalsIgnoreCase("NOT_FOUND") ? "" : tmp);
                 credentials.setUserProfile(profile);
             }
         });

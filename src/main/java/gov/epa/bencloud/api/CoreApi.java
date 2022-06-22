@@ -136,14 +136,25 @@ public class CoreApi {
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode userNode = mapper.createObjectNode();
 		
-		userNode.put(Constants.HEADER_USER_ID, userProfile.getId());
+		Boolean isUser = false;
+		Boolean isAdmin = false;
 
+		userNode.put(Constants.HEADER_USER_ID, userProfile.getId());
 		userNode.put(Constants.HEADER_DISPLAY_NAME, userProfile.getAttribute(Constants.HEADER_DISPLAY_NAME).toString());
 		userNode.put(Constants.HEADER_MAIL, userProfile.getAttribute(Constants.HEADER_MAIL).toString());
 		ArrayNode rolesNode = userNode.putArray(Constants.HEADER_GROUPS);
 		for (String role : userProfile.getRoles()) {
 			rolesNode.add(role);
+			if(isUser==false && role.equalsIgnoreCase(Constants.ROLE_USER)) {
+				isUser = true;
+			}
+			if(isAdmin==false && role.equalsIgnoreCase(Constants.ROLE_ADMIN)) {
+				isAdmin = true;
+			}
 		}
+		userNode.put("isAdmin", isAdmin);
+		userNode.put("isUser", isUser);
+
 		return userNode;
 	}
 
