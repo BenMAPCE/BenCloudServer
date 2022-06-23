@@ -19,34 +19,9 @@ import spark.Response;
 public class RoutesBase {
 
 	protected Optional<UserProfile> getUserProfile(Request request, Response response) {
-
-		//If we're running in a local dev environment, allow the UI to pass in uid and group info
-		//These are set automatically in the EPA environment and true authentication and authorization are active there
-		//if(ApplicationUtil.usingLocalProperties()) {
-			// Optional<UserProfile> profile = Optional.of(new CommonProfile());
-			// String userId = request.headers(Constants.HEADER_USER_ID);
-			// if(userId == null || userId.isBlank()) {
-			// 	userId = "Anonymous";
-			// }
-			// String roleHeader = request.headers(Constants.HEADER_GROUPS);
-			// String[] roles = null;
-			// if(roleHeader != null) {
-			// 	roles = roleHeader.split(";");
-			// 	for (String role : roles) {
-			// 		profile.get().addRole(role);                        
-			// 	}
-			// }
-			// profile.get().setId(userId);
-			// profile.get().addAttribute(Constants.HEADER_DISPLAY_NAME, request.headers(Constants.HEADER_DISPLAY_NAME));
-			// profile.get().addAttribute(Constants.HEADER_MAIL, request.headers(Constants.HEADER_MAIL));
-
-			// return profile;
-		// } else {
 			final SparkWebContext context = new SparkWebContext(request, response);
 			final ProfileManager manager = new ProfileManager(context, JEESessionStore.INSTANCE);
 			return manager.getProfile();
-		// }
-
 	}
 
 	protected List<String> getPostParametersNames(Request req) {
