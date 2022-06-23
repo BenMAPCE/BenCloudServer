@@ -81,9 +81,9 @@ public class CoreApi {
 	}
 
 	public static Object getPurgeResults(Request req, Response res, Optional<UserProfile> userProfile) {
-		if(! isAdmin(userProfile)) {
-			return false;
-		}
+		// if(! isAdmin(userProfile)) {
+		// 	return false;
+		// }
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
