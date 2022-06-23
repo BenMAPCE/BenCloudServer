@@ -68,4 +68,9 @@
    <logger name="gov.epa.bencloud" additivity="false" level="debug">
     <appender-ref ref="FILE" />
   </logger>
+
+   <logger name="org.pac4j.core.engine" additivity="false" level="debug">
+    <appender-ref ref="STDOUT" />
+  </logger>
+  
 </configuration>

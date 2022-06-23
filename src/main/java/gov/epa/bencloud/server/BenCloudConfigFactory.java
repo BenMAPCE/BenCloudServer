@@ -5,8 +5,10 @@ import java.util.Optional;
 import org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer;
 import org.pac4j.core.authorization.generator.AuthorizationGenerator;
 import org.pac4j.core.client.Clients;
+import org.pac4j.core.client.direct.AnonymousClient;
 import org.pac4j.core.config.Config;
 import org.pac4j.core.config.ConfigFactory;
+import org.pac4j.core.context.HttpConstants;
 import org.pac4j.core.credentials.TokenCredentials;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.util.CommonHelper;
@@ -15,6 +17,7 @@ import org.pac4j.http.client.direct.HeaderClient;
 import gov.epa.bencloud.Constants;
 
 import org.pac4j.core.matching.checker.DefaultMatchingChecker;
+import org.pac4j.core.matching.matcher.CorsMatcher;
 import org.pac4j.core.matching.matcher.HttpMethodMatcher;
 
 public class BenCloudConfigFactory implements ConfigFactory {
@@ -63,10 +66,13 @@ public class BenCloudConfigFactory implements ConfigFactory {
           };
         
         headerClient.addAuthorizationGenerator(authGen);
-        final Clients clients = new Clients(headerClient);
+        final Clients clients = new Clients(headerClient); //, new AnonymousClient());
         final Config config = new Config(clients);
-        //config.addAuthorizer("admin", new RequireAnyRoleAuthorizer("ROLE_ADMIN"));
-        config.addAuthorizer("custom", new BenCloudAuthorizer());
+
+        config.addAuthorizer("user", new RequireAnyRoleAuthorizer(Constants.ROLE_USER));
+        config.addAuthorizer("admin", new RequireAnyRoleAuthorizer(Constants.ROLE_ADMIN));
+        config.addMatcher("cors", new CorsMatcher());
+        //config.addMatcher("exclude_options", new HttpMethodMatcher(HttpConstants.HTTP_METHOD.GET) );
         return config;
     }
 }

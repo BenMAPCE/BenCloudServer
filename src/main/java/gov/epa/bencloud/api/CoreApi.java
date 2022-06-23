@@ -81,6 +81,10 @@ public class CoreApi {
 	}
 
 	public static Object getPurgeResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		if(! isAdmin(userProfile)) {
+			return false;
+		}
+
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
 		create
@@ -129,31 +133,55 @@ public class CoreApi {
 		return true;
 	}
 
+	public static Boolean isAdmin(Optional<UserProfile> userOptionalProfile) {
+		UserProfile userProfile = userOptionalProfile.get();
+		if(userProfile == null) {
+			return false;
+		}
+
+		for (String role : userProfile.getRoles()) {
+			if(role.equalsIgnoreCase(Constants.ROLE_ADMIN)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static Boolean isUser(Optional<UserProfile> userOptionalProfile) {
+		UserProfile userProfile = userOptionalProfile.get();
+		if(userProfile == null) {
+			return false;
+		}
+
+		for (String role : userProfile.getRoles()) {
+			if(role.equalsIgnoreCase(Constants.ROLE_USER)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public static Object getUserInfo(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
 
 		UserProfile userProfile = userOptionalProfile.get();
 
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode userNode = mapper.createObjectNode();
-		
-		Boolean isUser = false;
-		Boolean isAdmin = false;
 
 		userNode.put(Constants.HEADER_USER_ID, userProfile.getId());
-		userNode.put(Constants.HEADER_DISPLAY_NAME, userProfile.getAttribute(Constants.HEADER_DISPLAY_NAME).toString());
-		userNode.put(Constants.HEADER_MAIL, userProfile.getAttribute(Constants.HEADER_MAIL).toString());
+		Object tmp = userProfile.getAttribute(Constants.HEADER_DISPLAY_NAME);
+		userNode.put(Constants.HEADER_DISPLAY_NAME, tmp==null ? null : tmp.toString());
+
+		tmp = userProfile.getAttribute(Constants.HEADER_MAIL);
+		userNode.put(Constants.HEADER_MAIL, tmp==null ? null : tmp.toString());
 		ArrayNode rolesNode = userNode.putArray(Constants.HEADER_GROUPS);
 		for (String role : userProfile.getRoles()) {
 			rolesNode.add(role);
-			if(isUser==false && role.equalsIgnoreCase(Constants.ROLE_USER)) {
-				isUser = true;
-			}
-			if(isAdmin==false && role.equalsIgnoreCase(Constants.ROLE_ADMIN)) {
-				isAdmin = true;
-			}
 		}
-		userNode.put("isAdmin", isAdmin);
-		userNode.put("isUser", isUser);
+		userNode.put("isAdmin", isAdmin(userOptionalProfile));
+		userNode.put("isUser", isUser(userOptionalProfile));
 
 		return userNode;
 	}

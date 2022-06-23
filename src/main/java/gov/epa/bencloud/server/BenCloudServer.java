@@ -3,6 +3,7 @@ package gov.epa.bencloud.server;
 import java.io.File;
 import java.io.IOException;
 
+import org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer;
 import org.pac4j.core.config.Config;
 import org.pac4j.sparkjava.SecurityFilter;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.LoggerContext;
 import freemarker.template.Configuration;
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.jobs.JobsUtil;
 import gov.epa.bencloud.server.routes.AdminRoutes;
@@ -90,19 +92,25 @@ public class BenCloudServer {
 		benCloudService.before((request, response) -> {
 			//Loosen up CORS; perhaps a bit too much?
 			response.header("Access-Control-Allow-Origin", "*");
+			log.debug("path: {} {}, uid: {}, ismemberof: {}", request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
 
+			// u = getUserProfile(request, response)
+			// if (!authenticated) {
+			// 	halt(401, "You are not welcome here");
+			// }
 		});
-		
-		// Handle authentication and authorization (Passed in via headers from EPA WAM)
-
-		if( ! ApplicationUtil.usingLocalProperties()) {
-			final Config config = new BenCloudConfigFactory().build();
-			benCloudService.before(new SecurityFilter(config, "HeaderClient"));
-		}
 
 		Spark.exception(Exception.class, (exception, request, response) -> {
 		    log.error("Spark exception thrown", exception);
 		});
+
+		// Handle authentication and authorization (Passed in via headers from EPA WAM)
+		// if( ! ApplicationUtil.usingLocalProperties()) {
+			final Config config = new BenCloudConfigFactory().build();
+
+			benCloudService.before("/*", new SecurityFilter(config, "HeaderClient", "user"));
+			//benCloudService.before("/api/admin-only", new SecurityFilter(config, "HeaderClient", "admin"));
+		// }
 
 		new PublicRoutes(benCloudService, freeMarkerConfiguration);
 		new AdminRoutes(benCloudService, freeMarkerConfiguration);

@@ -6,13 +6,26 @@ info:
 servers:
   - url: http://localhost:4567/api
     description: Local development
+components:
+  securitySchemes:
+    headerUid:
+      type: apiKey
+      in: header
+      name: uid
+    headerIsMemberOf:
+      type: apiKey
+      in: header
+      name: ismemberof
+security:
+  - headerUid: []
+    headerIsMemberOf: []
 paths:
   /grid-definitions:
     get:
       summary: Returns the list of grid definitions.
       responses:
         '200':
-          description: An array of grid-definitions
+          description: Successfully returned an array of grid definitions
           content:
             application/json:
               schema:
@@ -49,7 +62,7 @@ paths:
       summary: Returns the list of pollutants.
       responses:
         '200':
-          description: An array of pollutants
+          description: Successfully returned an array of pollutants
           content:
             application/json:
               schema:
@@ -84,7 +97,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: An array of air quality layers
+          description: Successfully returned an array of air quality layers
           content:
             application/json:
               schema:
@@ -103,17 +116,1665 @@ paths:
                           example: 123
                         name:
                           type: string
+                          example: "2023_Pr_Baseline"
                         locked:
                           type: boolean
+                          example: false
                         grid_definition_id:
                           type: integer
+                          example: 28
                         pollutant_id:
                           type: integer
+                          example: 4
                         pollutant_name:
                           type: string
+                          example: "Ozone"
                         pollutant_friendly_name:
                           type: string
+                          example: "Ground-level ozone"
                         grid_definition_name:
                           type: string
+                          example: "CMAQ 12km Nation"
                         metric_statistics:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              pct_2_5:
+                                type: number
+                                example: 27.958
+                              pct_97_5:
+                                type: number
+                                example: 52.345
+                              max_value:
+                                type: number
+                                example: 71.307
+                              metric_id:
+                                type: integer
+                                example: 8
+                              min_value:
+                                type: number
+                                example: 24.37
+                              cell_count:
+                                type: integer
+                                example: 97416
+                              mean_value:
+                                type: number
+                                example: 38.733
+                              metric_name:
+                                type: string
+                                example: "D8HourMax"
+                              seasonal_metric_id:
+                                type: integer
+                                example: 5
+                              annual_statistic_id:
+                                type: integer
+                                example: 0
+                              cell_count_above_lrl:
+                                type: integer
+                                example: 0
+                              seasonal_metric_name:
+                                type: string
+                                example: ""
+                              annual_statistic_name:
+                                type: string
+                                example: "None"
+    post:
+      summary: Post a single air quality surface.
+      parameters:
+        - name: file
+          in: query
+          required: true
+          description: Csv file
+          schema:
+            type: file
+        - name: name
+          in: query
+          required: true
+          description: Surface name
+          schema:
+            type: string
+        - name: pollutantId
+          in: query
+          required: true
+          description: Pollutant id
+          schema:
+            type: integer
+        - name: gridId
+          in: query
+          required: true
+          description: Grid id
+          schema:
+            type: integer
+        - name: type
+          in: query
+          required: true
+          description: Type (model or monitor)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully added an air quality surface.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: ""
+                        message:
+                          type: string
+                          example: ""
+        '500':
+          description: Server or System Error
+  /air-quality-data-by-metric:
+      get:
+        summary: Returns the list of air quality surface definitions, flattened for tabular display.
+        parameters:
+          - name: pollutantId
+            in: query
+            required: false
+            description: Optional filter by pollutant
+            schema:
+              type: integer
+        responses:
+          '200':
+            description: Successfully returned an array of air quality layers flattened for tabular display.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    filteredRecordsCount:
+                      type: integer
+                      example: 1
+                    records:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: 
+                            type: integer
+                            example: 6
+                          name:
+                            type: string
+                            example: "2023_Pr_Baseline"
+                          metric_id:
+                            type: integer
+                            example: 8
+                          metric:
+                            type: string
+                            example: "D8HourMax"
+                          seasonal_metric_id: 
+                            type: integer
+                            example: 5
+                          seasonal_metric:
+                            type: string
+                            example: ""
+                          annual_statistic_id:
+                            type: integer
+                            example: 0
+                          statistic:
+                            type: string
+                            example: "None"
+                          cell_count:
+                            type: integer
+                            example: 97416
+                          min_value:
+                            type: number
+                            example: 24.37
+                          max_value:
+                            type: number
+                            example: 71.31
+                          mean_value:
+                            type: number
+                            example: 38.744
+                          pct_2_5:
+                            type: number
+                            example: 27.96
+                          pct_97_5:
+                            type: number
+                            example: 52.36
+                          cell_count_above_lrl:
+                            type: integer
+                            example: 0
+                          locked:
+                            type: boolean
+                            example: false
+                          grid_definition_id:
+                            type: integer
+                            example: 28
+                          grid_definition_name:
+                            type: string
+                            example: "CMAQ 12km Nation"
+                          pollutant_id:
+                            type: integer
+                            example: 4
+                          pollutant_name:
+                            type: string
+                            example: "Ozone"
+                          pollutant_friendly_name:
+                            type: string
+                            example: "Ground-level ozone"
+  /air-quality-data/{id}:
+    get:
+      summary: Returns an air quality surface definition.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by air quality surface id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully returned an air quality surface definition.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 123
+                  name:
+                    type: string
+                    example: "2023_Pr_Baseline"
+                  locked:
+                    type: boolean
+                    example: false
+                  grid_definition_id:
+                    type: integer
+                    example: 28
+                  pollutant_id:
+                    type: integer
+                    example: 4
+                  pollutant_name:
+                    type: string
+                    example: "Ozone"
+                  pollutant_friendly_name:
+                    type: string
+                    example: "Ground-level ozone"
+                  grid_definition_name:
+                    type: string
+                    example: "CMAQ 12km Nation"
+                  metric_statistics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pct_2_5:
+                          type: number
+                          example: 27.958
+                        pct_97_5:
+                          type: number
+                          example: 52.345
+                        max_value:
+                          type: number
+                          example: 71.307
+                        metric_id:
+                          type: integer
+                          example: 8
+                        min_value:
+                          type: number
+                          example: 24.37
+                        cell_count:
+                          type: integer
+                          example: 97416
+                        mean_value:
+                          type: number
+                          example: 38.733
+                        metric_name:
+                          type: string
+                          example: "D8HourMax"
+                        seasonal_metric_id:
+                          type: integer
+                          example: 5
+                        annual_statistic_id:
+                          type: integer
+                          example: 0
+                        cell_count_above_lrl:
+                          type: integer
+                          example: 0
+                        seasonal_metric_name:
+                          type: string
+                          example: ""
+                        annual_statistic_name:
+                          type: string
+                          example: "None"
+        '500':
+          description: Server or System Error
+    delete:
+      summary: Remove a single air quality surface definition.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by air quality surface id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully removed an air quality surface definition.
+        '204':
+          description: Successfully removed an air quality surface definition.
+  /air-quality-data/{id}/contents:
+    get:
+      summary: Returns the contents of a single air quality surface.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by air quality surface id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully returned details of a singly air quality surface.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  filteredRecordsCount:
+                    type: integer
+                    example: 1
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        grid_col:
+                          type: integer
+                          example: 1
+                        grid_row:
+                          type: integer
+                          example: 1
+                        metric:
+                          type: string
+                          example: "D8HourMax"
+                        seasonal_metric:
+                          type: string
+                          example: "WarmSeason_D8HourMax"
+                        annual_statistic:
+                          type: string
+                          example: "None"
+                        value:
+                          type: number
+                          example: 28.457
+                        
+        '500':
+          description: System Error
+  /population:
+    get:
+      summary: Returns an array of all population dataset definitions.
+      responses:
+        '200':
+          description: Successfully returned an array of population dataset definitions.
+          content:
+            application/json:
+              schema:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: "US CMAQ 12km Nation"
+                        id:
+                          type: integer
+                          example: 40
+                        grid_definition_id:
+                          type: integer
+                          example: 28
+                        years:
+                          type: array
+                          items: 
+                            type: integer
+                            example: 2000, 2001, 2002
+  /health-impact-functions:
+    get:
+      summary: Returns the list of health impact functions.
+      responses:
+        '200':
+          description: An array of health impact functions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 123
+                    health_impact_function_dataset_id:
+                      type: integer
+                      example: 15
+                    endpoint_group_id:
+                      type: integer
+                      example: 2
+                    endpoint_id:
+                      type: integer
+                      example: 2
+                    pollutant_id:
+                      type: integer
+                      example: 6
+                    metric_id:
+                      type: integer
+                      example: 11
+                    seasonal_metric_id:
+                      type: integer
+                      example: 5
+                    metric_statistic:
+                      type: integer
+                      example: 0
+                    author:
+                      type: string
+                      example: "Peters et al."
+                    function_year:
+                      type: integer
+                      example: 2001
+                    location:
+                      type: string
+                      example: "Boston, MA"
+                    other_pollutants:
+                      type: string
+                      example: ""
+                    qualifier:
+                      type: string
+                      example: ""
+                    reference:
+                      type: string
+                      example: "References info"
+                    start_age:
+                      type: integer
+                      example: 65
+                    end_age:
+                      type: integer
+                      example: 99
+                    function_text:
+                      type: string
+                      example: "(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION"
+                    incidence_dataset_id:
+                      type: integer
+                      example: 123
+                    prevalence_dataset_id:
+                      type: integer
+                      example: 123
+                    variable_dataset_id:
+                      type: integer
+                      example: 123
+                    beta:
+                      type: number
+                      example: 0.0242
+                    dist_beta:
+                      type: string
+                      example: "Normal"
+                    p1_beta:
+                      type: number
+                      example: 0.00928
+                    p2_beta:
+                      type: number
+                      example: 0
+                    val_a:
+                      type: number
+                      example: 0.981
+                    name_a:
+                      type: string
+                      example: "% of hospMI surviving 28 days"
+                    val_b:
+                      type: number
+                      example: 0
+                    name_b:
+                      type: string
+                      example: null
+                    val_c:
+                      type: number
+                      example: 0
+                    name_c:
+                      type: string
+                      example: null
+                    baseline_function_text:
+                      type: string
+                      example: "INCIDENCE*POPULATION"
+                    race_id:
+                      type: integer
+                      example: 5
+                    gender_id:
+                      type: integer
+                      example: 3
+                    ethnicity_id:
+                      type: integer
+                      example: 3
+                    start_day:
+                      type: integer
+                      example: null
+                    end_day:
+                      type: integer
+                      example: null
+                    endpoint_group_name:
+                      type: string
+                      example: "Acute Myocardial Infarction"
+                    endpoint_name:
+                      type: string
+                      example: "Acute Myocardial Infarction, nonfatal"
+                    race_name:
+                      type: string
+                      example: "ALL"
+                    gender_name:
+                      type: string
+                      example: "ALL"
+                    ethnicity_name:
+                      type: string
+                      example: "ALL"
+  /health-impact-functions/{id}:
+    get:
+      summary: Returns a single of health impact functions.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by health impact function id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully returned a single health impact function definition.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 123
+                    health_impact_function_dataset_id:
+                      type: integer
+                      example: 15
+                    endpoint_group_id:
+                      type: integer
+                      example: 2
+                    endpoint_id:
+                      type: integer
+                      example: 2
+                    pollutant_id:
+                      type: integer
+                      example: 6
+                    metric_id:
+                      type: integer
+                      example: 11
+                    seasonal_metric_id:
+                      type: integer
+                      example: 5
+                    metric_statistic:
+                      type: integer
+                      example: 0
+                    author:
+                      type: string
+                      example: "Peters et al."
+                    function_year:
+                      type: integer
+                      example: 2001
+                    location:
+                      type: string
+                      example: "Boston, MA"
+                    other_pollutants:
+                      type: string
+                      example: "PM2.5"
+                    qualifier:
+                      type: string
+                      example: "All year. 8-hour max from 8-hour mean."
+                    reference:
+                      type: string
+                      example: "References info"
+                    start_age:
+                      type: integer
+                      example: 65
+                    end_age:
+                      type: integer
+                      example: 99
+                    function_text:
+                      type: string
+                      example: "(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION"
+                    incidence_dataset_id:
+                      type: integer
+                      example: null
+                    prevalence_dataset_id:
+                      type: integer
+                      example: null
+                    variable_dataset_id:
+                      type: integer
+                      example: null
+                    beta:
+                      type: number
+                      example: 0.0242
+                    dist_beta:
+                      type: string
+                      example: "Normal"
+                    p1_beta:
+                      type: number
+                      example: 0.00928
+                    p2_beta:
+                      type: number
+                      example: 0
+                    val_a:
+                      type: number
+                      example: 0.981
+                    name_a:
+                      type: string
+                      example: "% of hospMI surviving 28 days"
+                    val_b:
+                      type: number
+                      example: 0
+                    name_b:
+                      type: string
+                      example: null
+                    val_c:
+                      type: number
+                      example: 0
+                    name_c:
+                      type: string
+                      example: null
+                    baseline_function_text:
+                      type: string
+                      example: "INCIDENCE*POPULATION"
+                    race_id:
+                      type: integer
+                      example: 5
+                    gender_id:
+                      type: integer
+                      example: 3
+                    ethnicity_id:
+                      type: integer
+                      example: 3
+                    start_day:
+                      type: integer
+                      example: 90
+                    end_day:
+                      type: integer
+                      example: 272
+                    endpoint_group_name:
+                      type: string
+                      example: "Acute Myocardial Infarction"
+                    endpoint_name:
+                      type: string
+                      example: "Acute Myocardial Infarction, nonfatal"
+                    race_name:
+                      type: string
+                      example: "ALL"
+                    gender_name:
+                      type: string
+                      example: "ALL"
+                    ethnicity_name:
+                      type: string
+                      example: "ALL" 
+        '500':
+          description: System Error
+  /health-impact-function-groups:
+    get:
+      summary: Returns the list of health impact function groups.
+      responses:
+        '200':
+          description: Successfully returned an array of health impact function groups.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "Premature Death - Primary"
+                    id:
+                      type: integer
+                      example: 5
+                    help_text:
+                      type: string
+                      example: "Primary functions selected from the larger premature death group"
+                    functions:
+                      type: array
+                      items:
+                        type: integer
+                        example: 861, 881, 890
+  /health-impact-function-groups/{id}:
+    get:
+      summary: Returns a health impact function group.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by health impact function group ids
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully returned a single health impact function group.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "Premature Death - Primary"
+                    id:
+                      type: integer
+                      example: 5
+                    help_text:
+                      type: string
+                      example: "some help text"
+                    functions:
+                      type: array
+                      items:
+                        type: integer
+                        example: 861, 881, 890
+  /incidence:
+    get:
+      summary: Returns a list of incidence datasets.
+      responses:
+        '200':
+          description: Successfully returned an array of incidence datasets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "County"
+                    id:
+                      type: integer
+                      example: 1
+                    grid_definition_id:
+                      type: integer
+                      example: 18
+                    years:
+                      type: array
+                      items:
+                        type: integer
+                        example: 2000, 2005, 2010
+  /prevalence:
+    get:
+      summary: Returns a list of prevalence datasets.
+      responses:
+        '200':
+          description: Succssfully returned an array of prevalence datasets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "National"
+                    id:
+                      type: integer
+                      example: 3
+                    grid_definition_id:
+                      type: integer
+                      example: 20
+                    years:
+                      type: array
+                      items:
+                        type: integer
+                        example: 2008, 2021
+  /valuation-functions:
+    get:
+      summary: Returns a list of valuation functions.
+      responses:
+        '200':
+          description: Successfully returned an array of valuation functions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 444
+                    valuation_dataset_id:
+                      type: integer
+                      example: 6
+                    endpoint_group_id:
+                      type: integer
+                      example: 2
+                    endpoint_id:
+                      type: integer
+                      example: 2
+                    qualifier:
+                      type: string
+                      example: "COI: 3 yr med costs, 5 yr wages, 3% DR"
+                    reference:
+                      type: string
+                      example: "references info"
+                    start_age:
+                      type: integer
+                      example: 65
+                    end_age:
+                      type: integer
+                      example: 99
+                    function_text:
+                      type: string
+                      example: "A*MedicalCostIndex+B*WageIndex"
+                    val_a:
+                      type: integer
+                      example: 48796
+                    name_a:
+                      type: string
+                      example: "Medical costs over 3 years in 2015$, 3% d.r."
+                    dist_a:
+                      type: string
+                      example: "None"
+                    p1a:
+                      type: integer
+                      example: 0
+                    p2a:
+                      type: integer
+                      example: 0
+                    val_b:
+                      type: number
+                      example: 0
+                    name_b:
+                      type: string
+                      example: "Opportunity cost over 5 yyrs, 3% d.r."
+                    val_c:
+                      type: number
+                      example: 0
+                    name_c:
+                      type: string
+                      example: "0"
+                    val_d:
+                      type: integer
+                      example: 0
+                    name_d:
+                      type: string
+                      example: "0"
+                    endpoint_group_name:
+                      type: string
+                      example: "Acute Myocardial Infarction"
+                    endpoint_name:
+                      type: string
+                      example: "Acute Myocardial Infarction, nonfatal"
+  /health-impact-result-datasets:
+    get:
+      summary: Returns a list of health impact result datasets.
+      responses:
+        '200':
+          description: An array of health impact result datasets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 444
+                    task_uuid:
+                      type: integer
+                      example: 123
+                    name:
+                      type: string
+                      example: ""
+                    population_dataset_id:
+                      type: integer
+                      example: 1
+                    population_year:
+                      type: integer
+                      example: 2000
+                    baseline_aq_layer_id:
+                      type: integer
+                      example: 123
+                    scenario_aq_layer_id:
+                      type: integer
+                      example: 123
+                    task_log:
+                      type: object
+                      example: null
+                            
+  /health-impact-result-datasets/{id}:
+    get:
+      summary: Returns an array of health impact functions that are part of a hif result dataset.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Filter by health impact function result dataset id or task UUID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: An array of health impact functions that are part of a hif result dataset.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 123
+                    health_impact_function_dataset_id:
+                      type: integer
+                      example: 15
+                    endpoint_group_id:
+                      type: integer
+                      example: 2
+                    endpoint_id:
+                      type: integer
+                      example: 2
+                    pollutant_id:
+                      type: integer
+                      example: 6
+                    metric_id:
+                      type: integer
+                      example: 11
+                    seasonal_metric_id:
+                      type: integer
+                      example: 5
+                    metric_statistic:
+                      type: integer
+                      example: 0
+                    author:
+                      type: string
+                      example: "Peters et al."
+                    function_year:
+                      type: integer
+                      example: 2001
+                    location:
+                      type: string
+                      example: "Boston, MA"
+                    other_pollutants:
+                      type: string
+                      example: null
+                    qualifier:
+                      type: string
+                      example: "Warm Season (April - September). Distributed Lags; Penalized splines; O3 Results (Table 24)"
+                    reference:
+                      type: string
+                      example: "References info"
+                    start_age:
+                      type: integer
+                      example: 65
+                    end_age:
+                      type: integer
+                      example: 99
+                    function_text:
+                      type: string
+                      example: "(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION"
+                    incidence_dataset_id:
+                      type: integer
+                      example: 123
+                    prevalence_dataset_id:
+                      type: integer
+                      example: 123
+                    variable_dataset_id:
+                      type: integer
+                      example: 123
+                    beta:
+                      type: number
+                      example: 0.0242
+                    dist_beta:
+                      type: string
+                      example: "Normal"
+                    p1_beta:
+                      type: number
+                      example: 0.00928
+                    p2_beta:
+                      type: number
+                      example: 0
+                    val_a:
+                      type: number
+                      example: 0.981
+                    name_a:
+                      type: string
+                      example: "% of hospMI surviving 28 days"
+                    val_b:
+                      type: number
+                      example: 0
+                    name_b:
+                      type: string
+                      example: null
+                    val_c:
+                      type: number
+                      example: 0
+                    name_c:
+                      type: string
+                      example: null
+                    baseline_function_text:
+                      type: string
+                      example: "INCIDENCE*POPULATION"
+                    race_id:
+                      type: integer
+                      example: 5
+                    gender_id:
+                      type: integer
+                      example: 3
+                    ethnicity_id:
+                      type: integer
+                      example: 3
+                    start_day:
+                      type: integer
+                      example: 90
+                    end_day:
+                      type: integer
+                      example: 272
+                    endpoint_group_name:
+                      type: string
+                      example: "Acute Myocardial Infarction"
+                    endpoint_name:
+                      type: string
+                      example: "Acute Myocardial Infarction, nonfatal"
+                    race_name:
+                      type: string
+                      example: "ALL"
+                    gender_name:
+                      type: string
+                      example: "ALL"
+                    ethnicity_name:
+                      type: string
+                      example: "ALL"
+  /health-impact-result-datasets/{id}/contents:
+    get:
+      summary: Returns health impact function results from an analysis.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Health impact function result dataset id or task UUID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Health impact function results from an analysis.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  filteredRecordsCount:
+                    type: integer
+                    example: 1
+                  records:
+                    type: object
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 444
+        '500':
+          description: System or Server Error.
+  /health-impact-result-datasets/{id}/export:
+    get:
+      summary: Returns health impact function results from an analysis as a zip file.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Health impact function result dataset id or task UUID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Zip file containing health impact function results from an analysis.
+        '500':
+          description: System or Server Error.
+  /valuation-result-datasets:
+    get:
+      summary: Returns an array of health impact funtion result datasets.
+      responses:
+        '200':
+          description: An array of health impact functions result datasets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 444
+                    task_uuid:
+                      type: integer
+                      example: 123
+                    hif_result_dataset_id:
+                      type: integer
+                      example: 123
+                    name:
+                      type: string
+                      example: ""
+                    variable_dataset_id:
+                      type: integer
+                      example: 123
+                    task_log:
+                      type: object
+                      example: null
+  /valuation-result-datasets/{id}:
+    get:
+      summary: Returns an array of health impact functions that are part of a hif result dataset.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Valuation result dataset id or task UUID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: An array of health impact functions that are part of a hif result dataset.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 472
+                    valuation_dataset_id:
+                      type: integer
+                      example: 6
+                    endpoint_group_id:
+                      type: integer
+                      example: 12
+                    endpoint_id:
+                      type: integer
+                      example: 50
+                    qualifier:
+                      type: string
+                      example: "VSL, based on 26 value-of-life studies, no D.R. applied"
+                    reference:
+                      type: string
+                      example: "0"
+                    start_age:
+                      type: integer
+                      example: 0
+                    end_age:
+                      type: integer
+                      example: 99
+                    function_text:
+                      type: string
+                      example: "A*AllGoodsIndex"
+                    val_a:
+                      type: number
+                      example: 8700000.26
+                    name_a: 
+                      type: string
+                      example: "mean VSL in 2015$"
+                    dist_a:
+                      type: string
+                      example: "Weibull"
+                    p1a:
+                      type: number
+                      example:
+                    p2a:
+                      type: number
+                      example: 
+                    val_b:
+                      type: integer
+                      example: 0
+                    name_b:
+                      type: string
+                      example: "0"
+                    val_c:
+                      type: integer
+                      example: 0
+                    name_c:
+                      type: string
+                      example: "0"
+                    val_d:
+                      type: integer
+                      example: 0
+                    name_d:
+                      type: string
+                      example: "0"
+                    hif:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 444
+                        author:
+                          type: string
+                          example: "Peters et al."
+                        function_year:
+                          type: integer
+                          example: 2001
+                        start_age:
+                          type: integer
+                          example: 65
+                        end_age:
+                          type: integer
+                          example: 99
+                        qualifier:
+                          type: string
+                          example: ""
+                        location:
+                          type: string
+                          example: "Boston, MA"
+                        reference:
+                          type: string
+                          example: "References info"
+                        endpoint_group_name:
+                          type: string
+                          example: "Acute Myocardial Infarction"
+                        endpoint_name:
+                          type: string
+                          example: "Acute Myocardial Infarction, nonfatal"
+  /valuation-result-datasets/{id}/contents:
+    get:
+      summary: Returns valuation results from an analysis.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Valuation result dataset id or task UUID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Valuation results from an analysis.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    column:
+                      type: integer
+                      example: 123
+                    row:
+                      type: integer
+                      example: 123
+                    endpoint:
+                      type: string
+                      example: "Mortality, All Cause"
+                    name:
+                      type: string
+                      example: "VSL, based on 26 value-of-life studies, no D.R. applied"
+                    author:
+                      type: string
+                      example: "Turner et al."
+                    year:
+                      type: integer
+                      example: 2016
+                    qualifier:
+                      type: string
+                      example: ""
+                    race:
+                      type: string
+                      example: "ALL"
+                    ethnicity:
+                      type: string
+                      example: "ALL"
+                    gender:
+                      type: string
+                      example: "ALL"
+                    metric:
+                      type: string
+                      example: "D8HourMax"
+                    seasonal_metric:
+                      type: string
+                      example: null
+                    metric_statistic:
+                      type: string
+                      example: "Mean"
+                    start_age:
+                      type: integer
+                      example: 0
+                    end_age:
+                      type: integer
+                      example: 99
+                    point_estimate:
+                      type: number
+                      example: 0.0512
+                    mean:
+                      type: number
+                      example: 0.0515
+                    standard_deviation:
+                      type: number
+                      example: 0.0353
+                    variance:
+                      type: number
+                      example: 0.00124
+                    pct_2_5:
+                      type: number
+                      example: 0.00401
+                    pct_97_5:
+                      type: number
+                      example: 0.1347
+  /valuation-result-datasets/{id}/export:
+    get:
+      summary: Returns an zip file with valuation results from an analysis.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Valuation result dataset id or task UUID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Zip file with valuation results from an analysis.
+        '500':
+          description: System or Server Error.
+  /tasks/{uuid}:
+    delete:
+      summary: Removes a task with the given UUID.
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          description: Task UUID.
+          schema:
+            type: string
+      responses:
+        '404':
+          description: UUID not found or task successfully removed.
+  /tasks/pending:
+    get:
+      summary: Returns a list of pending tasks.
+      responses:
+        '200':
+          description: An array of pending tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_name:
+                          type: string
+                          example: "Ozone - Valuation"
+                        task_uuid:
+                          type: string
+                          example: "482e078-..."
+                        task_submitted_date:
+                          type: string
+                          example: "2022-01-01 00:00:00"
+                        task_type:
+                          type: string
+                          example: "Valuation"
+                        task_status_message:
+                          type: string
+                          example: "Started at 2022-01-01 00:00:00"
+                        task_progress_message:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              status:
+                                type: string
+                                example: "active"
+                              message:
+                                type: string
+                                example: "Running valuation functions"
+                        task_percentage:
+                          type: integer
+                          example: 50
+                        task_status:
+                          type: boolean
+                          example: true
+                  success:
+                    type: boolean
+                    example: true
+                  recordsFiltered:
+                    type: integer
+                    example: 1
+                  recordsTotal:
+                    type: integer
+                    example: 1
+  /tasks/completed:
+    get:
+      summary: Returns a list of completed tasks.
+      responses:
+        '200':
+          description: Successfully returned an array of completed tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_name:
+                          type: string
+                          example: "Ozone Analysis"
+                        task_type:
+                          type: string
+                          example: "HIF"
+                        task_description:
+                          type: string
+                          example: null
+                        task_uuid:
+                          type: string
+                          example: "482e078-..."
+                        task_submited_date:
+                          type: string
+                          example: "2022-01-01 00:00:00"
+                        task_started_date:
+                          type: string
+                          example: "2022-01-01 00:00:00"
+                        task_completed_date:
+                          type: string
+                          example: "2022-01-01 00:10:15"
+                        task_wait_time:
                           type: object
+                          properties:
+                            task_wait_time_display:
+                              type: string
+                              example: "4 seconds "
+                            task_wait_time_seconds:
+                              type: integer
+                              example: 4
+                        task_execution_time:
+                          type: object
+                          properties:
+                            task_execution_time_display:
+                              type: string
+                              example: "10 minutes 15 seconds "
+                            task_execution_time_seconds:
+                              type: integer
+                              example: 615
+                        task_elapsed_time:
+                          type: string
+                          example: "10 minutes 15 seconds "
+                        task_successful:
+                          type: boolean
+                          example: true
+                        task_message:
+                          type: string
+                          example: "Saved 191,049 results"
+                  success:
+                    type: boolean
+                    example: true
+                  recordsFiltered:
+                    type: integer
+                    example: 123
+                  recordsTotal:
+                    type: integer
+                    example: 123     
+  /tasks:
+    post:
+      summary: Add a task.
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Task name
+          schema:
+            type: string
+        - name: parent_task_uuid
+          in: query
+          required: true
+          description: Parent task uuid
+          schema:
+            type: string   
+        - name: type
+          in: query
+          required: true
+          description: Task type
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully added a task.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "example task name"
+                  type:  
+                    type: string
+                    example: "Valuation"
+        '500':
+          description: Server or System Error.
+  /task-configs:
+    get:
+      summary: Returns a list of task configurations.
+      responses:
+        '200':
+          description: Successfully returned an array of task configurations.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 5
+                    name:
+                      type: string
+                      example: "Ozone analysis"
+                    type:
+                      type: string
+                      example: "v1"
+                    parameters:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: ""
+                        type:
+                          type: string
+                          example: "HIF"
+                        pollutant:
+                          type: object
+                          properties:
+                            pollutantId:
+                              type: integer
+                              example: 4
+                            pollutantFriendlyName:
+                              type: string
+                              example: "Ground-level ozone"
+                        air_quality_data:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              type:
+                                type: string
+                                example: "baseline"
+                              id:
+                                type: integer
+                                example: 12
+                              metricId:
+                                type: integer
+                                example: 8
+                              seasonalMetricId:
+                                type: integer
+                                example: 4
+                              name:
+                                type: string
+                                example: "baseline"
+                        population:
+                          type: object
+                          properties:
+                            populationDatasetId:
+                              type: integer
+                              example: 40
+                            populationDatasetName:
+                              type: string
+                              example: "US CMAQ 12km Nation"
+                            populationYear:
+                              type: integer
+                              example: 2000
+                            incidenceId:
+                              type: integer
+                              example: 1
+                            incidenceName:
+                              type: string
+                              example: "County"
+                        healthEffects:
+                          type: object
+                          properties:
+                            healthEffectId:
+                              type: integer
+                              example: 5
+                            healthEffectName:
+                              type: string
+                              example: "Premature Death - Primary"
+                        functions:
+                          type: array
+                          items: 
+                            type: object
+                            properties:
+                              hifId:
+                                type: integer
+                                example: 123
+                              start_age:
+                                type: integer
+                                example: 30
+                              end_age:
+                                type: integer
+                                example: 99
+                              race_id:
+                                type: integer
+                                example: 5
+                              gender_id:
+                                type: integer
+                                example: 3
+                              ethnicity_id:
+                                type: integer
+                                example: 3
+                        hash:
+                          type: string
+                          example: "355a4805-..."
+
+    post:
+      summary: Add a task configuration.
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Task name
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: true
+          description: Task type
+          schema:
+            type: string   
+        - name: parameters
+          in: query
+          required: true
+          description: Task parameters
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully added a task configuration.
+  /user:
+    get:
+      summary: Returns the user's id.
+      responses:
+        '200':
+          description: The user's id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                    example: 123
