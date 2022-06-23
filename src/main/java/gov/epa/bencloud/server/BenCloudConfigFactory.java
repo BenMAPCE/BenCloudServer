@@ -69,7 +69,8 @@ public class BenCloudConfigFactory implements ConfigFactory {
         final Clients clients = new Clients(headerClient); //, new AnonymousClient());
         final Config config = new Config(clients);
 
-        config.addAuthorizer("user", new RequireAnyRoleAuthorizer(Constants.ROLE_USER));
+        //config.addAuthorizer("user", new RequireAnyRoleAuthorizer(Constants.ROLE_USER));
+        config.addAuthorizer("user", new BenCloudAuthorizer());
         config.addAuthorizer("admin", new RequireAnyRoleAuthorizer(Constants.ROLE_ADMIN));
         config.addMatcher("cors", new CorsMatcher());
         //config.addMatcher("exclude_options", new HttpMethodMatcher(HttpConstants.HTTP_METHOD.GET) );
