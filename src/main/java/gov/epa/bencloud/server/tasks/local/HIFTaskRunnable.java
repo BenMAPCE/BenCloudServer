@@ -290,8 +290,9 @@ public class HIFTaskRunnable implements Runnable {
 							hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
 							hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
 							hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
+							//hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
 							hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
-							
+
 							for(int i=0; i < resultPercentiles.length; i++) {
 								hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
 								resultPercentiles[i] += hifFunctionExpression.calculate() * seasonalScalar;

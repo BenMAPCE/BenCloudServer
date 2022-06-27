@@ -744,7 +744,6 @@ public class AirQualityApi {
 			seasonalMetricIdLookup = AirQualityUtil.getSeasonalMetricIdLookup(pollutantId);
 			statisticIdLookup = ApiUtil.getStatisticIdLookup();
 			
-			//TODO: Validate each record and abort before the batch.execute() if there's a problem. --- done
 			//We might also need to clean up the header. Or, maybe we should make this a transaction?
 			
 			//step 2: make sure file has > 0 rows. Check rowCount after while loop.
@@ -1104,6 +1103,7 @@ public class AirQualityApi {
 	}
 	
 	public static boolean deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+		// TODO: Add user security enforcement
 		Integer id = Integer.valueOf(request.params("id"));
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		

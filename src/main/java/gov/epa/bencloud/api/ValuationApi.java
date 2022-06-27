@@ -54,8 +54,9 @@ public class ValuationApi {
 		 //*  sortBy=
 		 //*  descending=
 		 //*  filter=
-		 
-		//TODO: Implement sortBy, descending, and filter
+
+		// TODO: Add user security enforcement 
+		// TODO: Implement sortBy, descending, and filter
 		
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);	
@@ -154,7 +155,7 @@ public class ValuationApi {
 		
 		 //*  :id (valuation results dataset id)
 		 //*  gridId= (aggregate the results to another grid definition)
-		 
+		// TODO: Add user security enforcement 		 
 		
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);

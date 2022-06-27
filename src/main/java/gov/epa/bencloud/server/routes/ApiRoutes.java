@@ -123,6 +123,7 @@ public class ApiRoutes extends RoutesBase {
 		service.post(apiPrefix + "/air-quality-data", (request, response) -> {
 			
 			request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+
 			String layerName = getPostParameterValue(request, "name");
 			Integer pollutantId = Integer.valueOf(getPostParameterValue(request, "pollutantId"));
 			Integer gridId = Integer.valueOf(getPostParameterValue(request, "gridId"));

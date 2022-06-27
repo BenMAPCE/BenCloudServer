@@ -69,7 +69,8 @@ public class HIFApi {
 		 //*  sortBy=
 		 //*  descending=
 		 //*  filter=
-		 
+		
+		// TODO: Add user security enforcement
 		//TODO: Implement sortBy, descending, and filter
 		
 		String idParam = request.params("id");
@@ -178,10 +179,10 @@ public class HIFApi {
 	}
 	
 	public static void getHifResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
-		
 		 //*  :id (health impact function results dataset id (can also support task id))
 		 //*  gridId= (aggregate the results to one or more grid definitions)
 		 
+		// TODO: Add user security enforcement
 		//TODO: Implement sortBy, descending, and filter
 		//TODO: I have (temporarily?) removed the paging and limit functionality. We will always give back all the rows.
 		

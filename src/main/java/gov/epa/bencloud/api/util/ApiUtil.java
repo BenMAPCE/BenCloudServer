@@ -124,7 +124,7 @@ public class ApiUtil {
 	
 	public static Object deleteTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		String uuid = req.params("uuid");
-		
+		// TODO: Add user security enforcement 		
 		Result<Record> completedTasks = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
 				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
