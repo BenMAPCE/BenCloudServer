@@ -2,6 +2,7 @@ package gov.epa.bencloud.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.pac4j.core.config.Config;
 import org.pac4j.core.context.HttpConstants;
@@ -18,6 +19,7 @@ import gov.epa.bencloud.server.routes.PublicRoutes;
 import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.FreeMarkerRenderUtil;
+import spark.Request;
 import spark.Service;
 import spark.Spark;
 
@@ -88,8 +90,8 @@ public class BenCloudServer {
 		        });
 
 		final Config config = new BenCloudConfigFactory().build();
+
 		benCloudService.before((request, response) -> {
-			//Loosen up CORS; perhaps a bit too much?
 			response.header("Access-Control-Allow-Origin", "*");
 			
 			log.debug("path: {} {}, uid: {}, ismemberof: {}", request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
@@ -119,7 +121,21 @@ public class BenCloudServer {
 		log.info("*** BenMAP API Server. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 
 	}
-
+	
+	public static String getPostParameterValue(Request req, String name) {
+		
+		String value = null;
+		
+		Map<String, String[]> params = req.raw().getParameterMap();
+		
+		for (Map.Entry<String, String[]> entry : params.entrySet()) {
+			if (entry.getKey().equals(name)) {
+				value = entry.getValue()[0];
+			}
+		}
+		
+		return value;
+	}
 	public static String getApplicationPath() {
 		return applicationPath;
 	}

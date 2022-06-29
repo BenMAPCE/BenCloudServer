@@ -1,10 +1,17 @@
 package gov.epa.bencloud.api.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.Part;
+
+import org.apache.commons.io.IOUtils;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
@@ -207,5 +214,28 @@ public class ApiUtil {
 			return -999;
 		}
 		return versionRecord.value1().intValue();
+	}
+
+
+    public static String getMultipartFormParameterAsString(Request request, String paramName) {
+        try {
+			Part formPart = request.raw().getPart(paramName);
+			if(formPart == null || formPart.getSize() == 0) {
+				return null;
+			}
+			InputStream partInputStream = formPart.getInputStream();
+			return IOUtils.toString(partInputStream, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		} catch (ServletException e) {
+			e.printStackTrace();
+			return null;
+		}
+    }
+
+
+	public static Integer getMultipartFormParameterAsInteger(Request request, String paramName) {
+		return Integer.valueOf(getMultipartFormParameterAsString(request, paramName));
 	}
 }

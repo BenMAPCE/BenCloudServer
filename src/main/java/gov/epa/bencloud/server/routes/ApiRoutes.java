@@ -1,16 +1,9 @@
 package gov.epa.bencloud.server.routes;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.servlet.MultipartConfigElement;
 
-import org.pac4j.core.config.Config;
-import org.pac4j.core.profile.ProfileManager;
-import org.pac4j.core.profile.UserProfile;
-import org.pac4j.jee.context.session.JEESessionStore;
-import org.pac4j.sparkjava.SecurityFilter;
-import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +17,6 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
-import gov.epa.bencloud.server.util.ParameterUtil;
-import gov.epa.bencloud.server.BenCloudConfigFactory;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import spark.Service;
 
@@ -121,15 +112,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  type= (model or monitor)
 		 */
 		service.post(apiPrefix + "/air-quality-data", (request, response) -> {
-			
-			request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-
-			String layerName = getPostParameterValue(request, "name");
-			Integer pollutantId = Integer.valueOf(getPostParameterValue(request, "pollutantId"));
-			Integer gridId = Integer.valueOf(getPostParameterValue(request, "gridId"));
-			String layerType = getPostParameterValue(request, "type");
-			
-			return AirQualityApi.postAirQualityLayer(request, layerName, pollutantId, gridId, layerType, response, getUserProfile(request, response));
+			return AirQualityApi.postAirQualityLayer(request, response, getUserProfile(request, response));
 		});
 
 		/*

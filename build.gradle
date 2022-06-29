@@ -60,7 +60,7 @@ dependencies {
 	implementation 'org.quartz-scheduler:quartz:2.3.1'
 
     implementation 'com.github.javafaker:javafaker:1.0.2'
-    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:4.4.2'
+    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.0.6'
     
     implementation 'io.kubernetes:client-java-extended:14.0.0'
 

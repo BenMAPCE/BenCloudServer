@@ -58,6 +58,7 @@ public class BenCloudConfigFactory implements ConfigFactory {
         final Clients clients = new Clients(headerClient); 
         final Config config = new Config(clients);
 
+        //TODO: Switch to RequireAnyRoleAuthorizer once groups are populated and figure out how to smoothly help other users request access
         //config.addAuthorizer("user", new RequireAnyRoleAuthorizer(Constants.ROLE_USER));
         config.addAuthorizer("user", new BenCloudAuthorizer());
         

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.servlet.MultipartConfigElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
@@ -26,19 +27,13 @@ import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record10;
-import org.jooq.Record12;
-import org.jooq.Record13;
 import org.jooq.Record14;
-import org.jooq.Record21;
 import org.jooq.Record22;
-import org.jooq.Record5;
 import org.jooq.Record6;
 import org.jooq.Record7;
-import org.jooq.Record9;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.Table;
-import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.tools.csv.CSVReader;
 import org.pac4j.core.profile.UserProfile;
@@ -51,7 +46,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.Constants;
@@ -623,31 +617,42 @@ public class AirQualityApi {
 		return aqMap;
 	}
 	
-	public static Object postAirQualityLayer(Request request, String layerName, Integer pollutantId, Integer gridId, String layerType, Response response, Optional<UserProfile> userProfile) {
+	public static Object postAirQualityLayer(Request request, Response response, Optional<UserProfile> userProfile) {
+		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 
-		//System.out.println("postAirQualityLayer");
+		String layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
+		Integer pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
+		Integer gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
+		// Add this in later when we start supporting other air quality surface types such as monitor data
+		//String layerType = IOUtils.toString(request.raw().getPart("type").getInputStream(), StandardCharsets.UTF_8);
+
+		//Validate csv file
+		String errorMsg= ""; //stores more detailed info. Not used in report for now but may need in the future?
+		ValidationMessage validationMsg = new ValidationMessage();
+
+				
+		if(layerName == null || pollutantId == null || gridId == null) {
+			response.type("application/json");
+			//response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: name, pollutantId, gridId."));
+			return transformValMsgToJSON(validationMsg);
+		}
 
 		//TODO: REMOVE THIS. IT'S JUST A WORKAROUND FOR A TEMPORARY UI BUG
 		if(pollutantId.equals(0)) {
 			pollutantId = 6;
 		}
 		
-		//Validate csv file
-		String errorMsg= ""; //stores more detailed info. Not used in report for now but may need in the future?
-		ValidationMessage validationMsg = new ValidationMessage();
-		
 		//step 0: make sure layerName is not the same as any existing ones
 		
 		List<String>layerNames = AirQualityUtil.getExistingLayerNames(pollutantId);
 		if (layerNames.contains(layerName.toLowerCase())) {
 			validationMsg.success = false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","The layer name " + layerName + " already exists. Please enter a different name."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please enter a different name."));
 			response.type("application/json");
-			//response.status(400);
 			return transformValMsgToJSON(validationMsg);
-			//TODO: maybe move all "return transformValMsgToJSON(validationMsg);" to "finally" so that it is not scattered multiple places
 		}
-		
 		
 		AirQualityLayerRecord aqRecord=null;
 		int columnIdx=-999;
@@ -661,18 +666,13 @@ public class AirQualityApi {
 		Map<String, Integer> seasonalMetricIdLookup = new HashMap<>();		
 		Map<String, Integer> statisticIdLookup = new HashMap<>();
 		
-		
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			
 			CSVReader csvReader = new CSVReader (new InputStreamReader(is));				
 
 			String[] record;
 			
-			
-			
-			
 			//step 1: verify column names 
-			//(already done above.)
 			// Read the header
 			// allow either "column" or "col"; "values" or "value"
 			// todo: warn or abort when both "column" and "col" exist.
@@ -736,7 +736,6 @@ public class AirQualityApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 				response.type("application/json");
-				//response.status(400);
 				return transformValMsgToJSON(validationMsg);
 			}
 			
@@ -1097,7 +1096,6 @@ public class AirQualityApi {
 		}
 		
 		response.type("application/json");
-		//return getAirQualityLayerDefinition(aqRecord.value1()).formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 		validationMsg.success = true;
 		return transformValMsgToJSON(validationMsg); 
 	}

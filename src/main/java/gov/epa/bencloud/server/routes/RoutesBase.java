@@ -22,6 +22,11 @@ public class RoutesBase {
 			final SparkWebContext context = new SparkWebContext(request, response);
 			final ProfileManager manager = new ProfileManager(context, JEESessionStore.INSTANCE);
 			return manager.getProfile();
+
+			// UserProfile userProfile = new CommonProfile();
+			// userProfile.setId("TESTING");
+			// return Optional.of(userProfile);
+
 	}
 
 	protected List<String> getPostParametersNames(Request req) {
