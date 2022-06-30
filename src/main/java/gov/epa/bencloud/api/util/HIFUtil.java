@@ -30,6 +30,9 @@ import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
+import gov.epa.bencloud.api.function.HIFArguments;
+import gov.epa.bencloud.api.function.HIFunction;
+import gov.epa.bencloud.api.function.HIFNativeFactory;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
@@ -39,9 +42,8 @@ import gov.epa.bencloud.server.tasks.model.Task;
 public class HIFUtil {
 
 
-	public static Expression[] getFunctionAndBaselineExpression(Integer id) {
+	public static HIFunction[] getFunctionsForHIF(Integer id) {
 
-		Expression[] functionAndBaselineExpressions = new Expression[2];
 		// Load the function by id
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
@@ -49,27 +51,69 @@ public class HIFUtil {
 				.selectFrom(HEALTH_IMPACT_FUNCTION)
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(id))
 				.fetchOne();
-		
-		// Populate/create the necessary arguments and constants
-		//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
-		Constant a = new Constant("A", record.getValA().doubleValue());
-		Constant b = new Constant("B", record.getValB().doubleValue());
-		Constant c = new Constant("C", record.getValC().doubleValue());
-		
-		//The following will be set while iterating cells
-		Argument beta = new Argument("BETA", record.getBeta().doubleValue());
-		Argument deltaQ = new Argument("DELTAQ", 0.0);
-		Argument q1 = new Argument("Q0", 0.0);
-		Argument q2 = new Argument("Q1", 0.0);
-		Argument incidence = new Argument("INCIDENCE", 0.0);
-		Argument prevalence = new Argument("PREVALENCE", 0.0);
-		Argument population = new Argument("POPULATION", 0.0);
-		
-		// return the expression
-		functionAndBaselineExpressions[0] = new Expression(record.getFunctionText(), a, b, c, beta, deltaQ, q1, q2, incidence, prevalence, population);		
-		functionAndBaselineExpressions[1] = new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q1, q2, incidence, prevalence, population);		
 
-		return functionAndBaselineExpressions;
+		HIFunction[] functions = new HIFunction[2];
+
+		functions[0] = new HIFunction();
+		functions[1] = new HIFunction();
+
+		functions[0].nativeFunction = HIFNativeFactory.create(record.getFunctionText());
+		functions[1].nativeFunction = HIFNativeFactory.create(record.getBaselineFunctionText());
+
+		functions[0].hifArguments = new HIFArguments();
+		functions[1].hifArguments = new HIFArguments();
+
+		functions[0].hifArguments.A = record.getValA().doubleValue();
+		functions[0].hifArguments.B = record.getValB().doubleValue();
+		functions[0].hifArguments.C = record.getValC().doubleValue();
+		functions[0].hifArguments.beta = record.getBeta().doubleValue();
+
+		functions[1].hifArguments.A = record.getValA().doubleValue();
+		functions[1].hifArguments.B = record.getValB().doubleValue();
+		functions[1].hifArguments.C = record.getValC().doubleValue();
+		functions[1].hifArguments.beta = record.getBeta().doubleValue();
+
+		//If we don't have a native function, we'll use the interpreted one insetead
+		if(functions[0].nativeFunction == null) {
+			// Populate/create the necessary arguments and constants
+			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
+			Constant a = new Constant("A", functions[0].hifArguments.A);
+			Constant b = new Constant("B", functions[0].hifArguments.B);
+			Constant c = new Constant("C", functions[0].hifArguments.C);
+			
+			//The following will be set while iterating cells
+			Argument beta = new Argument("BETA", functions[0].hifArguments.beta);
+			Argument deltaQ = new Argument("DELTAQ", 0.0);
+			Argument q0 = new Argument("Q0", 0.0);
+			Argument q1 = new Argument("Q1", 0.0);
+			Argument incidence = new Argument("INCIDENCE", 0.0);
+			Argument prevalence = new Argument("PREVALENCE", 0.0);
+			Argument population = new Argument("POPULATION", 0.0);
+
+			functions[0].interpretedFunction = new Expression(record.getFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
+		}
+
+		//If we don't have a native baseline function, we'll use the interpreted one insetead
+		if(functions[1].nativeFunction == null) {
+			// Populate/create the necessary arguments and constants
+			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
+			Constant a = new Constant("A", functions[1].hifArguments.A);
+			Constant b = new Constant("B", functions[1].hifArguments.B);
+			Constant c = new Constant("C", functions[1].hifArguments.C);
+			
+			//The following will be set while iterating cells
+			Argument beta = new Argument("BETA", functions[1].hifArguments.beta);
+			Argument deltaQ = new Argument("DELTAQ", 0.0);
+			Argument q0 = new Argument("Q0", 0.0);
+			Argument q1 = new Argument("Q1", 0.0);
+			Argument incidence = new Argument("INCIDENCE", 0.0);
+			Argument prevalence = new Argument("PREVALENCE", 0.0);
+			Argument population = new Argument("POPULATION", 0.0);
+
+			functions[1].interpretedFunction = new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
+		}
+
+		return functions;
 	}
 
 	public static Record getFunctionDefinition(Integer id) {

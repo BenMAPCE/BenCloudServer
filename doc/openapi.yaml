@@ -5,7 +5,9 @@ info:
   version: 0.2.0
 servers:
   - url: http://localhost:4567/api
-    description: Local development
+    description: Local Development
+  - url: https://benmapdev.epa.gov/api
+    description: EPA DevSecOps Development
 components:
   securitySchemes:
     headerUid:
@@ -181,37 +183,23 @@ paths:
                                 example: "None"
     post:
       summary: Post a single air quality surface.
-      parameters:
-        - name: file
-          in: query
-          required: true
-          description: Csv file
-          schema:
-            type: file
-        - name: name
-          in: query
-          required: true
-          description: Surface name
-          schema:
-            type: string
-        - name: pollutantId
-          in: query
-          required: true
-          description: Pollutant id
-          schema:
-            type: integer
-        - name: gridId
-          in: query
-          required: true
-          description: Grid id
-          schema:
-            type: integer
-        - name: type
-          in: query
-          required: true
-          description: Type (model or monitor)
-          schema:
-            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+               type: object
+               properties:
+                 name:
+                   type: string
+                 pollutantId:
+                   type: integer
+                 gridId:
+                   type: integer
+                 type:
+                   type: string
+                 file:
+                   type: string
+                   format: binary
       responses:
         '200':
           description: Successfully added an air quality surface.

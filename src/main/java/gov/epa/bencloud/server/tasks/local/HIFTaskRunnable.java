@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.PopulationApi;
+import gov.epa.bencloud.api.function.HIFunction;
 import gov.epa.bencloud.api.model.AirQualityCell;
 import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.HIFConfig;
@@ -82,8 +83,8 @@ public class HIFTaskRunnable implements Runnable {
 			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
 			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
 			
-			ArrayList<Expression> hifFunctionExpressionList = new ArrayList<Expression>();
-			ArrayList<Expression> hifBaselineExpressionList = new ArrayList<Expression>();
+			ArrayList<HIFunction> hifFunctionList = new ArrayList<HIFunction>();
+			ArrayList<HIFunction> hifBaselineList = new ArrayList<HIFunction>();
 			
 			// incidenceLists contains an array of incidence maps for each HIF
 			ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
@@ -109,9 +110,9 @@ public class HIFTaskRunnable implements Runnable {
 				
 				TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 
-				Expression[] e = HIFUtil.getFunctionAndBaselineExpression(hif.hifId);
-				hifFunctionExpressionList.add(e[0]);
-				hifBaselineExpressionList.add(e[1]);
+				HIFunction[] f = HIFUtil.getFunctionsForHIF(hif.hifId);
+				hifFunctionList.add(f[0]);
+				hifBaselineList.add(f[1]);
 				
 				Record h = HIFUtil.getFunctionDefinition(hif.hifId);
 				hif.hifRecord = h.intoMap();
@@ -211,8 +212,8 @@ public class HIFTaskRunnable implements Runnable {
 				 */
 							
 				hifTaskConfig.hifs.parallelStream().forEach((hifConfig) -> {
-					Expression hifFunctionExpression = hifFunctionExpressionList.get(hifConfig.arrayIdx);
-					Expression hifBaselineExpression = hifBaselineExpressionList.get(hifConfig.arrayIdx);
+					HIFunction hifFunction = hifFunctionList.get(hifConfig.arrayIdx);
+					HIFunction hifBaselineFunction = hifBaselineList.get(hifConfig.arrayIdx);
 
 					Map<String, Object> hifRecord = hifConfig.hifRecord;
 					double[] betaDist = hifBetaDistributionLists.get(hifConfig.arrayIdx);
@@ -233,11 +234,6 @@ public class HIFTaskRunnable implements Runnable {
 					if((int)hifRecord.get("metric_statistic") == 0) { // NONE
 						seasonalScalar = hifConfig.totalDays.doubleValue();
 					}
-					// If we have variable values, grab them for use in the standard deviation calc below. 
-					// Else, set to 1 so they won't have any effect.
-					//Double varA = hifDefinition.getValA().doubleValue() != 0 ? hifDefinition.getValA().doubleValue() : 1.0;
-					//Double varB = hifDefinition.getValB().doubleValue() != 0 ? hifDefinition.getValB().doubleValue() : 1.0;
-					//Double varC = hifDefinition.getValC().doubleValue() != 0 ? hifDefinition.getValC().doubleValue() : 1.0;
 					
 					double beta = ((Double) hifRecord.get("beta")).doubleValue();
 
@@ -246,15 +242,32 @@ public class HIFTaskRunnable implements Runnable {
 					// Normal operation in BenCloud will use all doubles but, during validation with BenMAP results, it may be useful to preserve the legacy behavior
 					baselineValue = hifTaskConfig.preserveLegacyBehavior ? (float)baselineValue : baselineValue;
 					scenarioValue = hifTaskConfig.preserveLegacyBehavior ? (float)scenarioValue : scenarioValue;
-					double deltaQ = baselineValue - scenarioValue;					
-					
-					hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifFunctionExpression.setArgumentValue("Q0", baselineValue);
-					hifFunctionExpression.setArgumentValue("Q1", scenarioValue);
+					double deltaQ = baselineValue - scenarioValue;	
 
-					hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifBaselineExpression.setArgumentValue("Q0", baselineValue);
-					hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
+					Expression hifFunctionExpression = null;
+					Expression hifBaselineExpression = null;
+					
+					if(hifFunction.nativeFunction == null) {
+						hifFunctionExpression = hifFunction.interpretedFunction;
+						hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
+						hifFunctionExpression.setArgumentValue("Q0", baselineValue);
+						hifFunctionExpression.setArgumentValue("Q1", scenarioValue);
+					} else {
+						hifFunction.hifArguments.deltaQ = deltaQ;
+						hifFunction.hifArguments.q0 = baselineValue;
+						hifFunction.hifArguments.q1 = scenarioValue;
+					}
+
+					if(hifBaselineFunction.nativeFunction == null) {
+						hifBaselineExpression = hifBaselineFunction.interpretedFunction;
+						hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
+						hifBaselineExpression.setArgumentValue("Q0", baselineValue);
+						hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
+					} else {
+						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
+						hifBaselineFunction.hifArguments.q0 = baselineValue;
+						hifBaselineFunction.hifArguments.q1 = scenarioValue;
+					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
 					Map<Long, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
@@ -286,22 +299,44 @@ public class HIFTaskRunnable implements Runnable {
 							
 							totalPop += rangePop;
 
-							hifFunctionExpression.setArgumentValue("BETA", beta);
-							hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
-							hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
-							hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
-							//hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
-							hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
+							if(hifFunction.nativeFunction == null) {
+								hifFunctionExpression.setArgumentValue("BETA", beta);
+								hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
+								hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
+								hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
+								
+								hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
+								for(int i=0; i < resultPercentiles.length; i++) {
+									hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
+									resultPercentiles[i] += hifFunctionExpression.calculate() * seasonalScalar;
+								}
+							} else {
+								hifFunction.hifArguments.beta = beta;
+								hifFunction.hifArguments.incidence = incidence;
+								hifFunction.hifArguments.prevalence = prevalence;
+								hifFunction.hifArguments.population = rangePop;
 
-							for(int i=0; i < resultPercentiles.length; i++) {
-								hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
-								resultPercentiles[i] += hifFunctionExpression.calculate() * seasonalScalar;
+								hifFunctionEstimate += hifFunction.nativeFunction.calculate(hifFunction.hifArguments) * seasonalScalar;
+								for(int i=0; i < resultPercentiles.length; i++) {
+									hifFunction.hifArguments.beta = betaDist[i];								
+									resultPercentiles[i] += hifFunction.nativeFunction.calculate(hifFunction.hifArguments) * seasonalScalar;
+								}
 							}
-							
-							hifBaselineExpression.setArgumentValue("INCIDENCE", incidence);
-							hifBaselineExpression.setArgumentValue("PREVALENCE", prevalence);
-							hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
-							hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
+
+							if(hifBaselineFunction.nativeFunction == null) {
+								hifBaselineExpression.setArgumentValue("INCIDENCE", incidence);
+								hifBaselineExpression.setArgumentValue("PREVALENCE", prevalence);
+								hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
+								
+								hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
+							} else {
+								hifBaselineFunction.hifArguments.incidence = incidence;
+								hifBaselineFunction.hifArguments.prevalence = prevalence;
+								hifBaselineFunction.hifArguments.population = rangePop;
+
+								hifBaselineEstimate += hifBaselineFunction.nativeFunction.calculate(hifBaselineFunction.hifArguments) * seasonalScalar;
+							}
+
 						}
 					}
 					// This can happen if we're running multiple functions but we don't have any
