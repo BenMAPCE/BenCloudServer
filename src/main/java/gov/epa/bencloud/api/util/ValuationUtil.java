@@ -16,7 +16,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import gov.epa.bencloud.api.model.HIFTaskLog;
+import gov.epa.bencloud.api.function.VFArguments;
+import gov.epa.bencloud.api.function.VFNativeFactory;
+import gov.epa.bencloud.api.function.VFunction;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
@@ -28,7 +30,7 @@ import gov.epa.bencloud.server.tasks.model.Task;
 
 public class ValuationUtil {
 
-	public static Expression getFunctionExpression(Integer id) {
+	public static VFunction getFunctionForVF(Integer id) {
 
 		// Load the function by id
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -38,21 +40,36 @@ public class ValuationUtil {
 				.where(VALUATION_FUNCTION.ID.eq(id))
 				.fetchOne();
 		
-		// Populate/create the necessary arguments
-		//{ A, B, C, D, AllGoodsIndex, MedicalCostIndex, WageIndex, LagAdjustment, dicSetupVariables };
-		Constant a = new Constant("A", record.getValA().doubleValue());
-		Constant b = new Constant("B", record.getValB().doubleValue());
-		Constant c = new Constant("C", record.getValC().doubleValue());
-		Constant d = new Constant("D", record.getValD().doubleValue());
-		Argument allGoodsIndex = new Argument("AllGoodsIndex", 0.0);
-		Argument medicalCostIndex = new Argument("MedicalCostIndex", 0.0);
-		Argument wageIndex = new Argument("WageIndex", 0.0);
-		
-		//TODO: Inspect function for variables and create arguments to match
-		//Hardcoding median_income for now
-		Argument medianIncome = new Argument("median_income", 0.0);
+		VFunction function = new VFunction();
 
-		return new Expression(record.getFunctionText(), a, b, c, d, allGoodsIndex, medicalCostIndex, wageIndex, medianIncome);
+		function.nativeFunction = VFNativeFactory.create(record.getFunctionText());
+		function.vfArguments = new VFArguments();
+
+		function.vfArguments.a = record.getValA().doubleValue();
+		function.vfArguments.b = record.getValB().doubleValue();
+		function.vfArguments.c = record.getValC().doubleValue();
+		function.vfArguments.d = record.getValD().doubleValue();
+		function.vfArguments.allGoodsIndex = 0.0;
+		function.vfArguments.medicalCostIndex = 0.0;
+		function.vfArguments.wageIndex = 0.0;
+		function.vfArguments.medianIncome = 0.0;
+		
+		if(function.nativeFunction == null) {
+			Constant a = new Constant("A", function.vfArguments.a);
+			Constant b = new Constant("B", function.vfArguments.b);
+			Constant c = new Constant("C", function.vfArguments.c);
+			Constant d = new Constant("D", function.vfArguments.d);
+			Argument allGoodsIndex = new Argument("AllGoodsIndex", function.vfArguments.allGoodsIndex);
+			Argument medicalCostIndex = new Argument("MedicalCostIndex", function.vfArguments.medicalCostIndex);
+			Argument wageIndex = new Argument("WageIndex", function.vfArguments.wageIndex);
+			
+			//TODO: Inspect function for variables and create arguments to match
+			//Hardcoding median_income for now
+			Argument medianIncome = new Argument("median_income", function.vfArguments.medianIncome);
+			function.interpretedFunction = new Expression(record.getFunctionText(), a, b, c, d, allGoodsIndex, medicalCostIndex, wageIndex, medianIncome);
+		}
+
+		return function;
 	}
 
 	public static Record getFunctionDefinition(Integer id) {

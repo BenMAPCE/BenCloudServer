@@ -43,21 +43,22 @@ public class HIFNativeFactory {
             return new HIFNative17();
         } else if (functionalForm.equalsIgnoreCase(HIFNative18.functionalForm)) {
             return new HIFNative18();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative19.functionalForm)) {
+            return new HIFNative19();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative20.functionalForm)) {
+            return new HIFNative20();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative21.functionalForm)) {
+            return new HIFNative21();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative22.functionalForm)) {
+            return new HIFNative22();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative23.functionalForm)) {
+            return new HIFNative23();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative24.functionalForm)) {
+            return new HIFNative24();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative25.functionalForm)) {
+            return new HIFNative25();
         }
-/*
-
-todo: add baseline functions
-
-INCIDENCE*POPULATION
-INCIDENCE*POPULATION*A
-INCIDENCE*POPULATION*(1-A)
-A*POPULATION*PREVALENCE
-PREVALENCE*POPULATION
-A*POPULATION
-INCIDENCE*POPULATION*A*B
- * 
- * 
- */
+        
         return null;
     }
 

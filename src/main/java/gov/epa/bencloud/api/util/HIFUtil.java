@@ -2,21 +2,17 @@ package gov.epa.bencloud.api.util;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.Vector;
 
-
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Result;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.*;
 
@@ -31,8 +27,8 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.function.HIFArguments;
-import gov.epa.bencloud.api.function.HIFunction;
 import gov.epa.bencloud.api.function.HIFNativeFactory;
+import gov.epa.bencloud.api.function.HIFunction;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
@@ -63,23 +59,23 @@ public class HIFUtil {
 		functions[0].hifArguments = new HIFArguments();
 		functions[1].hifArguments = new HIFArguments();
 
-		functions[0].hifArguments.A = record.getValA().doubleValue();
-		functions[0].hifArguments.B = record.getValB().doubleValue();
-		functions[0].hifArguments.C = record.getValC().doubleValue();
+		functions[0].hifArguments.a = record.getValA().doubleValue();
+		functions[0].hifArguments.b = record.getValB().doubleValue();
+		functions[0].hifArguments.c = record.getValC().doubleValue();
 		functions[0].hifArguments.beta = record.getBeta().doubleValue();
 
-		functions[1].hifArguments.A = record.getValA().doubleValue();
-		functions[1].hifArguments.B = record.getValB().doubleValue();
-		functions[1].hifArguments.C = record.getValC().doubleValue();
+		functions[1].hifArguments.a = record.getValA().doubleValue();
+		functions[1].hifArguments.b = record.getValB().doubleValue();
+		functions[1].hifArguments.c = record.getValC().doubleValue();
 		functions[1].hifArguments.beta = record.getBeta().doubleValue();
 
 		//If we don't have a native function, we'll use the interpreted one insetead
 		if(functions[0].nativeFunction == null) {
 			// Populate/create the necessary arguments and constants
 			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
-			Constant a = new Constant("A", functions[0].hifArguments.A);
-			Constant b = new Constant("B", functions[0].hifArguments.B);
-			Constant c = new Constant("C", functions[0].hifArguments.C);
+			Constant a = new Constant("A", functions[0].hifArguments.a);
+			Constant b = new Constant("B", functions[0].hifArguments.b);
+			Constant c = new Constant("C", functions[0].hifArguments.c);
 			
 			//The following will be set while iterating cells
 			Argument beta = new Argument("BETA", functions[0].hifArguments.beta);
@@ -97,9 +93,9 @@ public class HIFUtil {
 		if(functions[1].nativeFunction == null) {
 			// Populate/create the necessary arguments and constants
 			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
-			Constant a = new Constant("A", functions[1].hifArguments.A);
-			Constant b = new Constant("B", functions[1].hifArguments.B);
-			Constant c = new Constant("C", functions[1].hifArguments.C);
+			Constant a = new Constant("A", functions[1].hifArguments.a);
+			Constant b = new Constant("B", functions[1].hifArguments.b);
+			Constant c = new Constant("C", functions[1].hifArguments.c);
 			
 			//The following will be set while iterating cells
 			Argument beta = new Argument("BETA", functions[1].hifArguments.beta);

@@ -99,9 +99,9 @@ public class CoreApi {
 		.truncate(TASK_COMPLETE)
 		.execute();
 		
-		create
-		.truncate(TASK_CONFIG)
-		.execute();
+//		create
+//		.truncate(TASK_CONFIG)
+//		.execute();
 
 		create
 		.truncate(HIF_RESULT)
