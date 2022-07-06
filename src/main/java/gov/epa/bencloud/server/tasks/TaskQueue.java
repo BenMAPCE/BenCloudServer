@@ -370,4 +370,39 @@ public class TaskQueue {
 		return task;
 	}
 
+	public static Task getChildValuationTaskFromQueueRecord(String parentUuid) {
+
+		// System.out.println("getTaskFromQueueRecord: " + uuid);
+
+		Task task = new Task();
+
+		try {
+			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
+					.where(TASK_QUEUE.TASK_PARENT_UUID.eq(parentUuid)
+							.and(TASK_QUEUE.TASK_TYPE.equalIgnoreCase("Valuation")))
+					.fetch();
+
+			if (result.size() == 0) {
+				System.out.println("no uuid in queue");
+			} else if (result.size() > 1) {
+				System.out.println("recieved more than 1 uuid record");
+			} else {
+				Record record = result.get(0);
+				task.setName(record.getValue(TASK_QUEUE.TASK_NAME));
+				task.setDescription(record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
+				task.setUserIdentifier(record.getValue(TASK_QUEUE.USER_ID));
+				task.setPriority(record.getValue(TASK_QUEUE.TASK_PRIORITY));
+				task.setUuid(record.getValue(TASK_QUEUE.TASK_UUID));
+				task.setParentUuid(record.getValue(TASK_QUEUE.TASK_PARENT_UUID));
+				task.setParameters(record.getValue(TASK_QUEUE.TASK_PARAMETERS));
+				task.setType(record.getValue(TASK_QUEUE.TASK_TYPE));
+				task.setSubmittedDate(record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE));
+				task.setStartedDate(record.getValue(TASK_QUEUE.TASK_STARTED_DATE));
+			}
+		} catch (DataAccessException e1) {
+			log.error("Error getting task", e1);
+		}
+
+		return task;
+	}
 }

@@ -65,13 +65,6 @@ public class BenCloudTaskRunner {
 		}
 
 		log.info("*** BenMAP Task Runner. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
-		log.info("Available processors (cores): " + Runtime.getRuntime().availableProcessors());
-		log.info("Free memory (MB): " + Runtime.getRuntime().freeMemory()/1024/1024);
-		
-	    long maxMemory = Runtime.getRuntime().maxMemory();
-	    log.info("Maximum memory (MB): " + (maxMemory == Long.MAX_VALUE ? "no limit" : maxMemory/1024/1024));
-	    log.info("Total memory available to JVM (MB): " + Runtime.getRuntime().totalMemory()/1024/1024);
-
 	    
 	    try {
 			Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
@@ -81,6 +74,13 @@ public class BenCloudTaskRunner {
 			} else if(task.getType().equalsIgnoreCase("HIF")) {
 				HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
 				ht.run();
+				
+				//After the HIFs are done, let's go ahead and look for any valuation tasks
+				Task childTask = TaskQueue.getChildValuationTaskFromQueueRecord(taskUuid);
+				if(childTask != null && childTask.getType().equalsIgnoreCase("Valuation")) {
+					ValuationTaskRunnable vt = new ValuationTaskRunnable(childTask.getUuid(), taskRunnerUuid);
+					vt.run();	
+				}
 			} else if(task.getType().equalsIgnoreCase("Valuation")) {
 				ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
 				vt.run();
