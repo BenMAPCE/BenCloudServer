@@ -62,7 +62,7 @@ public class HIFTaskRunnable implements Runnable {
 
 	public void run() {
 		
-		log.info("Task Begin: " + taskUuid);
+		log.info("HIF Task Begin: " + taskUuid);
 		ObjectMapper mapper = new ObjectMapper();
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 		final int maxRowsInMemory = 100000;
@@ -421,7 +421,7 @@ public class HIFTaskRunnable implements Runnable {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
 			log.error("Task failed", e);
 		}
-		log.info("Task Complete: " + taskUuid);
+		log.info("HIF Task Complete: " + taskUuid);
 	}
 
 	private void updateHifConfigValues(HIFConfig hif, Record h) {

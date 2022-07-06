@@ -66,6 +66,8 @@ public class ValuationTaskRunnable implements Runnable {
 	private boolean taskSuccessful = true;
 
 	public void run() {
+		log.info("Valuation Task Begin: " + taskUuid);
+		
 		ObjectMapper mapper = new ObjectMapper();
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 		final int maxRowsInMemory = 100000;
@@ -351,6 +353,7 @@ public class ValuationTaskRunnable implements Runnable {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
 			log.error("Task failed", e);
 		}
+		log.info("Valuation Task Complete: " + taskUuid);
 	}
 
 	private double[] getDistributionSamples(Record vfRecord) {
