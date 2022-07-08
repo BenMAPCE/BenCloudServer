@@ -405,16 +405,6 @@ public class HIFTaskRunnable implements Runnable {
 			hifTaskLog.setDtEnd(LocalDateTime.now());
 			HIFUtil.storeTaskLog(hifTaskLog);
 			
-			//TODO: Right here is the place where we want to look and see if there is a child valuation task
-			// If so, then let's go ahead and call ValuationTaskRunnable.run() right here and run it in the same thread
-			// We just have to be really sure we avoid also spawning another runner
-			
-			// 1. Mark the val job as started
-			// 2. Mark this hif job as complete
-			// 3. Run the val job inside it's own try/catch so any error can be used to just fail the val job
-			// ACTUALLY, when the time comes, look at chaining tasks in the BenCloudTaskRunner instead of here.
-			
-			
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
