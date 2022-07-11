@@ -88,13 +88,13 @@ public class BenCloudTaskRunner {
 				//After the HIFs are done, let's go ahead and look for any valuation tasks
 				Task childTask = TaskQueue.getChildValuationTaskFromQueueRecord(taskUuid);
 				if(childTask != null && childTask.getType().equalsIgnoreCase("Valuation")) {
-					//Switch the task worker to the valuation tasks
+					//Switch the task worker to the valuation task
 					DSL.using(JooqUtil.getJooqConfiguration()).update(TASK_WORKER)
 					.set(TASK_WORKER.TASK_UUID, childTask.getUuid())
 					.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskRunnerUuid))
 					.execute();
 
-					//Start the valuation tasks
+					//Start the valuation task
 					DSL.using(JooqUtil.getJooqConfiguration()).update(TASK_QUEUE)
 					.set(TASK_QUEUE.TASK_STARTED_DATE, LocalDateTime.now())
 					.set(TASK_QUEUE.TASK_PERCENTAGE, 0)

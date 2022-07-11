@@ -171,11 +171,19 @@ public class CoreApi {
 		ObjectNode userNode = mapper.createObjectNode();
 
 		userNode.put(Constants.HEADER_USER_ID, userProfile.getId());
-		Object tmp = userProfile.getAttribute(Constants.HEADER_DISPLAY_NAME);
-		userNode.put(Constants.HEADER_DISPLAY_NAME, tmp==null ? null : tmp.toString());
+		Object tmpDisplayName = userProfile.getAttribute(Constants.HEADER_DISPLAY_NAME);
+		Object tmpMail = userProfile.getAttribute(Constants.HEADER_MAIL);
 
-		tmp = userProfile.getAttribute(Constants.HEADER_MAIL);
-		userNode.put(Constants.HEADER_MAIL, tmp==null ? null : tmp.toString());
+		userNode.put(Constants.HEADER_MAIL, tmpMail==null ? null : tmpMail.toString());
+
+		// We want displayname to always contains something useful.
+		// However, there is some inconsistency in the user object between EPA and login.gov logins that this code deals with
+		if(tmpDisplayName == null || tmpDisplayName.toString().isEmpty()) {
+			userNode.put(Constants.HEADER_DISPLAY_NAME, tmpMail==null ? null : tmpMail.toString());			
+		} else {
+			userNode.put(Constants.HEADER_DISPLAY_NAME, tmpDisplayName==null ? null : tmpDisplayName.toString());			
+		}
+			
 		ArrayNode rolesNode = userNode.putArray(Constants.HEADER_GROUPS);
 		for (String role : userProfile.getRoles()) {
 			rolesNode.add(role);
