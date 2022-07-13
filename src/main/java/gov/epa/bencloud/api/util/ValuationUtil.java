@@ -42,7 +42,7 @@ public class ValuationUtil {
 		
 		VFunction function = new VFunction();
 
-		function.nativeFunction = VFNativeFactory.create(record.getFunctionText());
+		function.nativeFunction = null; //VFNativeFactory.create(record.getFunctionText());
 		function.vfArguments = new VFArguments();
 
 		function.vfArguments.a = record.getValA().doubleValue();

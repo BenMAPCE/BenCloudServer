@@ -53,8 +53,8 @@ public class HIFUtil {
 		functions[0] = new HIFunction();
 		functions[1] = new HIFunction();
 
-		functions[0].nativeFunction = HIFNativeFactory.create(record.getFunctionText());
-		functions[1].nativeFunction = HIFNativeFactory.create(record.getBaselineFunctionText());
+		functions[0].nativeFunction = null; //HIFNativeFactory.create(record.getFunctionText());
+		functions[1].nativeFunction = null; //HIFNativeFactory.create(record.getBaselineFunctionText());
 
 		functions[0].hifArguments = new HIFArguments();
 		functions[1].hifArguments = new HIFArguments();
