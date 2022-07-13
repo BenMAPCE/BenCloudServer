@@ -96,6 +96,7 @@ public class BenCloudTaskRunner {
 
 					//Start the valuation task
 					DSL.using(JooqUtil.getJooqConfiguration()).update(TASK_QUEUE)
+					.set(TASK_QUEUE.TASK_IN_PROCESS, true)
 					.set(TASK_QUEUE.TASK_STARTED_DATE, LocalDateTime.now())
 					.set(TASK_QUEUE.TASK_PERCENTAGE, 0)
 					.where(TASK_QUEUE.TASK_UUID.eq(childTask.getUuid()))
