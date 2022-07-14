@@ -34,7 +34,7 @@ public class BenCloudConfigFactory implements ConfigFactory {
                 Optional<String> roleHeader = ctx.getRequestHeader(Constants.HEADER_GROUPS);
                 String[] roles = null;
                 if(roleHeader.isPresent()) {
-                    roles = roleHeader.get().split(";");
+                    roles = roleHeader.get().split(":");
                     for (String role : roles) {
                         if(!role.equalsIgnoreCase("null")) {
                             profile.addRole(role);
