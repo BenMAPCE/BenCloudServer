@@ -29,25 +29,43 @@ public class PopulationApi {
 	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
 
 		//TODO: Need to grow the population using the selected popYear
-		//NOTE: For now, we're focusing on age groups and not dealing with race, gender, ethnicity
 		
 		// Get the array of age ranges to include based on the configured hifs
 		ArrayList<Integer> ageRangeIds = getAgeRangesForHifs(hifTaskConfig);
         Integer arrAgeRangeIds[] = new Integer[ageRangeIds.size()];
         arrAgeRangeIds = ageRangeIds.toArray(arrAgeRangeIds);
         
+        //Get array of race, ethnicity and gender to include based on the configured hifs
+        //TODO: If all hifs calls for "all" or null, set groupby = false. Will the values in lookup table stay forever? 
+        ArrayList<Integer> raceIds = getRacesForHifs(hifTaskConfig);
+        Integer arrRaceIds[] = new Integer[raceIds.size()];
+        arrRaceIds = raceIds.toArray(arrRaceIds);
+        boolean booGroupByRace = true;  //1ASIAN, 2BLACK, 3NATAMER, 4WHITE, 5All, 6null     
+        
+        ArrayList<Integer> ethnicityIds = getEthnicityForHifs(hifTaskConfig);
+        Integer arrEthnicityIds[] = new Integer[ethnicityIds.size()];
+        arrEthnicityIds = ethnicityIds.toArray(arrEthnicityIds);
+        boolean booGroupByEthnicity = true;  //1NON-HISP, 2HISP, 3All, 4null       
+        
+        ArrayList<Integer> genderIds = getGendersForHifs(hifTaskConfig);
+        Integer arrGenderIds[] = new Integer[genderIds.size()];
+        arrGenderIds = genderIds.toArray(arrGenderIds);
+        boolean booGroupByGender = true; //1F, 2M, 3All, 4null 
+        
+        
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
-				null, 
-				null, 
-				null, 
+				arrRaceIds, 
+				arrEthnicityIds, 
+				arrGenderIds, 
 				arrAgeRangeIds, 
-				null, 
-				null, 
-				null, 
-				true, 
-				28).intoGroups(GET_POPULATION.GRID_CELL_ID);
+				booGroupByRace, 
+				booGroupByEthnicity, 
+				booGroupByGender, 
+				true, //YY: groupbyAgeRange
+				28 //YY: outputGridDefinitionId
+				).intoGroups(GET_POPULATION.GRID_CELL_ID);
 
 		return popRecords;
 	}
@@ -85,6 +103,36 @@ public class PopulationApi {
 		}
 		
 		return ageRangeIds;
+	}
+	
+	public static ArrayList<Integer> getRacesForHifs(HIFTaskConfig hifTaskConfig){
+		ArrayList<Integer> raceIds = new  ArrayList<Integer>();
+		for(HIFConfig hif : hifTaskConfig.hifs) {
+			if(!raceIds.contains(hif.race)) {
+				raceIds.add(hif.race);
+			}
+		}		
+		return raceIds;		
+	}
+	
+	public static ArrayList<Integer> getEthnicityForHifs(HIFTaskConfig hifTaskConfig){
+		ArrayList<Integer> ethnicityIds = new  ArrayList<Integer>();
+		for(HIFConfig hif : hifTaskConfig.hifs) {
+			if(!ethnicityIds.contains(hif.ethnicity)) {
+				ethnicityIds.add(hif.ethnicity);
+			}
+		}		
+		return ethnicityIds;		
+	}
+	
+	public static ArrayList<Integer> getGendersForHifs(HIFTaskConfig hifTaskConfig){
+		ArrayList<Integer> genderIds = new  ArrayList<Integer>();
+		for(HIFConfig hif : hifTaskConfig.hifs) {
+			if(!genderIds.contains(hif.gender)) {
+				genderIds.add(hif.gender);
+			}
+		}		
+		return genderIds;		
 	}
 
 	public static Result<Record3<Integer, Short, Short>> getPopAgeRanges(Integer id) {

@@ -64,18 +64,35 @@ public class IncidenceApi {
 		//TODO: Need to add in handling for race, ethnicity, gender. 
 		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revised.
 		
+		//Get array of race, ethnicity and gender to include based on the configured hifs
+        //TODO: If all hifs calls for "all" or null, set groupby = false. Will the values in lookup table stay forever? 
+        ArrayList<Integer> raceIds = PopulationApi.getRacesForHifs(hifTaskConfig);
+        Integer arrRaceIds[] = new Integer[raceIds.size()];
+        arrRaceIds = raceIds.toArray(arrRaceIds);
+        boolean booGroupByRace = true;  //1ASIAN, 2BLACK, 3NATAMER, 4WHITE, 5All, 6null     
+        
+        ArrayList<Integer> ethnicityIds = PopulationApi.getEthnicityForHifs(hifTaskConfig);
+        Integer arrEthnicityIds[] = new Integer[ethnicityIds.size()];
+        arrEthnicityIds = ethnicityIds.toArray(arrEthnicityIds);
+        boolean booGroupByEthnicity = true;  //1NON-HISP, 2HISP, 3All, 4null       
+        
+        ArrayList<Integer> genderIds = PopulationApi.getGendersForHifs(hifTaskConfig);
+        Integer arrGenderIds[] = new Integer[genderIds.size()];
+        arrGenderIds = genderIds.toArray(arrGenderIds);
+        boolean booGroupByGender = true; //1F, 2M, 3All, 4null 
+		
 		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
 				h.get("endpoint_id", Integer.class), 
-				null, 
-				null, 
-				null, 
+				arrRaceIds, 
+				arrEthnicityIds, 
+				arrGenderIds, 
 				hifConfig.startAge.shortValue(), 
 				hifConfig.endAge.shortValue(), 
-				null,
-				null, 
-				null,
+				booGroupByRace,
+				booGroupByEthnicity, 
+				booGroupByGender,
 				true, 
 				AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId))
 				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
