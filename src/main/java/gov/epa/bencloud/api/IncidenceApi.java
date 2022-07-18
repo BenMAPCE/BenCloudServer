@@ -24,22 +24,28 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
+import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import spark.Request;
 import spark.Response;
 
 public class IncidenceApi {
 
-	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<Integer, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
+	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<PopulationApi.DemographicGroup, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
 		
-		Map<Long, Map<Integer, Double>> incidenceOrPrevalenceMap = new HashMap<Long, Map<Integer, Double>>();
+		//TODO: YY: incidenceOrPrevalenceMapOld is how it was originally calculated using ageRangeId as the key. Can be removed after confirming the new method is working.
+		
+		Map<Long, Map<Integer, Double>> incidenceOrPrevalenceMapOld = new HashMap<Long, Map<Integer, Double>>();
+		Map<Long, Map<PopulationApi.DemographicGroup, Double>> incidenceOrPrevalenceMap = new HashMap<Long, Map<PopulationApi.DemographicGroup, Double>>();
 		
 		//Some functions don't use incidence or prevalence. Just return an empty map for those.
 		if(isIncidence==true && (hifConfig.incidence == null || hifConfig.incidence == 0)) {
+			//incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMapOld);
 			incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 			return true;
 		} else if (isIncidence==false & (hifConfig.prevalence == null || hifConfig.prevalence == 0)) {
+			//incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMapOld);
 			incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 			return true;
 		}
@@ -63,6 +69,9 @@ public class IncidenceApi {
 		//Return an average incidence for each population age range for a given hif
 		//TODO: Need to add in handling for race, ethnicity, gender. 
 		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revised.
+		
+		//YY: age range percentage?
+		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = HIFTaskRunnable.getPopAgeRangeMapping(hifTaskConfig);
 		
 		//Get array of race, ethnicity and gender to include based on the configured hifs
         //TODO: If all hifs calls for "all" or null, set groupby = false. Will the values in lookup table stay forever? 
@@ -102,16 +111,22 @@ public class IncidenceApi {
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 
 		// Build a nested map like <grid_cell_id, <age_group_id, incidence_value>>
+		// YY: change age_group_id key to an object which contains age_group_id, race_id, ethnicity_id, and gender_id
 		
 		// FOR EACH GRID CELL
 		for (Entry<Long, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
 			HashMap<Integer, Double> incidenceOrPrevalenceCellMap = new HashMap<Integer, Double>();
+			HashMap<PopulationApi.DemographicGroup, Double> incidenceOrPrevalenceCellMap2 = new HashMap<PopulationApi.DemographicGroup, Double>();
+			
+			
 
 			// FOR EACH POPULATION AGE RANGE
 			for (Record3<Integer, Short, Short> popAgeRange : popAgeRanges) {
 				
 				// FOR EACH INCIDENCE AGE RANGE
 				int count=0;
+				HashMap<PopulationApi.DemographicGroup, Integer> demoGroupCount = new HashMap<PopulationApi.DemographicGroup, Integer>(); //for calculating average later
+				
 				for (GetIncidenceRecord incidenceOrPrevalenceAgeRange : cellIncidence.getValue()) {
 					Short popAgeStart = popAgeRange.value2();
 					Short popAgeEnd = popAgeRange.value3();
@@ -120,18 +135,48 @@ public class IncidenceApi {
 
 					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
 						incidenceOrPrevalenceCellMap.put(popAgeRange.value1(), incidenceOrPrevalenceCellMap.getOrDefault(popAgeRange.value1(), 0.0) + incidenceOrPrevalenceAgeRange.getValue().doubleValue());
+						
 						count++;
 					} 
+					
+					//YY: Correct?
+					PopulationApi.DemographicGroup demoGroup = new PopulationApi.DemographicGroup();
+					demoGroup.ageRangeId = popAgeRange.value1();
+					demoGroup.raceId = incidenceOrPrevalenceAgeRange.getRaceId();
+					demoGroup.ethnicityId = incidenceOrPrevalenceAgeRange.getEthnicityId();
+					demoGroup.genderId = incidenceOrPrevalenceAgeRange.getGenderId();
+					
+					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
+					if (popAgeRangeHifMap.containsKey(demoGroup.ageRangeId)) {
+						double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.ageRangeId);
+						incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) + inc);
+						demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);
+					}	
 					
 				}
 				//Now calculate the average (if more than one incidence rate was applied to this population age range
 				//TODO: Do we need to improve our averaging here to handle partial overlaps better
+				
 				if(count > 0) {
-					incidenceOrPrevalenceCellMap.put(popAgeRange.value1(), incidenceOrPrevalenceCellMap.getOrDefault(popAgeRange.value1(), 0.0)/count);
+					incidenceOrPrevalenceCellMap.put(popAgeRange.value1(), incidenceOrPrevalenceCellMap.getOrDefault(popAgeRange.value1(), 0.0)/count);					
 				}
+				
+				//YY: averaging by demographic groups (age, race, ethnicity, gender)
+				if(!demoGroupCount.isEmpty()) {
+					for(Entry<PopulationApi.DemographicGroup, Integer> entry : demoGroupCount.entrySet()) {
+						PopulationApi.DemographicGroup demoGroup = entry.getKey();
+						int groupCount = entry.getValue();
+						incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0)/groupCount); 						
+					}
+					
+					//
+				}
+				
 			}
-			incidenceOrPrevalenceMap.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap);
+			incidenceOrPrevalenceMapOld.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap);
+			incidenceOrPrevalenceMap.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap2);
 		}
+		//incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMapOld);
 		incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 		return true;
 	}

@@ -87,8 +87,11 @@ public class HIFTaskRunnable implements Runnable {
 			ArrayList<HIFunction> hifBaselineList = new ArrayList<HIFunction>();
 			
 			// incidenceLists contains an array of incidence maps for each HIF
-			ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
-			ArrayList<Map<Long, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			//ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			//ArrayList<Map<Long, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			//YY:update incidence and prevalence key to include gender, race, ethnicity, and age range
+			ArrayList<Map<Long, Map<PopulationApi.DemographicGroup, Double>>> incidenceLists = new ArrayList<Map<Long, Map<PopulationApi.DemographicGroup, Double>>>();
+			ArrayList<Map<Long, Map<PopulationApi.DemographicGroup, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<PopulationApi.DemographicGroup, Double>>>();
 			
 			// incidenceCachepMap is used inside addIncidenceEntryGroups to avoid querying for datasets we already have
 			Map<String, Integer> incidenceCacheMap = new HashMap<String, Integer>();
@@ -270,10 +273,10 @@ public class HIFTaskRunnable implements Runnable {
 					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
-					Map<Long, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
-					Map<Long, Map<Integer, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
-					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
-					Map<Integer, Double> prevalenceCell = prevalenceMap.get(baselineEntry.getKey());
+					Map<Long, Map<PopulationApi.DemographicGroup, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
+					Map<Long, Map<PopulationApi.DemographicGroup, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
+					Map<PopulationApi.DemographicGroup, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
+					Map<PopulationApi.DemographicGroup, Double> prevalenceCell = prevalenceMap.get(baselineEntry.getKey());
 
 					/*
 					 * ACCUMULATE THE ESTIMATE FOR EACH AGE CATEGORY IN THIS CELL
@@ -290,12 +293,24 @@ public class HIFTaskRunnable implements Runnable {
 					for (GetPopulationRecord popCategory : populationCell) {
 						// <gridCellId, race, gender, ethnicity, agerange, pop>
 						Integer popAgeRange = popCategory.getAgeRangeId();
+						Integer popRace = popCategory.getRaceId();
+						Integer popEthnicity = popCategory.getEthnicityId();
+						Integer popGender = popCategory.getGenderId();
+						
+						PopulationApi.DemographicGroup demoGroup = new PopulationApi.DemographicGroup();
+						demoGroup.ageRangeId = popAgeRange;
+						demoGroup.raceId = popRace;
+						demoGroup.ethnicityId = popEthnicity;
+						demoGroup.genderId = popGender;
+												
 						
 						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
 							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
+							//YY: Incidence average is updated in addIncidenceOrPrevalenceEntryGroups. Need review.
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
-							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
-							prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popAgeRange, 0.0);
+							
+							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(demoGroup, 0.0);
+							prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(demoGroup, 0.0);
 							
 							totalPop += rangePop;
 
@@ -500,8 +515,8 @@ public class HIFTaskRunnable implements Runnable {
 			hif.totalDays = hif.endDay - hif.startDay + 1;
 		}
 	}
-
-	private ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
+	//YY: change to public so that it can be used when calculating incidence
+	public static ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
 		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = new ArrayList<HashMap<Integer, Double>>();
 		
 		// Get the full list of age ranges for the population
