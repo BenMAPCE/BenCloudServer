@@ -12,7 +12,8 @@ stages:
   - image_build
   - image_scan
   - application_scan
-  - deploy
+  - deploy_nonprod
+  - deploy_prod
 
 include:
   - remote: 'https://gitlab.com/prismacloud-public/shift-left/extension/-/raw/master/.pcs.gitlab-ci.yml'
@@ -34,6 +35,7 @@ build_jars:
   image: gradle:alpine
   tags:
     - benmapdevgitlab
+    - benmapstggitlab
   script:
     - gradle fatJar
     - gradle taskRunnerFatJar
@@ -56,6 +58,7 @@ build_server_image:
   stage: image_build
   tags:
     - benmapdevgitlab
+    - benmapstggitlab
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -70,6 +73,7 @@ build_runner_image:
   stage: image_build
   tags:
     - benmapdevgitlab
+    - benmapstggitlab
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -110,7 +114,7 @@ net_sparker:
     - echo "Simulate a NetSparker scan."
 
 deploy_testdev:
-  stage: deploy
+  stage: deploy_nonprod
   only: 
     - develop
   tags:
@@ -130,4 +134,26 @@ deploy_testdev:
     url: https://dev.bencloud-dev.aws.epa.gov/api
     kubernetes:
       namespace: benmap-dev
+
+deploy_staging:
+  stage: deploy_nonprod
+  only: 
+    - main
+  tags:
+    - benmapstggitlab
+  when: manual
+  image: dtzar/helm-kubectl
+  script:
+    - apk add gettext
+    - kubectl config set-cluster benmap-shared-stg00 --server="$KUBE_URL"
+    - kubectl config set-cluster benmap-shared-stg00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
+    - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
+    - kubectl config set-context default --cluster=benmap-shared-stg00 --user=gitlab --namespace="benmap-stg"
+    - kubectl config use-context default
+    - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
+  environment:
+    name: staging
+    url: https://stg.bencloud-stg.aws.epa.gov/api
+    kubernetes:
+      namespace: benmap-stg
 
