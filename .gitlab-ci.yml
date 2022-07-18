@@ -188,7 +188,7 @@ deploy_testdev:
     - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
     - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="benmap-dev"
     - kubectl config use-context default
-    - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
+    - envsubst < k8s/bencloud-dev-server.yml | kubectl apply -f -
   environment:
     name: testdev
     url: https://dev.bencloud-dev.aws.epa.gov/api
@@ -210,7 +210,7 @@ deploy_staging:
     - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
     - kubectl config set-context default --cluster=benmap-shared-stg00 --user=gitlab --namespace="benmap-stg"
     - kubectl config use-context default
-    - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
+    - envsubst < k8s/bencloud-stage-server.yml | kubectl apply -f -
   environment:
     name: staging
     url: https://stg.bencloud-stg.aws.epa.gov/api
