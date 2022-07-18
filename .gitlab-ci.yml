@@ -35,7 +35,7 @@ build_jars:
   image: gradle:alpine
   tags:
     - benmapdevgitlab
-    - benmapstggitlab
+    - benmapstagegitlab
   script:
     - gradle fatJar
     - gradle taskRunnerFatJar
@@ -58,7 +58,7 @@ build_server_image:
   stage: image_build
   tags:
     - benmapdevgitlab
-    - benmapstggitlab
+    - benmapstagegitlab
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -73,7 +73,7 @@ build_runner_image:
   stage: image_build
   tags:
     - benmapdevgitlab
-    - benmapstggitlab
+    - benmapstagegitlab
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -140,7 +140,7 @@ deploy_staging:
   only: 
     - main
   tags:
-    - benmapstggitlab
+    - benmapstagegitlab
   when: manual
   image: dtzar/helm-kubectl
   script:
