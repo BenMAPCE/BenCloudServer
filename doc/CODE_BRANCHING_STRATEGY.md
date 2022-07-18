@@ -1,6 +1,5 @@
 # Code Branching Strategy
 
-
 * BenMAP Cloud developers will create a personal developer branch for their work or, if preferred, use a feature branch for their work on a particularly large feature. Either way, this branch will be created from the default "develop" branch. Personal developer branches can be long-lived. Feature branches may be deleted after merging into develop branch.
     * Example personal developer branch: **develop-janderton**
     * Example feature branch referencing jira ticket: **develop-BCD-999**

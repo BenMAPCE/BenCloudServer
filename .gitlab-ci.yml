@@ -109,7 +109,7 @@ net_sparker:
   script:
     - echo "Simulate a NetSparker scan."
 
-deploy_development:
+deploy_testdev:
   stage: deploy
   only: 
     - develop
@@ -126,7 +126,7 @@ deploy_development:
     - kubectl config use-context default
     - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
   environment:
-    name: development
+    name: testdev
     url: https://dev.bencloud-dev.aws.epa.gov/api
     kubernetes:
       namespace: benmap-dev

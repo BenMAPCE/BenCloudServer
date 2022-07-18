@@ -1,18 +1,28 @@
 package gov.epa.bencloud.server;
 
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_QUEUE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_WORKER;
+
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import ch.qos.logback.classic.LoggerContext;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.tasks.model.TaskMessage;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class BenCloudTaskRunner {
@@ -65,13 +75,6 @@ public class BenCloudTaskRunner {
 		}
 
 		log.info("*** BenMAP Task Runner. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
-		log.info("Available processors (cores): " + Runtime.getRuntime().availableProcessors());
-		log.info("Free memory (MB): " + Runtime.getRuntime().freeMemory()/1024/1024);
-		
-	    long maxMemory = Runtime.getRuntime().maxMemory();
-	    log.info("Maximum memory (MB): " + (maxMemory == Long.MAX_VALUE ? "no limit" : maxMemory/1024/1024));
-	    log.info("Total memory available to JVM (MB): " + Runtime.getRuntime().totalMemory()/1024/1024);
-
 	    
 	    try {
 			Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
@@ -81,7 +84,28 @@ public class BenCloudTaskRunner {
 			} else if(task.getType().equalsIgnoreCase("HIF")) {
 				HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
 				ht.run();
-			} else if(task.getType().equalsIgnoreCase("Valuation")) {
+				
+				//After the HIFs are done, let's go ahead and look for any valuation tasks
+				Task childTask = TaskQueue.getChildValuationTaskFromQueueRecord(taskUuid);
+				if(childTask != null && childTask.getType().equalsIgnoreCase("Valuation")) {
+					//Switch the task worker to the valuation task
+					DSL.using(JooqUtil.getJooqConfiguration()).update(TASK_WORKER)
+					.set(TASK_WORKER.TASK_UUID, childTask.getUuid())
+					.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskRunnerUuid))
+					.execute();
+
+					//Start the valuation task
+					DSL.using(JooqUtil.getJooqConfiguration()).update(TASK_QUEUE)
+					.set(TASK_QUEUE.TASK_IN_PROCESS, true)
+					.set(TASK_QUEUE.TASK_STARTED_DATE, LocalDateTime.now())
+					.set(TASK_QUEUE.TASK_PERCENTAGE, 0)
+					.where(TASK_QUEUE.TASK_UUID.eq(childTask.getUuid()))
+					.execute();
+					
+					ValuationTaskRunnable vt = new ValuationTaskRunnable(childTask.getUuid(), taskRunnerUuid);
+					vt.run();	
+				}
+			} else if(task.getType().equalsIgnoreCase("Valuation")) {				
 				ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
 				vt.run();
 			} else {

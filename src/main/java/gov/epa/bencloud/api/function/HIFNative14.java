@@ -6,6 +6,6 @@ public class HIFNative14 implements HIFNative{
     
     @Override
     public double calculate(HIFArguments args) {
-        return (1.0 - (1.0 / Math.exp(args.beta * args.deltaQ))) * args.A * args.population * args.prevalence;
+        return (1.0 - (1.0 / Math.exp(args.beta * args.deltaQ))) * args.a * args.population * args.prevalence;
     }
 }

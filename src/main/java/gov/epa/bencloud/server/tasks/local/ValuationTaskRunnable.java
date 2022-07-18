@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.HIFApi;
+import gov.epa.bencloud.api.function.VFunction;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
@@ -65,6 +66,8 @@ public class ValuationTaskRunnable implements Runnable {
 	private boolean taskSuccessful = true;
 
 	public void run() {
+		log.info("Valuation Task Begin: " + taskUuid);
+		
 		ObjectMapper mapper = new ObjectMapper();
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 		final int maxRowsInMemory = 100000;
@@ -92,7 +95,7 @@ public class ValuationTaskRunnable implements Runnable {
 				return;
 			}
 			
-			List<Expression> valuationFunctionExpressionList = new ArrayList<Expression>();
+			List<VFunction> valuationFunctionList = new ArrayList<VFunction>();
 
 			List<Record> vfDefinitionList = new ArrayList<Record>();
 			ArrayList<double[]> vfBetaDistributionLists = new ArrayList<double[]>();
@@ -103,7 +106,7 @@ public class ValuationTaskRunnable implements Runnable {
 				if(!hifIdList.contains(vfConfig.hifId)) {
 					hifIdList.add(vfConfig.hifId);
 				}
-				valuationFunctionExpressionList.add(ValuationUtil.getFunctionExpression(vfConfig.vfId));
+				valuationFunctionList.add(ValuationUtil.getFunctionForVF(vfConfig.vfId));
 				
 				Record vfDefinition = ValuationUtil.getFunctionDefinition(vfConfig.vfId);
 				vfDefinitionList.add(vfDefinition);
@@ -186,22 +189,41 @@ public class ValuationTaskRunnable implements Runnable {
 							
 							double hifEstimate = hifResult.get(HIF_RESULT.RESULT).doubleValue();
 							
-							Expression valuationFunctionExpression = valuationFunctionExpressionList.get(vfIdx);
+							VFunction valuationFunction = valuationFunctionList.get(vfIdx);
 
 							Record vfDefinition = vfDefinitionList.get(vfIdx);
 							double[] betaDist = vfBetaDistributionLists.get(vfIdx);
 
 							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
+							valuationFunction.vfArguments.allGoodsIndex = inflationIndices.get("AllGoodsIndex");
+							valuationFunction.vfArguments.allGoodsIndex = inflationIndices.get("MedicalCostIndex");
+							valuationFunction.vfArguments.wageIndex = inflationIndices.get("WageIndex");
+
+							//TODO: Need to improve handling of variables
 							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
-								if(valuationFunctionExpression.getArgument(variable.getKey()) != null) {
-									valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(HIF_RESULT.GRID_CELL_ID), 0.0));		
+								if(variable.getKey().equalsIgnoreCase("median_income")) {
+									valuationFunction.vfArguments.medianIncome =  variable.getValue().getOrDefault(hifResult.get(HIF_RESULT.GRID_CELL_ID), 0.0);	
+									break;	
 								}
 							}
-							valuationFunctionExpression.setArgumentValue("AllGoodsIndex", inflationIndices.get("AllGoodsIndex"));
-							valuationFunctionExpression.setArgumentValue("MedicalCostIndex", inflationIndices.get("MedicalCostIndex"));
-							valuationFunctionExpression.setArgumentValue("WageIndex", inflationIndices.get("WageIndex"));
+							double valuationFunctionEstimate = 0.0;
+							if(valuationFunction.nativeFunction == null) {
+								Expression valuationFunctionExpression = valuationFunction.interpretedFunction;
+								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
+									if(valuationFunctionExpression.getArgument(variable.getKey()) != null) {
+										valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(HIF_RESULT.GRID_CELL_ID), 0.0));		
+									}
+								}
+								valuationFunctionExpression.setArgumentValue("AllGoodsIndex", valuationFunction.vfArguments.allGoodsIndex);
+								valuationFunctionExpression.setArgumentValue("MedicalCostIndex", valuationFunction.vfArguments.medicalCostIndex);
+								valuationFunctionExpression.setArgumentValue("WageIndex", valuationFunction.vfArguments.wageIndex);
+								valuationFunctionExpression.setArgumentValue("median_income", valuationFunction.vfArguments.medianIncome);
 
-							double valuationFunctionEstimate = valuationFunctionExpression.calculate();
+								valuationFunctionEstimate = valuationFunctionExpression.calculate();
+							} else {
+								valuationFunctionEstimate = valuationFunction.nativeFunction.calculate(valuationFunction.vfArguments);
+							}
+
 							valuationFunctionEstimate = valuationFunctionEstimate * incomeGrowthFactor * hifEstimate;
 							
 							DescriptiveStatistics distStats = new DescriptiveStatistics();
@@ -331,6 +353,7 @@ public class ValuationTaskRunnable implements Runnable {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
 			log.error("Task failed", e);
 		}
+		log.info("Valuation Task Complete: " + taskUuid);
 	}
 
 	private double[] getDistributionSamples(Record vfRecord) {
