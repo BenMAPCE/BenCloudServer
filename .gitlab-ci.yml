@@ -32,6 +32,8 @@ before_script:
 
 build_dev_jars:
   stage: code_build
+  only: 
+    - develop
   image: gradle:alpine
   tags:
     - benmapdevgitlab
@@ -55,6 +57,8 @@ build_dev_jars:
 
 build_stage_jars:
   stage: code_build
+  only: 
+    - main
   image: gradle:alpine
   tags:
     - benmapstagegitlab
@@ -78,6 +82,8 @@ build_stage_jars:
 
 build_dev_server_image:
   stage: image_build
+  only: 
+    - develop
   tags:
     - benmapdevgitlab
   image:
@@ -92,6 +98,8 @@ build_dev_server_image:
 
 build_stage_server_image:
   stage: image_build
+  only: 
+    - main
   tags:
     - benmapstagegitlab
   image:
@@ -106,6 +114,8 @@ build_stage_server_image:
 
 build_dev_runner_image:
   stage: image_build
+  only: 
+    - develop
   tags:
     - benmapdevgitlab
   image:
@@ -120,6 +130,8 @@ build_dev_runner_image:
 
 build_stage_runner_image:
   stage: image_build
+  only: 
+    - main
   tags:
     - benmapstagegitlab
   image:
