@@ -4,6 +4,10 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+/*
+ * Representation of a valuation configuration
+ */
+
 public class ValuationConfig {
 	public Integer hifId = null;
 	public Integer vfId = null;
@@ -18,10 +22,16 @@ public class ValuationConfig {
 		this.vfId = function.get("vf_id").asInt();
 	}
 	
+	/*
+	 * Default constructor
+	 */
 	public ValuationConfig() {
 		
 	}
 
+	/*
+	 * Returns a string representation of a valuation configuration
+	 */
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();

@@ -1,6 +1,5 @@
 package gov.epa.bencloud.server.tasks.local;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,9 +20,6 @@ import org.mariuszgromada.math.mxparser.mXparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.epa.bencloud.api.AirQualityApi;
@@ -36,10 +32,8 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.util.HIFUtil;
-import gov.epa.bencloud.server.database.PooledDataSource;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
+
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultRecord;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
@@ -47,12 +41,20 @@ import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
+/*
+ * Methods related to running HIF tasks.
+ */
 public class HIFTaskRunnable implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskRunnable.class);
 	
 	private String taskUuid;
 	private String taskWorkerUuid;
 
+	/**
+	 * Creates an HIFTaskRunnable object with the given taskUuid and taskWorkerUuid
+	 * @param taskUuid
+	 * @param taskWorkerUuid
+	 */
 	public HIFTaskRunnable(String taskUuid, String taskWorkerUuid) {
 		this.taskUuid = taskUuid;
 		this.taskWorkerUuid = taskWorkerUuid;
@@ -60,6 +62,15 @@ public class HIFTaskRunnable implements Runnable {
 
 	private boolean taskSuccessful = true;
 
+	/*
+	 * Runs the HIF task.
+	 * Loads the necessary air quality layers.
+	 * Loads the necessary incidence/prevalance data for each HIF.
+	 * Creates a normal distribution for each HIF, with mean = HIF beta and standard deviation = HIF p1_beta.
+	 * 	Splits the normal distribution into 20 slices, representing percentiles.
+	 * Loads the necessary population data for each HIF.
+	 * 
+	 */
 	public void run() {
 		
 		log.info("HIF Task Begin: " + taskUuid);
@@ -491,11 +502,16 @@ public class HIFTaskRunnable implements Runnable {
 		}
 	}
 
+	/**
+	 * Gets the full list of age ranges for the population.
+	 * For each hif, adds a map of the relevant age ranges and percentages.
+	 * @param hifTaskConfig
+	 * @return a list of maps with keys = population age range, 
+	 * 			and values = percentage of population in that age range that applies to a given HIF.
+	 */
 	private ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
 		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = new ArrayList<HashMap<Integer, Double>>();
 		
-		// Get the full list of age ranges for the population
-		// for each hif, add a map of the relevant age ranges and percentages
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 		
 		// We're getting the hifs from hifTaskConfig in the order they were originally placed

@@ -1,17 +1,9 @@
 package gov.epa.bencloud.server.routes;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.jooq.Record;
-import org.jooq.Result;
-import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import freemarker.template.Configuration;
-import gov.epa.bencloud.server.database.JooqUtil;
-import gov.epa.bencloud.server.util.FreeMarkerRenderUtil;
 import spark.Service;
 
 public class AdminRoutes extends RoutesBase {

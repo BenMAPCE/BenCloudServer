@@ -16,9 +16,17 @@ import freemarker.template.TemplateExceptionHandler;
 import spark.ModelAndView;
 import spark.template.freemarker.FreeMarkerEngine;
 
+/*
+ * Methods used for configuring and rendering freemarker resources.
+ */
 public class FreeMarkerRenderUtil {
 	private static final Logger log = LoggerFactory.getLogger(FreeMarkerRenderUtil.class);
 
+	/**
+	 * Creates a new file from the template path and sets the freemarker configuration parameters. 
+	 * @param templatePath
+	 * @return a Configuration object with the proper freemarker configuration parameters.
+	 */
 	public static Configuration configureFreemarker(String templatePath) {
 		
 		Configuration freeMarkerConfiguration = new Configuration(Configuration.VERSION_2_3_31);
@@ -40,6 +48,13 @@ public class FreeMarkerRenderUtil {
 		
 	}
 	
+	/**
+	 * 
+	 * @param freeMarkerConfiguration
+	 * @param model
+	 * @param templatePath
+	 * @return renders the model and view from the given model and template path.
+	 */
 	public static String render(
 			Configuration freeMarkerConfiguration, 
 			Map<String, Object> model, 
@@ -48,6 +63,7 @@ public class FreeMarkerRenderUtil {
 	    return new FreeMarkerEngine(freeMarkerConfiguration)
 	    		.render(new ModelAndView(model, templatePath));
 	}
+
 
 	public static void logPath(
 			HttpServletRequest httpServletRequest, 

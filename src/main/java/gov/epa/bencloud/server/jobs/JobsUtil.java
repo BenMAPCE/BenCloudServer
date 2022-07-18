@@ -12,8 +12,6 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import gov.epa.bencloud.server.database.PooledDataSource;
-
 public class JobsUtil {
 	private static final Logger log = LoggerFactory.getLogger(JobsUtil.class);
 	

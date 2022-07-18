@@ -19,9 +19,19 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import spark.Request;
 import spark.Response;
 
+/*
+ * Methods for retreiving data related to grid definitions.
+ */
 public class GridDefinitionApi {
 	private static final Logger log = LoggerFactory.getLogger(GridDefinitionApi.class);
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all grid definitions, ordered by grid definition name.
+	 */
 	public static Object getAllGridDefinitions(Request request, Response response, Optional<UserProfile> userProfile) {
 		UserProfile u = userProfile.get();
 
@@ -35,6 +45,11 @@ public class GridDefinitionApi {
 		return gridRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
+	/**
+	 * 
+	 * @param gridId
+	 * @return the grid definition name for the given grid definition id.
+	 */
 	public static String getGridDefinitionName(int gridId) {
 
 		Record1<String> gridRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -46,6 +61,11 @@ public class GridDefinitionApi {
 		return gridRecord.value1();
 	}
 	
+	/**
+	 * 
+	 * @param gridId
+	 * @return the grid definition name, column count, and row count for the given grid definition id.
+	 */
 	public static Record3<String, Integer, Integer> getGridDefinitionInfo(int gridId) {
 
 		Record3<String, Integer, Integer> gridRecord = DSL.using(JooqUtil.getJooqConfiguration())
