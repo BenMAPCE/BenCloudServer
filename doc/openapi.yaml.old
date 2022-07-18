@@ -1,0 +1,119 @@
+openapi: 3.0.0
+info:
+  title: BenMAP API
+  description: REST API support for benmap.epa.gov
+  version: 0.2.0
+servers:
+  - url: http://localhost:4567/api
+    description: Local development
+paths:
+  /grid-definitions:
+    get:
+      summary: Returns the list of grid definitions.
+      responses:
+        '200':
+          description: An array of grid-definitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 123
+                    name:
+                      type: string
+                      example: "CMAQ 12km Nation"
+                    col_count:
+                      type: integer
+                      example: 396
+                    row_count:
+                      type: integer
+                      example: 246
+                    is_admin_layer:
+                      type: string
+                      example: "F"
+                    draw_priority:
+                      type: integer
+                      example: 0
+                    outline_color:
+                      type: string
+                      example: "#000000"
+                    table_name:
+                      type: string
+                      example: "grids.us_cmaq_12km_nation"
+  /pollutants:
+    get:
+      summary: Returns the list of pollutants.
+      responses:
+        '200':
+          description: An array of pollutants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 123
+                    name:
+                      type: string
+                      example: "Ozone"
+                    observation_type:
+                      type: integer
+                      example: 0
+                    friendly_name:
+                      type: string
+                      example: "Ground-level ozone"
+                    help_text:
+                      type: string
+                      example: "Some help text"
+  /air-quality-data:
+    get:
+      summary: Returns the list of air quality surface definitions.
+      parameters:
+        - name: pollutantId
+          in: query
+          required: false
+          description: Optional filter by pollutant
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: An array of air quality layers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  filteredRecordsCount:
+                    type: integer
+                    example: 1
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 123
+                        name:
+                          type: string
+                        locked:
+                          type: boolean
+                        grid_definition_id:
+                          type: integer
+                        pollutant_id:
+                          type: integer
+                        pollutant_name:
+                          type: string
+                        pollutant_friendly_name:
+                          type: string
+                        grid_definition_name:
+                          type: string
+                        metric_statistics:
+                          type: object

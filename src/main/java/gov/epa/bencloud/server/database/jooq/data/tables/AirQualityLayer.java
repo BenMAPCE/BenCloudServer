@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row5;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -69,9 +69,14 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     public final TableField<AirQualityLayerRecord, Integer> GRID_DEFINITION_ID = createField(DSL.name("grid_definition_id"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>data.air_quality_layer.locked</code>.
+     * The column <code>data.air_quality_layer.user_id</code>.
      */
-    public final TableField<AirQualityLayerRecord, Boolean> LOCKED = createField(DSL.name("locked"), SQLDataType.BOOLEAN.defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
+    public final TableField<AirQualityLayerRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.share_scope</code>.
+     */
+    public final TableField<AirQualityLayerRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     private AirQualityLayer(Name alias, Table<AirQualityLayerRecord> aliased) {
         this(alias, aliased, null);
@@ -170,11 +175,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row5 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, String, Integer, Integer, Boolean> fieldsRow() {
-        return (Row5) super.fieldsRow();
+    public Row6<Integer, String, Integer, Integer, String, Short> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

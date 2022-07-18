@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row14;
+import org.jooq.Row15;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -54,12 +54,7 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     /**
      * The column <code>data.task_queue.task_id</code>.
      */
-    public final TableField<TaskQueueRecord, Long> TASK_ID = createField(DSL.name("task_id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
-
-    /**
-     * The column <code>data.task_queue.task_user_identifier</code>.
-     */
-    public final TableField<TaskQueueRecord, String> TASK_USER_IDENTIFIER = createField(DSL.name("task_user_identifier"), SQLDataType.CLOB, this, "");
+    public final TableField<TaskQueueRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
 
     /**
      * The column <code>data.task_queue.task_priority</code>.
@@ -70,6 +65,11 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
      * The column <code>data.task_queue.task_uuid</code>.
      */
     public final TableField<TaskQueueRecord, String> TASK_UUID = createField(DSL.name("task_uuid"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.task_queue.task_parent_uuid</code>.
+     */
+    public final TableField<TaskQueueRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
 
     /**
      * The column <code>data.task_queue.task_name</code>.
@@ -117,9 +117,14 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     public final TableField<TaskQueueRecord, LocalDateTime> TASK_STARTED_DATE = createField(DSL.name("task_started_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
     /**
-     * The column <code>data.task_queue.task_parent_uuid</code>.
+     * The column <code>data.task_queue.user_id</code>.
      */
-    public final TableField<TaskQueueRecord, String> TASK_PARENT_UUID = createField(DSL.name("task_parent_uuid"), SQLDataType.CLOB, this, "");
+    public final TableField<TaskQueueRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.task_queue.sharing_scope</code>.
+     */
+    public final TableField<TaskQueueRecord, Short> SHARING_SCOPE = createField(DSL.name("sharing_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     private TaskQueue(Name alias, Table<TaskQueueRecord> aliased) {
         this(alias, aliased, null);
@@ -165,8 +170,8 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     }
 
     @Override
-    public Identity<TaskQueueRecord, Long> getIdentity() {
-        return (Identity<TaskQueueRecord, Long>) super.getIdentity();
+    public Identity<TaskQueueRecord, Integer> getIdentity() {
+        return (Identity<TaskQueueRecord, Integer>) super.getIdentity();
     }
 
     @Override
@@ -201,11 +206,11 @@ public class TaskQueue extends TableImpl<TaskQueueRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row14 type methods
+    // Row15 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Long, String, Integer, String, String, String, String, String, Integer, String, Boolean, LocalDateTime, LocalDateTime, String> fieldsRow() {
-        return (Row14) super.fieldsRow();
+    public Row15<Integer, Integer, String, String, String, String, String, String, Integer, String, Boolean, LocalDateTime, LocalDateTime, String, Short> fieldsRow() {
+        return (Row15) super.fieldsRow();
     }
 }

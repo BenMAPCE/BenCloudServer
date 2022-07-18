@@ -2,6 +2,9 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.Optional;
+import java.util.Set;
+
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
@@ -9,23 +12,33 @@ import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
+
 import spark.Request;
 import spark.Response;
 
 public class CoreApi {
-
-	public static Object getTaskConfigs(Request request, Response response) {
+	private static final Logger log = LoggerFactory.getLogger(CoreApi.class);
+	
+	public static Object getTaskConfigs(Request request, Response response, Optional<UserProfile> userProfile) {
 		//TODO: Add type filter to select HIF or Valuation
 		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(TASK_CONFIG.asterisk())
 				.from(TASK_CONFIG)
+				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
 				.orderBy(TASK_CONFIG.NAME)
 				.fetch();
 		
@@ -34,7 +47,7 @@ public class CoreApi {
 	}
 	
 	//TODO: Add deleteTaskConfig, update?
-	public static String postTaskConfig(Request request, Response response) {
+	public static String postTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
 		ObjectMapper mapper = new ObjectMapper();
 		String body = request.body();
 		
@@ -59,15 +72,19 @@ public class CoreApi {
 		JSON params = JSON.json(jsonPost.get("parameters").toString());
 		
 		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
-		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS)
-		.values(name, type, params)
+		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
+		.values(name, type, params, userProfile.get().getId())
 		.returning(TASK_CONFIG.asterisk())
 		.fetchOne();
 		
 		return rec.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
-	public static Object getPurgeResults(Request req, Response res) {
+	public static Object getPurgeResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		// if(! isAdmin(userProfile)) {
+		// 	return false;
+		// }
+
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
 		create
@@ -82,6 +99,10 @@ public class CoreApi {
 		.truncate(TASK_COMPLETE)
 		.execute();
 		
+//		create
+//		.truncate(TASK_CONFIG)
+//		.execute();
+
 		create
 		.truncate(HIF_RESULT)
 		.execute();
@@ -110,5 +131,86 @@ public class CoreApi {
 		.execute("vacuum analyze");
 		
 		return true;
+	}
+
+	public static Boolean isAdmin(Optional<UserProfile> userOptionalProfile) {
+		UserProfile userProfile = userOptionalProfile.get();
+		if(userProfile == null) {
+			return false;
+		}
+
+		for (String role : userProfile.getRoles()) {
+			if(role.equalsIgnoreCase(Constants.ROLE_ADMIN)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static Boolean isUser(Optional<UserProfile> userOptionalProfile) {
+		UserProfile userProfile = userOptionalProfile.get();
+		if(userProfile == null) {
+			return false;
+		}
+
+		for (String role : userProfile.getRoles()) {
+			if(role.equalsIgnoreCase(Constants.ROLE_USER)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static Object getUserInfo(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
+
+		UserProfile userProfile = userOptionalProfile.get();
+
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode userNode = mapper.createObjectNode();
+
+		userNode.put(Constants.HEADER_USER_ID, userProfile.getId());
+		Object tmpDisplayName = userProfile.getAttribute(Constants.HEADER_DISPLAY_NAME);
+		Object tmpMail = userProfile.getAttribute(Constants.HEADER_MAIL);
+
+		userNode.put(Constants.HEADER_MAIL, tmpMail==null ? null : tmpMail.toString());
+
+		// We want displayname to always contains something useful.
+		// However, there is some inconsistency in the user object between EPA and login.gov logins that this code deals with
+		if(tmpDisplayName == null || tmpDisplayName.toString().isEmpty()) {
+			userNode.put(Constants.HEADER_DISPLAY_NAME, tmpMail==null ? null : tmpMail.toString());			
+		} else {
+			userNode.put(Constants.HEADER_DISPLAY_NAME, tmpDisplayName==null ? null : tmpDisplayName.toString());			
+		}
+			
+		ArrayNode rolesNode = userNode.putArray(Constants.HEADER_GROUPS);
+		for (String role : userProfile.getRoles()) {
+			rolesNode.add(role);
+		}
+		userNode.put("isAdmin", isAdmin(userOptionalProfile));
+		userNode.put("isUser", isUser(userOptionalProfile));
+
+		return userNode;
+	}
+
+	public static Object getFixHealthEffectGroupName(Request req, Response res, Optional<UserProfile> userProfile) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		create.update(HEALTH_IMPACT_FUNCTION_GROUP)
+			.set(HEALTH_IMPACT_FUNCTION_GROUP.NAME, "Results for Regulatory Analysis")
+			.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(7))
+			.execute();
+		
+		create.update(AIR_QUALITY_LAYER)
+		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Baseline")
+		.where(AIR_QUALITY_LAYER.ID.eq(6))
+		.execute();	
+		
+		create.update(AIR_QUALITY_LAYER)
+		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Implementation")
+		.where(AIR_QUALITY_LAYER.ID.eq(7))
+		.execute();			
+		
+		return "done";
 	}
 }

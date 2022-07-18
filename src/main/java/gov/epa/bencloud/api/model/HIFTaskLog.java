@@ -4,7 +4,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +49,7 @@ public class HIFTaskLog extends TaskLog {
         logMessages.add(dtf.format(LocalDateTime.now()) + ": " + message); 
 	}
 	
-	
-	@Override
-	public String toString() {
+	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		b.append("-------------------------------\n");
 		b.append("HEALTH IMPACT FUNCTION TASK LOG\n");
@@ -70,7 +70,7 @@ public class HIFTaskLog extends TaskLog {
 			.append("\n");
 		b.append("\n");
 
-		b.append(hifTaskConfig.toString());
+		b.append(hifTaskConfig.toString(userProfile));
 		
 		b.append("\nPROCESSING LOG\n\n");
 		for(String msg : logMessages) {

@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -33,6 +34,7 @@ import org.jooq.Record22;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +59,7 @@ import spark.Response;
 public class HIFApi {
 	private static final Logger log = LoggerFactory.getLogger(HIFApi.class);
 
-	public static void getHifResultContents(Request request, Response response) {
+	public static void getHifResultContents(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		 //*  :id (health impact function results dataset id (can also support task id))
 		 //*  gridId= (aggregate the results to another grid definition)
@@ -67,7 +69,8 @@ public class HIFApi {
 		 //*  sortBy=
 		 //*  descending=
 		 //*  filter=
-		 
+		
+		// TODO: Add user security enforcement
 		//TODO: Implement sortBy, descending, and filter
 		
 		String idParam = request.params("id");
@@ -175,11 +178,11 @@ public class HIFApi {
 		}
 	}
 	
-	public static void getHifResultExport(Request request, Response response) {
-		
+	public static void getHifResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
 		 //*  :id (health impact function results dataset id (can also support task id))
 		 //*  gridId= (aggregate the results to one or more grid definitions)
 		 
+		// TODO: Add user security enforcement
 		//TODO: Implement sortBy, descending, and filter
 		//TODO: I have (temporarily?) removed the paging and limit functionality. We will always give back all the rows.
 		
@@ -249,7 +252,7 @@ public class HIFApi {
 					hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
 					hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
 					hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
-					hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
+					//hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
 					hifResultRecords.field(GET_HIF_RESULTS.MEAN),
 					hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
 					DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
@@ -292,7 +295,7 @@ public class HIFApi {
 						}
 					}
 					//Remove percentiles by keeping all other fields
-					Result<?> hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
+					Result<?> hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26));
 			try {
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
 					hifRecordsClean.formatCSV(zipStream);
@@ -308,7 +311,7 @@ public class HIFApi {
 		try {
 			zipStream.putNextEntry(new ZipEntry(taskFileName + "_TaskLog.txt"));
 			HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(id);
-			zipStream.write(hifTaskLog.toString().getBytes());
+			zipStream.write(hifTaskLog.toString(userProfile).getBytes());
 			zipStream.closeEntry();
 			
 			zipStream.close();
@@ -320,9 +323,9 @@ public class HIFApi {
 		
 	}
 
-	public static Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
+	public static Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		Result<Record7<Integer, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
+		Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
 				HIF_RESULT.GRID_CELL_ID,
 				HIF_RESULT.GRID_COL,
 				HIF_RESULT.GRID_ROW,
@@ -342,7 +345,7 @@ public class HIFApi {
 
 	}
 	
-	public static Object getAllHealthImpactFunctions(Request request, Response response) {
+	public static Object getAllHealthImpactFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
@@ -364,7 +367,7 @@ public class HIFApi {
 		return hifRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
-	public static Object getAllHifGroups(Request request, Response response) {
+	public static Object getAllHifGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 			
 		int pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 		
@@ -387,7 +390,7 @@ public class HIFApi {
 		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
-	public static Object getSelectedHifGroups(Request request, Response response) {
+	public static Object getSelectedHifGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		String idsParam = request.params("ids");
 		int popYear = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("popYear"), 0);
@@ -539,7 +542,7 @@ public class HIFApi {
 		return aqId.value1();
 	}
 	
-	public static Object getHealthImpactFunction(Request request, Response response) {
+	public static Object getHealthImpactFunction(Request request, Response response, Optional<UserProfile> userProfile) {
 		String id = request.params("id");
 		
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
@@ -608,7 +611,7 @@ public class HIFApi {
 		return hifResultCount.value1().intValue();
 	}
 
-	public static Object getHifResultDatasets(Request request, Response response) {
+	public static Object getHifResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 		Result<Record> hifDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HIF_RESULT_DATASET.asterisk())
 				.from(HIF_RESULT_DATASET)
@@ -619,7 +622,7 @@ public class HIFApi {
 		return hifDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
-	public static Object getHifResultDatasetFunctions(Request request, Response response) {
+	public static Object getHifResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
 				

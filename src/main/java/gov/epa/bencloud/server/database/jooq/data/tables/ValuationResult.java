@@ -76,7 +76,7 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     /**
      * The column <code>data.valuation_result.grid_cell_id</code>.
      */
-    public final TableField<ValuationResultRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<ValuationResultRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.valuation_result.population</code>.
@@ -192,7 +192,7 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Integer, Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
+    public Row14<Integer, Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
         return (Row14) super.fieldsRow();
     }
 }

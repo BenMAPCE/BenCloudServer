@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -22,6 +23,7 @@ import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record21;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +43,7 @@ import spark.Response;
 public class ValuationApi {
 	private static final Logger log = LoggerFactory.getLogger(ValuationApi.class);
 	
-	public static void getValuationResultContents(Request request, Response response) {
+	public static void getValuationResultContents(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		 //*  :id (valuation results dataset id)
 		 //*  gridId= (aggregate the results to another grid definition)
@@ -52,8 +54,9 @@ public class ValuationApi {
 		 //*  sortBy=
 		 //*  descending=
 		 //*  filter=
-		 
-		//TODO: Implement sortBy, descending, and filter
+
+		// TODO: Add user security enforcement 
+		// TODO: Implement sortBy, descending, and filter
 		
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);	
@@ -148,11 +151,11 @@ public class ValuationApi {
 		
 	}
 	
-	public static void getValuationResultExport(Request request, Response response) {
+	public static void getValuationResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		 //*  :id (valuation results dataset id)
 		 //*  gridId= (aggregate the results to another grid definition)
-		 
+		// TODO: Add user security enforcement 		 
 		
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
@@ -300,7 +303,7 @@ public class ValuationApi {
 		return valuationResultDataset.getId();
 	}
 
-	public static Object getAllValuationFunctions(Request request, Response response) {
+	public static Object getAllValuationFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 
 		Result<Record> valuationRecords = null;
 		try {
@@ -322,7 +325,7 @@ public class ValuationApi {
 		return valuationRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
-	public static Object getValuationResultDatasets(Request request, Response response) {
+	public static Object getValuationResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 		Result<Record> valuationDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(VALUATION_RESULT_DATASET.asterisk())
 				.from(VALUATION_RESULT_DATASET)
@@ -333,7 +336,7 @@ public class ValuationApi {
 		return valuationDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
-	public static Object getValuationResultDatasetFunctions(Request request, Response response) {
+	public static Object getValuationResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
 		

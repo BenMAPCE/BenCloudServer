@@ -14,7 +14,7 @@ import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row8;
+import org.jooq.Row10;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -85,6 +85,16 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
      * The column <code>data.hif_result_dataset.task_log</code>.
      */
     public final TableField<HifResultDatasetRecord, JSON> TASK_LOG = createField(DSL.name("task_log"), SQLDataType.JSON, this, "");
+
+    /**
+     * The column <code>data.hif_result_dataset.user_id</code>.
+     */
+    public final TableField<HifResultDatasetRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.hif_result_dataset.sharing_scope</code>.
+     */
+    public final TableField<HifResultDatasetRecord, Short> SHARING_SCOPE = createField(DSL.name("sharing_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     private HifResultDataset(Name alias, Table<HifResultDatasetRecord> aliased) {
         this(alias, aliased, null);
@@ -161,11 +171,11 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row8 type methods
+    // Row10 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, String, String, Integer, Integer, Integer, Integer, JSON> fieldsRow() {
-        return (Row8) super.fieldsRow();
+    public Row10<Integer, String, String, Integer, Integer, Integer, Integer, JSON, String, Short> fieldsRow() {
+        return (Row10) super.fieldsRow();
     }
 }

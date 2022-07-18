@@ -166,3 +166,6 @@ bencloud-local.properties
 .java-version
 *.log
 *.log.zip
+settings.json
+.vscode
+BENMAP50.FDB

@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.PopulationApi;
+import gov.epa.bencloud.api.function.HIFunction;
 import gov.epa.bencloud.api.model.AirQualityCell;
 import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.HIFConfig;
@@ -61,7 +62,7 @@ public class HIFTaskRunnable implements Runnable {
 
 	public void run() {
 		
-		log.info("Task Begin: " + taskUuid);
+		log.info("HIF Task Begin: " + taskUuid);
 		ObjectMapper mapper = new ObjectMapper();
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 		final int maxRowsInMemory = 100000;
@@ -79,15 +80,15 @@ public class HIFTaskRunnable implements Runnable {
 			
 			//TODO: This will need to change as we start supporting more metrics within a single AQ layer.
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
-			Map<Integer, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
-			Map<Integer, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
+			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
+			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
 			
-			ArrayList<Expression> hifFunctionExpressionList = new ArrayList<Expression>();
-			ArrayList<Expression> hifBaselineExpressionList = new ArrayList<Expression>();
+			ArrayList<HIFunction> hifFunctionList = new ArrayList<HIFunction>();
+			ArrayList<HIFunction> hifBaselineList = new ArrayList<HIFunction>();
 			
 			// incidenceLists contains an array of incidence maps for each HIF
-			ArrayList<Map<Integer, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
-			ArrayList<Map<Integer, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Integer, Map<Integer, Double>>>();
+			ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			ArrayList<Map<Long, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
 			
 			// incidenceCachepMap is used inside addIncidenceEntryGroups to avoid querying for datasets we already have
 			Map<String, Integer> incidenceCacheMap = new HashMap<String, Integer>();
@@ -109,9 +110,9 @@ public class HIFTaskRunnable implements Runnable {
 				
 				TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 
-				Expression[] e = HIFUtil.getFunctionAndBaselineExpression(hif.hifId);
-				hifFunctionExpressionList.add(e[0]);
-				hifBaselineExpressionList.add(e[1]);
+				HIFunction[] f = HIFUtil.getFunctionsForHIF(hif.hifId);
+				hifFunctionList.add(f[0]);
+				hifBaselineList.add(f[1]);
 				
 				Record h = HIFUtil.getFunctionDefinition(hif.hifId);
 				hif.hifRecord = h.intoMap();
@@ -152,7 +153,7 @@ public class HIFTaskRunnable implements Runnable {
 			ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = getPopAgeRangeMapping(hifTaskConfig);
 			
 			// Load the population dataset
-			Map<Integer, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig);
+			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig);
 
 			// Load data for the selected HIFs
 			// Determine the race/gender/ethnicity groups and age ranges needed for the
@@ -179,7 +180,11 @@ public class HIFTaskRunnable implements Runnable {
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
-			for (Entry<Integer, AirQualityCell> baselineEntry : baseline.entrySet()) {
+			//TODO: Can we improve performance by moving parallelism to the outer loop?
+			// Maybe for each HIF, for each cell...
+			// That will make it more challenging to track progress. Maybe maintain a process counter in each hifConfig
+			// and then put hif at idx=1 in charge of updating the task queue?
+			for (Entry<Long, AirQualityCell> baselineEntry : baseline.entrySet()) {
 				// updating task percentage
 				int currentPct = Math.round(currentCell * 100 / totalCells);
 				currentCell++;
@@ -207,8 +212,8 @@ public class HIFTaskRunnable implements Runnable {
 				 */
 							
 				hifTaskConfig.hifs.parallelStream().forEach((hifConfig) -> {
-					Expression hifFunctionExpression = hifFunctionExpressionList.get(hifConfig.arrayIdx);
-					Expression hifBaselineExpression = hifBaselineExpressionList.get(hifConfig.arrayIdx);
+					HIFunction hifFunction = hifFunctionList.get(hifConfig.arrayIdx);
+					HIFunction hifBaselineFunction = hifBaselineList.get(hifConfig.arrayIdx);
 
 					Map<String, Object> hifRecord = hifConfig.hifRecord;
 					double[] betaDist = hifBetaDistributionLists.get(hifConfig.arrayIdx);
@@ -229,11 +234,6 @@ public class HIFTaskRunnable implements Runnable {
 					if((int)hifRecord.get("metric_statistic") == 0) { // NONE
 						seasonalScalar = hifConfig.totalDays.doubleValue();
 					}
-					// If we have variable values, grab them for use in the standard deviation calc below. 
-					// Else, set to 1 so they won't have any effect.
-					//Double varA = hifDefinition.getValA().doubleValue() != 0 ? hifDefinition.getValA().doubleValue() : 1.0;
-					//Double varB = hifDefinition.getValB().doubleValue() != 0 ? hifDefinition.getValB().doubleValue() : 1.0;
-					//Double varC = hifDefinition.getValC().doubleValue() != 0 ? hifDefinition.getValC().doubleValue() : 1.0;
 					
 					double beta = ((Double) hifRecord.get("beta")).doubleValue();
 
@@ -242,19 +242,36 @@ public class HIFTaskRunnable implements Runnable {
 					// Normal operation in BenCloud will use all doubles but, during validation with BenMAP results, it may be useful to preserve the legacy behavior
 					baselineValue = hifTaskConfig.preserveLegacyBehavior ? (float)baselineValue : baselineValue;
 					scenarioValue = hifTaskConfig.preserveLegacyBehavior ? (float)scenarioValue : scenarioValue;
-					double deltaQ = baselineValue - scenarioValue;					
-					
-					hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifFunctionExpression.setArgumentValue("Q0", baselineValue);
-					hifFunctionExpression.setArgumentValue("Q1", scenarioValue);
+					double deltaQ = baselineValue - scenarioValue;	
 
-					hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-					hifBaselineExpression.setArgumentValue("Q0", baselineValue);
-					hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
+					Expression hifFunctionExpression = null;
+					Expression hifBaselineExpression = null;
+					
+					if(hifFunction.nativeFunction == null) {
+						hifFunctionExpression = hifFunction.interpretedFunction;
+						hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
+						hifFunctionExpression.setArgumentValue("Q0", baselineValue);
+						hifFunctionExpression.setArgumentValue("Q1", scenarioValue);
+					} else {
+						hifFunction.hifArguments.deltaQ = deltaQ;
+						hifFunction.hifArguments.q0 = baselineValue;
+						hifFunction.hifArguments.q1 = scenarioValue;
+					}
+
+					if(hifBaselineFunction.nativeFunction == null) {
+						hifBaselineExpression = hifBaselineFunction.interpretedFunction;
+						hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
+						hifBaselineExpression.setArgumentValue("Q0", baselineValue);
+						hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
+					} else {
+						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
+						hifBaselineFunction.hifArguments.q0 = baselineValue;
+						hifBaselineFunction.hifArguments.q1 = scenarioValue;
+					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
-					Map<Integer, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
-					Map<Integer, Map<Integer, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
+					Map<Long, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
+					Map<Long, Map<Integer, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
 					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
 					Map<Integer, Double> prevalenceCell = prevalenceMap.get(baselineEntry.getKey());
 
@@ -275,27 +292,51 @@ public class HIFTaskRunnable implements Runnable {
 						Integer popAgeRange = popCategory.getAgeRangeId();
 						
 						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
+							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
 							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
 							prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popAgeRange, 0.0);
 							
 							totalPop += rangePop;
 
-							hifFunctionExpression.setArgumentValue("BETA", beta);
-							hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
-							hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
-							hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
-							hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
-							
-							for(int i=0; i < resultPercentiles.length; i++) {
-								hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
-								resultPercentiles[i] += hifFunctionExpression.calculate() * seasonalScalar;
+							if(hifFunction.nativeFunction == null) {
+								hifFunctionExpression.setArgumentValue("BETA", beta);
+								hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
+								hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
+								hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
+								
+								hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
+								for(int i=0; i < resultPercentiles.length; i++) {
+									hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
+									resultPercentiles[i] += hifFunctionExpression.calculate() * seasonalScalar;
+								}
+							} else {
+								hifFunction.hifArguments.beta = beta;
+								hifFunction.hifArguments.incidence = incidence;
+								hifFunction.hifArguments.prevalence = prevalence;
+								hifFunction.hifArguments.population = rangePop;
+
+								hifFunctionEstimate += hifFunction.nativeFunction.calculate(hifFunction.hifArguments) * seasonalScalar;
+								for(int i=0; i < resultPercentiles.length; i++) {
+									hifFunction.hifArguments.beta = betaDist[i];								
+									resultPercentiles[i] += hifFunction.nativeFunction.calculate(hifFunction.hifArguments) * seasonalScalar;
+								}
 							}
-							
-							hifBaselineExpression.setArgumentValue("INCIDENCE", incidence);
-							hifBaselineExpression.setArgumentValue("PREVALENCE", prevalence);
-							hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
-							hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
+
+							if(hifBaselineFunction.nativeFunction == null) {
+								hifBaselineExpression.setArgumentValue("INCIDENCE", incidence);
+								hifBaselineExpression.setArgumentValue("PREVALENCE", prevalence);
+								hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
+								
+								hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
+							} else {
+								hifBaselineFunction.hifArguments.incidence = incidence;
+								hifBaselineFunction.hifArguments.prevalence = prevalence;
+								hifBaselineFunction.hifArguments.population = rangePop;
+
+								hifBaselineEstimate += hifBaselineFunction.nativeFunction.calculate(hifBaselineFunction.hifArguments) * seasonalScalar;
+							}
+
 						}
 					}
 					// This can happen if we're running multiple functions but we don't have any
@@ -363,13 +404,14 @@ public class HIFTaskRunnable implements Runnable {
 			hifTaskLog.setSuccess(true);
 			hifTaskLog.setDtEnd(LocalDateTime.now());
 			HIFUtil.storeTaskLog(hifTaskLog);
+			
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
 			log.error("Task failed", e);
 		}
-		log.info("Task Complete: " + taskUuid);
+		log.info("HIF Task Complete: " + taskUuid);
 	}
 
 	private void updateHifConfigValues(HIFConfig hif, Record h) {
@@ -456,22 +498,48 @@ public class HIFTaskRunnable implements Runnable {
 		// for each hif, add a map of the relevant age ranges and percentages
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 		
-		for(HIFConfig hif : hifTaskConfig.hifs) {
+		// We're getting the hifs from hifTaskConfig in the order they were originally placed
+		for(int idx = 0; idx < hifTaskConfig.hifs.size(); idx++) {
+			HIFConfig hif = null;
+			
+			// Find the hif with arrayIdx = idx
+			for(int i = 0; i < hifTaskConfig.hifs.size(); i ++) {
+				if(hifTaskConfig.hifs.get(i).arrayIdx == idx) {
+					hif = hifTaskConfig.hifs.get(i);
+					break;
+				}
+			}
+			
 			HashMap<Integer, Double> hifPopAgeRanges = new HashMap<Integer, Double>();
 			for(Record3<Integer, Short, Short> ageRange : popAgeRanges) {
 				Integer ageRangeId = ageRange.value1();
 				Short startAge = ageRange.value2();
 				Short endAge = ageRange.value3();
 				
-				if(hif.startAge <= startAge && hif.endAge >= endAge) {
-					// population age range is fully contained in the HIF age range
-					hifPopAgeRanges.put(ageRangeId, 1.0);
+				if(hif.startAge <= endAge && hif.endAge >= startAge) {
+					if ((startAge >= hif.startAge || hif.startAge == -1) && (endAge <= hif.endAge || hif.endAge == -1)) {
+						// The population age range is fully contained in the hif's age range
+						hifPopAgeRanges.put(ageRangeId, 1.0);
+					}
+					else
+					{
+						// calculate the percentage of the population age range that falls within the hif's age range
+						double dDiv = 1;
+						if (startAge < hif.startAge) {
+							dDiv = (double)(endAge - hif.startAge + 1) / (double)(endAge - startAge + 1);
+							if (endAge > hif.endAge) {
+								dDiv = (double)(hif.endAge - hif.startAge + 1) / (double)(endAge - startAge + 1);
+							}
+						} else if (endAge > hif.endAge) {
+							dDiv = (double)(hif.endAge - startAge + 1) / (double)(endAge - startAge + 1);
+						}
+						hifPopAgeRanges.put(ageRangeId, dDiv);
+					}
 				}
-				//TODO: Handle partial overlap here
 			}
-			hifPopAgeRangeMapping.add(hifPopAgeRanges);
+			hifPopAgeRangeMapping.add(hifPopAgeRanges);	
 		}
-		
+
 		return hifPopAgeRangeMapping;
 	}
 	

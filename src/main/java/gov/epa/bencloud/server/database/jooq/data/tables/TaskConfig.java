@@ -14,7 +14,7 @@ import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row4;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -65,6 +65,16 @@ public class TaskConfig extends TableImpl<TaskConfigRecord> {
      * The column <code>data.task_config.parameters</code>.
      */
     public final TableField<TaskConfigRecord, JSON> PARAMETERS = createField(DSL.name("parameters"), SQLDataType.JSON, this, "");
+
+    /**
+     * The column <code>data.task_config.user_id</code>.
+     */
+    public final TableField<TaskConfigRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.task_config.sharing_scope</code>.
+     */
+    public final TableField<TaskConfigRecord, Short> SHARING_SCOPE = createField(DSL.name("sharing_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     private TaskConfig(Name alias, Table<TaskConfigRecord> aliased) {
         this(alias, aliased, null);
@@ -141,11 +151,11 @@ public class TaskConfig extends TableImpl<TaskConfigRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row4 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<Integer, String, String, JSON> fieldsRow() {
-        return (Row4) super.fieldsRow();
+    public Row6<Integer, String, String, JSON, String, Short> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

@@ -456,7 +456,7 @@ public class Tables {
     public static Result<GetVariableRecord> GET_VARIABLE(
           Configuration configuration
         , Integer _DatasetId
-        , String[] _VariableName
+        , String _VariableName
         , Integer _OutputGridDefinitionId
     ) {
         return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
@@ -471,7 +471,7 @@ public class Tables {
      */
     public static GetVariable GET_VARIABLE(
           Integer _DatasetId
-        , String[] _VariableName
+        , String _VariableName
         , Integer _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(
@@ -486,7 +486,7 @@ public class Tables {
      */
     public static GetVariable GET_VARIABLE(
           Field<Integer> _DatasetId
-        , Field<String[]> _VariableName
+        , Field<String> _VariableName
         , Field<Integer> _OutputGridDefinitionId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetVariable.GET_VARIABLE.call(

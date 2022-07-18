@@ -1,0 +1,2 @@
+-- In this release, we replaced the entire database due to a complete migration of data from BenMAP-CE 1.5.8.17
+-- db version is 2

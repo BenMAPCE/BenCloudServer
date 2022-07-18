@@ -2,11 +2,14 @@ package gov.epa.bencloud.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
+import org.pac4j.core.config.Config;
+import org.pac4j.core.context.HttpConstants;
+import org.pac4j.sparkjava.SecurityFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import freemarker.template.Configuration;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.jobs.JobsUtil;
@@ -16,15 +19,13 @@ import gov.epa.bencloud.server.routes.PublicRoutes;
 import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.FreeMarkerRenderUtil;
+import spark.Request;
 import spark.Service;
 import spark.Spark;
 
 public class BenCloudServer {
-
-	public static final String version = "0.1";
 	
 	private static final Logger log = LoggerFactory.getLogger(BenCloudServer.class);
-    
 	private static String applicationPath;
 	
 	public static void main(String[] args) {
@@ -52,8 +53,6 @@ public class BenCloudServer {
 		log.debug("max Task Workers: " + TaskWorker.getMaxTaskWorkers());
 		
 		ApplicationUtil.configureLogging();
-		LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
-		Logger logger = loggerContext.getLogger("gov.epa.bencloud");
 			
 		try {
 			applicationPath = new File(".").getCanonicalPath();
@@ -65,6 +64,8 @@ public class BenCloudServer {
 				applicationPath + ApplicationUtil.getProperties().getProperty(
 						"template.files.directory"));
 
+
+
 		Service benCloudService = Service.ignite()
 				.port(Integer.parseInt(ApplicationUtil.getProperty("server.port")))
 				.threadPool(20);
@@ -75,44 +76,66 @@ public class BenCloudServer {
 		benCloudService.options("/*",
 		        (request, response) -> {
 
-		            String accessControlRequestHeaders = request
-		                    .headers("Access-Control-Request-Headers");
+		            String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
 		            if (accessControlRequestHeaders != null) {
-		                response.header("Access-Control-Allow-Headers",
-		                        accessControlRequestHeaders);
+		                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
 		            }
 
-		            String accessControlRequestMethod = request
-		                    .headers("Access-Control-Request-Method");
+		            String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
 		            if (accessControlRequestMethod != null) {
-		                response.header("Access-Control-Allow-Methods",
-		                        accessControlRequestMethod);
+		                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
 		            }
 
 		            return "OK";
 		        });
 
-		benCloudService.before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
-		
+		final Config config = new BenCloudConfigFactory().build();
+
+		benCloudService.before((request, response) -> {
+			response.header("Access-Control-Allow-Origin", "*");
+			
+			log.debug("path: {} {}, uid: {}, ismemberof: {}", request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
+
+			//Exclude OPTIONS calls from security filter
+			if(!request.requestMethod().equalsIgnoreCase(HttpConstants.HTTP_METHOD.OPTIONS.name())) {
+				new SecurityFilter(config, "HeaderClient", "user").handle(request, response);
+			}
+		});
+
 		Spark.exception(Exception.class, (exception, request, response) -> {
 		    log.error("Spark exception thrown", exception);
 		});
-		
+
 		new PublicRoutes(benCloudService, freeMarkerConfiguration);
 		new AdminRoutes(benCloudService, freeMarkerConfiguration);
 		new ApiRoutes(benCloudService, freeMarkerConfiguration);
 		
 		JobsUtil.startJobScheduler();
 		
-		// TODO: Add logic to check database version in settings table
-		// and log it as info below. 
-		// At some point, we might want to add a static final db version in here so we can throw an error if the db version is lower than exported.
 		int dbVersion = ApiUtil.getDatabaseVersion();
-		
-		log.info("*** BenCloud API Server. Code version " + version + ", database version " + dbVersion + " ***");
+		if(ApiUtil.minimumDbVersion > dbVersion) {
+			log.error("STARTUP FAILED: Database version is " + dbVersion + " but must be at least " + ApiUtil.minimumDbVersion);
+			System.exit(-1);
+		}
+
+		log.info("*** BenMAP API Server. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 
 	}
-
+	
+	public static String getPostParameterValue(Request req, String name) {
+		
+		String value = null;
+		
+		Map<String, String[]> params = req.raw().getParameterMap();
+		
+		for (Map.Entry<String, String[]> entry : params.entrySet()) {
+			if (entry.getKey().equals(name)) {
+				value = entry.getValue()[0];
+			}
+		}
+		
+		return value;
+	}
 	public static String getApplicationPath() {
 		return applicationPath;
 	}

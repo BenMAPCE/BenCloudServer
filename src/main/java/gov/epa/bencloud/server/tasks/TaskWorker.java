@@ -4,6 +4,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_QUEUE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_WORKER;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import org.jooq.Record;
@@ -13,12 +14,15 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.TaskWorkerRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.tasks.model.TaskMessage;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class TaskWorker {
@@ -27,7 +31,7 @@ public class TaskWorker {
 
 	public static int maxTaskWorkers = 0;
 
-	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 3; 
+	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 5; 
 
 	static {
 		maxTaskWorkers = Integer.parseInt(ApplicationUtil.getProperty("max.task.workers"));
@@ -86,8 +90,15 @@ public class TaskWorker {
 					.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskWorkerUuid))
 					.execute();
 
+
+					ObjectMapper mapper = new ObjectMapper();
+					ArrayList<TaskMessage> messages = new ArrayList<TaskMessage>();
+					messages.add(new TaskMessage("active", "Preparing task runner"));
+					
 					DSL.using(ctx).update(TASK_QUEUE)
 					.set(TASK_QUEUE.TASK_STARTED_DATE, LocalDateTime.now())
+					.set(TASK_QUEUE.TASK_PERCENTAGE, 0)
+					.set(TASK_QUEUE.TASK_MESSAGE, mapper.writeValueAsString(messages))
 					.where(TASK_QUEUE.TASK_UUID.eq(task.getUuid()))
 					.execute();
 										

@@ -4,6 +4,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jooq.JSONFormat;
 import org.jooq.Record1;
@@ -12,6 +13,7 @@ import org.jooq.Record4;
 import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
@@ -19,11 +21,12 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
+import spark.Request;
 import spark.Response;
 
 public class PopulationApi {
 
-	public static Map<Integer, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
+	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
 
 		//TODO: Need to grow the population using the selected popYear
 		//NOTE: For now, we're focusing on age groups and not dealing with race, gender, ethnicity
@@ -33,7 +36,7 @@ public class PopulationApi {
         Integer arrAgeRangeIds[] = new Integer[ageRangeIds.size()];
         arrAgeRangeIds = ageRangeIds.toArray(arrAgeRangeIds);
         
-		Map<Integer, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
+		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
 				null, 
@@ -101,7 +104,7 @@ public class PopulationApi {
 		return popAgeRanges;
 	}
 	
-	public static Object getAllPopulationDatasets(Response response) {
+	public static Object getAllPopulationDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 
 			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(POPULATION_DATASET.NAME,

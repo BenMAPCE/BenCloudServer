@@ -68,4 +68,5 @@
    <logger name="gov.epa.bencloud" additivity="false" level="debug">
     <appender-ref ref="FILE" />
   </logger>
+  
 </configuration>

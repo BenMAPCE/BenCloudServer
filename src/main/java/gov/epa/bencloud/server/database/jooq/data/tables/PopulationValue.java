@@ -5,15 +5,10 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 
 
 import gov.epa.bencloud.server.database.jooq.data.Data;
-import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationValueRecord;
-
-import java.util.Arrays;
-import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row3;
@@ -55,7 +50,7 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
     /**
      * The column <code>data.population_value.grid_cell_id</code>.
      */
-    public final TableField<PopulationValueRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<PopulationValueRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.population_value.pop_value</code>.
@@ -101,11 +96,6 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
     }
 
     @Override
-    public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.POPULATION_VALUE_POP_ENTRY_ID_IDX);
-    }
-
-    @Override
     public PopulationValue as(String alias) {
         return new PopulationValue(DSL.name(alias), this);
     }
@@ -136,7 +126,7 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Integer, Integer, Double> fieldsRow() {
+    public Row3<Integer, Long, Double> fieldsRow() {
         return (Row3) super.fieldsRow();
     }
 }

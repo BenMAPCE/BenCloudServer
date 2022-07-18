@@ -48,7 +48,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     /**
      * The column <code>data.get_variable.grid_cell_id</code>.
      */
-    public final TableField<GetVariableRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<GetVariableRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.get_variable.value</code>.
@@ -58,7 +58,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     private GetVariable(Name alias, Table<GetVariableRecord> aliased) {
         this(alias, aliased, new Field[] {
             DSL.val(null, SQLDataType.INTEGER),
-            DSL.val(null, SQLDataType.CLOB.getArrayDataType()),
+            DSL.val(null, SQLDataType.CLOB),
             DSL.val(null, SQLDataType.INTEGER)
         });
     }
@@ -124,7 +124,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<String, Integer, Double> fieldsRow() {
+    public Row3<String, Long, Double> fieldsRow() {
         return (Row3) super.fieldsRow();
     }
 
@@ -133,12 +133,12 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
      */
     public GetVariable call(
           Integer _DatasetId
-        , String[] _VariableName
+        , String _VariableName
         , Integer _OutputGridDefinitionId
     ) {
         GetVariable result = new GetVariable(DSL.name("get_variable"), null, new Field[] {
             DSL.val(_DatasetId, SQLDataType.INTEGER),
-            DSL.val(_VariableName, SQLDataType.CLOB.getArrayDataType()),
+            DSL.val(_VariableName, SQLDataType.CLOB),
             DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
         });
 
@@ -150,7 +150,7 @@ public class GetVariable extends TableImpl<GetVariableRecord> {
      */
     public GetVariable call(
           Field<Integer> _DatasetId
-        , Field<String[]> _VariableName
+        , Field<String> _VariableName
         , Field<Integer> _OutputGridDefinitionId
     ) {
         GetVariable result = new GetVariable(DSL.name("get_variable"), null, new Field[] {

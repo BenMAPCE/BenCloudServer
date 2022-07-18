@@ -8,11 +8,12 @@
 # https://github.com/gradle/gradle
 
 stages:
-  - Build
-  - Image
-  - Image Scan
-  - Application Scan
-  - Deployment
+  - code_build
+  - image_build
+  - image_scan
+  - application_scan
+  - deploy_nonprod
+  - deploy_prod
 
 include:
   - remote: 'https://gitlab.com/prismacloud-public/shift-left/extension/-/raw/master/.pcs.gitlab-ci.yml'
@@ -29,8 +30,10 @@ variables:
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
-Build BenCloud Jars:
-  stage: Build
+build_dev_jars:
+  stage: code_build
+  only: 
+    - develop
   image: gradle:alpine
   tags:
     - benmapdevgitlab
@@ -52,8 +55,35 @@ Build BenCloud Jars:
       - BenCloudTaskRunner.jar
       - bencloud-server.properties
 
-Build BenCloudServer Image:
-  stage: Image
+build_stage_jars:
+  stage: code_build
+  only: 
+    - main
+  image: gradle:alpine
+  tags:
+    - benmapstagegitlab
+  script:
+    - gradle fatJar
+    - gradle taskRunnerFatJar
+    - cp build/libs/BenCloudServer.jar BenCloudServer.jar
+    - cp build/libs/BenCloudTaskRunner.jar BenCloudTaskRunner.jar
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: push
+    paths:
+      - build
+      - .gradle
+  artifacts:
+    name: "$CI_COMMIT_REF_NAME"
+    paths:
+      - BenCloudServer.jar
+      - BenCloudTaskRunner.jar
+      - bencloud-server.properties
+
+build_dev_server_image:
+  stage: image_build
+  only: 
+    - develop
   tags:
     - benmapdevgitlab
   image:
@@ -63,12 +93,29 @@ Build BenCloudServer Image:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
-  #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloud Jars
+    - build_dev_jars
 
-Build BenCloudTaskRunner Image:
-  stage: Image
+build_stage_server_image:
+  stage: image_build
+  only: 
+    - main
+  tags:
+    - benmapstagegitlab
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
+  dependencies:
+    - build_stage_jars
+
+build_dev_runner_image:
+  stage: image_build
+  only: 
+    - develop
   tags:
     - benmapdevgitlab
   image:
@@ -78,12 +125,27 @@ Build BenCloudTaskRunner Image:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
-  #Declare the build job as a dependency so you have access to the artifacts created there.  Since the path to these artifacts is just a file name, the files will be available at the root level
   dependencies:
-    - Build BenCloud Jars
+    - build_dev_jars
 
-prisma-cloud-compute-scan:
-  stage: Image Scan
+build_stage_runner_image:
+  stage: image_build
+  only: 
+    - main
+  tags:
+    - benmapstagegitlab
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
+  dependencies:
+    - build_stage_jars
+
+prisma_cloud_compute_scan:
+  stage: image_scan
   extends:
     - .pcs_compute_scan
   tags:
@@ -101,8 +163,8 @@ prisma-cloud-compute-scan:
     - docker pull $prisma_cloud_scan_image
     - ./image_scan.sh  
 
-NetSparker:
-  stage: Application Scan
+net_sparker:
+  stage: application_scan
   tags:
     - devsecops-instance
   when: manual
@@ -111,8 +173,10 @@ NetSparker:
   script:
     - echo "Simulate a NetSparker scan."
 
-Deploy to Development:
-  stage: Deployment
+deploy_testdev:
+  stage: deploy_nonprod
+  only: 
+    - develop
   tags:
     - benmapdevgitlab
   when: manual
@@ -124,10 +188,32 @@ Deploy to Development:
     - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
     - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="benmap-dev"
     - kubectl config use-context default
-    - envsubst < k8s/bencloud-server.yml | kubectl apply -f -
+    - envsubst < k8s/bencloud-dev-server.yml | kubectl apply -f -
   environment:
     name: testdev
     url: https://dev.bencloud-dev.aws.epa.gov/api
     kubernetes:
       namespace: benmap-dev
+
+deploy_staging:
+  stage: deploy_nonprod
+  only: 
+    - main
+  tags:
+    - benmapstagegitlab
+  when: manual
+  image: dtzar/helm-kubectl
+  script:
+    - apk add gettext
+    - kubectl config set-cluster benmap-shared-stg00 --server="$KUBE_URL"
+    - kubectl config set-cluster benmap-shared-stg00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
+    - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
+    - kubectl config set-context default --cluster=benmap-shared-stg00 --user=gitlab --namespace="benmap-stg"
+    - kubectl config use-context default
+    - envsubst < k8s/bencloud-stage-server.yml | kubectl apply -f -
+  environment:
+    name: staging
+    url: https://stg.bencloud-stg.aws.epa.gov/api
+    kubernetes:
+      namespace: benmap-stg
 

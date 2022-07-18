@@ -64,7 +64,7 @@ public class AirQualityCell extends TableImpl<AirQualityCellRecord> {
     /**
      * The column <code>data.air_quality_cell.grid_cell_id</code>.
      */
-    public final TableField<AirQualityCellRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<AirQualityCellRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.air_quality_cell.metric_id</code>.
@@ -185,7 +185,7 @@ public class AirQualityCell extends TableImpl<AirQualityCellRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Double> fieldsRow() {
+    public Row8<Integer, Integer, Integer, Long, Integer, Integer, Integer, Double> fieldsRow() {
         return (Row8) super.fieldsRow();
     }
 }

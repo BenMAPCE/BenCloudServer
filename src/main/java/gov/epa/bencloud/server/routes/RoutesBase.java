@@ -3,14 +3,32 @@ package gov.epa.bencloud.server.routes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Optional;
 
+import org.pac4j.core.profile.CommonProfile;
+import org.pac4j.core.profile.ProfileManager;
+import org.pac4j.core.profile.UserProfile;
+import org.pac4j.jee.context.session.JEESessionStore;
+import org.pac4j.sparkjava.SparkWebContext;
+
+import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.server.util.ApplicationUtil;
 import spark.Request;
 import spark.Response;
 
 public class RoutesBase {
 
-	
+	protected Optional<UserProfile> getUserProfile(Request request, Response response) {
+			final SparkWebContext context = new SparkWebContext(request, response);
+			final ProfileManager manager = new ProfileManager(context, JEESessionStore.INSTANCE);
+			return manager.getProfile();
+
+			// UserProfile userProfile = new CommonProfile();
+			// userProfile.setId("TESTING");
+			// return Optional.of(userProfile);
+
+	}
+
 	protected List<String> getPostParametersNames(Request req) {
 	
 		Map<String, String[]> params = req.raw().getParameterMap();
@@ -58,18 +76,4 @@ public class RoutesBase {
 
 		return req.raw().getParameterMap();
 	}
-	
-	public static String getOrSetOrExtendCookie(Request req, Response res) {
-
-		String userIdentifier = req.cookie("bcoUserIdentifier");
-		if (null == userIdentifier) {
-			UUID uuid = UUID.randomUUID();
-			res.cookie("bcoUserIdentifier", uuid.toString(), 60 * 60 * 24 * 90);
-		} else {
-			res.cookie("bcoUserIdentifier", userIdentifier, 60 * 60 * 24 * 90);	
-		}
-		
-		return req.cookie("bcoUserIdentifier");
-	}
-
 }

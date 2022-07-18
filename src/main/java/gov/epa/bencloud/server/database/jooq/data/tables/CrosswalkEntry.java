@@ -65,7 +65,7 @@ public class CrosswalkEntry extends TableImpl<CrosswalkEntryRecord> {
     /**
      * The column <code>data.crosswalk_entry.source_grid_cell_id</code>.
      */
-    public final TableField<CrosswalkEntryRecord, Integer> SOURCE_GRID_CELL_ID = createField(DSL.name("source_grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<CrosswalkEntryRecord, Long> SOURCE_GRID_CELL_ID = createField(DSL.name("source_grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.crosswalk_entry.target_col</code>.
@@ -80,7 +80,7 @@ public class CrosswalkEntry extends TableImpl<CrosswalkEntryRecord> {
     /**
      * The column <code>data.crosswalk_entry.target_grid_cell_id</code>.
      */
-    public final TableField<CrosswalkEntryRecord, Integer> TARGET_GRID_CELL_ID = createField(DSL.name("target_grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<CrosswalkEntryRecord, Long> TARGET_GRID_CELL_ID = createField(DSL.name("target_grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.crosswalk_entry.percentage</code>.
@@ -161,7 +161,7 @@ public class CrosswalkEntry extends TableImpl<CrosswalkEntryRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Double> fieldsRow() {
+    public Row8<Integer, Integer, Integer, Long, Integer, Integer, Long, Double> fieldsRow() {
         return (Row8) super.fieldsRow();
     }
 }

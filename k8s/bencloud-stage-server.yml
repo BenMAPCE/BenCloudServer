@@ -14,20 +14,12 @@ spec:
     app: bencloud-server
 
 ---
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: api-service-account
-  namespace: benmap-dev
-
----
 # Currently very permissive. Need to refine
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: api-cluster-role
-  namespace: benmap-dev
+  namespace: benmap-stg
 rules:
   - apiGroups:
         - ""
@@ -68,22 +60,7 @@ kind: ClusterRoleBinding
 metadata:
   name: api-cluster-role-binding
 subjects:
-- namespace: benmap-dev 
-  kind: ServiceAccount
-  name: api-service-account 
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: api-cluster-role 
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: api-cluster-role-binding
-subjects:
-- namespace: benmap-dev 
+- namespace: benmap-stg
   kind: ServiceAccount
   name: default 
 roleRef:
@@ -97,7 +74,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bencloud-server
-  namespace: benmap-dev
+  namespace: benmap-stg
   annotations:
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
@@ -131,7 +108,7 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: 5G
+          memory: 4G
           cpu: 2
         livenessProbe:
          tcpSocket:
@@ -190,7 +167,7 @@ spec:
         - dev.bencloud-dev.aws.epa.gov
       secretName: bencloud-tls-secret
   rules:
-    - host: dev.bencloud-dev.aws.epa.gov
+    - host: stg.bencloud-stg.aws.epa.gov
       http:
         paths:
         - path: /api

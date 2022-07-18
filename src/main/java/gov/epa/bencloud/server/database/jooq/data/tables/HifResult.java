@@ -70,7 +70,7 @@ public class HifResult extends TableImpl<HifResultRecord> {
     /**
      * The column <code>data.hif_result.grid_cell_id</code>.
      */
-    public final TableField<HifResultRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<HifResultRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>data.hif_result.population</code>.
@@ -81,6 +81,21 @@ public class HifResult extends TableImpl<HifResultRecord> {
      * The column <code>data.hif_result.delta_aq</code>.
      */
     public final TableField<HifResultRecord, Double> DELTA_AQ = createField(DSL.name("delta_aq"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.hif_result.baseline_aq</code>.
+     */
+    public final TableField<HifResultRecord, Double> BASELINE_AQ = createField(DSL.name("baseline_aq"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.hif_result.scenario_aq</code>.
+     */
+    public final TableField<HifResultRecord, Double> SCENARIO_AQ = createField(DSL.name("scenario_aq"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.hif_result.incidence</code>.
+     */
+    public final TableField<HifResultRecord, Double> INCIDENCE = createField(DSL.name("incidence"), SQLDataType.DOUBLE, this, "");
 
     /**
      * The column <code>data.hif_result.result</code>.
@@ -121,21 +136,6 @@ public class HifResult extends TableImpl<HifResultRecord> {
      * The column <code>data.hif_result.percentiles</code>.
      */
     public final TableField<HifResultRecord, Double[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.FLOAT.getArrayDataType(), this, "");
-
-    /**
-     * The column <code>data.hif_result.baseline_aq</code>.
-     */
-    public final TableField<HifResultRecord, Double> BASELINE_AQ = createField(DSL.name("baseline_aq"), SQLDataType.DOUBLE, this, "");
-
-    /**
-     * The column <code>data.hif_result.scenario_aq</code>.
-     */
-    public final TableField<HifResultRecord, Double> SCENARIO_AQ = createField(DSL.name("scenario_aq"), SQLDataType.DOUBLE, this, "");
-
-    /**
-     * The column <code>data.hif_result.incidence</code>.
-     */
-    public final TableField<HifResultRecord, Double> INCIDENCE = createField(DSL.name("incidence"), SQLDataType.DOUBLE, this, "");
 
     private HifResult(Name alias, Table<HifResultRecord> aliased) {
         this(alias, aliased, null);
@@ -211,7 +211,7 @@ public class HifResult extends TableImpl<HifResultRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row18<Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[], Double, Double, Double> fieldsRow() {
+    public Row18<Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
         return (Row18) super.fieldsRow();
     }
 }

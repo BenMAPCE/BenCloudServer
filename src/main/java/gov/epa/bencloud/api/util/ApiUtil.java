@@ -1,14 +1,24 @@
 package gov.epa.bencloud.api.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.Part;
+
+import org.apache.commons.io.IOUtils;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
+
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import gov.epa.bencloud.api.HIFApi;
@@ -31,6 +41,8 @@ import spark.Response;
  */
 public class ApiUtil {
 
+	public static final String appVersion = "0.3.0";
+	public static final int minimumDbVersion = 3;
 	
 	/**
 	 * @param columnIdx
@@ -38,8 +50,8 @@ public class ApiUtil {
 	 * @return unique integer using the Cantor pairing function to combine column and row indices
 	 * https://en.wikipedia.org/wiki/Pairing_function
 	 */
-	public static int getCellId(int columnIdx, int rowIdx) {
-		return (int)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
+	public static long getCellId(int columnIdx, int rowIdx) {
+		return (long)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
 	}
 
 
@@ -117,9 +129,9 @@ public class ApiUtil {
 		return map;	
 	}
 	
-	public static Object deleteTaskResults(Request req, Response res) {
+	public static Object deleteTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		String uuid = req.params("uuid");
-		
+		// TODO: Add user security enforcement 		
 		Result<Record> completedTasks = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
 				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
@@ -138,7 +150,10 @@ public class ApiUtil {
 		return null;
 	}
 
-	public static Map<String, Map<Integer, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
+	// Note that this implementation is currently incomplete. 
+	// It will currently ONLY return data for the median_income variable. 
+	// It needs to be extended so it will look up each variable that is required.
+	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
 		 // Load list of functions from the database
 		
 		//TODO: Change this to only load what we need
@@ -147,18 +162,18 @@ public class ApiUtil {
 		//TODO: Temp override until we can improve variable selection
 		allVariableNames.removeIf(n -> (!n.equals("median_income")));
 		
-		HashMap<String, Map<Integer, Double>> variableMap = new HashMap<String, Map<Integer, Double>>();
+		HashMap<String, Map<Long, Double>> variableMap = new HashMap<String, Map<Long, Double>>();
 		
 		Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 				1, 
-				allVariableNames.toArray(new String[0]), 
+				allVariableNames.get(0), 
 				28);
 		//Look at all valuation functions to determine which variables are needed
 		for(String variableName: allVariableNames) {
 			for(Record function : vfDefinitionList) {
 				if(function.get("function_text", String.class).toLowerCase().contains(variableName)) {
 					if(!variableMap.containsKey(variableName)) {
-						variableMap.put(variableName, new HashMap<Integer, Double>());
+						variableMap.put(variableName, new HashMap<Long, Double>());
 					}
 				}
 			}
@@ -199,5 +214,28 @@ public class ApiUtil {
 			return -999;
 		}
 		return versionRecord.value1().intValue();
+	}
+
+
+    public static String getMultipartFormParameterAsString(Request request, String paramName) {
+        try {
+			Part formPart = request.raw().getPart(paramName);
+			if(formPart == null || formPart.getSize() == 0) {
+				return null;
+			}
+			InputStream partInputStream = formPart.getInputStream();
+			return IOUtils.toString(partInputStream, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		} catch (ServletException e) {
+			e.printStackTrace();
+			return null;
+		}
+    }
+
+
+	public static Integer getMultipartFormParameterAsInteger(Request request, String paramName) {
+		return Integer.valueOf(getMultipartFormParameterAsString(request, paramName));
 	}
 }
