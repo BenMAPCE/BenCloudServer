@@ -76,10 +76,23 @@ build_stage_jars:
       - BenCloudTaskRunner.jar
       - bencloud-server.properties
 
-build_server_image:
+build_dev_server_image:
   stage: image_build
   tags:
     - benmapdevgitlab
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
+  dependencies:
+    - build_dev_jars
+
+build_stage_server_image:
+  stage: image_build
+  tags:
     - benmapstagegitlab
   image:
     name: gcr.io/kaniko-project/executor:debug
@@ -89,12 +102,25 @@ build_server_image:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
   dependencies:
-    - build_jars
+    - build_stage_jars
 
-build_runner_image:
+build_dev_runner_image:
   stage: image_build
   tags:
     - benmapdevgitlab
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
+  dependencies:
+    - build_dev_jars
+
+build_stage_runner_image:
+  stage: image_build
+  tags:
     - benmapstagegitlab
   image:
     name: gcr.io/kaniko-project/executor:debug
@@ -104,7 +130,7 @@ build_runner_image:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
   dependencies:
-    - build_jars
+    - build_stage_jars
 
 prisma_cloud_compute_scan:
   stage: image_scan
