@@ -1,0 +1,179 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bencloud-server-service
+  annotations:
+    app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+    app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+spec:
+  ports:
+  - protocol: TCP
+    port: 443
+    targetPort: 4567
+  selector:
+    app: bencloud-server
+
+---
+# Currently very permissive. Need to refine
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: api-cluster-role
+  namespace: benmap-stg
+rules:
+  - apiGroups:
+        - ""
+        - apps
+        - autoscaling
+        - batch
+        - extensions
+        - policy
+        - rbac.authorization.k8s.io
+    resources:
+      - pods
+      - componentstatuses
+      - configmaps
+      - daemonsets
+      - deployments
+      - events
+      - endpoints
+      - horizontalpodautoscalers
+      - ingress
+      - jobs
+      - limitranges
+      - namespaces
+      - nodes
+      - pods
+      - persistentvolumes
+      - persistentvolumeclaims
+      - resourcequotas
+      - replicasets
+      - replicationcontrollers
+      - serviceaccounts
+      - services
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: api-cluster-role-binding
+subjects:
+- namespace: benmap-stg
+  kind: ServiceAccount
+  name: default 
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api-cluster-role 
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bencloud-server
+  namespace: benmap-stg
+  annotations:
+    app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+    app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bencloud-server
+
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+
+  template:
+    metadata:
+      labels:
+        app: bencloud-server
+      annotations:
+        app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+        app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+    spec:
+      securityContext:
+        runAsUser: 555
+        runAsGroup: 555
+        fsGroup: 555
+      containers:
+      - name: api
+        image:  registry.epa.gov/benmap/bencloudserver/bencloudserver:$CI_COMMIT_SHORT_SHA
+        imagePullPolicy: Always
+        resources:
+         requests:
+          memory: 4G
+          cpu: 2
+        livenessProbe:
+         tcpSocket:
+            port: 4567
+         initialDelaySeconds: 10
+         periodSeconds: 15
+        startupProbe:
+          tcpSocket:
+            port: 4567
+          failureThreshold: 30
+          periodSeconds: 10
+        env:
+          - name: REDEPLOY_META
+            value: $CI_JOB_ID-$CI_COMMIT_SHA
+          - name: API_CI_JOB_ID
+            value: "$CI_JOB_ID"
+          - name: API_CI_COMMIT_SHA
+            value: "$CI_COMMIT_SHA"
+          - name: API_CI_COMMIT_SHORT_SHA
+            value: "$CI_COMMIT_SHORT_SHA"
+          - name: API_CI_PROJECT_PATH_SLUG
+            value: "$CI_PROJECT_PATH_SLUG"
+          - name: API_CI_ENVIRONMENT_SLUG
+            value: "$CI_ENVIRONMENT_SLUG"
+          - name: DB_CONNECTION
+            value: "$DB_CONNECTION"
+          - name: DB_HOST
+            value: "$DB_HOST"
+          - name: DB_PORT
+            value: "$DB_PORT"
+          - name: DB_DATABASE
+            value: "$DB_DATABASE"
+          - name: DB_USERNAME
+            value: "$DB_USERNAME"
+          - name: DB_PASSWORD
+            value: "$DB_PASSWORD"
+        ports:
+        - containerPort: 4567
+      imagePullSecrets:
+      - name: glcr-auth
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bencloudserver-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
+    app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
+#   nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+spec:
+  tls:
+    - hosts:
+        - dev.bencloud-dev.aws.epa.gov
+      secretName: bencloud-tls-secret
+  rules:
+    - host: stg.bencloud-stg.aws.epa.gov
+      http:
+        paths:
+        - path: /api
+          pathType: Prefix
+          backend:
+           service:
+            name: bencloud-server-service
+            port: 
+             number: 443
