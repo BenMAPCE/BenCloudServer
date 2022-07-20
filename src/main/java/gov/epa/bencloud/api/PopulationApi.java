@@ -185,10 +185,4 @@ public class PopulationApi {
 		return record;
 		}
 	
-	public static class DemographicGroup{
-		public Integer ageRangeId = null;
-		public Integer raceId = null;
-		public Integer ethnicityId = null;
-		public Integer genderId = null;
-	}
 }

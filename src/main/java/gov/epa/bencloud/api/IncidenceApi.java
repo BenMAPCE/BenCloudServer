@@ -20,6 +20,7 @@ import org.pac4j.core.profile.UserProfile;
 
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.PopulationCategoryKey;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
@@ -30,14 +31,14 @@ import spark.Response;
 
 public class IncidenceApi {
 
-	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<PopulationApi.DemographicGroup, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
+	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
 		
 		//TODO: YY: incidenceOrPrevalenceMapOld is how it was originally calculated using ageRangeId as the key. Can be removed after confirming the new method is working.
 		
 		Map<Long, Map<Integer, Double>> incidenceOrPrevalenceMapOld = new HashMap<Long, Map<Integer, Double>>();
-		Map<Long, Map<PopulationApi.DemographicGroup, Double>> incidenceOrPrevalenceMap = new HashMap<Long, Map<PopulationApi.DemographicGroup, Double>>();
+		Map<Long, Map<PopulationCategoryKey, Double>> incidenceOrPrevalenceMap = new HashMap<Long, Map<PopulationCategoryKey, Double>>();
 		
 		//Some functions don't use incidence or prevalence. Just return an empty map for those.
 		if(isIncidence==true && (hifConfig.incidence == null || hifConfig.incidence == 0)) {
@@ -116,7 +117,7 @@ public class IncidenceApi {
 		// FOR EACH GRID CELL
 		for (Entry<Long, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
 			HashMap<Integer, Double> incidenceOrPrevalenceCellMap = new HashMap<Integer, Double>();
-			HashMap<PopulationApi.DemographicGroup, Double> incidenceOrPrevalenceCellMap2 = new HashMap<PopulationApi.DemographicGroup, Double>();
+			HashMap<PopulationCategoryKey, Double> incidenceOrPrevalenceCellMap2 = new HashMap<PopulationCategoryKey, Double>();
 			
 			
 
@@ -125,7 +126,7 @@ public class IncidenceApi {
 				
 				// FOR EACH INCIDENCE AGE RANGE
 				int count=0;
-				HashMap<PopulationApi.DemographicGroup, Integer> demoGroupCount = new HashMap<PopulationApi.DemographicGroup, Integer>(); //for calculating average later
+				HashMap<PopulationCategoryKey, Integer> demoGroupCount = new HashMap<PopulationCategoryKey, Integer>(); //for calculating average later
 				
 				for (GetIncidenceRecord incidenceOrPrevalenceAgeRange : cellIncidence.getValue()) {
 					Short popAgeStart = popAgeRange.value2();
@@ -140,15 +141,15 @@ public class IncidenceApi {
 					} 
 					
 					//YY: Correct?
-					PopulationApi.DemographicGroup demoGroup = new PopulationApi.DemographicGroup();
-					demoGroup.ageRangeId = popAgeRange.value1();
-					demoGroup.raceId = incidenceOrPrevalenceAgeRange.getRaceId();
-					demoGroup.ethnicityId = incidenceOrPrevalenceAgeRange.getEthnicityId();
-					demoGroup.genderId = incidenceOrPrevalenceAgeRange.getGenderId();
+					PopulationCategoryKey demoGroup = new PopulationCategoryKey(popAgeRange.value1(), 
+							incidenceOrPrevalenceAgeRange.getRaceId(),
+							incidenceOrPrevalenceAgeRange.getEthnicityId(),
+							incidenceOrPrevalenceAgeRange.getGenderId());
+
 					
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
-					if (popAgeRangeHifMap.containsKey(demoGroup.ageRangeId)) {
-						double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.ageRangeId);
+					if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
+						double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
 						incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) + inc);
 						demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);
 					}	
@@ -163,8 +164,8 @@ public class IncidenceApi {
 				
 				//YY: averaging by demographic groups (age, race, ethnicity, gender)
 				if(!demoGroupCount.isEmpty()) {
-					for(Entry<PopulationApi.DemographicGroup, Integer> entry : demoGroupCount.entrySet()) {
-						PopulationApi.DemographicGroup demoGroup = entry.getKey();
+					for(Entry<PopulationCategoryKey, Integer> entry : demoGroupCount.entrySet()) {
+						PopulationCategoryKey demoGroup = entry.getKey();
 						int groupCount = entry.getValue();
 						incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0)/groupCount); 						
 					}
