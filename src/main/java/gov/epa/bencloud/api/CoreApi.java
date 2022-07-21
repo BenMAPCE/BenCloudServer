@@ -33,6 +33,20 @@ import spark.Response;
 public class CoreApi {
 	private static final Logger log = LoggerFactory.getLogger(CoreApi.class);
 	
+	public static Object getErrorResponse(Request request, Response response, int statusCode, String msg) {
+		response.type("application/json");
+		response.status(statusCode);
+		return "{\"message\":\"" + msg + "\"}";	
+	}
+
+	public static Object getErrorResponseNotFound(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 404, "Not found");
+	}
+	
+	public static Object getErrorResponseInvalidId(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 400, "Invalid id");
+	}
+	
 	public static Object getTaskConfigs(Request request, Response response, Optional<UserProfile> userProfile) {
 		//TODO: Add type filter to select HIF or Valuation
 		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
@@ -213,4 +227,5 @@ public class CoreApi {
 		
 		return "done";
 	}
+
 }

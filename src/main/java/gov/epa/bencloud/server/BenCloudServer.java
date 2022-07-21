@@ -10,15 +10,11 @@ import org.pac4j.sparkjava.SecurityFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import freemarker.template.Configuration;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.jobs.JobsUtil;
-import gov.epa.bencloud.server.routes.AdminRoutes;
 import gov.epa.bencloud.server.routes.ApiRoutes;
-import gov.epa.bencloud.server.routes.PublicRoutes;
 import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.util.ApplicationUtil;
-import gov.epa.bencloud.server.util.FreeMarkerRenderUtil;
 import spark.Request;
 import spark.Service;
 import spark.Spark;
@@ -29,8 +25,6 @@ public class BenCloudServer {
 	private static String applicationPath;
 	
 	public static void main(String[] args) {
-
-		String javaVersion = System.getProperty("java.version");
 
 		try {
 			ApplicationUtil.loadProperties("bencloud-server.properties");
@@ -60,11 +54,6 @@ public class BenCloudServer {
 			log.error("Unable to set application path", e1);
 		}
 		
-		Configuration freeMarkerConfiguration = FreeMarkerRenderUtil.configureFreemarker(
-				applicationPath + ApplicationUtil.getProperties().getProperty(
-						"template.files.directory"));
-
-
 
 		Service benCloudService = Service.ignite()
 				.port(Integer.parseInt(ApplicationUtil.getProperty("server.port")))
@@ -119,9 +108,7 @@ public class BenCloudServer {
 			System.exit(-1);
 		}
 		
-		new PublicRoutes(benCloudService, freeMarkerConfiguration);
-		new AdminRoutes(benCloudService, freeMarkerConfiguration);
-		new ApiRoutes(benCloudService, freeMarkerConfiguration);
+		new ApiRoutes(benCloudService);
 		
 		JobsUtil.startJobScheduler();
 	
