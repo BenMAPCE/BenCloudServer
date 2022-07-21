@@ -48,12 +48,21 @@ import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
+/*
+ * Methods related to running HIF tasks.
+ */
 public class HIFTaskRunnable implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskRunnable.class);
 	
 	private String taskUuid;
 	private String taskWorkerUuid;
 
+
+	/**
+	 * Creates an HIFTaskRunnable object with the given taskUuid and taskWorkerUuid
+	 * @param taskUuid
+	 * @param taskWorkerUuid
+	 */
 	public HIFTaskRunnable(String taskUuid, String taskWorkerUuid) {
 		this.taskUuid = taskUuid;
 		this.taskWorkerUuid = taskWorkerUuid;
@@ -505,6 +514,16 @@ public class HIFTaskRunnable implements Runnable {
 			hif.totalDays = hif.endDay - hif.startDay + 1;
 		}
 	}
+
+
+	/**
+	 * Gets the full list of age ranges for the population.
+	 * For each hif, adds a map of the relevant age ranges and percentages.
+	 * @param hifTaskConfig
+	 * @return a list of maps with keys = population age range, 
+	 * 			and values = percentage of population in that age range that applies to a given HIF.
+	 */
+	
 	//YY: change to public so that it can be used when calculating incidence
 	public static ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
 		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = new ArrayList<HashMap<Integer, Double>>();

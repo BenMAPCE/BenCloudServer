@@ -31,6 +31,16 @@ import spark.Response;
 
 public class IncidenceApi {
 
+	/**
+	 * @param hifTaskConfig
+	 * @param hifConfig
+	 * @param isIncidence if true, load incidence; if false, load prevelance
+	 * @param h
+	 * @param incidenceOrPrevalenceLists
+	 * @param incidenceOrPrevalenceCacheMap
+	 * @return true if incidence or prevelance entry groups are successfully added to incidenceOrPrevelanceLists,
+	 * 			or if incidence/prevalence are not used to for the given function
+	 */
 	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
@@ -182,14 +192,35 @@ public class IncidenceApi {
 		return true;
 	}
 	
+	/**
+	 * 
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all incidence datasets.
+	 */
 	public static Object getAllIncidenceDatasets(Response response, Optional<UserProfile> userProfile) {
 		return getAllIncidencePrevalenceDatasets(response, false);
 	}
 
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all prevalance datasets.
+	 */
 	public static Object getAllPrevalenceDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 		return getAllIncidencePrevalenceDatasets(response, true);
 	}
 	
+
+	/**
+	 * 
+	 * @param response
+	 * @param prevalence true if prevalance, false if incidence
+	 * @return a JSON representation of all incidence or prevalance datasets.
+	 */
 	public static Object getAllIncidencePrevalenceDatasets(Response response, boolean prevalence) {
 		Result<Record4<String, Integer, Integer, Integer[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(INCIDENCE_DATASET.NAME,
@@ -210,6 +241,12 @@ public class IncidenceApi {
 		return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+
+	/**
+	 * 
+	 * @param id incidence dataset id
+	 * @return the name of a given incidence dataset.
+	 */
 	public static String getIncidenceDatasetName(int id) {
 
 		Record1<String> record = DSL.using(JooqUtil.getJooqConfiguration())
