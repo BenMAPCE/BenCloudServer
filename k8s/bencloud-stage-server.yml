@@ -164,10 +164,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - stg.bencloud-stg.aws.epa.gov
+        - stg.bencloud-stage.aws.epa.gov
       secretName: bencloud-tls-secret
   rules:
-    - host: stg.bencloud-stg.aws.epa.gov
+    - host: stg.bencloud-stage.aws.epa.gov
       http:
         paths:
         - path: /api
