@@ -63,7 +63,6 @@ public class TaskQueue {
 
 							// If it's a child task, make sure the parent succeeded
 							String parentUuid = record.getValue(TASK_QUEUE.TASK_PARENT_UUID);
-							System.out.println(parentUuid);
 							if(parentUuid != null && parentUuid.length() > 0) {
 								String parentStatus = HIFApi.getHIFTaskStatus(parentUuid);
 								
@@ -84,6 +83,7 @@ public class TaskQueue {
 								
 							}
 						}
+
 						return taskUuid;
 
 					});
@@ -92,6 +92,7 @@ public class TaskQueue {
 		} finally {
 
 		}
+
 		return uuid;
 
 	}
@@ -240,7 +241,7 @@ public class TaskQueue {
 
 	public static ObjectNode getPendingTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
-		// System.out.println("getPendingTasks");
+		//System.out.println("getPendingTasks");
 //		System.out.println("userIdentifier: " + userIdentifier);
 		String userId = userProfile.get().getId();
 

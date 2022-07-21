@@ -2,6 +2,11 @@ package gov.epa.bencloud.api.function;
 
 public class HIFNativeFactory {
 
+    /**
+     * 
+     * @param functionalForm
+     * @return an HIFNative object for the given functional form.
+     */
     public static HIFNative create(String functionalForm) {
         if (functionalForm == null || functionalForm.isEmpty()) {
             return null;

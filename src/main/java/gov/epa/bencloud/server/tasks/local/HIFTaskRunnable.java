@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.PopulationApi;
@@ -142,9 +143,9 @@ public class HIFTaskRunnable implements Runnable {
 				for(int i=0; i < distBeta.length; i++) {
 					// Grab the median from each of the 20 slices of distSamples
 					distBeta[i] = (distSamples[idxMedian]+distSamples[idxMedian-1])/2.0;
+					System.out.println(i + ": "  + distBeta[i]);
 					idxMedian += distSamples.length / distBeta.length;
 				}
-				
 				hifBetaDistributionLists.add(distBeta);
 			}
 			
@@ -339,6 +340,7 @@ public class HIFTaskRunnable implements Runnable {
 								hifBaselineExpression.setArgumentValue("PREVALENCE", prevalence);
 								hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
 								
+
 								hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
 							} else {
 								hifBaselineFunction.hifArguments.incidence = incidence;

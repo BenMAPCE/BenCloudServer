@@ -323,6 +323,7 @@ paths:
           description: Filter by air quality surface id
           schema:
             type: integer
+            default: 10
       responses:
         '200':
           description: Successfully returned an air quality surface definition.
@@ -410,6 +411,7 @@ paths:
           description: Filter by air quality surface id
           schema:
             type: integer
+            default: 1
       responses:
         '200':
           description: Successfully removed an air quality surface definition.
@@ -425,6 +427,7 @@ paths:
           description: Filter by air quality surface id
           schema:
             type: integer
+            default: 10
       responses:
         '200':
           description: Successfully returned details of a singly air quality surface.
@@ -635,6 +638,7 @@ paths:
           description: Filter by health impact function id
           schema:
             type: integer
+            default: 861
       responses:
         '200':
           description: Successfully returned a single health impact function definition.
@@ -807,6 +811,7 @@ paths:
           description: Filter by health impact function group ids
           schema:
             type: integer
+            default: 1
       responses:
         '200':
           description: Successfully returned a single health impact function group.
@@ -1012,6 +1017,7 @@ paths:
           description: Filter by health impact function result dataset id or task UUID.
           schema:
             type: string
+            default: 17
       responses:
         '200':
           description: An array of health impact functions that are part of a hif result dataset.
@@ -1155,6 +1161,7 @@ paths:
           description: Health impact function result dataset id or task UUID.
           schema:
             type: string
+            default: 17
       responses:
         '200':
           description: Health impact function results from an analysis.
@@ -1186,6 +1193,7 @@ paths:
           description: Health impact function result dataset id or task UUID.
           schema:
             type: string
+            default: 17
       responses:
         '200':
           description: Zip file containing health impact function results from an analysis.
@@ -1232,6 +1240,7 @@ paths:
           description: Valuation result dataset id or task UUID.
           schema:
             type: string
+            default: 4
       responses:
         '200':
           description: An array of health impact functions that are part of a hif result dataset.
@@ -1345,6 +1354,7 @@ paths:
           description: Valuation result dataset id or task UUID.
           schema:
             type: string
+            default: 4
       responses:
         '200':
           description: Valuation results from an analysis.
@@ -1428,6 +1438,7 @@ paths:
           description: Valuation result dataset id or task UUID.
           schema:
             type: string
+            default: 4
       responses:
         '200':
           description: Zip file with valuation results from an analysis.
@@ -1443,6 +1454,7 @@ paths:
           description: Task UUID.
           schema:
             type: string
+            default: 1
       responses:
         '404':
           description: UUID not found or task successfully removed.

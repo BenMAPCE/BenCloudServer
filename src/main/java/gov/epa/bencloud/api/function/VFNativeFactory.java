@@ -2,6 +2,11 @@ package gov.epa.bencloud.api.function;
 
 public class VFNativeFactory {
 
+    /**
+     * 
+     * @param functionalForm
+     * @return a VFNative object with the given functional form.
+     */
     public static VFNative create(String functionalForm) {
         if (functionalForm == null || functionalForm.isEmpty()) {
             return null;

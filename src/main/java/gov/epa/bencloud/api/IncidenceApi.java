@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Map.Entry;
 
-import org.apache.poi.util.SystemOutLogger;
 import org.jooq.JSONFormat;
 import org.jooq.Record3;
 import org.jooq.Record4;
