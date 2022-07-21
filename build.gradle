@@ -25,10 +25,8 @@ dependencies {
         }
     }
     
-	implementation 'com.sparkjava:spark-template-freemarker:2.7.1'
 	implementation 'org.pac4j:spark-pac4j:5.0.0'
 	implementation 'org.pac4j:pac4j-http:5.4.3'
-	implementation 'org.freemarker:freemarker:2.3.31'
 
 	// database related
 	
@@ -59,7 +57,6 @@ dependencies {
 	implementation 'com.squareup.tape2:tape:2.0.0-beta1'
 	implementation 'org.quartz-scheduler:quartz:2.3.1'
 
-    implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.0.6'
     
     implementation 'io.kubernetes:client-java-extended:14.0.0'
