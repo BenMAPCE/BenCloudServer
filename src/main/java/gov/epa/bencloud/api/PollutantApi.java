@@ -17,8 +17,20 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import spark.Request;
 import spark.Response;
 
+/*
+ * Methods related to pollutant data.
+ */
 public class PollutantApi {
 	private static final Logger log = LoggerFactory.getLogger(PollutantApi.class);
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all pollutant definitions.
+	 * 
+	 */
 	public static Object getAllPollutantDefinitions(Request request, Response response, Optional<UserProfile> userProfile) {
 		Result<Record> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(POLLUTANT.asterisk())

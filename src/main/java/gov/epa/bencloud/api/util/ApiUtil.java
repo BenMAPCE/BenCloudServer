@@ -21,17 +21,12 @@ import org.pac4j.core.profile.UserProfile;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
-import gov.epa.bencloud.api.HIFApi;
-import gov.epa.bencloud.api.ValuationApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionRecord;
-import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskUtil;
-import gov.epa.bencloud.server.tasks.model.Task;
 import spark.Request;
 import spark.Response;
 
@@ -54,7 +49,12 @@ public class ApiUtil {
 		return (long)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
 	}
 
-
+	/**
+	 * 
+	 * @param id
+	 * @param inflationYear
+	 * @return  a map of inflation indices with key = index name, value = index value
+	 */
 	public static Map<String, Double> getInflationIndices(int id, Integer inflationYear) {
 
 		InflationEntryRecord inflationRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -69,6 +69,12 @@ public class ApiUtil {
 		return inflationIndices;
 	}
 
+	/**
+	 * 
+	 * @param id Income growth adjustment dataset id
+	 * @param popYear
+	 * @return a map of income growth factors, with key = endpoint group id, value = income growth adjustment dataset id and growth year.
+	 */
 	public static Map<Short, Record2<Short, Double>> getIncomeGrowthFactors(int id, Integer popYear) {
 
 		Map<Short, Record2<Short, Double>> incomeGrowthFactorRecords = DSL.using(JooqUtil.getJooqConfiguration())
@@ -81,6 +87,10 @@ public class ApiUtil {
 		return incomeGrowthFactorRecords;
 	}
 
+	/**
+	 * 
+	 * @return a map of statistic ids with key = statistic name, value = statistic id.
+	 */
 	public static Map<String, Integer> getStatisticIdLookup() {
 		Map<String, Integer> statistics = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(DSL.lower(STATISTIC_TYPE.NAME), STATISTIC_TYPE.ID)
@@ -89,6 +99,10 @@ public class ApiUtil {
 		return statistics;	
 	}
 	
+	/**
+	 * 
+	 * @return a map of pollutant metric names with key = pollutant metric id, value = pollutant metric name.
+	 */
 	public static Map<Integer, String> getMetricNameLookup() {
 		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(POLLUTANT_METRIC.ID, POLLUTANT_METRIC.NAME)
@@ -97,6 +111,10 @@ public class ApiUtil {
 		return map;	
 	}
 
+	/**
+	 * 
+	 * @return a map of seasonal metric names with key = seasonal metric id, value = seasonal metric name.
+	 */
 	public static Map<Integer, String> getSeasonalMetricNameLookup() {
 		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(SEASONAL_METRIC.ID, SEASONAL_METRIC.NAME)
@@ -105,6 +123,10 @@ public class ApiUtil {
 		return map;	
 	}
 	
+	/**
+	 * 
+	 * @return a map of race names with key = race id, value = race name.
+	 */
 	public static Map<Integer, String> getRaceNameLookup() {
 		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(RACE.ID, RACE.NAME)
@@ -113,6 +135,10 @@ public class ApiUtil {
 		return map;	
 	}
 	
+	/**
+	 * 
+	 * @return a map of ethnicity names with key = ethnicity id, value = ethnicity name.
+	 */
 	public static Map<Integer, String> getEthnicityNameLookup() {
 		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(ETHNICITY.ID, ETHNICITY.NAME)
@@ -121,6 +147,10 @@ public class ApiUtil {
 		return map;	
 	}
 	
+	/**
+	 * 
+	 * @return a map of gender names with key = gender id, value = gender name.
+	 */
 	public static Map<Integer, String> getGenderNameLookup() {
 		Map<Integer, String> map = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(GENDER.ID, GENDER.NAME)
@@ -129,6 +159,13 @@ public class ApiUtil {
 		return map;	
 	}
 	
+	/**
+	 * Deletes the results of a task, task UUID given in the req parameters.
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 * @return null
+	 */
 	public static Object deleteTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		String uuid = req.params("uuid");
 		// TODO: Add user security enforcement 		
@@ -153,6 +190,12 @@ public class ApiUtil {
 	// Note that this implementation is currently incomplete. 
 	// It will currently ONLY return data for the median_income variable. 
 	// It needs to be extended so it will look up each variable that is required.
+	/**
+	 * 
+	 * @param valuationTaskConfig
+	 * @param vfDefinitionList
+	 * @return
+	 */
 	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
 		 // Load list of functions from the database
 		
@@ -188,6 +231,11 @@ public class ApiUtil {
 		return variableMap;
 	}
 
+	/**
+	 * 
+	 * @param variableDatasetId
+	 * @return a list of all variable names for a given variable dataset.
+	 */
 	private static List<String> getAllVariableNames(Integer variableDatasetId) {
 		if(variableDatasetId == null) {
 			return null;
@@ -202,7 +250,10 @@ public class ApiUtil {
 		return allVariableNames;
 	}
 
-
+	/**
+	 * 
+	 * @return the database version. If null, returns -999.
+	 */
 	public static int getDatabaseVersion() {
 		Record1<Integer> versionRecord = DSL.using(JooqUtil.getJooqConfiguration())
 		.select(SETTINGS.VALUE_INT)
@@ -216,7 +267,12 @@ public class ApiUtil {
 		return versionRecord.value1().intValue();
 	}
 
-
+	/**
+	 * 
+	 * @param request
+	 * @param paramName
+	 * @return a string representation of a given multipart parameter.
+	 */
     public static String getMultipartFormParameterAsString(Request request, String paramName) {
         try {
 			Part formPart = request.raw().getPart(paramName);
@@ -235,6 +291,12 @@ public class ApiUtil {
     }
 
 
+	/**
+	 * 
+	 * @param request
+	 * @param paramName
+	 * @return an integer representation of a given multipart parameter.
+	 */
 	public static Integer getMultipartFormParameterAsInteger(Request request, String paramName) {
 		return Integer.valueOf(getMultipartFormParameterAsString(request, paramName));
 	}

@@ -62,9 +62,19 @@ import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
 
+/*
+ * Methods 
+ */
 public class AirQualityApi {
 	private static final Logger log = LoggerFactory.getLogger(AirQualityApi.class);
 
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of the air quality layer definitions for the given request.
+	 */
 	public static Object getAirQualityLayerDefinitions(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		int pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
@@ -219,6 +229,13 @@ public class AirQualityApi {
 		return data;
 	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of the air quality layer definitions by metric for the given request.
+	 */
 	public static Object getAirQualityLayerDefinitionsByMetric(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		String userId = userProfile.get().getId();
@@ -358,7 +375,12 @@ public class AirQualityApi {
 	}
 	
 	
-	
+	/**
+	 * 
+	 * @param id
+	 * @param userProfile
+	 * @return a representation of an air quality layer definition.
+	 */
 	@SuppressWarnings("unchecked")
 	public static @Nullable Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
 		String userId = userProfile.get().getId();
@@ -431,6 +453,11 @@ public class AirQualityApi {
 		.fetchOne();
 	}
 
+	/**
+	 * 
+	 * @param id
+	 * @return an air quality layer grid definition id for the given air quality layer id.
+	 */
 	public static Integer getAirQualityLayerGridId(Integer id) {
 		return DSL.using(JooqUtil.getJooqConfiguration())
 		.select(
@@ -440,6 +467,13 @@ public class AirQualityApi {
 		.fetchOne().value1();
 	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of the air quality layer details for a given air quality layer (aq layer id is a request parameter).
+	 */
 	public static Object getAirQualityLayerDetails(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		Integer id = Integer.valueOf(request.params("id"));
@@ -548,13 +582,20 @@ public class AirQualityApi {
 		}
 	}
 
+	/**
+	 * 
+	 * @param layerName
+	 * @return a csv file name for a given layer name.
+	 */
 	public static String createFilename(String layerName) {
 		// Currently allowing periods so we don't break extensions. Need to improve this.
 		return layerName.replaceAll("[^A-Za-z0-9._-]+", "") + ".csv";
 	}
 
-	/*
-	 * Returns Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
+	/**
+	 * 
+	 * @param id air quality layer id
+	 * @return Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
 	 */
 	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id) {
 /*
@@ -619,6 +660,9 @@ public class AirQualityApi {
 		return aqMap;
 	}
 	
+	/*
+	 * 
+	 */
 	public static Object postAirQualityLayer(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 
@@ -1102,6 +1146,13 @@ public class AirQualityApi {
 		return transformValMsgToJSON(validationMsg); 
 	}
 	
+	/**
+	 * Deletes an air quality layer definition from the database (aq layer id is a request parameter).
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return
+	 */
 	public static boolean deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
 		// TODO: Add user security enforcement
 		Integer id = Integer.valueOf(request.params("id"));
@@ -1119,6 +1170,11 @@ public class AirQualityApi {
 		}
 	} 
 	
+	/**
+	 * 
+	 * @param filterValue
+	 * @return a condition object representing an air quality layer filter condition.
+	 */
 	private static Condition buildAirQualityLayersFilterCondition(String filterValue) {
 
 		Condition filterCondition = DSL.trueCondition();
@@ -1154,6 +1210,11 @@ public class AirQualityApi {
 		return filterCondition;
 	}
 
+	/**
+	 * 
+	 * @param filterValue
+	 * @return a condition object representing an air quality cell filter condition.
+	 */
 	private static Condition buildAirQualityCellsFilterCondition(String filterValue) {
 
 		Condition filterCondition = DSL.trueCondition();
@@ -1201,6 +1262,12 @@ public class AirQualityApi {
 		return filterCondition;
 	}
 
+	/**
+	 * Sets the sort order of the air quality layers.
+	 * @param sortBy
+	 * @param descending
+	 * @param orderFields
+	 */
 	private static void setAirQualityLayersSortOrder(
 			String sortBy, Boolean descending, List<OrderField<?>> orderFields) {
 		
@@ -1240,6 +1307,12 @@ public class AirQualityApi {
 		}
 	}
 
+	/**
+	 * Sets the sort order of the air quality cells.
+	 * @param sortBy
+	 * @param descending
+	 * @param orderFields
+	 */
 	private static void setAirQualityCellsSortOrder(
 			String sortBy, Boolean descending, List<OrderField<?>> orderFields) {
 		
@@ -1289,6 +1362,11 @@ public class AirQualityApi {
 		}
 	}
 
+	/**
+	 * Transforms records into a JsonNode.
+	 * @param records
+	 * @return the trasformed records as a JsonNode.
+	 */
 	private static JsonNode transformRecordsToJSON(Record records) {
 		
         ObjectMapper mapper = new ObjectMapper();
@@ -1312,6 +1390,11 @@ public class AirQualityApi {
 		
 	}
 	
+	/**
+	 * Transforms a validation message into a JsonNode
+	 * @param validationMessage
+	 * @return the transformed validation message as a JsonNode.
+	 */
 	private static JsonNode transformValMsgToJSON(ValidationMessage validationMessage) {
 		
 		ObjectMapper mapper = new ObjectMapper();

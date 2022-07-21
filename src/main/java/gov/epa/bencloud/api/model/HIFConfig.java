@@ -3,12 +3,10 @@ package gov.epa.bencloud.api.model;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.util.ApiUtil;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 
 /**
  * @author jimanderton
@@ -43,8 +41,9 @@ public class HIFConfig {
 	
 	public Map<String, Object> hifRecord = null; //This map will contain the full HIF record
 	
-	/*
-	 * Creates the object from the task parameter object
+	/**
+	 * Creates an object from the task parameter object
+	 * @param function
 	 */
 	public HIFConfig(JsonNode function) {
 		this.hifId = function.get("id").asInt();
@@ -61,10 +60,17 @@ public class HIFConfig {
 		//TODO: Add code to allow user to specify metric, seasonal metric, and metric statistic?
 	}
 	
+	/**
+	 * Default constructor
+	 */
 	public HIFConfig() {
 		
 	}
 
+	/*
+	 * Returns a string representation of the HIFConfig object 
+	 * 
+	 */
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
@@ -132,6 +138,15 @@ public class HIFConfig {
 		return b.toString();
 	}
 	
+
+	/*
+	 * HIFConfig comparator
+	 * Compares (lexicographically) two HIFConfigs by endpoint group name, then endpoint name
+	 * Returns:
+	 * 		0 - if h1 = h2
+	 * 		a negative value - if h1 < h2
+	 * 		a positive value - if h1 > h2
+	 */
 	public static Comparator<HIFConfig> HifConfigEndpointGroupComparator = new Comparator<HIFConfig>() {
 		public int compare(HIFConfig h1, HIFConfig h2) {
 			//If we don't have both records, just bail as if they're equal. This shouldn't happen in this case.

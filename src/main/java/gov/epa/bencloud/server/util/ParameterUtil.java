@@ -1,8 +1,16 @@
 package gov.epa.bencloud.server.util;
 
+/*
+ * Methods for converting parameter values to other data types, or for setting null parameters to default values.
+ */
 public class ParameterUtil {
 
-
+	/**
+	 * 
+	 * @param parametersValue
+	 * @param defaultValue
+	 * @return the parameter value as an integer, or the default value if parametersValue == null or cannot be formatted as an integer.
+	 */
 	public static int getParameterValueAsInteger(String parametersValue, int defaultValue) {
 
 		int value = defaultValue;
@@ -18,6 +26,12 @@ public class ParameterUtil {
 		return value;
 	}	
 
+	/**
+	 * 
+	 * @param parametersValue
+	 * @param defaultValue
+	 * @return the parameter value as a string, or "" if parametersValue == null.
+	 */
 	public static String getParameterValueAsString(String parametersValue, String defaultValue) {
 
 		String value = "";
@@ -29,6 +43,12 @@ public class ParameterUtil {
 		return value;
 	}
 
+	/**
+	 * 
+	 * @param parametersValue
+	 * @param defaultValue
+	 * @return the parameter value as a boolean, or the default value if parametersValue == null. 
+	 */
 	public static boolean getParameterValueAsBoolean(String parametersValue, boolean defaultValue) {
 
 		boolean value = defaultValue;

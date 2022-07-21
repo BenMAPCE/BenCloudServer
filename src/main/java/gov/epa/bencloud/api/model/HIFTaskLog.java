@@ -16,6 +16,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import gov.epa.bencloud.server.util.DataUtil;
 
+
+/*
+ * Representation of a health impact function task log
+ * Used to log status/progress messages about a given task
+ */
 public class HIFTaskLog extends TaskLog {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskLog.class);
 	private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
@@ -23,32 +28,67 @@ public class HIFTaskLog extends TaskLog {
 	private HIFTaskConfig hifTaskConfig = null;
 	private List<String> logMessages = new ArrayList<String>();
 	
+	/**
+	 * Default constructor
+	 */
 	public HIFTaskLog() {
 		super();
 	}
 	
+	/**
+	 * Creates an hif task log object from a hifTaskConfig object
+	 * @param hifTaskConfig
+	 */
 	public HIFTaskLog(HIFTaskConfig hifTaskConfig) {
 		super();
 		this.hifTaskConfig = hifTaskConfig;
 	}
 	
+	/**
+	 * 
+	 * @return the hif task configuration
+	 */
 	public HIFTaskConfig getHifTaskConfig() {
 		return hifTaskConfig;
 	}
+	
+	/**
+	 * Sets the hif task configuration
+	 * @param hifTaskConfig
+	 */
 	public void setHifTaskConfig(HIFTaskConfig hifTaskConfig) {
 		this.hifTaskConfig = hifTaskConfig;
 	}
+
+	/**
+	 * 
+	 * @return hif task log messages
+	 */
 	public List<String> getLogMessages() {
 		return logMessages;
 	}
+
+	/**
+	 * Sets the hif task log messages
+	 * @param logMessages
+	 */
 	public void setLogMessages(List<String> logMessages) {
 		this.logMessages = logMessages;
 	}
 	
+	/**
+	 * Adds a messages to the hif task log messages
+	 * @param message
+	 */
 	public void addMessage(String message) {
         logMessages.add(dtf.format(LocalDateTime.now()) + ": " + message); 
 	}
 	
+	/**
+	 * 
+	 * @param userProfile
+	 * @return string representation of the hif task log
+	 */
 	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		b.append("-------------------------------\n");
@@ -80,6 +120,10 @@ public class HIFTaskLog extends TaskLog {
 		return b.toString();
 	}
 
+	/**
+	 * 
+	 * @return JSON string representation of the hif task log
+	 */
 	public String toJsonString() {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());

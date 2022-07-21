@@ -5,14 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.ProfileManager;
 import org.pac4j.core.profile.UserProfile;
 import org.pac4j.jee.context.session.JEESessionStore;
 import org.pac4j.sparkjava.SparkWebContext;
 
-import gov.epa.bencloud.Constants;
-import gov.epa.bencloud.server.util.ApplicationUtil;
 import spark.Request;
 import spark.Response;
 

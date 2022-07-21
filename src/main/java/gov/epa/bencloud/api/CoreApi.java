@@ -33,6 +33,27 @@ import spark.Response;
 public class CoreApi {
 	private static final Logger log = LoggerFactory.getLogger(CoreApi.class);
 	
+	public static Object getErrorResponse(Request request, Response response, int statusCode, String msg) {
+		response.type("application/json");
+		response.status(statusCode);
+		return "{\"message\":\"" + msg + "\"}";	
+	}
+
+	public static Object getErrorResponseNotFound(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 404, "Not found");
+	}
+	
+	public static Object getErrorResponseInvalidId(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 400, "Invalid id");
+	}
+	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of the current user's task configurations.
+	 */
 	public static Object getTaskConfigs(Request request, Response response, Optional<UserProfile> userProfile) {
 		//TODO: Add type filter to select HIF or Valuation
 		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
@@ -46,7 +67,16 @@ public class CoreApi {
 		return res.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
+
 	//TODO: Add deleteTaskConfig, update?
+
+	/**
+	 * 
+	 * @param request HTTP request body contains task configuration parameters
+	 * @param response
+	 * @param userProfile
+	 * @return add a task configuration to the database.
+	 */
 	public static String postTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
 		ObjectMapper mapper = new ObjectMapper();
 		String body = request.body();
@@ -80,6 +110,14 @@ public class CoreApi {
 		return rec.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 * @return
+	 */
 	public static Object getPurgeResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		// if(! isAdmin(userProfile)) {
 		// 	return false;
@@ -133,6 +171,12 @@ public class CoreApi {
 		return true;
 	}
 
+
+	/**
+	 * 
+	 * @param userOptionalProfile
+	 * @return true if the current user's role is admin. If not, returns false.
+	 */
 	public static Boolean isAdmin(Optional<UserProfile> userOptionalProfile) {
 		UserProfile userProfile = userOptionalProfile.get();
 		if(userProfile == null) {
@@ -148,6 +192,12 @@ public class CoreApi {
 		return false;
 	}
 
+
+	/**
+	 * 
+	 * @param userOptionalProfile
+	 * @return true if the current user's role is user. If not, returns false.
+	 */
 	public static Boolean isUser(Optional<UserProfile> userOptionalProfile) {
 		UserProfile userProfile = userOptionalProfile.get();
 		if(userProfile == null) {
@@ -163,6 +213,14 @@ public class CoreApi {
 		return false;
 	}
 
+
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userOptionalProfile
+	 * @return an ObjectNode representation of the current user's profile info.
+	 */
 	public static Object getUserInfo(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
 
 		UserProfile userProfile = userOptionalProfile.get();
@@ -194,6 +252,13 @@ public class CoreApi {
 		return userNode;
 	}
 
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 * @return 
+	 */
 	public static Object getFixHealthEffectGroupName(Request req, Response res, Optional<UserProfile> userProfile) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		create.update(HEALTH_IMPACT_FUNCTION_GROUP)
@@ -213,4 +278,5 @@ public class CoreApi {
 		
 		return "done";
 	}
+
 }

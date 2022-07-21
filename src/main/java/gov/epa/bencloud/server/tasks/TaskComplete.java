@@ -21,16 +21,25 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.util.RawValue;
 
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.DataUtil;
 
+/*
+ * 
+ */
 public class TaskComplete {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskComplete.class);
 
+	/**
+	 * Removes a completed task from the task queue, removes its task worker, and adds the task to the task complete table.
+	 * @param taskUuid
+	 * @param taskWorkerUuid
+	 * @param taskSuccessful
+	 * @param taskCompleteMessage
+	 */
 	public static void addTaskToCompleteAndRemoveTaskFromQueue(
 			String taskUuid, String taskWorkerUuid, 
 			boolean taskSuccessful, String taskCompleteMessage) {
@@ -96,6 +105,12 @@ public class TaskComplete {
 
 	}
 
+	/**
+	 * 
+	 * @param userProfile
+	 * @param postParameters
+	 * @return an ObjectNode representation of all of a user's completed tasks.
+	 */
 	public static ObjectNode getCompletedTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
 //		System.out.println("getCompletedTasks");
@@ -198,6 +213,13 @@ public class TaskComplete {
 		return data;
 	} 
 
+	/**
+	 * 
+	 * @param uuid
+	 * @return  If uuid is associated with a single task in task complete, returns that task.
+	 * 			If uuid is not in the task complete table, or is associated with multiple record in the table, 
+	 * 			returns an empty task object.
+	 */
 	public static Task getTaskFromCompleteRecord(String uuid) {
 
 		Task task = new Task();

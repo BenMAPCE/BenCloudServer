@@ -1,18 +1,11 @@
 package gov.epa.bencloud.api.model;
 
-import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER;
-import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
-import static gov.epa.bencloud.server.database.jooq.data.Tables.POPULATION_DATASET;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.jooq.JSON;
-import org.jooq.Record3;
-import org.jooq.Record9;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,13 +14,13 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import gov.epa.bencloud.api.AirQualityApi;
-import gov.epa.bencloud.api.GridDefinitionApi;
-import gov.epa.bencloud.api.PopulationApi;
-import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 
+
+/*
+ * Representation of a valuation task configuration
+ */
 public class ValuationTaskConfig {
 	private static final Logger log = LoggerFactory.getLogger(ValuationTaskConfig.class);
 	
@@ -43,11 +36,16 @@ public class ValuationTaskConfig {
 	
 	public List<ValuationConfig> valuationFunctions = new ArrayList<ValuationConfig>();
 	
-	
+	/*
+	 * Default constructor
+	 */
 	public ValuationTaskConfig() {
 		super();
 	}
 	
+	/*
+	 * Creates the valuation task configuration object from a task object
+	 */
 	public ValuationTaskConfig(Task task) {
 		super();
 		try {
@@ -74,6 +72,9 @@ public class ValuationTaskConfig {
 		}
 	}
 
+	/*
+	 * Returns a string representation of the valuation task configuration.
+	 */
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
