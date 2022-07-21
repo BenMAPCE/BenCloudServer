@@ -215,7 +215,7 @@ deploy_staging:
     - envsubst < k8s/bencloud-stage-server.yml | kubectl apply -f -
   environment:
     name: staging
-    url: https://stg.bencloud-stg.aws.epa.gov/api
+    url: https://stg.bencloud-stage.aws.epa.gov/api
     kubernetes:
       namespace: benmap-stg
 
