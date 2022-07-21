@@ -5,16 +5,12 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POPULATION_DATASET;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 import org.jooq.JSON;
 import org.jooq.Record10;
 import org.jooq.Record3;
-import org.jooq.Record9;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +26,10 @@ import gov.epa.bencloud.api.PopulationApi;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
-import io.vavr.collection.Array;
+
+/*
+ * Representation of a health impact function task configuration
+ */
 
 public class HIFTaskConfig {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskConfig.class);
@@ -44,10 +43,17 @@ public class HIFTaskConfig {
 	public Boolean preserveLegacyBehavior = false;
 	public List<HIFConfig> hifs = new ArrayList<HIFConfig>();
 	
+	/*
+	 * Default constructor
+	 */
 	public HIFTaskConfig() {
 		super();
 	}
-	
+
+	/**
+	 * Creates a hif task configuration object from a task object
+	 * @param task
+	 */
 	public HIFTaskConfig(Task task) {
 		super();
 		try {
@@ -91,6 +97,12 @@ public class HIFTaskConfig {
 		}
 	}
 
+
+	/**
+	 * 
+	 * @param userProfile
+	 * @return string representation of the hif task configuration
+	 */
 	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		

@@ -15,11 +15,19 @@ import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import gov.epa.bencloud.server.BenCloudServer;
 
+
+/*
+ * 
+ */
 public class ApplicationUtil {
 	private static final Logger log = LoggerFactory.getLogger(ApplicationUtil.class);
 	
 	public static Properties properties = new Properties();
 
+	/**
+	 * 
+	 * @return true if the local properties file exists, false if not.
+	 */
 	public static boolean usingLocalProperties() {
 
 		try {
@@ -38,11 +46,21 @@ public class ApplicationUtil {
 		return false;
 	}
 	
-	
+	/**
+	 * Loads the given properties file, if it exists.
+	 * @param propertiesFileName
+	 * @throws IOException
+	 */
 	public static void loadProperties(String propertiesFileName) throws IOException {
 		loadProperties(propertiesFileName, false);
 	}
 	
+	/**
+	 * Loads the given properties file, if it exists.
+	 * @param propertiesFileName
+	 * @param optional
+	 * @throws IOException
+	 */
 	public static void loadProperties(
 			String propertiesFileName, boolean optional) throws IOException {
 
@@ -67,17 +85,32 @@ public class ApplicationUtil {
 		}
 	}
 
+	/**
+	 * 
+	 * @param property
+	 * @return a value of a given property. 
+	 */
 	public static String getProperty(String property) {
 
 		return properties.getProperty(property);
 	}
 
+	/**
+	 * Sets the value of a given property.
+	 * @param propertyName
+	 * @param propertyValue
+	 */
 	private static void setProperty(String propertyName, String propertyValue) {
 
 		properties.setProperty(propertyName, propertyValue);
 		return;
 	}
 
+	/**
+	 * 
+	 * @return true if the value of max.task.workers > 0, false if null or if <= 0.
+	 * @throws IOException
+	 */
 	public static boolean validateProperties() throws IOException {
 
 		boolean propertiesOK = true;
@@ -105,6 +138,12 @@ public class ApplicationUtil {
 		return propertiesOK;
 	}
 
+	/**
+	 * Validates the value of a specific property.
+	 * @param propertyName
+	 * @return true if 
+	 * @throws IOException
+	 */
 	private static boolean checkPropertyDirectory(String propertyName) throws IOException {
 
 		boolean propertyOK = true;
@@ -130,6 +169,9 @@ public class ApplicationUtil {
 		return propertyOK;
 	}	
 	
+	/**
+	 * 
+	 */
 	public static void configureLogging() {
 
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -153,10 +195,19 @@ public class ApplicationUtil {
 
 	}
 
+	/**
+	 * 
+	 * @return a properties object.
+	 */
 	public static Properties getProperties() {
 		return properties;
 	}
 
+	/**
+	 * Replaces special characters in a given string
+	 * @param inputString
+	 * @return a cleaned string.
+	 */
 	public static String replaceNonValidCharacters(String inputString) {
 		
 		String outputString = inputString;
@@ -165,6 +216,10 @@ public class ApplicationUtil {
 		return outputString;
 	}
 	
+	/**
+	 * Checks the queue directory path, creates the directory if it does not exist.
+	 * @return the queue directory path.
+	 */
 	public static String createQueueDirectoryIfNecessary() {
 		
 		String queueDirectory = BenCloudServer.getApplicationPath() + 
@@ -177,6 +232,10 @@ public class ApplicationUtil {
 		return queueDirectory;
 	}
 
+	/**
+	 * Checks the output directory path, creates the directory if it does not exist.
+	 * @return the output directory path.
+	 */
 	public static String createOutputDirectoryIfNecessary() {
 		
 		String outputDirectory = BenCloudServer.getApplicationPath() + 

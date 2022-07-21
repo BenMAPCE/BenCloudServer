@@ -3,8 +3,17 @@ package gov.epa.bencloud.server.util;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+/*
+ * Methods for converting seconds into human readable times.
+ */
 public class DataUtil {
 
+	/**
+	 * 
+	 * @param start
+	 * @param end
+	 * @return the time in a human readable format (hours minutes seconds).
+	 */
 	public static String getHumanReadableTime(LocalDateTime start, LocalDateTime end) {
 		
 		if (null == start || null == end) {
@@ -20,6 +29,11 @@ public class DataUtil {
 		
 	}
 	
+	/**
+	 * Formats the a number of seconds into a human readable format (hours minutes seconds).
+	 * @param totalSeconds
+	 * @param humanReadableTime
+	 */
 	public static void getHumanReadableTime(long totalSeconds, StringBuilder humanReadableTime) {
 	
 		long hours = ((totalSeconds/60) / 60);

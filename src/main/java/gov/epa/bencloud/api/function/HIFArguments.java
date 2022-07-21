@@ -1,5 +1,8 @@
 package gov.epa.bencloud.api.function;
 
+/*
+ * Represents potential arguments used in a given HIF.
+ */
 public class HIFArguments {
     public double a;
     public double b;

@@ -2,12 +2,7 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,21 +11,15 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.util.stream.Collectors;
-import java.util.UUID;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.Table;
-import org.jooq.exception.IOException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record18;
-import org.jooq.Record2;
-import org.jooq.Record22;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
@@ -50,15 +39,24 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
-import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
 
+/*
+ * 
+ */
 public class HIFApi {
 	private static final Logger log = LoggerFactory.getLogger(HIFApi.class);
 
+	/**
+	 * Gets the hif results and stores them in the response parameters.
+	 * Request contains the hif result dataset id.
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 */
 	public static void getHifResultContents(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		 //*  :id (health impact function results dataset id (can also support task id))
@@ -178,6 +176,12 @@ public class HIFApi {
 		}
 	}
 	
+	/**
+	 * Exports hif results to a zip file.
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 */
 	public static void getHifResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
 		 //*  :id (health impact function results dataset id (can also support task id))
 		 //*  gridId= (aggregate the results to one or more grid definitions)
@@ -323,6 +327,12 @@ public class HIFApi {
 		
 	}
 
+	/**
+	 * Returns hif results needed for valuation purposes.
+	 * @param id
+	 * @param hifId
+	 * @return hif results for a given hifId.
+	 */
 	public static Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
@@ -344,7 +354,14 @@ public class HIFApi {
 		return hifRecords;
 
 	}
-	
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all health impact functions.
+	 */
 	public static Object getAllHealthImpactFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
@@ -367,6 +384,13 @@ public class HIFApi {
 		return hifRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return JSON representation of all hif groups for a given pollutant (pollutant id is a request parameter).
+	 */
 	public static Object getAllHifGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 			
 		int pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
@@ -390,6 +414,14 @@ public class HIFApi {
 		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return selected hif groups (hif group ids is a request parameter).
+	 * 
+	 */
 	public static Object getSelectedHifGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		String idsParam = request.params("ids");
@@ -504,7 +536,10 @@ public class HIFApi {
 		return groups;
 	}
 
-	
+	/**
+	 * @param hifResultDatasetId
+	 * @return a health impact function task configuration from a given hif result dataset id.
+	 */
 	public static HIFTaskConfig getHifTaskConfigFromDb(Integer hifResultDatasetId) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
@@ -522,10 +557,13 @@ public class HIFApi {
 		hifTaskConfig.aqScenarioId = hifTaskConfigRecord.getScenarioAqLayerId();
 		//TODO: Add code to load the hif details
 		
-		
 		return hifTaskConfig;
 	}
 
+	/**
+	 * @param hifResultDatasetId
+	 * @return an air quality layer grid definition id from a given hif result dataset id.
+	 */
 	public static Integer getBaselineGridForHifResults(int hifResultDatasetId) {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -542,6 +580,12 @@ public class HIFApi {
 		return aqId.value1();
 	}
 	
+	/**
+	 * @param request 
+	 * @param response
+	 * @param userProfile
+	 * @return JSON representation of a single health impact function.
+	 */
 	public static Object getHealthImpactFunction(Request request, Response response, Optional<UserProfile> userProfile) {
 		String id = request.params("id");
 		
@@ -567,6 +611,10 @@ public class HIFApi {
 		return hifRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+	/**
+	 * @param hifTaskUuid
+	 * @return a status message for the given hif task ("pending", "success", or "failed").
+	 */
 	public static String getHIFTaskStatus(String hifTaskUuid) {
 		TaskCompleteRecord completedTask = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(TASK_COMPLETE.asterisk())
@@ -583,6 +631,10 @@ public class HIFApi {
 		return "failed";
 	}
 
+	/**
+	 * @param hifTaskUuid
+	 * @return an hif result dataset id.
+	 */
 	public static Integer getHIFResultDatasetId(String hifTaskUuid) {
 
 		HifResultDatasetRecord hifResultDataset = DSL.using(JooqUtil.getJooqConfiguration())
@@ -597,6 +649,11 @@ public class HIFApi {
 		return hifResultDataset.getId();
 	}
 
+	/**
+	 * @param hifResultDatasetId
+	 * @param hifIdList
+	 * @return a count of the number of hif result records in the given list of hif ids.
+	 */
 	public static int getHifResultsRecordCount(Integer hifResultDatasetId, ArrayList<Integer> hifIdList) {
 		Record1<Integer> hifResultCount = DSL.using(JooqUtil.getJooqConfiguration())
 		.select(DSL.count())
@@ -611,6 +668,12 @@ public class HIFApi {
 		return hifResultCount.value1().intValue();
 	}
 
+	/**
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all hif result datasets.
+	 */
 	public static Object getHifResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 		Result<Record> hifDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HIF_RESULT_DATASET.asterisk())
@@ -622,6 +685,12 @@ public class HIFApi {
 		return hifDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
+	/**
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of the functions in a given hif result dataset.
+	 */
 	public static Object getHifResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		String idParam = request.params("id");	
 		

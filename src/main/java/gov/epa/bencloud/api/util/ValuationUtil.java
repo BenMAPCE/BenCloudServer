@@ -28,8 +28,17 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResult
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultRecord;
 import gov.epa.bencloud.server.tasks.model.Task;
 
+/*
+ * Methods for updating and accessing resources related to valuation functions
+ */
 public class ValuationUtil {
 
+
+	/**
+	 * 
+	 * @param id
+	 * @return the valuation function expression for a given valuation function id.
+	 */
 	public static VFunction getFunctionForVF(Integer id) {
 
 		// Load the function by id
@@ -72,6 +81,11 @@ public class ValuationUtil {
 		return function;
 	}
 
+	/**
+	 * 
+	 * @param id
+	 * @return the function definition for a given valuation function id.
+	 */
 	public static Record getFunctionDefinition(Integer id) {
 
 		// Load the function by id
@@ -90,6 +104,12 @@ public class ValuationUtil {
 		return record;
 	}
 	
+
+	/**
+	 * 
+	 * @param valuationResultDatasetId
+	 * @return the hif result dataset id related to the given valuation result dataset id.
+	 */
 	public static Integer getHifResultDatasetIdForValuationResultDataset(Integer valuationResultDatasetId) {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -102,6 +122,12 @@ public class ValuationUtil {
 		return record.getHifResultDatasetId();
 	}
 	
+	/**
+	 * Stores the valuation results from a given valuation task in the database.
+	 * @param task
+	 * @param valuationTaskConfig
+	 * @param valuationResults
+	 */
 	public static void storeResults(Task task, ValuationTaskConfig valuationTaskConfig, ArrayList<ValuationResultRecord> valuationResults) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
@@ -150,6 +176,10 @@ public class ValuationUtil {
 		.execute();	
 	}
 	
+	/**
+	 * Stores a given valuation function task log in the database.
+	 * @param vfTaskLog
+	 */
 	public static void storeTaskLog(ValuationTaskLog vfTaskLog) {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -158,10 +188,14 @@ public class ValuationUtil {
 		create.update(VALUATION_RESULT_DATASET)
 			.set(VALUATION_RESULT_DATASET.TASK_LOG, taskLogJson)
 			.where(VALUATION_RESULT_DATASET.ID.eq(vfTaskLog.getVfTaskConfig().resultDatasetId))
-			.execute();
-		
+			.execute();	
 	}
 	
+	/**
+	 * 
+	 * @param datasetId
+	 * @return a valuation task log associated with the given valuation result dataset id.
+	 */
 	public static ValuationTaskLog getTaskLog(Integer datasetId) {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());

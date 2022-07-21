@@ -35,9 +35,16 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatase
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultRecord;
 import gov.epa.bencloud.server.tasks.model.Task;
 
+/*
+ * Methods for updating and accessing resources related to health impact functions.
+ */
 public class HIFUtil {
 
-
+	/**
+	 * 
+	 * @param id
+	 * @return an array of functions (function, baseline function) for a given health impact function.
+	 */
 	public static HIFunction[] getFunctionsForHIF(Integer id) {
 
 		// Load the function by id
@@ -69,7 +76,7 @@ public class HIFUtil {
 		functions[1].hifArguments.c = record.getValC().doubleValue();
 		functions[1].hifArguments.beta = record.getBeta().doubleValue();
 
-		//If we don't have a native function, we'll use the interpreted one insetead
+		//If we don't have a native function, we'll use the interpreted one instead
 		if(functions[0].nativeFunction == null) {
 			// Populate/create the necessary arguments and constants
 			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
@@ -89,7 +96,7 @@ public class HIFUtil {
 			functions[0].interpretedFunction = new Expression(record.getFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
 		}
 
-		//If we don't have a native baseline function, we'll use the interpreted one insetead
+		//If we don't have a native baseline function, we'll use the interpreted one instead
 		if(functions[1].nativeFunction == null) {
 			// Populate/create the necessary arguments and constants
 			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
@@ -112,6 +119,11 @@ public class HIFUtil {
 		return functions;
 	}
 
+	/**
+	 * 
+	 * @param id
+	 * @return the function definition for a given hif.
+	 */
 	public static Record getFunctionDefinition(Integer id) {
 
 		// Load the function by id
@@ -142,9 +154,9 @@ public class HIFUtil {
 	
 	/**
 	 * This method supports saving partial datasets to avoid a situation where 
-	 * the complete result set get so large it cannot be kept in memory
-	 * It will only create the dataset and function_config records on the first call
-	 * Subsequent calls will only write the results themselves
+	 * the complete result set gets so large it cannot be kept in memory.
+	 * It will only create the dataset and function_config records on the first call.
+	 * Subsequent calls will only write the results themselves.
 	 * 
 	 * @param task
 	 * @param hifTaskConfig
@@ -228,11 +240,11 @@ public class HIFUtil {
 	}
 
 	/**
-	 * Selects the most appropriate incidence and prevalence dataset and year for a given function
-	 * First, tries the user's default incidence/prevalence selection
-	 * If that doesn't work, tries to use the selection in the health impact function config
-	 * Failing that, it resorts to default datasets that contain data for the endpoint group
-	 * In all cases, the selected year the closest available to the population year
+	 * Selects the most appropriate incidence and prevalence dataset and year for a given function.
+	 * First, tries the user's default incidence/prevalence selection.
+	 * If that doesn't work, tries to use the selection in the health impact function config.
+	 * Failing that, it resorts to default datasets that contain data for the endpoint group.
+	 * In all cases, the selected year is the closest available to the population year.
 	 * @param function
 	 * @param popYear
 	 * @param defaultIncidencePrevalenceDataset
@@ -333,6 +345,14 @@ public class HIFUtil {
 		}	
 	}
 
+	/**
+	 * 
+	 * @param defaultIncidencePrevalenceDataset
+	 * @param isPrevalence
+	 * @param endpointGroupId
+	 * @param popYear
+	 * @return the closest available incidence year compared to the popYear.
+	 */
 	private static int getClosestIncidenceYear(int defaultIncidencePrevalenceDataset, boolean isPrevalence, int endpointGroupId, int popYear) {
 
 		Record1<Integer>[] incidenceYears = DSL.using(JooqUtil.getJooqConfiguration())
@@ -377,6 +397,11 @@ public class HIFUtil {
 		 
 	}
 
+
+	/**
+	 * Stores the given hifTaskLog in the database.
+	 * @param hifTaskLog
+	 */
 	public static void storeTaskLog(HIFTaskLog hifTaskLog) {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -389,6 +414,11 @@ public class HIFUtil {
 		
 	}
 	
+	/**
+	 * 
+	 * @param datasetId
+	 * @return and HIFTaskLog object, based on the given hif result dataset id.
+	 */
 	public static HIFTaskLog getTaskLog(Integer datasetId) {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());
@@ -415,8 +445,10 @@ public class HIFUtil {
 		
 	}
 
-	/*
-	 * Returns unique, sorted list of health effects included in a list of hifs along with a count
+	/**
+	 * 
+	 * @param hifs
+	 * @return a unique, sorted list of health effects included in a list of hifs along with a count.
 	 */
 	public static String getHealthEffectsListFromHifs(List<HIFConfig> hifs) {
 		Map<String, Integer> epMap = new TreeMap<String, Integer>();
@@ -436,8 +468,10 @@ public class HIFUtil {
 		return s.toString();
 	}
 	
-	/*
-	 * Returns unique, sorted list of health effect groups included in a list of hifs along with a count
+	/**
+	 * 
+	 * @param hifs
+	 * @return a unique, sorted list of health effect groups included in a list of hifs along with a count.
 	 */
 	public static String getHealthEffectGroupsListFromHifs(List<HIFConfig> hifs) {
 		Map<String, Integer> epMap = new TreeMap<String, Integer>();
@@ -457,6 +491,11 @@ public class HIFUtil {
 		return s.toString();
 	}
 
+	/**
+	 * 
+	 * @param hifId
+	 * @return an hif heading (containing hif author and id) for the valuation function task log.
+	 */
 	public static String getHifHeadingForVFTaskLog(Integer hifId) {
 		// Load the function by id
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());

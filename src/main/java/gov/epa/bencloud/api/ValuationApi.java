@@ -17,7 +17,6 @@ import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
-import org.jooq.exception.IOException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
@@ -40,9 +39,18 @@ import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
 
+/*
+ * Methods related to valuation data.
+ */
 public class ValuationApi {
 	private static final Logger log = LoggerFactory.getLogger(ValuationApi.class);
 	
+	/**
+	 * Gets the contents of a valuation result dataset and stores it in the response.
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 */
 	public static void getValuationResultContents(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		 //*  :id (valuation results dataset id)
@@ -151,6 +159,12 @@ public class ValuationApi {
 		
 	}
 	
+	/**
+	 * Exports all valuation results to a zip file.
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 */
 	public static void getValuationResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		 //*  :id (valuation results dataset id)
@@ -273,6 +287,11 @@ public class ValuationApi {
 		
 	}
 	
+	/**
+	 * 
+	 * @param valuationResultDatasetId
+	 * @return a valuation task configuration from a given valuation result dataset id.
+	 */
 	public static ValuationTaskConfig getValuationTaskConfigFromDb(Integer valuationResultDatasetId) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
@@ -289,6 +308,11 @@ public class ValuationApi {
 		return valuationTaskConfig;
 	}
 	
+	/**
+	 * 
+	 * @param uuid
+	 * @return a valuation result dataset id from a given valuation task uuid.
+	 */
 	public static Integer getValuationResultDatasetId(String uuid) {
 
 		ValuationResultDatasetRecord valuationResultDataset = DSL.using(JooqUtil.getJooqConfiguration())
@@ -303,6 +327,13 @@ public class ValuationApi {
 		return valuationResultDataset.getId();
 	}
 
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all valuation functions.
+	 */
 	public static Object getAllValuationFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 
 		Result<Record> valuationRecords = null;
@@ -325,6 +356,13 @@ public class ValuationApi {
 		return valuationRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all valuation result datasets.
+	 */
 	public static Object getValuationResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 		Result<Record> valuationDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(VALUATION_RESULT_DATASET.asterisk())
@@ -336,6 +374,13 @@ public class ValuationApi {
 		return valuationDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of valuation functions from a given valuation result dataset.
+	 */
 	public static Object getValuationResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		String idParam = request.params("id");
 		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
@@ -369,6 +414,11 @@ public class ValuationApi {
 		return hifRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+	/**
+	 * 
+	 * @param valuationResultDatasetId
+	 * @return a baseline grid definition id from a given valuation result dataset.
+	 */
 	public static Integer getBaselineGridForValuationResults(int valuationResultDatasetId) {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());

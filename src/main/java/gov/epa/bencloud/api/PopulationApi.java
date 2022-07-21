@@ -20,12 +20,20 @@ import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import spark.Request;
 import spark.Response;
 
+/*
+ * Methods related to population data
+ */
 public class PopulationApi {
 
+	/**
+	 * 
+	 * @param hifTaskConfig
+	 * @return a map of population entry groups, with key = grid cell id,
+	 * 			value = population records
+	 */
 	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
 
 		//TODO: Need to grow the population using the selected popYear
@@ -70,6 +78,11 @@ public class PopulationApi {
 		return popRecords;
 	}
 
+	/**
+	 * 
+	 * @param hifTaskConfig
+	 * @return a list of age ranges for health impact functions in the given hif task configuration.
+	 */
 	private static ArrayList<Integer> getAgeRangesForHifs(HIFTaskConfig hifTaskConfig) {
 		
 		int minHifAge = 999;
@@ -135,6 +148,11 @@ public class PopulationApi {
 		return genderIds;		
 	}
 
+	/**
+	 * 
+	 * @param id Population dataset id
+	 * @return population age ranges for a given population dataset.
+	 */
 	public static Result<Record3<Integer, Short, Short>> getPopAgeRanges(Integer id) {
 
 		Record1<Integer> popConfig = DSL.using(JooqUtil.getJooqConfiguration())
@@ -152,6 +170,13 @@ public class PopulationApi {
 		return popAgeRanges;
 	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON represenation of all population datasets
+	 */
 	public static Object getAllPopulationDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 
 			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
@@ -172,6 +197,11 @@ public class PopulationApi {
 
 	}
 	
+	/**
+	 * 
+	 * @param id 
+	 * @return a ist of population dataset information
+	 */
 	public static Record3<String, Integer, String> getPopulationDatasetInfo(Integer id) {
 
 		Record3<String, Integer, String> record = DSL.using(JooqUtil.getJooqConfiguration())

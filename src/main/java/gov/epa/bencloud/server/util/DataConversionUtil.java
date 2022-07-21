@@ -8,9 +8,17 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/*
+ * Methods for performing conversions of strings to other data types.
+ */
 public class DataConversionUtil {
 	private static final Logger log = LoggerFactory.getLogger(DataConversionUtil.class);
 	
+	/**
+	 * 
+	 * @param filterValue
+	 * @return the given filter value in integer format.
+	 */
 	public static Integer getFilterValueAsInteger(String filterValue) {
 
 		Integer filterValueAsInteger = null;
@@ -25,6 +33,11 @@ public class DataConversionUtil {
 		return filterValueAsInteger;
 	}
 
+	/**
+	 * 
+	 * @param filterValue
+	 * @return the given filter value in long format.
+	 */
 	public static Long getFilterValueAsLong(String filterValue) {
 
 		Long filterValueAsLong = null;
@@ -39,6 +52,11 @@ public class DataConversionUtil {
 		return filterValueAsLong;
 	}
 
+	/**
+	 * 
+	 * @param filterValue
+	 * @return the given filter value in double format.
+	 */
 	public static Double getFilterValueAsDouble(String filterValue) {
 
 		Double filterValueAsDouble = null;
@@ -53,6 +71,11 @@ public class DataConversionUtil {
 		return filterValueAsDouble;
 	}
 
+	/**
+	 * 
+	 * @param filterValue
+	 * @return the given filter value in big decimal format.
+	 */
 	public static BigDecimal getFilterValueAsBigDecimal(String filterValue) {
 
 		BigDecimal filterValueAsBigDecimal = null;
@@ -67,6 +90,12 @@ public class DataConversionUtil {
 		return filterValueAsBigDecimal;
 	}
 
+	/**
+	 * 
+	 * @param filterValue
+	 * @param dateFormatString
+	 * @return the given filter value in date format.
+	 */
 	public static Date getFilterValueAsDate(String filterValue, String dateFormatString ) {
 
 		Date filterValueAsDate = null;
