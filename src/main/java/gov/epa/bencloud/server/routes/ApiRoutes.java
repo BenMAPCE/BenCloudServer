@@ -1,5 +1,7 @@
 package gov.epa.bencloud.server.routes;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -9,7 +11,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import freemarker.template.Configuration;
 import gov.epa.bencloud.api.*;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
@@ -24,7 +25,7 @@ public class ApiRoutes extends RoutesBase {
 	private Service service = null;
 	private final String apiPrefix = "/api";
 	
-	public ApiRoutes(Service service, Configuration freeMarkerConfiguration){
+	public ApiRoutes(Service service){
 		this.service = service;
 		addRoutes();
 	}
@@ -32,6 +33,16 @@ public class ApiRoutes extends RoutesBase {
 
 	private void addRoutes() {
 
+		service.notFound((request, response) -> {
+			response.type("application/json");
+			return "{\"message\":\"Not found\"}";
+		});
+
+		service.internalServerError((request, response) -> {
+			response.type("application/json");
+			return "{\"message\":\"Internal server error\"}";
+		});
+		
 		/*
 		 * GET array of all grid definitions
 		 */

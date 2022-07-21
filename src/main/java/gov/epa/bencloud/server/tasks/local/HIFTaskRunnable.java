@@ -1,5 +1,6 @@
 package gov.epa.bencloud.server.tasks.local;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,9 +21,11 @@ import org.mariuszgromada.math.mxparser.mXparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import ch.qos.logback.core.net.SyslogOutputStream;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.PopulationApi;
@@ -32,9 +35,12 @@ import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
+import gov.epa.bencloud.api.model.PopulationCategoryKey;
 import gov.epa.bencloud.api.util.HIFUtil;
-
+import gov.epa.bencloud.server.database.PooledDataSource;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultRecord;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
@@ -42,20 +48,12 @@ import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
-/*
- * Methods related to running HIF tasks.
- */
 public class HIFTaskRunnable implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskRunnable.class);
 	
 	private String taskUuid;
 	private String taskWorkerUuid;
 
-	/**
-	 * Creates an HIFTaskRunnable object with the given taskUuid and taskWorkerUuid
-	 * @param taskUuid
-	 * @param taskWorkerUuid
-	 */
 	public HIFTaskRunnable(String taskUuid, String taskWorkerUuid) {
 		this.taskUuid = taskUuid;
 		this.taskWorkerUuid = taskWorkerUuid;
@@ -63,15 +61,6 @@ public class HIFTaskRunnable implements Runnable {
 
 	private boolean taskSuccessful = true;
 
-	/*
-	 * Runs the HIF task.
-	 * Loads the necessary air quality layers.
-	 * Loads the necessary incidence/prevalance data for each HIF.
-	 * Creates a normal distribution for each HIF, with mean = HIF beta and standard deviation = HIF p1_beta.
-	 * 	Splits the normal distribution into 20 slices, representing percentiles.
-	 * Loads the necessary population data for each HIF.
-	 * 
-	 */
 	public void run() {
 		
 		log.info("HIF Task Begin: " + taskUuid);
@@ -99,8 +88,11 @@ public class HIFTaskRunnable implements Runnable {
 			ArrayList<HIFunction> hifBaselineList = new ArrayList<HIFunction>();
 			
 			// incidenceLists contains an array of incidence maps for each HIF
-			ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
-			ArrayList<Map<Long, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			//ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			//ArrayList<Map<Long, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
+			//YY:update incidence and prevalence key to include gender, race, ethnicity, and age range
+			ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> incidenceLists = new ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>>();
+			ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>>();
 			
 			// incidenceCachepMap is used inside addIncidenceEntryGroups to avoid querying for datasets we already have
 			Map<String, Integer> incidenceCacheMap = new HashMap<String, Integer>();
@@ -116,7 +108,11 @@ public class HIFTaskRunnable implements Runnable {
 			messages.add(new TaskMessage("active", "Loading incidence and prevalence data"));
 			int idx=0;
 			for (HIFConfig hif : hifTaskConfig.hifs) {
-				hif.arrayIdx = idx;
+				hif.arrayIdx = idx++;	
+			}
+
+			idx=0;
+			for (HIFConfig hif : hifTaskConfig.hifs) {	
 				messages.get(messages.size()-1).setMessage("Loading incidence and prevalence for function " + ++idx + " of " + hifTaskConfig.hifs.size());
 				TaskQueue.updateTaskPercentage(taskUuid, 2, mapper.writeValueAsString(messages));
 				
@@ -143,9 +139,9 @@ public class HIFTaskRunnable implements Runnable {
 				for(int i=0; i < distBeta.length; i++) {
 					// Grab the median from each of the 20 slices of distSamples
 					distBeta[i] = (distSamples[idxMedian]+distSamples[idxMedian-1])/2.0;
-					System.out.println(i + ": "  + distBeta[i]);
 					idxMedian += distSamples.length / distBeta.length;
 				}
+				
 				hifBetaDistributionLists.add(distBeta);
 			}
 			
@@ -282,10 +278,10 @@ public class HIFTaskRunnable implements Runnable {
 					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
-					Map<Long, Map<Integer, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
-					Map<Long, Map<Integer, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
-					Map<Integer, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
-					Map<Integer, Double> prevalenceCell = prevalenceMap.get(baselineEntry.getKey());
+					Map<Long, Map<PopulationCategoryKey, Double>> incidenceMap = incidenceLists.get(hifConfig.arrayIdx);
+					Map<Long, Map<PopulationCategoryKey, Double>> prevalenceMap = prevalenceLists.get(hifConfig.arrayIdx);
+					Map<PopulationCategoryKey, Double> incidenceCell = incidenceMap.get(baselineEntry.getKey());
+					Map<PopulationCategoryKey, Double> prevalenceCell = prevalenceMap.get(baselineEntry.getKey());
 
 					/*
 					 * ACCUMULATE THE ESTIMATE FOR EACH AGE CATEGORY IN THIS CELL
@@ -302,12 +298,19 @@ public class HIFTaskRunnable implements Runnable {
 					for (GetPopulationRecord popCategory : populationCell) {
 						// <gridCellId, race, gender, ethnicity, agerange, pop>
 						Integer popAgeRange = popCategory.getAgeRangeId();
+						Integer popRace = popCategory.getRaceId();
+						Integer popEthnicity = popCategory.getEthnicityId();
+						Integer popGender = popCategory.getGenderId();
+						
+						PopulationCategoryKey popCatKey = new PopulationCategoryKey(popAgeRange, popRace, popEthnicity, popGender);						
 						
 						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
 							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
+							//YY: Incidence average is updated in addIncidenceOrPrevalenceEntryGroups. Need review.
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
-							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popAgeRange, 0.0);
-							prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popAgeRange, 0.0);
+							
+							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popCatKey, 0.0);
+							prevalence = prevalenceCell == null ? 0.0 : prevalenceCell.getOrDefault(popCatKey, 0.0);
 							
 							totalPop += rangePop;
 
@@ -340,7 +343,6 @@ public class HIFTaskRunnable implements Runnable {
 								hifBaselineExpression.setArgumentValue("PREVALENCE", prevalence);
 								hifBaselineExpression.setArgumentValue("POPULATION", rangePop);
 								
-
 								hifBaselineEstimate += hifBaselineExpression.calculate() * seasonalScalar;
 							} else {
 								hifBaselineFunction.hifArguments.incidence = incidence;
@@ -503,17 +505,12 @@ public class HIFTaskRunnable implements Runnable {
 			hif.totalDays = hif.endDay - hif.startDay + 1;
 		}
 	}
-
-	/**
-	 * Gets the full list of age ranges for the population.
-	 * For each hif, adds a map of the relevant age ranges and percentages.
-	 * @param hifTaskConfig
-	 * @return a list of maps with keys = population age range, 
-	 * 			and values = percentage of population in that age range that applies to a given HIF.
-	 */
-	private ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
+	//YY: change to public so that it can be used when calculating incidence
+	public static ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
 		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = new ArrayList<HashMap<Integer, Double>>();
 		
+		// Get the full list of age ranges for the population
+		// for each hif, add a map of the relevant age ranges and percentages
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 		
 		// We're getting the hifs from hifTaskConfig in the order they were originally placed
@@ -521,6 +518,7 @@ public class HIFTaskRunnable implements Runnable {
 			HIFConfig hif = null;
 			
 			// Find the hif with arrayIdx = idx
+
 			for(int i = 0; i < hifTaskConfig.hifs.size(); i ++) {
 				if(hifTaskConfig.hifs.get(i).arrayIdx == idx) {
 					hif = hifTaskConfig.hifs.get(i);

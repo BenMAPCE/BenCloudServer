@@ -692,8 +692,15 @@ public class HIFApi {
 	 * @return a JSON representation of the functions in a given hif result dataset.
 	 */
 	public static Object getHifResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
-		String idParam = request.params("id");
-		Integer id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
+		String idParam = request.params("id");	
+		
+		Integer id=null;
+		try {
+			id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
 				
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
@@ -714,6 +721,9 @@ public class HIFApi {
 				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
 				.fetch();
 		
+		if(hifRecords.isEmpty()) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
 		response.type("application/json");
 		return hifRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}

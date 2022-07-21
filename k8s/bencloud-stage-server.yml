@@ -164,7 +164,7 @@ metadata:
 spec:
   tls:
     - hosts:
-        - dev.bencloud-dev.aws.epa.gov
+        - stg.bencloud-stg.aws.epa.gov
       secretName: bencloud-tls-secret
   rules:
     - host: stg.bencloud-stg.aws.epa.gov
