@@ -8,6 +8,7 @@
 # https://github.com/gradle/gradle
 
 stages:
+  - test
   - code_build
   - image_build
   - image_scan
