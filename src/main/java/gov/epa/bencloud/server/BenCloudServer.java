@@ -105,18 +105,26 @@ public class BenCloudServer {
 		Spark.exception(Exception.class, (exception, request, response) -> {
 		    log.error("Spark exception thrown", exception);
 		});
-
+	
+		int dbVersion = -999;
+		try {
+			dbVersion = ApiUtil.getDatabaseVersion();
+		} catch (Exception e) {
+			log.error("STARTUP FAILED: Unable to access database", e);
+			System.exit(-1);
+		}
+		
+		if(ApiUtil.minimumDbVersion > dbVersion) {
+			log.error("STARTUP FAILED: Database version is " + dbVersion + " but must be at least " + ApiUtil.minimumDbVersion);
+			System.exit(-1);
+		}
+		
 		new PublicRoutes(benCloudService, freeMarkerConfiguration);
 		new AdminRoutes(benCloudService, freeMarkerConfiguration);
 		new ApiRoutes(benCloudService, freeMarkerConfiguration);
 		
 		JobsUtil.startJobScheduler();
-		
-		int dbVersion = ApiUtil.getDatabaseVersion();
-		if(ApiUtil.minimumDbVersion > dbVersion) {
-			log.error("STARTUP FAILED: Database version is " + dbVersion + " but must be at least " + ApiUtil.minimumDbVersion);
-			System.exit(-1);
-		}
+	
 
 		log.info("*** BenMAP API Server. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 
