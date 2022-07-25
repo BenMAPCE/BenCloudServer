@@ -367,11 +367,22 @@ public class AirQualityApi {
 	 * @return Single air quality layer definition as json string 
 	 */
 	public static Object getAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
-		Integer id = Integer.valueOf(request.params("id"));
+		
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
 		
 		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id, userProfile);
 		response.type("application/json");
-		return aqRecord.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+		if(aqRecord == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		} else {
+			return aqRecord.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+		}
 	}
 	
 	
