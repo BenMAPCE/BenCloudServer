@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -248,4 +250,8 @@ public class ApplicationUtil {
 		return outputDirectory;
 	}
 
+	public static String getCurrentLocalDateTimeStamp() {
+	    return LocalDateTime.now()
+	       .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+	}
 }
