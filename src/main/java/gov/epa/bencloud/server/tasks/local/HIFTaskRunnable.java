@@ -121,6 +121,11 @@ public class HIFTaskRunnable implements Runnable {
 			}
 
 			idx=0;
+			
+			// For each HIF, keep track of which age groups (and what percentage) apply
+			// Hashmap key is the population age range and the value is what percent of that range's population applies to the HIF
+			ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = getPopAgeRangeMapping(hifTaskConfig);
+
 			for (HIFConfig hif : hifTaskConfig.hifs) {	
 				messages.get(messages.size()-1).setMessage("Loading incidence and prevalence for function " + ++idx + " of " + hifTaskConfig.hifs.size());
 				TaskQueue.updateTaskPercentage(taskUuid, 2, mapper.writeValueAsString(messages));
@@ -138,8 +143,8 @@ public class HIFTaskRunnable implements Runnable {
 				updateHifConfigValues(hif, h);
 				
 				//This will get the incidence and prevalence dataset for the year specified in the hif config
-				boolean ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hif, true, h, incidenceLists, incidenceCacheMap);
-				ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hif, false, h, prevalenceLists, prevalenceCacheMap);
+				boolean ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hifPopAgeRangeMapping, hif, true, h, incidenceLists, incidenceCacheMap);
+				ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hifPopAgeRangeMapping, hif, false, h, prevalenceLists, prevalenceCacheMap);
 				
 				double[] distSamples = getDistributionSamples(h);
 				double[] distBeta = new double[20];
@@ -165,9 +170,6 @@ public class HIFTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 3, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
-			// For each HIF, keep track of which age groups (and what percentage) apply
-			// Hashmap key is the population age range and the value is what percent of that range's population applies to the HIF
-			ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = getPopAgeRangeMapping(hifTaskConfig);
 			
 			// Load the population dataset
 			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig);
@@ -311,7 +313,7 @@ public class HIFTaskRunnable implements Runnable {
 						Integer popEthnicity = popCategory.getEthnicityId();
 						Integer popGender = popCategory.getGenderId();
 						
-						PopulationCategoryKey popCatKey = new PopulationCategoryKey(popAgeRange, popRace, popEthnicity, popGender);						
+						PopulationCategoryKey popCatKey = new PopulationCategoryKey(popAgeRange, null, null, null); //popRace, popEthnicity, popGender);						
 						
 						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
 							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
