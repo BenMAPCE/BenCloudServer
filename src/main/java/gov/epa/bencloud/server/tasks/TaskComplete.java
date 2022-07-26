@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.DataUtil;
@@ -140,7 +141,9 @@ public class TaskComplete {
 			try {
 
 				Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
-						.where(TASK_COMPLETE.USER_ID.eq(userId))
+						.where(TASK_COMPLETE.USER_ID.eq(userId)
+								.or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.noCondition()) //Show all completed results to admins for now
+							)
 						.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
 						.fetch();
 
@@ -155,6 +158,7 @@ public class TaskComplete {
 					task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
 					task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
 					task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
+					task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
 					
 					wrappedObject = mapper.createObjectNode();
 					wrappedObject.put("task_wait_time_display", DataUtil.getHumanReadableTime(
