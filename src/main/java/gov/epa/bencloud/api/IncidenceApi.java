@@ -159,13 +159,17 @@ public class IncidenceApi {
 
 					
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
-					if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
-						//JA Adjusting this since it was never pulling the value from incidenceOrPrevalenceAgeRange so incidence was always 0
-						//double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
-						double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
-						incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) + inc);
-						demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);
-					}	
+
+					//JA Added range restriction here so we only consider population bins that fall within the incidence range
+					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
+						if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
+							//JA Adjusting this since it was never pulling the value from incidenceOrPrevalenceAgeRange so incidence was always 0
+							//double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+							incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) + inc);
+							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);
+						}	
+					}
 					
 				}
 				//Now calculate the average (if more than one incidence rate was applied to this population age range
