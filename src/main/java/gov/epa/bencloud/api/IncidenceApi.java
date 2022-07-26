@@ -41,7 +41,7 @@ public class IncidenceApi {
 	 * @return true if incidence or prevelance entry groups are successfully added to incidenceOrPrevelanceLists,
 	 * 			or if incidence/prevalence are not used to for the given function
 	 */
-	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
+	public static boolean addIncidenceOrPrevalenceEntryGroups(HIFTaskConfig hifTaskConfig, ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping, HIFConfig hifConfig, boolean isIncidence, Record h, ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> incidenceOrPrevalenceLists, Map<String, Integer> incidenceOrPrevalenceCacheMap) {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
 		
@@ -82,7 +82,7 @@ public class IncidenceApi {
 		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revised.
 		
 		//YY: age range percentage?
-		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = HIFTaskRunnable.getPopAgeRangeMapping(hifTaskConfig);
+		//ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = HIFTaskRunnable.getPopAgeRangeMapping(hifTaskConfig);
 		
 		//Get array of race, ethnicity and gender to include based on the configured hifs
         //TODO: If all hifs calls for "all" or null, set groupby = false. Will the values in lookup table stay forever? 
@@ -105,14 +105,14 @@ public class IncidenceApi {
 				incPrevId,
 				incPrevYear,
 				h.get("endpoint_id", Integer.class), 
-				arrRaceIds, 
-				arrEthnicityIds, 
-				arrGenderIds, 
+				null, //arrRaceIds, 
+				null, //arrEthnicityIds, 
+				null, //arrGenderIds, 
 				hifConfig.startAge.shortValue(), 
 				hifConfig.endAge.shortValue(), 
-				booGroupByRace,
-				booGroupByEthnicity, 
-				booGroupByGender,
+				false, //booGroupByRace,
+				false, //booGroupByEthnicity, 
+				false, //booGroupByGender,
 				true, 
 				AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId))
 				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
@@ -152,14 +152,17 @@ public class IncidenceApi {
 					
 					//YY: Correct?
 					PopulationCategoryKey demoGroup = new PopulationCategoryKey(popAgeRange.value1(), 
-							incidenceOrPrevalenceAgeRange.getRaceId(),
-							incidenceOrPrevalenceAgeRange.getEthnicityId(),
-							incidenceOrPrevalenceAgeRange.getGenderId());
+							null, //incidenceOrPrevalenceAgeRange.getRaceId(),
+							null, //incidenceOrPrevalenceAgeRange.getEthnicityId(),
+							null //incidenceOrPrevalenceAgeRange.getGenderId()
+							);
 
 					
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
 					if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
-						double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+						//JA Adjusting this since it was never pulling the value from incidenceOrPrevalenceAgeRange so incidence was always 0
+						//double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+						double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
 						incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) + inc);
 						demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);
 					}	

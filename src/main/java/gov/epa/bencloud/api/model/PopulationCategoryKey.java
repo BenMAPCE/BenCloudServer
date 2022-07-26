@@ -3,13 +3,13 @@ package gov.epa.bencloud.api.model;
 import java.util.Objects;
 
 public class PopulationCategoryKey{
-	private final int ageRangeId;
-	private final int raceId;
-	private final int ethnicityId;
-	private final int genderId;
-	private final int hashcode;
+	private final Integer ageRangeId;
+	private final Integer raceId;
+	private final Integer ethnicityId;
+	private final Integer genderId;
+	private final Integer hashcode;
 	
-	public PopulationCategoryKey(int ageRangeId, int raceId, int ethnicityId, int genderId) {
+	public PopulationCategoryKey(Integer ageRangeId, Integer raceId, Integer ethnicityId, Integer genderId) {
 		this.ageRangeId = ageRangeId;
 		this.raceId = raceId;
 		this.ethnicityId = ethnicityId;
@@ -35,35 +35,35 @@ public class PopulationCategoryKey{
 	/**
 	 * @return the ageRangeId
 	 */
-	public int getAgeRangeId() {
+	public Integer getAgeRangeId() {
 		return ageRangeId;
 	}
 
 	/**
 	 * @return the raceId
 	 */
-	public int getRaceId() {
+	public Integer getRaceId() {
 		return raceId;
 	}
 
 	/**
 	 * @return the ethnicityId
 	 */
-	public int getEthnicityId() {
+	public Integer getEthnicityId() {
 		return ethnicityId;
 	}
 
 	/**
 	 * @return the genderId
 	 */
-	public int getGenderId() {
+	public Integer getGenderId() {
 		return genderId;
 	}
 
 	/**
 	 * @return the hashcode
 	 */
-	public int getHashcode() {
+	public Integer getHashcode() {
 		return hashcode;
 	}
 	
