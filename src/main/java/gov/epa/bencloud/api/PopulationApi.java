@@ -64,13 +64,13 @@ public class PopulationApi {
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
-				arrRaceIds, 
-				arrEthnicityIds, 
-				arrGenderIds, 
+				null, //arrRaceIds, 
+				null, //arrEthnicityIds, 
+				null, //arrGenderIds, 
 				arrAgeRangeIds, 
-				booGroupByRace, 
-				booGroupByEthnicity, 
-				booGroupByGender, 
+				false, //booGroupByRace, 
+				false, //booGroupByEthnicity, 
+				false, //booGroupByGender, 
 				true, //YY: groupbyAgeRange
 				28 //YY: outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
