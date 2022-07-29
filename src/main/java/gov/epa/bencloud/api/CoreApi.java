@@ -3,7 +3,6 @@ package gov.epa.bencloud.api;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.jooq.DSLContext;
 import org.jooq.JSON;
@@ -56,6 +55,7 @@ public class CoreApi {
 	 */
 	public static Object getTaskConfigs(Request request, Response response, Optional<UserProfile> userProfile) {
 		//TODO: Add type filter to select HIF or Valuation
+
 		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(TASK_CONFIG.asterisk())
 				.from(TASK_CONFIG)
@@ -95,11 +95,21 @@ public class CoreApi {
 			e.printStackTrace();
 			response.status(400);
 			return null;
+		} 
+		
+		String name;
+		String type;
+		JSON params;
+		try {
+			name = jsonPost.get("name").asText();
+			type = jsonPost.get("type").asText();
+			params = JSON.json(jsonPost.get("parameters").toString());
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+			response.status(400);
+			return null;
 		}
 		
-		String name = jsonPost.get("name").asText();
-		String type = jsonPost.get("type").asText();
-		JSON params = JSON.json(jsonPost.get("parameters").toString());
 		
 		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
 		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
