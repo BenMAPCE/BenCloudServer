@@ -92,7 +92,7 @@ public class KubernetesUtil {
 	    	  //.withApiVersion("batch/v1")
 	    	  //.withKind("Job")
 	    	  .withNewMetadata()
-	    	    .withNamespace("benmap-dev")
+	    	    .withNamespace(envMap.get("K8S_NAMESPACE"))
 	    	    .withGenerateName("bencloud-job-")
 	    	    .withAnnotations(
 	    	    	Map.of(
@@ -128,7 +128,7 @@ public class KubernetesUtil {
 	    	
 	    	logger.debug("body: " + body.toString());
 
-	    	V1Job createdJob = batchApi.createNamespacedJob("benmap-dev", body, "true", null, null);
+	    	V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body, "true", null, null);
 
 	    	logger.debug("Job status: " + createdJob.getStatus());
 
@@ -185,7 +185,7 @@ public class KubernetesUtil {
 
 			V1Job body = new V1JobBuilder()
 					.withNewMetadata()
-						.withNamespace("benmap-dev")
+						.withNamespace(envMap.get("K8S_NAMESPACE"))
 						.withGenerateName("bencloud-job-")
 						.withAnnotations(
 							Map.of("app.gitlab.com/app", envMap.get("API_CI_PROJECT_PATH_SLUG"),
@@ -221,7 +221,7 @@ public class KubernetesUtil {
 					.endSpec()
 					.build();
 
-			V1Job createdJob = batchApi.createNamespacedJob("benmap-dev", body, "true", null, null);
+			V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body, "true", null, null);
 
 			//logger.debug("Job status: " + createdJob.getStatus());
 			logger.debug("Starting job for " + taskUuid);
@@ -248,7 +248,7 @@ public class KubernetesUtil {
 
 			CoreV1Api coreApi = new CoreV1Api(client);
 
-			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null,
+			V1PodList list = coreApi.listNamespacedPod(envMap.get("K8S_NAMESPACE"), "true", null, null, null, null, null, null, null,
 					null, null);
 
 			return list.toString();
@@ -276,7 +276,7 @@ public class KubernetesUtil {
 
 			StringBuilder sb = new StringBuilder();
 
-			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null,
+			V1PodList list = coreApi.listNamespacedPod(envMap.get("K8S_NAMESPACE"), "true", null, null, null, null, null, null, null,
 					null, null);
 			for (V1Pod item : list.getItems()) {
 				if (item.getMetadata().getName().startsWith("bencloud-job-")) {
@@ -313,7 +313,7 @@ public class KubernetesUtil {
 	    	StringBuilder sb = new StringBuilder();
 	    	int numDeleted = 0;
 	    	
-			V1PodList list = coreApi.listNamespacedPod("benmap-dev", "true", null, null, null, null, null, null, null, null, null);
+			V1PodList list = coreApi.listNamespacedPod(envMap.get("K8S_NAMESPACE"), "true", null, null, null, null, null, null, null, null, null);
 			for (V1Pod item : list.getItems()) {
 				
 				if(item.getMetadata().getName().startsWith("bencloud-job-")) {
