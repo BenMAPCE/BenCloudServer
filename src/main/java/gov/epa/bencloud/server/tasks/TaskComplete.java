@@ -135,85 +135,78 @@ public class TaskComplete {
         ObjectNode wrappedObject = mapper.createObjectNode();
 
         int records = 0;
-        
-//		if (null != userIdentifier) {
 
-			try {
+		try {
 
-				Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
-						.where(TASK_COMPLETE.USER_ID.eq(userId)
-								.or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.noCondition()) //Show all completed results to admins for now
-							)
-						.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
-						.fetch();
+			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
+					.where(TASK_COMPLETE.USER_ID.eq(userId)
+							.or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.noCondition()) //Show all completed results to admins for now
+						)
+					.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
+					.fetch();
 
-				for (Record record : result) {
+			for (Record record : result) {
 
-					task = mapper.createObjectNode();
+				task = mapper.createObjectNode();
 
-					task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
-					task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
-					task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
-					task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
-					task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
-					task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
-					task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
-					task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
-					
-					wrappedObject = mapper.createObjectNode();
-					wrappedObject.put("task_wait_time_display", DataUtil.getHumanReadableTime(
-							record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE), 
-							record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
-					wrappedObject.put("task_wait_time_seconds", 
-							ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE),
-									record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
-					task.set("task_wait_time", wrappedObject);
-
-					wrappedObject = mapper.createObjectNode();
-					wrappedObject.put("task_execution_time_display", DataUtil.getHumanReadableTime(
-							record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
-							record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
-					wrappedObject.put("task_execution_time_seconds", 
-							ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_STARTED_DATE),
-									record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
-					task.set("task_execution_time", wrappedObject);
-
-					task.put("task_elapsed_time", DataUtil.getHumanReadableTime(
-							record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
-							record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
-/*
-					System.out.println(DataUtil.getHumanReadableTime(
-							record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
-							record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
-*/					
-					task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
-					task.put("task_message", record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE));
-				    					
-					tasks.add(task);
-					records++;
-					
-				}
+				task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
+				task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
+				task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
+				task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
+				task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
+				task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
+				task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
+				task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
 				
-				data.set("data", tasks);
-				data.put("success", true);
-				data.put("recordsFiltered", records);
-				data.put("recordsTotal", records);
+				wrappedObject = mapper.createObjectNode();
+				wrappedObject.put("task_wait_time_display", DataUtil.getHumanReadableTime(
+						record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE), 
+						record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
+				wrappedObject.put("task_wait_time_seconds", 
+						ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE),
+								record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
+				task.set("task_wait_time", wrappedObject);
 
-			} catch (DataAccessException e) {
-				data.put("success", false);
-				data.put("error_message", e.getMessage());
-				log.error("Error getting completed tasks", e);
-			} catch (IllegalArgumentException e) {
-				data.put("success", false);
-				data.put("error_message", e.getMessage());
-				log.error("Error getting completed tasks", e);
+				wrappedObject = mapper.createObjectNode();
+				wrappedObject.put("task_execution_time_display", DataUtil.getHumanReadableTime(
+						record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
+						record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+				wrappedObject.put("task_execution_time_seconds", 
+						ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_STARTED_DATE),
+								record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+				task.set("task_execution_time", wrappedObject);
+
+				task.put("task_elapsed_time", DataUtil.getHumanReadableTime(
+						record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
+						record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+				
+				task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
+				task.put("task_message", record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE));
+			    					
+				tasks.add(task);
+				records++;
+				
 			}
-//		}
+			
+			data.set("data", tasks);
+			data.put("success", true);
+			data.put("recordsFiltered", records);
+			data.put("recordsTotal", records);
 
-//		System.out.println("--------------------------------------------------");
-//		System.out.println(data.toPrettyString());
-//		System.out.println("--------------------------------------------------");
-		
+		} catch (DataAccessException e) {
+			data.put("success", false);
+			data.put("error_message", e.getMessage());
+			log.error("Error getting completed tasks", e);
+		} catch (IllegalArgumentException e) {
+			data.put("success", false);
+			data.put("error_message", e.getMessage());
+			log.error("Error getting completed tasks", e);
+		} catch (Exception e) {
+			data.put("success", false);
+			data.put("error_message", "Unknown error");
+			log.error("Error getting completed tasks", e);			
+		}
+	
 		return data;
 	} 
 
