@@ -153,32 +153,62 @@ public class TaskComplete {
 				task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
 				task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
 				task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
-				task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
-				task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
-				task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
+				try {
+					task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
+				} catch (Exception e) {
+					task.put("task_submitted_date", "");
+					e.printStackTrace();
+				}
+				try {
+					task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
+				} catch (Exception e) {
+					task.put("task_started_date", "");
+					e.printStackTrace();
+				}
+				try {
+					task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
+				} catch (Exception e) {
+					task.put("task_completed_date", "");
+					e.printStackTrace();
+				}
+				
 				task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
 				
 				wrappedObject = mapper.createObjectNode();
-				wrappedObject.put("task_wait_time_display", DataUtil.getHumanReadableTime(
-						record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE), 
-						record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
-				wrappedObject.put("task_wait_time_seconds", 
-						ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE),
-								record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
+				try {
+					wrappedObject.put("task_wait_time_display", DataUtil.getHumanReadableTime(
+							record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE), 
+							record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
+					wrappedObject.put("task_wait_time_seconds", 
+							ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE),
+									record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
+				} catch (Exception e) {
+					
+					e.printStackTrace();
+				}
 				task.set("task_wait_time", wrappedObject);
 
 				wrappedObject = mapper.createObjectNode();
-				wrappedObject.put("task_execution_time_display", DataUtil.getHumanReadableTime(
-						record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
-						record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
-				wrappedObject.put("task_execution_time_seconds", 
-						ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_STARTED_DATE),
-								record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+				try {
+					wrappedObject.put("task_execution_time_display", DataUtil.getHumanReadableTime(
+							record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
+							record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+					wrappedObject.put("task_execution_time_seconds", 
+							ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_STARTED_DATE),
+									record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				task.set("task_execution_time", wrappedObject);
 
-				task.put("task_elapsed_time", DataUtil.getHumanReadableTime(
-						record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
-						record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+				try {
+					task.put("task_elapsed_time", DataUtil.getHumanReadableTime(
+							record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
+							record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+				} catch (Exception e) {
+					task.put("task_elapsed_time", "");
+					e.printStackTrace();
+				}
 				
 				task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
 				task.put("task_message", record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE));
