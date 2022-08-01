@@ -65,26 +65,56 @@ public class ValuationApi {
 
 		// TODO: Add user security enforcement 
 		// TODO: Implement sortBy, descending, and filter
+
+		String idParam;
+		Integer id;	
+
+		String hifIdsParam;
+		String vfIdsParam;
+		int gridId;
+		int page;
+		int rowsPerPage;
+		String sortBy;
+		boolean descending;
+		String filter;
+
+		try {
+
+			idParam = String.valueOf(request.params("id"));
+			id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
+
+
+			hifIdsParam = request.raw().getParameter("hifId");
+			vfIdsParam = request.raw().getParameter("vfId");
+			
+			gridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);			
+			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
+			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 1000);
+			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
+			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
+			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		}
 		
-		String idParam = request.params("id");
-		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);	
 		
-		String hifIdsParam = request.raw().getParameter("hifId");
-		String vfIdsParam = request.raw().getParameter("vfId");
+		List<Integer> hifIds = (hifIdsParam == null || hifIdsParam.equals("")) ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+		List<Integer> vfIds = (vfIdsParam == null || vfIdsParam.equals(""))? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		
-		int gridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);
-		
-		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
-		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 1000);
-		String sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
-		boolean descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
-		String filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
-		
-		List<Integer> hifIds = hifIdsParam == null ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
-		List<Integer> vfIds = vfIdsParam == null ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
-		
-		if(gridId == 0) {
-			gridId = ValuationApi.getBaselineGridForValuationResults(id).intValue();
+		try {
+			if(gridId == 0) {
+				gridId = ValuationApi.getBaselineGridForValuationResults(id).intValue();
+			}
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+			response.status(400);
+			return;
 		}
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -97,8 +127,9 @@ public class ValuationApi {
 								gridId))
 				.asTable("vf_result_records");
 		
-
-		Cursor<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords = create.select(
+		Cursor<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords;
+		try {
+			vfRecords = create.select(
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
 				ENDPOINT.NAME.as("endpoint"),
@@ -144,7 +175,11 @@ public class ValuationApi {
 				.limit(rowsPerPage)
 				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
 				.fetchLazy();
-		
+		} catch (DataAccessException e) {
+			e.printStackTrace();
+			response.status(400);
+			return;
+		}
 		
 		try {
 			response.type("application/json");
@@ -171,19 +206,41 @@ public class ValuationApi {
 		 //*  gridId= (aggregate the results to another grid definition)
 		// TODO: Add user security enforcement 		 
 		
-		String idParam = request.params("id");
-		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
+		String idParam;
+		Integer id;
+		String gridIdParam;
+		try {
+			idParam = String.valueOf(request.params("id"));
+
+			//If the id is 36 characters long, we'll assume it's a task uuid
+			id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
+			gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		} catch (Exception e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		}
 		
-		String gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
-		int[] gridIds = gridIdParam==null ? null : Arrays.stream(gridIdParam.split(","))
+
+		int[] gridIds = (gridIdParam==null || gridIdParam.equals("")) ? null : Arrays.stream(gridIdParam.split(","))
 			    .mapToInt(Integer::parseInt)
 			    .toArray();
 		
 		// If a gridId wasn't provided, look up the baseline AQ grid grid for this resultset
-		if(gridIds == null) {
-			gridIds = new int[] {ValuationApi.getBaselineGridForValuationResults(id).intValue()};
-		}	
-		
+		try{
+			if(gridIds == null) {
+				gridIds = new int[] {ValuationApi.getBaselineGridForValuationResults(id).intValue()};
+			}	
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+			response.status(400);
+			return;
+		}
+
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		response.type("application/zip");
 		String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(id).name);
@@ -203,58 +260,64 @@ public class ValuationApi {
 		}
 		
 		for(int i=0; i < gridIds.length; i++) {
+			Result<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords;
+			try {
+				Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
+						GET_VALUATION_RESULTS(
+								id, 
+								null,
+								null ,
+								gridIds[i]))
+						.asTable("vf_result_records");
 
-			Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
-					GET_VALUATION_RESULTS(
-							id, 
-							null,
-							null ,
-							gridIds[i]))
-					.asTable("vf_result_records");
-
-			Result<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords = create.select(
-					vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
-					vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-					ENDPOINT.NAME.as("endpoint"),
-					VALUATION_FUNCTION.QUALIFIER.as("name"),
-					HEALTH_IMPACT_FUNCTION.AUTHOR,
-					HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
-					HEALTH_IMPACT_FUNCTION.QUALIFIER,
-					RACE.NAME.as("race"),
-					ETHNICITY.NAME.as("ethnicity"),
-					GENDER.NAME.as("gender"),
-					POLLUTANT_METRIC.NAME.as("metric"),
-					SEASONAL_METRIC.NAME.as("seasonal_metric"),
-					STATISTIC_TYPE.NAME.as("metric_statistic"),
-					VALUATION_FUNCTION.START_AGE,
-					VALUATION_FUNCTION.END_AGE,
-					vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
-					vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
-					vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
-					vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
-					vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
-					vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5)
-					)
-					.from(vfResultRecords)
-					.join(VALUATION_RESULT_FUNCTION_CONFIG)
-					.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(id)
-							.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID)))
-							.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
-					.join(VALUATION_RESULT_DATASET)
-					.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
-					.join(HIF_RESULT_FUNCTION_CONFIG)
-					.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
-							.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
-					.join(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)))
-					.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
-					.join(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
-					.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
-					.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
-					.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
-					.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-					.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-					.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-					.fetch();
+				vfRecords = create.select(
+						vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
+						vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
+						ENDPOINT.NAME.as("endpoint"),
+						VALUATION_FUNCTION.QUALIFIER.as("name"),
+						HEALTH_IMPACT_FUNCTION.AUTHOR,
+						HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+						HEALTH_IMPACT_FUNCTION.QUALIFIER,
+						RACE.NAME.as("race"),
+						ETHNICITY.NAME.as("ethnicity"),
+						GENDER.NAME.as("gender"),
+						POLLUTANT_METRIC.NAME.as("metric"),
+						SEASONAL_METRIC.NAME.as("seasonal_metric"),
+						STATISTIC_TYPE.NAME.as("metric_statistic"),
+						VALUATION_FUNCTION.START_AGE,
+						VALUATION_FUNCTION.END_AGE,
+						vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
+						vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
+						vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
+						vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
+						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
+						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5)
+						)
+						.from(vfResultRecords)
+						.join(VALUATION_RESULT_FUNCTION_CONFIG)
+						.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(id)
+								.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID)))
+								.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
+						.join(VALUATION_RESULT_DATASET)
+						.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
+						.join(HIF_RESULT_FUNCTION_CONFIG)
+						.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
+								.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
+						.join(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)))
+						.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+						.join(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
+						.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+						.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+						.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+						.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+						.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+						.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+						.fetch();
+			} catch (DataAccessException e) {
+				e.printStackTrace();
+				response.status(400);
+				return;
+			}
 			try {
 				zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
 				vfRecords.formatCSV(zipStream);
@@ -382,8 +445,21 @@ public class ValuationApi {
 	 * @return a JSON representation of valuation functions from a given valuation result dataset.
 	 */
 	public static Object getValuationResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
-		String idParam = request.params("id");
-		Integer id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
+		
+		String idParam;
+		Integer id;
+		try {
+			idParam = String.valueOf(request.params("id"));
+
+			//If the id is 36 characters long, we'll assume it's a task uuid
+			id = idParam.length() == 36 ? ValuationApi.getValuationResultDatasetId(idParam) : Integer.valueOf(idParam);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);	
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
 		
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(VALUATION_FUNCTION.asterisk()

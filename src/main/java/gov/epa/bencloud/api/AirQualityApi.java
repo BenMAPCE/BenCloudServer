@@ -77,13 +77,26 @@ public class AirQualityApi {
 	 */
 	public static Object getAirQualityLayerDefinitions(Request request, Response response, Optional<UserProfile> userProfile) {
 		
-		int pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
-		
-		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
-		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
-		String sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
-		boolean descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
-		String filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+		int pollutantId;
+		int page;
+		int rowsPerPage;
+		String sortBy;
+		boolean descending;
+		String filter;
+		try {
+			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
+			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
+			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
+			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
+			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
+			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
 		
 		String userId = userProfile.get().getId();
 
@@ -108,7 +121,7 @@ public class AirQualityApi {
 			pollutantCondition = DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId);
 			filterCondition = filterCondition.and(pollutantCondition);
 		}
-		
+
 		if (!"".equals(filter)) {
 			filterCondition = filterCondition.and(buildAirQualityLayersFilterCondition(filter));
 
@@ -238,14 +251,27 @@ public class AirQualityApi {
 	 */
 	public static Object getAirQualityLayerDefinitionsByMetric(Request request, Response response, Optional<UserProfile> userProfile) {
 		
-		String userId = userProfile.get().getId();
-		int pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
-		
-		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
-		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
-		String sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
-		boolean descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
-		String filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+		String userId = userProfile.get().getId();		
+		int pollutantId;
+		int page;
+		int rowsPerPage;
+		String sortBy;
+		boolean descending;
+		String filter;
+		try {
+			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
+			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
+			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
+			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
+			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
+			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
 		
 //		System.out.println("");
 //		System.out.println("page: " + page);
@@ -487,16 +513,29 @@ public class AirQualityApi {
 	 */
 	public static Object getAirQualityLayerDetails(Request request, Response response, Optional<UserProfile> userProfile) {
 		
-		Integer id = Integer.valueOf(request.params("id"));
 		String userId = userProfile.get().getId();
 		//System.out.println("in getAirQualityLayerDetails");
 		
-		int page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
-		int rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
-		String sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
-		boolean descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
-		String filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
-
+		int id;
+		int page;
+		int rowsPerPage;
+		String sortBy;
+		boolean descending;
+		String filter;
+		try {
+			id = Integer.valueOf(request.params("id"));
+			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
+			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
+			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
+			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
+			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
 		//System.out.println("id: " + id);
 		//System.out.println("filter: " + filter);
 		//System.out.println("rowsPerPage: " + rowsPerPage);
@@ -676,10 +715,21 @@ public class AirQualityApi {
 	 */
 	public static Object postAirQualityLayer(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-
-		String layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
-		Integer pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
-		Integer gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
+		String layerName;
+		Integer pollutantId;
+		Integer gridId;
+		try{
+			layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
+			pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
+			gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+		
 		// Add this in later when we start supporting other air quality surface types such as monitor data
 		//String layerType = IOUtils.toString(request.raw().getPart("type").getInputStream(), StandardCharsets.UTF_8);
 
@@ -1166,7 +1216,14 @@ public class AirQualityApi {
 	 */
 	public static boolean deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
 		// TODO: Add user security enforcement
-		Integer id = Integer.valueOf(request.params("id"));
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return false;
+		} 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
 		int cellRows = create.deleteFrom(AIR_QUALITY_CELL).where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id)).execute();
