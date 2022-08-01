@@ -1,7 +1,5 @@
 package gov.epa.bencloud.server.routes;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -244,8 +242,11 @@ public class ApiRoutes extends RoutesBase {
 			//TODO: Implement a new version of this that supports filtering, etc
 			HIFApi.getHifResultContents(request, response, getUserProfile(request, response));
 			
-			return null;
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
 
+			return null;
 		});
 		
 		/*
@@ -259,8 +260,11 @@ public class ApiRoutes extends RoutesBase {
 			//TODO: Implement a new version of this that supports filtering, etc
 			HIFApi.getHifResultExport(request, response, getUserProfile(request, response));
 			
-			return null;
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
 
+			return null;
 		});
 		
 		/*
@@ -299,6 +303,10 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/valuation-result-datasets/:id/contents", (request, response) -> {
 			ValuationApi.getValuationResultContents(request, response, getUserProfile(request, response));
 			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
 			return null;
 
 		});
@@ -312,8 +320,11 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/valuation-result-datasets/:id/export", (request, response) -> {
 			ValuationApi.getValuationResultExport(request, response, getUserProfile(request, response));
 			
-			return null;
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
 
+			return null;
 		});
 		
 		service.delete(apiPrefix + "/tasks/:uuid", (request, response) -> {
@@ -342,27 +353,30 @@ public class ApiRoutes extends RoutesBase {
 			
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode params = mapper.readTree(body);
-			
-			
-			Task task = new Task();
-			task.setName(params.get("name").asText());
-			
-			task.setParameters(body);
-			task.setUuid(UUID.randomUUID().toString());
-			JsonNode parentTaskUuid = params.get("parent_task_uuid");
-			if(parentTaskUuid != null) {
-				task.setParentUuid(params.get("parent_task_uuid").asText());
-				
-			}
-			task.setUserIdentifier(getUserProfile(request, response).get().getId());
-			task.setType(params.get("type").asText());
-			
-			TaskQueue.writeTaskToQueue(task);
 
-			ObjectNode ret = mapper.createObjectNode();
-			ret.put("task_uuid", task.getUuid());
-			response.type("application/json");
-			return ret;
+			try {
+				Task task = new Task();
+				task.setName(params.get("name").asText());
+			
+				task.setParameters(body);
+				task.setUuid(UUID.randomUUID().toString());
+				JsonNode parentTaskUuid = params.get("parent_task_uuid");
+				if(parentTaskUuid != null) {
+					task.setParentUuid(params.get("parent_task_uuid").asText());
+				}
+				task.setUserIdentifier(getUserProfile(request, response).get().getId());
+				task.setType(params.get("type").asText());
+			
+				TaskQueue.writeTaskToQueue(task);
+				
+				ObjectNode ret = mapper.createObjectNode();
+				ret.put("task_uuid", task.getUuid());
+				response.type("application/json");
+				return ret;
+			} catch(NullPointerException e) {
+				e.printStackTrace();
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
 
 		});
 		
@@ -375,6 +389,10 @@ public class ApiRoutes extends RoutesBase {
 		
 		service.post(apiPrefix + "/task-configs", (request, response) -> {
 			String ret = CoreApi.postTaskConfig(request, response, getUserProfile(request, response));
+
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
 
 			response.type("application/json");
 			return ret;
