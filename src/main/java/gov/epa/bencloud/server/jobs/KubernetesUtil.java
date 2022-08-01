@@ -243,7 +243,7 @@ public class KubernetesUtil {
 			ApiClient client = ClientBuilder.cluster().build();
 
 			Configuration.setDefaultApiClient(client);
-
+	    	Map<String, String> envMap = System.getenv();
 			client.setDebugging(true);
 
 			CoreV1Api coreApi = new CoreV1Api(client);
@@ -269,7 +269,7 @@ public class KubernetesUtil {
 			ApiClient client = ClientBuilder.cluster().build();
 
 			Configuration.setDefaultApiClient(client);
-
+	    	Map<String, String> envMap = System.getenv();
 			client.setDebugging(true);
 
 			CoreV1Api coreApi = new CoreV1Api(client);
@@ -304,7 +304,7 @@ public class KubernetesUtil {
 	    	ApiClient client = ClientBuilder.cluster().build();
 	    	
 	    	Configuration.setDefaultApiClient(client);
-	    	
+	    	Map<String, String> envMap = System.getenv();
 	    	client.setDebugging(true);
 	
 	    	BatchV1Api batchApi = new BatchV1Api(client);
