@@ -82,6 +82,7 @@ public class BenCloudServer {
 
 		benCloudService.before((request, response) -> {
 			response.header("Access-Control-Allow-Origin", "*");
+			response.header("Content-Security-Policy", "default-src 'self';");
 			
 			log.info("{} {} {}, uid: {}, ismemberof: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
 
