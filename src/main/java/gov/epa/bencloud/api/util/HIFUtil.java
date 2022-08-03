@@ -13,6 +13,8 @@ import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.exception.DataAccessException;
+import org.jooq.exception.TooManyRowsException;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.*;
 
@@ -253,221 +255,229 @@ public class HIFUtil {
 	 */
 	public static void setIncidencePrevalence(ObjectNode function, int popYear, int defaultIncidencePrevalenceDataset, Integer functionIncidenceDataset, Integer functionPrevalenceDataset, Boolean userPrefered) {
 
-		int endpointGroupId = function.get("endpoint_group_id").asInt();
-		int endpointId = function.get("endpoint_id").asInt();
-		int raceId = function.get("race_id").asInt();
-		int genderId = function.get("gender_id").asInt();
-		int ethnicityId = function.get("ethnicity_id").asInt();
-		String functionText = function.get("function_text").asText().toLowerCase();
-		boolean isPrevalenceFunction = functionText.contains("prevalence");
-		boolean isIncidenceFunction = functionText.contains("incidence");
-		boolean defaultDatasetSupportsIncidenceForEndpointGroup = false;
-		boolean defaultDatasetSupportsPrevalenceForEndpointGroup = false;
+		
+		try {
+			//int endpointGroupId = function.get("endpoint_group_id").asInt();
+			int endpointId = function.get("endpoint_id").asInt();
+			int raceId = function.get("race_id").asInt();
+			int genderId = function.get("gender_id").asInt();
+			int ethnicityId = function.get("ethnicity_id").asInt();
+			String functionText = function.get("function_text").asText().toLowerCase();
+			boolean isPrevalenceFunction = functionText.contains("prevalence");
+			boolean isIncidenceFunction = functionText.contains("incidence");
+			boolean defaultDatasetSupportsIncidenceForEndpoint = false;
+			boolean defaultDatasetSupportsPrevalenceForEndpoint = false;
 
 
-		if(defaultIncidencePrevalenceDataset != 0) {		
-			//Determine if this dataset supports incidence and/or prevalence for this function's endpoint group
-			
-			//step 1: check if the default dataset a perfect match			
-			Record1<Integer> countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(DSL.count())
-					.from(INCIDENCE_ENTRY)
-					.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset)
-							.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
-							.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
-							.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
-							.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-							.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-					.fetchOne();
-			
-			//step 2: if the default dataset is not a perfect match, check if it's a partial match (dataset's group (e.g. ALL) includes hif group (e.g. White))
-			if(countIncidence.value1() <= 0 && userPrefered) {
-				countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+			if(defaultIncidencePrevalenceDataset != 0) {		
+				//Determine if this dataset supports incidence and/or prevalence for this function's endpoint group
+				
+				//step 1: check if the default dataset a perfect match			
+				Record1<Integer> countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
 						.select(DSL.count())
 						.from(INCIDENCE_ENTRY)
 						.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset)
 								.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
 								.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
-								.and((DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
-										.or(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId)))
-								.and((DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
-										.or(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId)))
-								.and((DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
-								.or(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-						.fetchOne();				
-			}
-			defaultDatasetSupportsIncidenceForEndpointGroup = countIncidence.value1() > 0;
-			
-			//Do the same for prevalence data:
-			Record1<Integer> countPrevalence = DSL.using(JooqUtil.getJooqConfiguration())
-					.select(DSL.count())
-					.from(INCIDENCE_ENTRY)
-					.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset)
-							.and(INCIDENCE_ENTRY.PREVALENCE.eq(true))
-							.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
-							.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
-							.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-							.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-					.fetchOne();
-			
-			if(countPrevalence.value1() <= 0 && userPrefered) {
-				countPrevalence = DSL.using(JooqUtil.getJooqConfiguration())
+								.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+								.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+								.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+						.fetchOne();
+				
+				//step 2: if the default dataset is not a perfect match, check if it's a partial match (dataset's group (e.g. ALL) includes hif group (e.g. White))
+				if(countIncidence.value1() <= 0 && userPrefered) {
+					countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+							.select(DSL.count())
+							.from(INCIDENCE_ENTRY)
+							.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset)
+									.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and((DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
+											.or(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId)))
+									.and((DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
+											.or(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId)))
+									.and((DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+									.or(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+							.fetchOne();				
+				}
+				defaultDatasetSupportsIncidenceForEndpoint = countIncidence.value1() > 0;
+				
+				//Do the same for prevalence data:
+				Record1<Integer> countPrevalence = DSL.using(JooqUtil.getJooqConfiguration())
 						.select(DSL.count())
 						.from(INCIDENCE_ENTRY)
 						.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset)
 								.and(INCIDENCE_ENTRY.PREVALENCE.eq(true))
 								.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
-								.and((DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
-										.or(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId)))
-								.and((DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
-										.or(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId)))
-								.and((DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
-								.or(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-						.fetchOne();
-			}
-			defaultDatasetSupportsPrevalenceForEndpointGroup = countPrevalence.value1() > 0;
-		}
-		
-		if (isIncidenceFunction) {
-			if (defaultDatasetSupportsIncidenceForEndpointGroup) {
-				function.put("incidence_dataset_id", defaultIncidencePrevalenceDataset);
-				function.put("incidence_year", HIFUtil.getClosestIncidenceYear(defaultIncidencePrevalenceDataset, false, endpointGroupId, popYear));
-				function.put("incidence_dataset_name", IncidenceApi.getIncidenceDatasetName(defaultIncidencePrevalenceDataset));
-
-			} else if (functionIncidenceDataset != null && functionIncidenceDataset != 0 && 1==2) {
-				// As of August 2022 we want to ignore Incidence/Prevalence dataset assigned in HIF dataset thus using 1==2 here.
-				
-				//function.put("incidence_dataset_id", functionIncidenceDataset);
-				//function.put("incidence_year", HIFUtil.getClosestIncidenceYear(functionIncidenceDataset, false, endpointGroupId, popYear));
-				//function.put("incidence_dataset_name", IncidenceApi.getIncidenceDatasetName(functionIncidenceDataset));
-	
-			} else {
-				// Find perfect match. If doesn't exist, use 'ALL, ALL, ALL'
-				int dsId = 0;
-				
-				Record1<Integer> bestId = DSL.using(JooqUtil.getJooqConfiguration())
-						.select(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
-						.from(INCIDENCE_ENTRY)
-						.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
-								.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 								.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 								.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 								.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 						.fetchOne();
-				if(bestId.value1() !=null) {
-					dsId = bestId.value1();
+				
+				if(countPrevalence.value1() <= 0 && userPrefered) {
+					countPrevalence = DSL.using(JooqUtil.getJooqConfiguration())
+							.select(DSL.count())
+							.from(INCIDENCE_ENTRY)
+							.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset)
+									.and(INCIDENCE_ENTRY.PREVALENCE.eq(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and((DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
+											.or(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId)))
+									.and((DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
+											.or(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId)))
+									.and((DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+									.or(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+							.fetchOne();
 				}
-				else {
-					bestId = DSL.using(JooqUtil.getJooqConfiguration())
-							.select(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+				defaultDatasetSupportsPrevalenceForEndpoint = countPrevalence.value1() > 0;
+			}
+			
+			if (isIncidenceFunction) {
+				if (defaultDatasetSupportsIncidenceForEndpoint) {
+					function.put("incidence_dataset_id", defaultIncidencePrevalenceDataset);
+					function.put("incidence_year", HIFUtil.getClosestIncidenceYear(defaultIncidencePrevalenceDataset, false, endpointId, popYear));
+					function.put("incidence_dataset_name", IncidenceApi.getIncidenceDatasetName(defaultIncidencePrevalenceDataset));
+
+				} else if (functionIncidenceDataset != null && functionIncidenceDataset != 0 && 1==2) {
+					// As of August 2022 we want to ignore Incidence/Prevalence dataset assigned in HIF dataset thus using 1==2 here.
+					
+					//function.put("incidence_dataset_id", functionIncidenceDataset);
+					//function.put("incidence_year", HIFUtil.getClosestIncidenceYear(functionIncidenceDataset, false, endpointGroupId, popYear));
+					//function.put("incidence_dataset_name", IncidenceApi.getIncidenceDatasetName(functionIncidenceDataset));
+
+				} else {
+					// Find perfect match. If doesn't exist, use 'ALL, ALL, ALL'
+					int dsId = 0;
+					
+					//TODO: I think this logic will work with existing datasets, but we will need to expand this to pull multiple records and then allow the user to choose 
+					// since there could be more than one "best" id.
+					Record1<Integer> bestId = DSL.using(JooqUtil.getJooqConfiguration())
+							.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 							.from(INCIDENCE_ENTRY)
 							.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
 									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
-									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
-									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
-									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 							.fetchOne();
-					if(bestId.value1() !=null) {
+					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 					}
+					else {
+						bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+								.fetchOne();
+						if(bestId != null && bestId.value1() !=null) {
+							dsId = bestId.value1();
+						}
+					}
+					
+					if(dsId!=0) {
+						function.put("incidence_dataset_id", dsId); 
+						function.put("incidence_year", HIFUtil.getClosestIncidenceYear(dsId, false, endpointId, popYear));
+						function.put("incidence_dataset_name", IncidenceApi.getIncidenceDatasetName(dsId));
+					}
+					else {
+						//No incidence dataset can be found to work with the HIF
+						function.putNull("incidence_dataset_id");
+						function.putNull("incidence_year");
+						function.putNull("incidence_dataset_name");
+					}			 
 				}
-				
-				if(dsId!=0) {
-					function.put("incidence_dataset_id", dsId); 
-					function.put("incidence_year", HIFUtil.getClosestIncidenceYear(dsId, false, endpointGroupId, popYear));
-					function.put("incidence_dataset_name", IncidenceApi.getIncidenceDatasetName(dsId));
-				}
-				else {
-					//No incidence dataset can be found to work with the HIF
-					function.putNull("incidence_dataset_id");
-					function.putNull("incidence_year");
-					function.putNull("incidence_dataset_name");
-				}			 
-			}
-		} else {
-			function.putNull("incidence_dataset_id");
-			function.putNull("incidence_year");
-			function.putNull("incidence_dataset_name");
-		}
-				
-		if(isPrevalenceFunction) {
-			if (defaultDatasetSupportsPrevalenceForEndpointGroup) {
-				function.put("prevalence_dataset_id", defaultIncidencePrevalenceDataset);
-				function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(defaultIncidencePrevalenceDataset, true, endpointGroupId, popYear));
-				function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(defaultIncidencePrevalenceDataset));
-			} else if (functionPrevalenceDataset != null && functionPrevalenceDataset != 0 && 1==2) {
-				// As of August 2022 we want to ignore Incidence/Prevalence dataset assigned in HIF dataset thus using 1==2 here.
-				
-				// Default selection won't work so use what's defined in the function
-				//function.put("prevalence_dataset_id", functionPrevalenceDataset);
-				//function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(functionPrevalenceDataset, true, endpointGroupId, popYear));
-				//function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(functionPrevalenceDataset));
 			} else {
-				// Find perfect match. If doesn't exist, use 'ALL, ALL, ALL'
-				//int dsId = (endpointGroupId == 30 || endpointGroupId == 28) ? 3 : 1; //National Incidence & Prevalence OR Prevalence
-				int dsId = 0;
-				
-				Record1<Integer> bestId = DSL.using(JooqUtil.getJooqConfiguration())
-						.select(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
-						.from(INCIDENCE_ENTRY)
-						.where(INCIDENCE_ENTRY.PREVALENCE.eq(true)
-								.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
-								.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
-								.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-								.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-						.fetchOne();
-				if(bestId.value1() !=null) {
-					dsId = bestId.value1();
-				}
-				else {
-					bestId = DSL.using(JooqUtil.getJooqConfiguration())
-							.select(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+				function.putNull("incidence_dataset_id");
+				function.putNull("incidence_year");
+				function.putNull("incidence_dataset_name");
+			}
+					
+			if(isPrevalenceFunction) {
+				if (defaultDatasetSupportsPrevalenceForEndpoint) {
+					function.put("prevalence_dataset_id", defaultIncidencePrevalenceDataset);
+					function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(defaultIncidencePrevalenceDataset, true, endpointId, popYear));
+					function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(defaultIncidencePrevalenceDataset));
+				} else if (functionPrevalenceDataset != null && functionPrevalenceDataset != 0 && 1==2) {
+					// As of August 2022 we want to ignore Incidence/Prevalence dataset assigned in HIF dataset thus using 1==2 here.
+					
+					// Default selection won't work so use what's defined in the function
+					//function.put("prevalence_dataset_id", functionPrevalenceDataset);
+					//function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(functionPrevalenceDataset, true, endpointGroupId, popYear));
+					//function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(functionPrevalenceDataset));
+				} else {
+					// Find perfect match. If doesn't exist, use 'ALL, ALL, ALL'
+					//int dsId = (endpointGroupId == 30 || endpointGroupId == 28) ? 3 : 1; //National Incidence & Prevalence OR Prevalence
+					int dsId = 0;
+					
+					Record1<Integer> bestId = DSL.using(JooqUtil.getJooqConfiguration())
+							.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 							.from(INCIDENCE_ENTRY)
 							.where(INCIDENCE_ENTRY.PREVALENCE.eq(true)
 									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
-									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
-									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
-									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 							.fetchOne();
-					if(bestId.value1() !=null) {
+					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 					}
-				}						
-				
-				if(dsId!=0) {
-					function.put("prevalence_dataset_id", dsId); 
-					function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(dsId, false, endpointGroupId, popYear));
-					function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(dsId));
+					else {
+						bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.eq(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+								.fetchOne();
+						if(bestId != null && bestId.value1() !=null) {
+							dsId = bestId.value1();
+						}
+					}						
+					
+					if(dsId!=0) {
+						function.put("prevalence_dataset_id", dsId); 
+						function.put("prevalence_year", HIFUtil.getClosestIncidenceYear(dsId, true, endpointId, popYear));
+						function.put("prevalence_dataset_name", IncidenceApi.getIncidenceDatasetName(dsId));
+					}
+					else {
+						//No prevalence dataset can be found to work with the HIF
+						function.putNull("prevalence_dataset_id");
+						function.putNull("prevalence_year");
+						function.putNull("prevalence_dataset_name");
+					}
 				}
-				else {
-					//No prevalence dataset can be found to work with the HIF
-					function.putNull("prevalence_dataset_id");
-					function.putNull("prevalence_year");
-					function.putNull("prevalence_dataset_name");
-				}
+			} else {
+				function.putNull("prevalence_dataset_id");
+				function.putNull("prevalence_year");
+				function.putNull("prevalence_dataset_name");
 			}
-		} else {
-			function.putNull("prevalence_dataset_id");
-			function.putNull("prevalence_year");
-			function.putNull("prevalence_dataset_name");
-		}	
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
 	}
 
 	/**
 	 * 
 	 * @param defaultIncidencePrevalenceDataset
 	 * @param isPrevalence
-	 * @param endpointGroupId
+	 * @param endpointId
 	 * @param popYear
 	 * @return the closest available incidence year compared to the popYear.
 	 */
-	private static int getClosestIncidenceYear(int defaultIncidencePrevalenceDataset, boolean isPrevalence, int endpointGroupId, int popYear) {
+	private static int getClosestIncidenceYear(int defaultIncidencePrevalenceDataset, boolean isPrevalence, int endpointId, int popYear) {
 
 		Record1<Integer>[] incidenceYears = DSL.using(JooqUtil.getJooqConfiguration())
 				.selectDistinct(INCIDENCE_ENTRY.YEAR)
 				.from(INCIDENCE_ENTRY)
 				.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset)
-						.and(INCIDENCE_ENTRY.ENDPOINT_GROUP_ID.eq(endpointGroupId))
+						.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 						.and(DSL.coalesce(INCIDENCE_ENTRY.PREVALENCE, false).eq(isPrevalence))
 						)
 				.orderBy(INCIDENCE_ENTRY.YEAR)
