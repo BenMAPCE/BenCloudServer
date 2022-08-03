@@ -29,10 +29,21 @@ public class HIFConfig {
 	public Integer metric = null;
 	public Integer seasonalMetric = null;
 	public Integer metricStatistic = null;
+	
+	//incidence and prevlance may use different race, ethnicity, and/or gender than 
+	//the functions configuration due to data availability
 	public Integer incidence = null;
 	public Integer incidenceYear = null;
+	public Integer incidenceRace = null;
+	public Integer incidenceEthnicity = null;
+	public Integer incidenceGender = null;
+	
 	public Integer prevalence = null;
 	public Integer prevalenceYear = null;
+	public Integer prevalenceRace = null;
+	public Integer prevalenceEthnicity = null;
+	public Integer prevalenceGender = null;
+	
 	public Integer variable = null;
 	public Integer startDay = null;
 	public Integer endDay = null;
@@ -52,10 +63,19 @@ public class HIFConfig {
 		this.race = function.has("race_id") ? function.get("race_id").asInt() : null;
 		this.ethnicity = function.has("ethnicity_id") ? function.get("ethnicity_id").asInt() : null;
 		this.gender = function.has("gender_id") ? function.get("gender_id").asInt() : null;
+		
 		this.incidence = function.has("incidence_dataset_id") ? function.get("incidence_dataset_id").asInt() : null;
 		this.incidenceYear = function.has("incidence_year") ? function.get("incidence_year").asInt() : null;
+		this.incidenceRace = function.has("incidence_race") ? function.get("incidence_race").asInt() : null;
+		this.incidenceEthnicity = function.has("incidence_ethnicity") ? function.get("incidence_ethnicity").asInt() : null;
+		this.incidenceGender = function.has("incidence_gender") ? function.get("incidence_gender").asInt() : null;
+		
 		this.prevalence = function.has("prevalence_dataset_id") ? function.get("prevalence_dataset_id").asInt() : null;
 		this.prevalenceYear = function.has("prevalence_year") ? function.get("prevalence_year").asInt() : null;
+		this.prevalenceRace = function.has("prevalence_race") ? function.get("prevalence_race").asInt() : null;
+		this.prevalenceEthnicity = function.has("prevalence_ethnicity") ? function.get("prevalence_ethnicity").asInt() : null;
+		this.prevalenceGender = function.has("prevalence_gender") ? function.get("prevalence_gender").asInt() : null;
+		
 		this.variable = function.has("variable") ? function.get("variable").asInt() : null;
 		//TODO: Add code to allow user to specify metric, seasonal metric, and metric statistic?
 	}
@@ -107,9 +127,15 @@ public class HIFConfig {
 		
 		if(incidence != null && incidence != 0) {
 			b.append("Incidence Dataset: ").append(IncidenceApi.getIncidenceDatasetName(incidence)).append(" (").append(incidenceYear).append(")\n");
+			b.append("Incidence Race: ").append(ApiUtil.getRaceNameLookup().getOrDefault(incidenceRace, "")).append("\n");
+			b.append("Incidence Ethnicity: ").append(ApiUtil.getEthnicityNameLookup().getOrDefault(incidenceEthnicity, "")).append("\n");
+			b.append("Incidence Gender: ").append(ApiUtil.getGenderNameLookup().getOrDefault(incidenceGender, "")).append("\n");
 		}
 		if(prevalence != null && prevalence != 0) {
 			b.append("Prevalence Dataset: ").append(IncidenceApi.getIncidenceDatasetName(prevalence)).append(" (").append(prevalenceYear).append(")\n");
+			b.append("Prevalence Race: ").append(ApiUtil.getRaceNameLookup().getOrDefault(prevalenceRace, "")).append("\n");
+			b.append("Prevalence Ethnicity: ").append(ApiUtil.getEthnicityNameLookup().getOrDefault(prevalenceEthnicity, "")).append("\n");
+			b.append("Prevalence Gender: ").append(ApiUtil.getGenderNameLookup().getOrDefault(prevalenceGender, "")).append("\n");
 		}
 		
 		b.append("Beta: ").append(hifRecord.get("beta")).append("\n");
