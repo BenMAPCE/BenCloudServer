@@ -342,7 +342,7 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-							.fetchOne();
+							.fetchAny();
 					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 						incidenceRace = raceId;
@@ -358,7 +358,7 @@ public class HIFUtil {
 										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
 										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
-								.fetchOne();
+								.fetchAny();
 						if(bestId != null && bestId.value1() !=null) {
 							dsId = bestId.value1();
 							incidenceRace = 5;
@@ -457,7 +457,7 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-							.fetchOne();
+							.fetchAny();
 					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 						incidenceRace = raceId;
@@ -473,7 +473,7 @@ public class HIFUtil {
 										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
 										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
-								.fetchOne();
+								.fetchAny();
 						if(bestId != null && bestId.value1() !=null) {
 							dsId = bestId.value1();
 							incidenceRace = 5;
