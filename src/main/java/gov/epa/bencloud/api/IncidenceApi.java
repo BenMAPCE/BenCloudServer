@@ -65,8 +65,20 @@ public class IncidenceApi {
 		Integer incPrevId = isIncidence ? hifConfig.incidence : hifConfig.prevalence;
 		Integer incPrevYear = isIncidence ? hifConfig.incidenceYear : hifConfig.prevalenceYear;
 		
+		//Use the race, ethnicity, and gender selected earlier
+		//If needed, convert the ALL entry to the Null entry to match incidence data
+		Integer raceId = (isIncidence ? hifConfig.incidenceRace : hifConfig.prevalenceRace);
+		raceId = (raceId == 5 ? 6 : raceId);
+		Integer ethnicityId = (isIncidence ? hifConfig.incidenceEthnicity : hifConfig.prevalenceEthnicity);
+		ethnicityId = (ethnicityId == 3 ? 4 : ethnicityId);
+		Integer genderId = (isIncidence ? hifConfig.incidenceGender : hifConfig.prevalenceGender);
+		genderId = (genderId == 3 ? 4 : genderId);
+		
 		// Now, check the incidenceOrPrevalenceLists to see if we already have data for this function config
-		String cacheKey = incPrevId + "~" + incPrevYear + "~" + h.get("endpoint_id", Integer.class) + "~" + hifConfig.startAge + "~" + hifConfig.endAge;
+		String cacheKey = incPrevId + "~" + incPrevYear + "~" + h.get("endpoint_id", Integer.class) + "~" + hifConfig.startAge + "~" + hifConfig.endAge
+				+ "~" + raceId
+				+ "~" + ethnicityId
+				+ "~" + genderId;
 		
 		if(incidenceOrPrevalenceCacheMap.containsKey(cacheKey)) {
 			// Just add another reference to this map in the incidenceLists ArrayList
@@ -86,33 +98,40 @@ public class IncidenceApi {
 		
 		//Get array of race, ethnicity and gender to include based on the configured hifs
         //TODO: If all hifs calls for "all" or null, set groupby = false. Will the values in lookup table stay forever? 
-        ArrayList<Integer> raceIds = PopulationApi.getRacesForHifs(hifTaskConfig);
-        Integer arrRaceIds[] = new Integer[raceIds.size()];
-        arrRaceIds = raceIds.toArray(arrRaceIds);
-        boolean booGroupByRace = true;  //1ASIAN, 2BLACK, 3NATAMER, 4WHITE, 5All, 6null     
-        
-        ArrayList<Integer> ethnicityIds = PopulationApi.getEthnicityForHifs(hifTaskConfig);
-        Integer arrEthnicityIds[] = new Integer[ethnicityIds.size()];
-        arrEthnicityIds = ethnicityIds.toArray(arrEthnicityIds);
-        boolean booGroupByEthnicity = true;  //1NON-HISP, 2HISP, 3All, 4null       
-        
-        ArrayList<Integer> genderIds = PopulationApi.getGendersForHifs(hifTaskConfig);
-        Integer arrGenderIds[] = new Integer[genderIds.size()];
-        arrGenderIds = genderIds.toArray(arrGenderIds);
-        boolean booGroupByGender = true; //1F, 2M, 3All, 4null 
+//        ArrayList<Integer> raceIds = PopulationApi.getRacesForHifs(hifTaskConfig);
+//        Integer arrRaceIds[] = new Integer[raceIds.size()];
+//        arrRaceIds = raceIds.toArray(arrRaceIds);
+//        boolean booGroupByRace = true;  //1ASIAN, 2BLACK, 3NATAMER, 4WHITE, 5All, 6null     
+//        
+//        ArrayList<Integer> ethnicityIds = PopulationApi.getEthnicityForHifs(hifTaskConfig);
+//        Integer arrEthnicityIds[] = new Integer[ethnicityIds.size()];
+//        arrEthnicityIds = ethnicityIds.toArray(arrEthnicityIds);
+//        boolean booGroupByEthnicity = true;  //1NON-HISP, 2HISP, 3All, 4null       
+//        
+//        ArrayList<Integer> genderIds = PopulationApi.getGendersForHifs(hifTaskConfig);
+//        Integer arrGenderIds[] = new Integer[genderIds.size()];
+//        arrGenderIds = genderIds.toArray(arrGenderIds);
+//        boolean booGroupByGender = true; //1F, 2M, 3All, 4null 
+		
+		Integer[] arrRaceId = new Integer[1];
+		arrRaceId[0] = raceId;
+		Integer[] arrEthnicityId = new Integer[1];
+		arrEthnicityId[0] = ethnicityId;
+		Integer[] arrGenderId = new Integer[1];
+		arrGenderId[0] = genderId;
 		
 		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
 				h.get("endpoint_id", Integer.class), 
-				null, //arrRaceIds, 
-				null, //arrEthnicityIds, 
-				null, //arrGenderIds, 
+				arrRaceId, 
+				arrEthnicityId,
+				arrGenderId,
 				hifConfig.startAge.shortValue(), 
 				hifConfig.endAge.shortValue(), 
-				false, //booGroupByRace,
-				false, //booGroupByEthnicity, 
-				false, //booGroupByGender,
+				false,
+				false,
+				false, 
 				true, 
 				AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId))
 				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
@@ -151,6 +170,7 @@ public class IncidenceApi {
 					} 
 					
 					//YY: Correct?
+					//JA: The race,ethnicity,and gender aren't important here because the entire resultset is for the combo that the HIF needs
 					PopulationCategoryKey demoGroup = new PopulationCategoryKey(popAgeRange.value1(), 
 							null, //incidenceOrPrevalenceAgeRange.getRaceId(),
 							null, //incidenceOrPrevalenceAgeRange.getEthnicityId(),

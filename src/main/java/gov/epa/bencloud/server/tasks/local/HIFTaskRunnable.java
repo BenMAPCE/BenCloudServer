@@ -315,7 +315,10 @@ public class HIFTaskRunnable implements Runnable {
 						
 						PopulationCategoryKey popCatKey = new PopulationCategoryKey(popAgeRange, null, null, null); //popRace, popEthnicity, popGender);						
 						
-						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
+						if (popAgeRangeHifMap.containsKey(popAgeRange) 
+								&& (hifConfig.race == 5 || hifConfig.race == popRace)
+								&& (hifConfig.ethnicity == 3 || hifConfig.ethnicity == popEthnicity)
+								&& (hifConfig.gender == 3 || hifConfig.gender == popGender)) {
 							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
 							//YY: Incidence average is updated in addIncidenceOrPrevalenceEntryGroups. Need review.
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
