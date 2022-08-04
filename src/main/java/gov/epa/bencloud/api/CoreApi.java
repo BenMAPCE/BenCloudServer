@@ -129,50 +129,46 @@ public class CoreApi {
 	 * @return
 	 */
 	public static Object getPurgeResults(Request req, Response res, Optional<UserProfile> userProfile) {
-		// if(! isAdmin(userProfile)) {
-		// 	return false;
-		// }
+		if(! isAdmin(userProfile)) {
+			return false;
+		}
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
 		create
-		.truncate(TASK_WORKER)
+		.deleteFrom(TASK_WORKER)
 		.execute();
 
 		create
-		.truncate(TASK_QUEUE)
+		.deleteFrom(TASK_QUEUE)
 		.execute();
 		
 		create
-		.truncate(TASK_COMPLETE)
+		.deleteFrom(TASK_COMPLETE)
 		.execute();
-		
-//		create
-//		.truncate(TASK_CONFIG)
-//		.execute();
 
 		create
-		.truncate(HIF_RESULT)
+		.deleteFrom(HIF_RESULT)
 		.execute();
 		
 		create
-		.truncate(HIF_RESULT_FUNCTION_CONFIG)
+		.deleteFrom(HIF_RESULT_FUNCTION_CONFIG)
 		.execute();
 		
 		create
-		.truncate(HIF_RESULT_DATASET)
+		.deleteFrom(HIF_RESULT_DATASET)
 		.execute();
 		
 		create
-		.truncate(VALUATION_RESULT)
+		.deleteFrom(VALUATION_RESULT)
 		.execute();
 		
 		create
-		.truncate(VALUATION_RESULT_FUNCTION_CONFIG)
+		.deleteFrom(VALUATION_RESULT_FUNCTION_CONFIG)
 		.execute();
 		
 		create
-		.truncate(VALUATION_RESULT_DATASET)
+		.deleteFrom(VALUATION_RESULT_DATASET)
 		.execute();
 		
 		create
