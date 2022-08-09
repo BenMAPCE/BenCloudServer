@@ -355,7 +355,7 @@ public class ApiRoutes extends RoutesBase {
 				UserProfile profile = getUserProfile(request, response).get();
 				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
 				int taskCount = CoreApi.getTotalTaskCountForUser(profile);
-				if(taskCount > 10) {
+				if(taskCount >= 10) {
 					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of 10 tasks allowed per user. Please delete existing task results before submitting new tasks.");
 				}
 				
