@@ -1214,17 +1214,26 @@ public class AirQualityApi {
 	 * @param userProfile
 	 * @return
 	 */
-	public static boolean deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
-		// TODO: Add user security enforcement
+	public static Object deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+		
 		Integer id;
 		try {
 			id = Integer.valueOf(request.params("id"));
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
-			CoreApi.getErrorResponseInvalidId(request, response);
-			return false;
+			return CoreApi.getErrorResponseInvalidId(request, response);
 		} 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+		AirQualityLayerRecord layerResult = create.selectFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.ID.eq(id)).fetchAny();
+		if(layerResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+		
+		if(layerResult.getUserId() == null || layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
+			//This is either a shared layer or it belongs to someone else
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
 		
 		int cellRows = create.deleteFrom(AIR_QUALITY_CELL).where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id)).execute();
 		int statRows = create.deleteFrom(AIR_QUALITY_LAYER_METRICS).where(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(id)).execute();
@@ -1232,9 +1241,10 @@ public class AirQualityApi {
 
 		
 		if(cellRows + statRows + headerRows == 0) {
-			return false;
+			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
 		} else {
-			return true;
+			response.status(204);
+			return null;
 		}
 	} 
 	

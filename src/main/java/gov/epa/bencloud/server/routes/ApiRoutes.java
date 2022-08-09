@@ -129,13 +129,8 @@ public class ApiRoutes extends RoutesBase {
 		 */
 		service.delete(apiPrefix + "/air-quality-data/:id", (request, response) -> {
 
-			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response, getUserProfile(request, response))) {
-				response.status(204);
-			} else {
-				response.status(404);
-			}
-			
-			return "";
+			return AirQualityApi.deleteAirQualityLayerDefinition(request, response, getUserProfile(request, response));
+
 		});
 		
 		/*

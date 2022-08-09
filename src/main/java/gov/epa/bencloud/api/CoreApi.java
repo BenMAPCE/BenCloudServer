@@ -46,6 +46,10 @@ public class CoreApi {
 		return CoreApi.getErrorResponse(request, response, 400, "Invalid id");
 	}
 	
+	public static Object getErrorResponseForbidden(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 403, "Forbidden");
+	}
+	
 	/**
 	 * 
 	 * @param request

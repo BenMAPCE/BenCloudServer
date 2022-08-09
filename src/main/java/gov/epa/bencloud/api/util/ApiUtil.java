@@ -12,6 +12,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.Nullable;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
@@ -21,11 +22,13 @@ import org.pac4j.core.profile.UserProfile;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
 import gov.epa.bencloud.server.tasks.TaskUtil;
 import spark.Request;
 import spark.Response;
@@ -168,22 +171,25 @@ public class ApiUtil {
 	 */
 	public static Object deleteTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		String uuid = req.params("uuid");
-		// TODO: Add user security enforcement 		
-		Result<Record> completedTasks = 
-				DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
-				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
-				.fetch();
 
-		if (completedTasks.size() > 0) {
-			Record taskCompleteRecord = completedTasks.get(0);
-			
-			if (taskCompleteRecord.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
-				TaskUtil.deleteHifResults(uuid);
-			} else if (taskCompleteRecord.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
-				TaskUtil.deleteValuationResults(uuid);
-			}
+		TaskCompleteRecord completedTask = DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(TASK_COMPLETE)
+				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+				.fetchAny();
+
+		if(completedTask == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
 		}
 		
+		if(CoreApi.isAdmin(userProfile) == false && completedTask.getTaskUuid().equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
+		}
+			
+		if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+			TaskUtil.deleteHifResults(uuid);
+		} else if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+			TaskUtil.deleteValuationResults(uuid);
+		}
+		res.status(204);
 		return null;
 	}
 
