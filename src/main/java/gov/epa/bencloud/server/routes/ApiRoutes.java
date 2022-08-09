@@ -2,6 +2,7 @@ package gov.epa.bencloud.server.routes;
 
 import java.util.UUID;
 
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,7 @@ import gov.epa.bencloud.api.*;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
+import gov.epa.bencloud.server.tasks.TaskUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import spark.Service;
@@ -350,17 +352,28 @@ public class ApiRoutes extends RoutesBase {
 			JsonNode params = mapper.readTree(body);
 
 			try {
+				UserProfile profile = getUserProfile(request, response).get();
+				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
+				int taskCount = CoreApi.getTotalTaskCountForUser(profile);
+				if(taskCount > 10) {
+					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of 10 tasks allowed per user. Please delete existing task results before submitting new tasks.");
+				}
+				
 				Task task = new Task();
+				task.setUserIdentifier(profile.getId());
+				task.setType(params.get("type").asText());
+
+				if(CoreApi.isValidTaskType(task.getType()) == false) {
+					return CoreApi.getErrorResponseBadRequest(request, response);
+				}
+				
 				task.setName(params.get("name").asText());
-			
 				task.setParameters(body);
 				task.setUuid(UUID.randomUUID().toString());
 				JsonNode parentTaskUuid = params.get("parent_task_uuid");
 				if(parentTaskUuid != null) {
 					task.setParentUuid(params.get("parent_task_uuid").asText());
 				}
-				task.setUserIdentifier(getUserProfile(request, response).get().getId());
-				task.setType(params.get("type").asText());
 			
 				TaskQueue.writeTaskToQueue(task);
 				
@@ -370,7 +383,7 @@ public class ApiRoutes extends RoutesBase {
 				return ret;
 			} catch(NullPointerException e) {
 				e.printStackTrace();
-				return CoreApi.getErrorResponseInvalidId(request, response);
+				return CoreApi.getErrorResponseBadRequest(request, response);
 			}
 
 		});

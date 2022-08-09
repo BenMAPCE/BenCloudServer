@@ -6,6 +6,7 @@ import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,4 +120,5 @@ public class TaskUtil {
 		}
 
 	}
+
 }

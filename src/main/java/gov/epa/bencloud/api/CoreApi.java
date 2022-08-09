@@ -49,6 +49,10 @@ public class CoreApi {
 	public static Object getErrorResponseForbidden(Request request, Response response) {
 		return CoreApi.getErrorResponse(request, response, 403, "Forbidden");
 	}
+
+	public static Object getErrorResponseBadRequest(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 400, "Bad request");
+	}
 	
 	/**
 	 * 
@@ -287,6 +291,20 @@ public class CoreApi {
 		.execute();			
 		
 		return "done";
+	}
+
+	public static int getTotalTaskCountForUser(UserProfile profile) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		int pendingCount = create.fetchCount(TASK_QUEUE, TASK_QUEUE.USER_ID.eq(profile.getId()));
+		int completedCount = create.fetchCount(TASK_COMPLETE, TASK_COMPLETE.USER_ID.eq(profile.getId()));
+		return pendingCount + completedCount;
+	}
+
+	public static boolean isValidTaskType(String type) {
+		if(type.equalsIgnoreCase("HIF") || type.equalsIgnoreCase("Valuation")) {
+			return true;
+		}
+		return false;
 	}
 
 }
