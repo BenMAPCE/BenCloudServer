@@ -180,7 +180,7 @@ public class ApiUtil {
 			return CoreApi.getErrorResponseNotFound(req, res);
 		}
 		
-		if(CoreApi.isAdmin(userProfile) == false && completedTask.getTaskUuid().equalsIgnoreCase(userProfile.get().getId()) == false) {
+		if(CoreApi.isAdmin(userProfile) == false && completedTask.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
 			return CoreApi.getErrorResponseForbidden(req, res);
 		}
 			
