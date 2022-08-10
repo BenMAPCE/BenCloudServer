@@ -27,7 +27,9 @@ import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record10;
+import org.jooq.Record13;
 import org.jooq.Record14;
+import org.jooq.Record21;
 import org.jooq.Record22;
 import org.jooq.Record6;
 import org.jooq.Record7;
@@ -145,7 +147,7 @@ public class AirQualityApi {
 	
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
-		Table<Record14<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer>> metricStatistics = create.select(
+		Table<Record13<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double>> metricStatistics = create.select(
 				AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID,
 				AIR_QUALITY_LAYER_METRICS.METRIC_ID,
 				POLLUTANT_METRIC.NAME.as("metric_name"),
@@ -158,8 +160,7 @@ public class AirQualityApi {
 				AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
 				AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
 				AIR_QUALITY_LAYER_METRICS.PCT_2_5,
-				AIR_QUALITY_LAYER_METRICS.PCT_97_5,
-				AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL)
+				AIR_QUALITY_LAYER_METRICS.PCT_97_5)
 				.from(AIR_QUALITY_LAYER_METRICS)
 				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
 				.join(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
@@ -190,8 +191,7 @@ public class AirQualityApi {
 								metricStatistics.field("max_value"),
 								metricStatistics.field("mean_value"),
 								metricStatistics.field("pct_2_5"),
-								metricStatistics.field("pct_97_5"),
-								metricStatistics.field("cell_count_above_lrl")
+								metricStatistics.field("pct_97_5")
 								)).as("metric_statistics")
 						)
 				.from(AIR_QUALITY_LAYER)
@@ -317,7 +317,7 @@ public class AirQualityApi {
 		
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 		
-		@NotNull Result<Record22<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer, String, Short, Integer, String, Integer, String, String>> aqRecords = 
+		Result<Record21<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, String, Short, Integer, String, Integer, String, String>> aqRecords = 
 			DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
 						AIR_QUALITY_LAYER.ID, 
@@ -334,7 +334,6 @@ public class AirQualityApi {
 						AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
 						AIR_QUALITY_LAYER_METRICS.PCT_2_5,
 						AIR_QUALITY_LAYER_METRICS.PCT_97_5,
-						AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL,
 						AIR_QUALITY_LAYER.USER_ID,
 						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
@@ -423,7 +422,7 @@ public class AirQualityApi {
 		String userId = userProfile.get().getId();
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
-		Table<Record14<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer>> metricStatistics = create.select(
+		Table<Record13<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double>> metricStatistics = create.select(
 				AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID,
 				AIR_QUALITY_LAYER_METRICS.METRIC_ID,
 				POLLUTANT_METRIC.NAME.as("metric_name"),
@@ -436,8 +435,7 @@ public class AirQualityApi {
 				AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
 				AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
 				AIR_QUALITY_LAYER_METRICS.PCT_2_5,
-				AIR_QUALITY_LAYER_METRICS.PCT_97_5,
-				AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL)
+				AIR_QUALITY_LAYER_METRICS.PCT_97_5)
 				.from(AIR_QUALITY_LAYER_METRICS)
 				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
 				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
@@ -467,8 +465,7 @@ public class AirQualityApi {
 						metricStatistics.field("max_value"),
 						metricStatistics.field("mean_value"),
 						metricStatistics.field("pct_2_5"),
-						metricStatistics.field("pct_97_5"),
-						metricStatistics.field("cell_count_above_lrl")
+						metricStatistics.field("pct_97_5")
 						)).as("metric_statistics")
 				)
 		.from(AIR_QUALITY_LAYER)
@@ -1157,7 +1154,6 @@ public class AirQualityApi {
 					, AIR_QUALITY_LAYER_METRICS.MEAN_VALUE
 					, AIR_QUALITY_LAYER_METRICS.PCT_2_5
 					, AIR_QUALITY_LAYER_METRICS.PCT_97_5
-					, AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL
 					)
 			.select(
     		DSL.select(
@@ -1171,7 +1167,6 @@ public class AirQualityApi {
     				, DSL.avg(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("mean_value")
     				, DSL.percentileCont(0.025).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_2_5")
     				, DSL.percentileCont(0.975).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_97_5")
-    				, DSL.val(0).as("cell_count_above_lrl")
     				)
     		.from(AIR_QUALITY_CELL)
 			.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(aqRecord.value1()))
