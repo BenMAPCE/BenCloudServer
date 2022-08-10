@@ -431,13 +431,6 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
-		service.get(apiPrefix + "/admin/run-job", (request, response) -> {
-			Object data = KubernetesUtil.runJob(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
-
-		});
-		
 		service.get(apiPrefix + "/admin/pods", (request, response) -> {
 			Object data = KubernetesUtil.listPods(request, response, getUserProfile(request, response));
 			response.type("application/json");

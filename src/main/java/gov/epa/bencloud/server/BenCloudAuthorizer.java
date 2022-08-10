@@ -20,11 +20,11 @@ public class BenCloudAuthorizer extends ProfileAuthorizer {
     	}
     	
     	UserProfile profile = profiles.get(0);
-    	if(CoreApi.isUser(Optional.of(profile))) {
+    	if(CoreApi.isUser(Optional.of(profile)) || CoreApi.isAdmin(Optional.of(profile))  ) {
     		return true;
     	}
     	
-    	//If they are not in the BenMAP_Users group, we will only allow access to the /user endpoint.
+    	//If they are not in the BenMAP_Users or BenMAP_Admins group, we will only allow access to the /user endpoint.
     	String path = context.getPath();
     	if(path.endsWith("/user")) {
     		return true;
