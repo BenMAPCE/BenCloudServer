@@ -1239,7 +1239,7 @@ public class AirQualityApi {
 			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
 		} else {
 			response.status(204);
-			return null;
+			return response;
 		}
 	} 
 	

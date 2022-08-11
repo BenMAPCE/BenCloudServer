@@ -180,17 +180,17 @@ public class ApiUtil {
 			return CoreApi.getErrorResponseNotFound(req, res);
 		}
 		
-		if(CoreApi.isAdmin(userProfile) == false && completedTask.getTaskUuid().equalsIgnoreCase(userProfile.get().getId()) == false) {
+		if(CoreApi.isAdmin(userProfile) == false && completedTask.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
 			return CoreApi.getErrorResponseForbidden(req, res);
 		}
-			
+
 		if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
 			TaskUtil.deleteHifResults(uuid);
 		} else if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
 			TaskUtil.deleteValuationResults(uuid);
 		}
 		res.status(204);
-		return null;
+		return res;
 	}
 
 	// Note that this implementation is currently incomplete. 
