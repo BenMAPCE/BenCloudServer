@@ -54,6 +54,19 @@ public class CoreApi {
 		return CoreApi.getErrorResponse(request, response, 400, "Bad request");
 	}
 	
+	public static Object getSuccessResponse(Request request, Response response, int statusCode, String msg) {
+		response.type("application/json");
+		return "{\"message\":\"" + msg + "\"}";
+	}
+
+	public static Object getAirQualityLayerDeleteSuccessResponse(Request request, Response response) {
+		return CoreApi.getSuccessResponse(request, response, 204, "Successfully deleted AQ layer");
+	}
+
+	public static Object getTaskDeleteSuccessResponse(Request request, Response response) {
+		return CoreApi.getSuccessResponse(request, response, 204, "Successfully deleted task");
+	}	
+
 	/**
 	 * 
 	 * @param request
