@@ -655,6 +655,11 @@
         <item>County, ethnicity-stratified</item>
         <item>18</item>
       </line>
+      <line>
+        <item>5</item>
+        <item>County, ethnicity-adjusted race-stratified</item>
+        <item>18</item>
+      </line>
     </data>
     <attributes/>
     <cluster_schema/>

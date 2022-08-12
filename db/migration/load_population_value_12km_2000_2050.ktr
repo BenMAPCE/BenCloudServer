@@ -591,12 +591,7 @@
       <enabled>Y</enabled>
     </hop>
     <hop>
-      <from>Generate rows</from>
-      <to>current_year</to>
-      <enabled>Y</enabled>
-    </hop>
-    <hop>
-      <from>current_year</from>
+      <from>Data grid</from>
       <to>Table input</to>
       <enabled>Y</enabled>
     </hop>
@@ -755,7 +750,7 @@ join g
 	and p.ethnicity_id = g.ethnicity_id 
 	and p.age_range_id = g.age_range_id</sql>
     <limit>0</limit>
-    <lookup>current_year</lookup>
+    <lookup>Data grid</lookup>
     <execute_each_row>Y</execute_each_row>
     <variables_active>N</variables_active>
     <lazy_conversion_active>N</lazy_conversion_active>
@@ -764,8 +759,31 @@ join g
       <value-meta>
         <type>Integer</type>
         <storagetype>normal</storagetype>
+        <name>current_year</name>
+        <length>-1</length>
+        <precision>-1</precision>
+        <origin>Data grid</origin>
+        <comments/>
+        <conversion_Mask/>
+        <decimal_symbol/>
+        <grouping_symbol/>
+        <currency_symbol/>
+        <trim_type>none</trim_type>
+        <case_insensitive>N</case_insensitive>
+        <collator_disabled>Y</collator_disabled>
+        <collator_strength>0</collator_strength>
+        <sort_descending>N</sort_descending>
+        <output_padding>N</output_padding>
+        <date_format_lenient>N</date_format_lenient>
+        <date_format_locale>en_US</date_format_locale>
+        <date_format_timezone>America/Los_Angeles</date_format_timezone>
+        <lenient_string_to_number>N</lenient_string_to_number>
+      </value-meta>
+      <value-meta>
+        <type>Integer</type>
+        <storagetype>normal</storagetype>
         <name>pop_dataset_id</name>
-        <length>9</length>
+        <length>4</length>
         <precision>0</precision>
         <origin>Table input</origin>
         <comments>pop_dataset_id</comments>
@@ -857,7 +875,7 @@ join g
         <type>Integer</type>
         <storagetype>normal</storagetype>
         <name>race_id</name>
-        <length>9</length>
+        <length>4</length>
         <precision>0</precision>
         <origin>Table input</origin>
         <comments>race_id</comments>
@@ -880,7 +898,7 @@ join g
         <type>Integer</type>
         <storagetype>normal</storagetype>
         <name>gender_id</name>
-        <length>9</length>
+        <length>4</length>
         <precision>0</precision>
         <origin>Table input</origin>
         <comments>gender_id</comments>
@@ -903,7 +921,7 @@ join g
         <type>Integer</type>
         <storagetype>normal</storagetype>
         <name>ethnicity_id</name>
-        <length>9</length>
+        <length>4</length>
         <precision>0</precision>
         <origin>Table input</origin>
         <comments>ethnicity_id</comments>
@@ -926,7 +944,7 @@ join g
         <type>Integer</type>
         <storagetype>normal</storagetype>
         <name>age_range_id</name>
-        <length>9</length>
+        <length>4</length>
         <precision>0</precision>
         <origin>Table input</origin>
         <comments>age_range_id</comments>
@@ -969,16 +987,16 @@ join g
         <lenient_string_to_number>N</lenient_string_to_number>
       </value-meta>
       <value-meta>
-        <type>BigNumber</type>
+        <type>Number</type>
         <storagetype>normal</storagetype>
         <name>pop_value</name>
         <length>-1</length>
         <precision>-1</precision>
         <origin>Table input</origin>
         <comments>pop_value</comments>
-        <conversion_Mask>######0.0###################;-######0.0###################</conversion_Mask>
+        <conversion_Mask>####0.0#########;-####0.0#########</conversion_Mask>
         <decimal_symbol>.</decimal_symbol>
-        <grouping_symbol/>
+        <grouping_symbol>,</grouping_symbol>
         <currency_symbol/>
         <trim_type>none</trim_type>
         <case_insensitive>N</case_insensitive>
@@ -1107,8 +1125,8 @@ join g
     </GUI>
   </step>
   <step>
-    <name>Generate rows</name>
-    <type>RowGenerator</type>
+    <name>Data grid</name>
+    <type>DataGrid</type>
     <description/>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -1118,12 +1136,177 @@ join g
       <schema_name/>
     </partitioning>
     <fields>
+      <field>
+        <name>current_year</name>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <set_empty_string>N</set_empty_string>
+        <field_null_if/>
+      </field>
     </fields>
-    <limit>51</limit>
-    <never_ending>N</never_ending>
-    <interval_in_ms>5000</interval_in_ms>
-    <row_time_field>now</row_time_field>
-    <last_time_field>FiveSecondsAgo</last_time_field>
+    <data>
+      <line>
+        <item>2000</item>
+      </line>
+      <line>
+        <item>2001</item>
+      </line>
+      <line>
+        <item>2002</item>
+      </line>
+      <line>
+        <item>2003</item>
+      </line>
+      <line>
+        <item>2004</item>
+      </line>
+      <line>
+        <item>2005</item>
+      </line>
+      <line>
+        <item>2006</item>
+      </line>
+      <line>
+        <item>2007</item>
+      </line>
+      <line>
+        <item>2008</item>
+      </line>
+      <line>
+        <item>2009</item>
+      </line>
+      <line>
+        <item>2010</item>
+      </line>
+      <line>
+        <item>2011</item>
+      </line>
+      <line>
+        <item>2012</item>
+      </line>
+      <line>
+        <item>2013</item>
+      </line>
+      <line>
+        <item>2014</item>
+      </line>
+      <line>
+        <item>2015</item>
+      </line>
+      <line>
+        <item>2016</item>
+      </line>
+      <line>
+        <item>2017</item>
+      </line>
+      <line>
+        <item>2018</item>
+      </line>
+      <line>
+        <item>2019</item>
+      </line>
+      <line>
+        <item>2020</item>
+      </line>
+      <line>
+        <item>2021</item>
+      </line>
+      <line>
+        <item>2022</item>
+      </line>
+      <line>
+        <item>2023</item>
+      </line>
+      <line>
+        <item>2024</item>
+      </line>
+      <line>
+        <item>2025</item>
+      </line>
+      <line>
+        <item>2026</item>
+      </line>
+      <line>
+        <item>2027</item>
+      </line>
+      <line>
+        <item>2028</item>
+      </line>
+      <line>
+        <item>2029</item>
+      </line>
+      <line>
+        <item>2030</item>
+      </line>
+      <line>
+        <item>2031</item>
+      </line>
+      <line>
+        <item>2032</item>
+      </line>
+      <line>
+        <item>2033</item>
+      </line>
+      <line>
+        <item>2034</item>
+      </line>
+      <line>
+        <item>2035</item>
+      </line>
+      <line>
+        <item>2036</item>
+      </line>
+      <line>
+        <item>2037</item>
+      </line>
+      <line>
+        <item>2038</item>
+      </line>
+      <line>
+        <item>2039</item>
+      </line>
+      <line>
+        <item>2040</item>
+      </line>
+      <line>
+        <item>2041</item>
+      </line>
+      <line>
+        <item>2042</item>
+      </line>
+      <line>
+        <item>2043</item>
+      </line>
+      <line>
+        <item>2044</item>
+      </line>
+      <line>
+        <item>2045</item>
+      </line>
+      <line>
+        <item>2046</item>
+      </line>
+      <line>
+        <item>2047</item>
+      </line>
+      <line>
+        <item>2048</item>
+      </line>
+      <line>
+        <item>2049</item>
+      </line>
+      <line>
+        <item>2050</item>
+      </line>
+      <line>
+        <item>2055</item>
+      </line>
+    </data>
     <attributes/>
     <cluster_schema/>
     <remotesteps>
@@ -1134,42 +1317,7 @@ join g
     </remotesteps>
     <GUI>
       <xloc>48</xloc>
-      <yloc>368</yloc>
-      <draw>Y</draw>
-    </GUI>
-  </step>
-  <step>
-    <name>current_year</name>
-    <type>Sequence</type>
-    <description/>
-    <distribute>Y</distribute>
-    <custom_distribution/>
-    <copies>1</copies>
-    <partitioning>
-      <method>none</method>
-      <schema_name/>
-    </partitioning>
-    <valuename>current_year</valuename>
-    <use_database>N</use_database>
-    <connection/>
-    <schema/>
-    <seqname>SEQ_</seqname>
-    <use_counter>Y</use_counter>
-    <counter_name/>
-    <start_at>2000</start_at>
-    <increment_by>1</increment_by>
-    <max_value>2050</max_value>
-    <attributes/>
-    <cluster_schema/>
-    <remotesteps>
-      <input>
-      </input>
-      <output>
-      </output>
-    </remotesteps>
-    <GUI>
-      <xloc>48</xloc>
-      <yloc>208</yloc>
+      <yloc>288</yloc>
       <draw>Y</draw>
     </GUI>
   </step>

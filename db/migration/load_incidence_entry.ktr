@@ -687,6 +687,10 @@
         <source_value>53</source_value>
         <target_value>2012</target_value>
       </field>
+      <field>
+        <source_value>54</source_value>
+        <target_value>2012</target_value>
+      </field>
     </fields>
     <attributes/>
     <cluster_schema/>
@@ -792,6 +796,10 @@
       <field>
         <source_value>53</source_value>
         <target_value>4</target_value>
+      </field>
+      <field>
+        <source_value>54</source_value>
+        <target_value>5</target_value>
       </field>
     </fields>
     <attributes/>

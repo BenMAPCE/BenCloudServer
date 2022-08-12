@@ -200,235 +200,206 @@ INSERT INTO "data".health_impact_function_group (id,"name",help_text) VALUES
 	 (3,'Acute Effects - All','This includes shorter-term health impacts such as asthma exacerbations and emergency department visits or hospital admissions for cardiovascular or respiratory disease.'),
 	 (5,'Premature Death - Primary','Primary functions selected from the larger premature death group'),
 	 (6,'Acute Effects - Primary','Primary functions selected from the larger acute effects group'),
-	 (7,'Ozone Transport Functions','Created to support testing and validation');
+
 	 
 CREATE TABLE "data".health_impact_function_group_member
 (
   health_impact_function_group_id INT
 , health_impact_function_id INT
 );
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (3,860),
-	 (6,860),
-	 (1,861),
-	 (5,861),
-	 (3,862),
-	 (6,862),
-	 (1,863),
-	 (1,864),
-	 (1,865),
-	 (1,866);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (1,867),
-	 (1,868),
-	 (3,869),
-	 (3,870),
-	 (2,871),
-	 (3,872),
-	 (3,873),
-	 (3,874),
-	 (6,874),
-	 (3,875);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (6,875),
-	 (3,876),
-	 (6,876),
-	 (3,877),
-	 (6,877),
-	 (3,878),
-	 (6,878),
-	 (3,879),
-	 (6,879),
-	 (3,880);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (6,880),
-	 (1,881),
-	 (5,881),
-	 (3,882),
-	 (6,882),
-	 (3,883),
-	 (6,883),
-	 (3,884),
-	 (6,884),
-	 (3,885);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (6,885),
-	 (3,886),
-	 (6,886),
-	 (2,887),
-	 (2,888),
-	 (2,889),
-	 (1,890),
-	 (5,890),
-	 (1,891),
-	 (5,891);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (1,892),
-	 (2,893),
-	 (1,894),
-	 (1,895),
-	 (1,896),
-	 (1,897),
-	 (1,898),
-	 (1,899),
-	 (1,900),
-	 (1,901);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (1,902),
-	 (3,903),
-	 (3,904),
-	 (3,905),
-	 (3,906),
-	 (3,907),
-	 (3,908),
-	 (3,909),
-	 (3,910),
-	 (3,911);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (3,912),
-	 (3,913),
-	 (3,914),
-	 (3,915),
-	 (3,916),
-	 (3,917),
-	 (3,918),
-	 (1,919),
-	 (1,920),
-	 (1,921);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (1,922),
-	 (1,923),
-	 (1,924),
-	 (1,925),
-	 (1,926),
-	 (1,927),
-	 (1,928),
-	 (1,929),
-	 (1,930),
-	 (2,931);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (2,932),
-	 (2,933),
-	 (2,934),
-	 (2,935),
-	 (2,936),
-	 (2,937),
-	 (2,938),
-	 (2,939),
-	 (2,940),
-	 (2,941);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (2,942),
-	 (2,943),
-	 (2,944),
-	 (2,945),
-	 (2,946),
-	 (2,947),
-	 (2,948),
-	 (2,949),
-	 (2,950),
-	 (2,951);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (2,952),
-	 (2,953),
-	 (2,954),
-	 (2,955),
-	 (3,956),
-	 (6,956),
-	 (3,957),
-	 (6,957),
-	 (3,958),
-	 (6,958);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (2,959),
-	 (3,960),
-	 (6,960),
-	 (3,961),
-	 (6,961),
-	 (2,962),
-	 (2,963),
-	 (2,964),
-	 (2,965),
-	 (2,966);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (3,967),
-	 (6,967),
-	 (2,968),
-	 (2,969),
-	 (3,970),
-	 (6,970),
-	 (3,971),
-	 (6,971),
-	 (3,972),
-	 (6,972);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (3,973),
-	 (6,973),
-	 (3,974),
-	 (6,974),
-	 (2,975),
-	 (2,976),
-	 (1,977),
-	 (5,977),
-	 (1,978),
-	 (5,978);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (1,979),
-	 (5,979),
-	 (3,980),
-	 (3,981),
-	 (3,982),
-	 (3,983),
-	 (3,984),
-	 (3,985),
-	 (2,986),
-	 (2,987);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (3,988),
-	 (3,989),
-	 (3,990),
-	 (1,991),
-	 (1,992),
-	 (1,993),
-	 (1,994),
-	 (1,995),
-	 (1,996),
-	 (1,997);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (1,998),
-	 (1,999),
-	 (1,1000),
-	 (3,1001),
-	 (3,1002),
-	 (3,1003),
-	 (3,1004),
-	 (3,1005),
-	 (3,1006),
-	 (3,1007);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (3,1008),
-	 (3,1009),
-	 (3,1010),
-	 (7,874),
-	 (7,875),
-	 (7,876),
-	 (7,877),
-	 (7,878),
-	 (7,879),
-	 (7,880);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (7,881),
-	 (7,882),
-	 (7,883),
-	 (7,884),
-	 (7,885),
-	 (7,886),
-	 (7,887),
-	 (7,888),
-	 (7,889),
-	 (7,890);
-INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id) VALUES
-	 (7,891);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 886);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 862);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 882);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 883);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 884);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 885);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 875);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 876);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 878);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 877);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 874);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 903);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 904);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 905);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 906);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 913);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 914);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 907);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 908);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 909);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 910);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 911);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 912);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 915);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 916);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 872);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 873);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 880);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 860);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 917);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 918);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 869);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 870);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 879);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 960);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 967);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 980);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 956);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 970);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 971);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 973);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 972);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1002);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1001);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1003);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1004);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1007);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1006);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1008);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1009);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1005);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 1010);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 988);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 981);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 989);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 982);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 983);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 984);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 990);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 974);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 958);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 985);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 957);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(3, 961);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 886);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 862);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 882);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 883);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 884);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 885);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 875);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 876);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 878);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 877);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 874);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 880);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 860);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 879);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 960);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 967);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 956);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 970);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 971);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 973);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 972);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 974);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 958);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 957);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(6, 961);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 893);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 888);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 889);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 887);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 871);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 931);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 932);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 933);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 934);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 935);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 936);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 937);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 938);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 939);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 940);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 941);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 942);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 943);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 944);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 945);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 946);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 947);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 948);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 949);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 950);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 951);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 952);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 953);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 954);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 955);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 959);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 975);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 964);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 963);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 962);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 966);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 986);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 987);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 968);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 969);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 976);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 965);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 892);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 899);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 865);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 900);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 866);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 919);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 929);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 930);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 920);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 896);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 921);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 922);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 923);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 924);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 925);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 926);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 927);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 928);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 901);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 902);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 867);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 868);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 894);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 863);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 895);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 864);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 881);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 861);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 897);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 898);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 890);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 891);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 999);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 998);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 997);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1000);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 996);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 991);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 994);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 995);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 979);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 992);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 993);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 978);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 977);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 881);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 861);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 890);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 891);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 979);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 978);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 977);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(2, 1018);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 1012);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1012);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1014);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1015);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1013);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1016);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1017);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(5, 1011);
+INSERT INTO data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id) VALUES(1, 1011);
 
 CREATE TABLE "statistic_type" (
   "id" SERIAL PRIMARY KEY NOT NULL,
