@@ -13,6 +13,7 @@ public class TaskLog {
 	private LocalDateTime dtStart = null;
 	private LocalDateTime dtEnd = null;
 	private boolean success = false;
+	private String userId = null;
 	
 	
 	/*
@@ -104,6 +105,20 @@ public class TaskLog {
 	 */
 	public void setSuccess(boolean success) {
 		this.success = success;
+	}
+
+	/**
+	 * @return the userId
+	 */
+	public String getUserId() {
+		return userId;
+	}
+
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(String userId) {
+		this.userId = userId;
 	}
 	
 	

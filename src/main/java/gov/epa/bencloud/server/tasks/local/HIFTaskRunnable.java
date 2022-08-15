@@ -81,7 +81,7 @@ public class HIFTaskRunnable implements Runnable {
 		
 		try {
 			HIFTaskConfig hifTaskConfig = new HIFTaskConfig(task);
-			HIFTaskLog hifTaskLog = new HIFTaskLog(hifTaskConfig);
+			HIFTaskLog hifTaskLog = new HIFTaskLog(hifTaskConfig, task.getUserIdentifier());
 			hifTaskLog.setDtStart(LocalDateTime.now());
 			
 			hifTaskLog.addMessage("Starting HIF analysis");

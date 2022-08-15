@@ -70,7 +70,7 @@ public class ValuationTaskRunnable implements Runnable {
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
 			ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig(task);
-			ValuationTaskLog valuationTaskLog = new ValuationTaskLog(valuationTaskConfig);
+			ValuationTaskLog valuationTaskLog = new ValuationTaskLog(valuationTaskConfig, task.getUserIdentifier());
 			valuationTaskLog.setDtStart(LocalDateTime.now());
 			
 			messages.get(messages.size()-1).setStatus("complete");

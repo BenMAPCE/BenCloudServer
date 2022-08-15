@@ -338,7 +338,7 @@ public class ValuationApi {
 			//Get HifTaskLog and render below valuation log
 			zipStream.write("\n".getBytes());
 			HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(ValuationUtil.getHifResultDatasetIdForValuationResultDataset(id));
-			zipStream.write(hifTaskLog.toString().getBytes());
+			zipStream.write(hifTaskLog.toString(userProfile).getBytes());
 			
 			zipStream.closeEntry();
 			

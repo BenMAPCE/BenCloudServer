@@ -38,10 +38,12 @@ public class HIFTaskLog extends TaskLog {
 	/**
 	 * Creates an hif task log object from a hifTaskConfig object
 	 * @param hifTaskConfig
+	 * @param userId 
 	 */
-	public HIFTaskLog(HIFTaskConfig hifTaskConfig) {
+	public HIFTaskLog(HIFTaskConfig hifTaskConfig, String userId) {
 		super();
 		this.hifTaskConfig = hifTaskConfig;
+		this.setUserId(userId);
 	}
 	
 	/**
@@ -100,7 +102,7 @@ public class HIFTaskLog extends TaskLog {
 			.append(getDbVersion())
 			.append("\n");
 		b.append("User: ")
-			.append("IN DEVELOPMENT")
+			.append(getUserId())
 			.append("\n");
 		b.append("Completed: ")
 			.append(dtf.format(getDtEnd()))
