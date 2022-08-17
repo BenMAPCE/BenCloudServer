@@ -186,7 +186,7 @@ public class ValuationTaskRunnable implements Runnable {
 
 							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
 							valuationFunction.vfArguments.allGoodsIndex = inflationIndices.get("AllGoodsIndex");
-							valuationFunction.vfArguments.allGoodsIndex = inflationIndices.get("MedicalCostIndex");
+							valuationFunction.vfArguments.medicalCostIndex = inflationIndices.get("MedicalCostIndex");
 							valuationFunction.vfArguments.wageIndex = inflationIndices.get("WageIndex");
 
 							//TODO: Need to improve handling of variables
