@@ -156,7 +156,6 @@ public class IncidenceApi {
 				// FOR EACH INCIDENCE AGE RANGE
 				int count=0;
 				HashMap<PopulationCategoryKey, Integer> demoGroupCount = new HashMap<PopulationCategoryKey, Integer>(); //for calculating average later
-				
 				for (GetIncidenceRecord incidenceOrPrevalenceAgeRange : cellIncidence.getValue()) {
 					Short popAgeStart = popAgeRange.value2();
 					Short popAgeEnd = popAgeRange.value3();
@@ -182,12 +181,15 @@ public class IncidenceApi {
 
 					//JA Added range restriction here so we only consider population bins that fall within the incidence range
 					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
+						//calculate pct for mapping inc to pop age range. Calculate before looping through cells to be more efficient?
+						double pctIncToPop = (Math.min(popAgeEnd, incAgeEnd)-Math.max(popAgeStart, incAgeStart) + 1)/(popAgeEnd-popAgeStart+1);
 						if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
 							//JA Adjusting this since it was never pulling the value from incidenceOrPrevalenceAgeRange so incidence was always 0
 							//double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
-							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+							//double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * pctIncToPop;
 							incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) + inc);
-							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);
+							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);//If we only group by age range, count per group is always 1
 						}	
 					}
 					
