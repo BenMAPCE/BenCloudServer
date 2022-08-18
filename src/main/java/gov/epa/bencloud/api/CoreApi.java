@@ -286,24 +286,14 @@ public class CoreApi {
 	 * @param userProfile
 	 * @return 
 	 */
-	public static Object getFixHealthEffectGroupName(Request req, Response res, Optional<UserProfile> userProfile) {
+	public static Object getFixWeiFunction(Request req, Response res, Optional<UserProfile> userProfile) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		create.update(HEALTH_IMPACT_FUNCTION_GROUP)
-			.set(HEALTH_IMPACT_FUNCTION_GROUP.NAME, "Results for Regulatory Analysis")
-			.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(7))
-			.execute();
+		create.update(HEALTH_IMPACT_FUNCTION)
+			.set(HEALTH_IMPACT_FUNCTION.START_AGE, 65)
+			.where(HEALTH_IMPACT_FUNCTION.ID.eq(1018))
+			.execute();	
 		
-		create.update(AIR_QUALITY_LAYER)
-		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Baseline")
-		.where(AIR_QUALITY_LAYER.ID.eq(6))
-		.execute();	
-		
-		create.update(AIR_QUALITY_LAYER)
-		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Implementation")
-		.where(AIR_QUALITY_LAYER.ID.eq(7))
-		.execute();			
-		
-		return "done";
+		return "{'message': 'done'}";
 	}
 
 	public static int getTotalTaskCountForUser(UserProfile profile) {

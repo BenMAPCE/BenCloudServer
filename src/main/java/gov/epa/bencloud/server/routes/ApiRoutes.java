@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.*;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
@@ -355,8 +356,8 @@ public class ApiRoutes extends RoutesBase {
 				UserProfile profile = getUserProfile(request, response).get();
 				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
 				int taskCount = CoreApi.getTotalTaskCountForUser(profile);
-				if(taskCount >= 10) {
-					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of 10 tasks allowed per user. Please delete existing task results before submitting new tasks.");
+				if(taskCount >= Constants.MAX_TASKS) {
+					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + Constants.MAX_TASKS + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
 				}
 				
 				Task task = new Task();
@@ -418,8 +419,8 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */
-		service.get(apiPrefix + "/admin/fix-health-effect-group-name", (request, response) -> {
-			Object data = CoreApi.getFixHealthEffectGroupName(request, response, getUserProfile(request, response));
+		service.get(apiPrefix + "/admin/fix-wei-function", (request, response) -> {
+			Object data = CoreApi.getFixWeiFunction(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return data;
 

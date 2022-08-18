@@ -15,6 +15,8 @@ public class BenCloudAuthorizer extends ProfileAuthorizer {
 
     @Override
     public boolean isAuthorized(final WebContext context, final SessionStore sessionStore, final List<UserProfile> profiles) {
+    	String path = context.getPath();
+    	
     	if(profiles.isEmpty()) {
     		return false;
     	}
@@ -25,10 +27,11 @@ public class BenCloudAuthorizer extends ProfileAuthorizer {
     	}
     	
     	//If they are not in the BenMAP_Users or BenMAP_Admins group, we will only allow access to the /user endpoint.
-    	String path = context.getPath();
     	if(path.endsWith("/user")) {
     		return true;
     	}
+    	
+
     	
         return false;
     }

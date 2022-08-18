@@ -45,18 +45,14 @@ public class IncidenceApi {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
 		
-		//TODO: YY: incidenceOrPrevalenceMapOld is how it was originally calculated using ageRangeId as the key. Can be removed after confirming the new method is working.
-		
 		Map<Long, Map<Integer, Double>> incidenceOrPrevalenceMapOld = new HashMap<Long, Map<Integer, Double>>();
 		Map<Long, Map<PopulationCategoryKey, Double>> incidenceOrPrevalenceMap = new HashMap<Long, Map<PopulationCategoryKey, Double>>();
 		
 		//Some functions don't use incidence or prevalence. Just return an empty map for those.
 		if(isIncidence==true && (hifConfig.incidence == null || hifConfig.incidence == 0)) {
-			//incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMapOld);
 			incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 			return true;
 		} else if (isIncidence==false & (hifConfig.prevalence == null || hifConfig.prevalence == 0)) {
-			//incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMapOld);
 			incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 			return true;
 		}
@@ -65,7 +61,7 @@ public class IncidenceApi {
 		Integer incPrevId = isIncidence ? hifConfig.incidence : hifConfig.prevalence;
 		Integer incPrevYear = isIncidence ? hifConfig.incidenceYear : hifConfig.prevalenceYear;
 		
-		//Use the race, ethnicity, and gender selected earlier
+		//Use the race, ethnicity, and gender selected earlier in order to look up the exact data this function needs
 		//If needed, convert the ALL entry to the Null entry to match incidence data
 		Integer raceId = (isIncidence ? hifConfig.incidenceRace : hifConfig.prevalenceRace);
 		raceId = (raceId == 5 ? 6 : raceId);
@@ -81,7 +77,7 @@ public class IncidenceApi {
 				+ "~" + genderId;
 		
 		if(incidenceOrPrevalenceCacheMap.containsKey(cacheKey)) {
-			// Just add another reference to this map in the incidenceLists ArrayList
+			// If we found it, just add another reference to this map in the incidenceLists ArrayList
 			incidenceOrPrevalenceLists.add(incidenceOrPrevalenceLists.get(incidenceOrPrevalenceCacheMap.get(cacheKey)));
 			return true;
 		}
@@ -92,27 +88,8 @@ public class IncidenceApi {
 		//Return an average incidence for each population age range for a given hif
 		//TODO: Need to add in handling for race, ethnicity, gender. 
 		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revised.
-		
-		//YY: age range percentage?
-		//ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = HIFTaskRunnable.getPopAgeRangeMapping(hifTaskConfig);
-		
-		//Get array of race, ethnicity and gender to include based on the configured hifs
-        //TODO: If all hifs calls for "all" or null, set groupby = false. Will the values in lookup table stay forever? 
-//        ArrayList<Integer> raceIds = PopulationApi.getRacesForHifs(hifTaskConfig);
-//        Integer arrRaceIds[] = new Integer[raceIds.size()];
-//        arrRaceIds = raceIds.toArray(arrRaceIds);
-//        boolean booGroupByRace = true;  //1ASIAN, 2BLACK, 3NATAMER, 4WHITE, 5All, 6null     
-//        
-//        ArrayList<Integer> ethnicityIds = PopulationApi.getEthnicityForHifs(hifTaskConfig);
-//        Integer arrEthnicityIds[] = new Integer[ethnicityIds.size()];
-//        arrEthnicityIds = ethnicityIds.toArray(arrEthnicityIds);
-//        boolean booGroupByEthnicity = true;  //1NON-HISP, 2HISP, 3All, 4null       
-//        
-//        ArrayList<Integer> genderIds = PopulationApi.getGendersForHifs(hifTaskConfig);
-//        Integer arrGenderIds[] = new Integer[genderIds.size()];
-//        arrGenderIds = genderIds.toArray(arrGenderIds);
-//        boolean booGroupByGender = true; //1F, 2M, 3All, 4null 
-		
+				
+		//Convert race, ethnicity, gender to single element arrays
 		Integer[] arrRaceId = new Integer[1];
 		arrRaceId[0] = raceId;
 		Integer[] arrEthnicityId = new Integer[1];
@@ -145,8 +122,8 @@ public class IncidenceApi {
 		
 		// FOR EACH GRID CELL
 		for (Entry<Long, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
-			HashMap<Integer, Double> incidenceOrPrevalenceCellMap = new HashMap<Integer, Double>();
-			HashMap<PopulationCategoryKey, Double> incidenceOrPrevalenceCellMap2 = new HashMap<PopulationCategoryKey, Double>();
+			//HashMap<Integer, Double> incidenceOrPrevalenceCellMap = new HashMap<Integer, Double>();
+			HashMap<PopulationCategoryKey, Double> incidenceOrPrevalenceCellMap = new HashMap<PopulationCategoryKey, Double>();
 			
 			
 
@@ -161,15 +138,8 @@ public class IncidenceApi {
 					Short popAgeEnd = popAgeRange.value3();
 					Short incAgeStart = incidenceOrPrevalenceAgeRange.getStartAge();
 					Short incAgeEnd = incidenceOrPrevalenceAgeRange.getEndAge();
-
-					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
-						incidenceOrPrevalenceCellMap.put(popAgeRange.value1(), incidenceOrPrevalenceCellMap.getOrDefault(popAgeRange.value1(), 0.0) + incidenceOrPrevalenceAgeRange.getValue().doubleValue());
-						
-						count++;
-					} 
 					
-					//YY: Correct?
-					//JA: The race,ethnicity,and gender aren't important here because the entire resultset is for the combo that the HIF needs
+					//The race,ethnicity,and gender aren't important here because the entire resultset is for the combo that the HIF needs
 					PopulationCategoryKey demoGroup = new PopulationCategoryKey(popAgeRange.value1(), 
 							null, //incidenceOrPrevalenceAgeRange.getRaceId(),
 							null, //incidenceOrPrevalenceAgeRange.getEthnicityId(),
@@ -179,44 +149,35 @@ public class IncidenceApi {
 					
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
 
-					//JA Added range restriction here so we only consider population bins that fall within the incidence range
+					//Only consider population bins that fall within the incidence range
 					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
-						//calculate pct for mapping inc to pop age range. Calculate before looping through cells to be more efficient?
-						double pctIncToPop = (Math.min(popAgeEnd, incAgeEnd)-Math.max(popAgeStart, incAgeStart) + 1)/(popAgeEnd-popAgeStart+1);
+						//calculate pct for mapping inc to pop age range. 
+						double pctIncToPop = (Math.min(popAgeEnd, incAgeEnd)-Math.max(popAgeStart, incAgeStart) + 1.0)/(popAgeEnd-popAgeStart+1.0);
 						if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
-							//JA Adjusting this since it was never pulling the value from incidenceOrPrevalenceAgeRange so incidence was always 0
-							//double inc = incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
 							//double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+							double popPct = popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+							
 							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * pctIncToPop;
-							incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0) + inc);
+							incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0) + inc);
 							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);//If we only group by age range, count per group is always 1
 						}	
 					}
 					
 				}
-				//Now calculate the average (if more than one incidence rate was applied to this population age range
-				//TODO: Do we need to improve our averaging here to handle partial overlaps better
 				
-				if(count > 0) {
-					incidenceOrPrevalenceCellMap.put(popAgeRange.value1(), incidenceOrPrevalenceCellMap.getOrDefault(popAgeRange.value1(), 0.0)/count);					
-				}
-				
-				//YY: averaging by demographic groups (age, race, ethnicity, gender)
+				//Averaging by age range
 				if(!demoGroupCount.isEmpty()) {
 					for(Entry<PopulationCategoryKey, Integer> entry : demoGroupCount.entrySet()) {
 						PopulationCategoryKey demoGroup = entry.getKey();
 						int groupCount = entry.getValue();
-						incidenceOrPrevalenceCellMap2.put(demoGroup, incidenceOrPrevalenceCellMap2.getOrDefault(demoGroup, 0.0)/groupCount); 						
+						incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0)/groupCount); 						
 					}
 					
-					//
 				}
 				
 			}
-			incidenceOrPrevalenceMapOld.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap);
-			incidenceOrPrevalenceMap.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap2);
+			incidenceOrPrevalenceMap.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap);
 		}
-		//incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMapOld);
 		incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 		return true;
 	}
