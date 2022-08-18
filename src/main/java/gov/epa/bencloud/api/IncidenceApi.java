@@ -157,7 +157,7 @@ public class IncidenceApi {
 							//double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
 							double popPct = popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
 							
-							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * pctIncToPop;
+							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue(); //* pctIncToPop;
 							incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0) + inc);
 							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);//If we only group by age range, count per group is always 1
 						}	
@@ -166,14 +166,14 @@ public class IncidenceApi {
 				}
 				
 				//Averaging by age range
-				if(!demoGroupCount.isEmpty()) {
-					for(Entry<PopulationCategoryKey, Integer> entry : demoGroupCount.entrySet()) {
-						PopulationCategoryKey demoGroup = entry.getKey();
-						int groupCount = entry.getValue();
-						incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0)/groupCount); 						
-					}
-					
-				}
+//				if(!demoGroupCount.isEmpty()) {
+//					for(Entry<PopulationCategoryKey, Integer> entry : demoGroupCount.entrySet()) {
+//						PopulationCategoryKey demoGroup = entry.getKey();
+//						int groupCount = entry.getValue();
+//						incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0)/groupCount); 						
+//					}
+//					
+//				}
 				
 			}
 			incidenceOrPrevalenceMap.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap);
