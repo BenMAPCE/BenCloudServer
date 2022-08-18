@@ -132,7 +132,7 @@ public class IncidenceApi {
 				
 				// FOR EACH INCIDENCE AGE RANGE
 				int count=0;
-				HashMap<PopulationCategoryKey, Integer> demoGroupCount = new HashMap<PopulationCategoryKey, Integer>(); //for calculating average later
+				HashMap<PopulationCategoryKey, Double> demoGroupCount = new HashMap<PopulationCategoryKey, Double>(); //for calculating average later
 				for (GetIncidenceRecord incidenceOrPrevalenceAgeRange : cellIncidence.getValue()) {
 					Short popAgeStart = popAgeRange.value2();
 					Short popAgeEnd = popAgeRange.value3();
@@ -155,25 +155,25 @@ public class IncidenceApi {
 						double pctIncToPop = (Math.min(popAgeEnd, incAgeEnd)-Math.max(popAgeStart, incAgeStart) + 1.0)/(popAgeEnd-popAgeStart+1.0);
 						if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
 							//double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
-							double popPct = popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
+							//double popPct = popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
 							
-							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue(); //* pctIncToPop;
+							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * pctIncToPop;
 							incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0) + inc);
-							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0) + 1);//If we only group by age range, count per group is always 1
+							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0.0) + pctIncToPop);//If we only group by age range, count per group is always 1
 						}	
 					}
 					
 				}
 				
-				//Averaging by age range
-//				if(!demoGroupCount.isEmpty()) {
-//					for(Entry<PopulationCategoryKey, Integer> entry : demoGroupCount.entrySet()) {
-//						PopulationCategoryKey demoGroup = entry.getKey();
-//						int groupCount = entry.getValue();
-//						incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0)/groupCount); 						
-//					}
-//					
-//				}
+				//Weight average by age range overlap
+				if(!demoGroupCount.isEmpty()) {
+					for(Entry<PopulationCategoryKey, Double> entry : demoGroupCount.entrySet()) {
+						PopulationCategoryKey demoGroup = entry.getKey();
+						double groupCount = entry.getValue();
+						incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0)/groupCount); 						
+					}
+					
+				}
 				
 			}
 			incidenceOrPrevalenceMap.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap);
