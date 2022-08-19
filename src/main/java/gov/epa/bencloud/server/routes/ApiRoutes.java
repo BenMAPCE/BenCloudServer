@@ -419,12 +419,12 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */
-		service.get(apiPrefix + "/admin/fix-wei-function", (request, response) -> {
-			Object data = CoreApi.getFixWeiFunction(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
-
-		});
+//		service.get(apiPrefix + "/admin/fix-wei-function", (request, response) -> {
+//			Object data = CoreApi.getFixWeiFunction(request, response, getUserProfile(request, response));
+//			response.type("application/json");
+//			return data;
+//
+//		});
 		service.get(apiPrefix + "/admin/purge-results", (request, response) -> {
 			Object data = CoreApi.getPurgeResults(request, response, getUserProfile(request, response));
 			response.type("application/json");
