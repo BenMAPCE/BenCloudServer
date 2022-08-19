@@ -24,14 +24,14 @@ import gov.epa.bencloud.api.model.PopulationCategoryKey;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
-import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import spark.Request;
 import spark.Response;
 
 public class IncidenceApi {
 
 	/**
+	 * Get incidence data, categorized by population age group for the hifConfig
+	 * 
 	 * @param hifTaskConfig
 	 * @param hifConfig
 	 * @param isIncidence if true, load incidence; if false, load prevelance
@@ -45,7 +45,6 @@ public class IncidenceApi {
 
 		//isIncidence tells us whether we should be loading incidence or prevalence
 		
-		Map<Long, Map<Integer, Double>> incidenceOrPrevalenceMapOld = new HashMap<Long, Map<Integer, Double>>();
 		Map<Long, Map<PopulationCategoryKey, Double>> incidenceOrPrevalenceMap = new HashMap<Long, Map<PopulationCategoryKey, Double>>();
 		
 		//Some functions don't use incidence or prevalence. Just return an empty map for those.
@@ -56,8 +55,10 @@ public class IncidenceApi {
 			incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 			return true;
 		}
+
+		Integer hifAgeStart = hifConfig.startAge;
+		Integer hifAgeEnd = hifConfig.endAge;
 		
-		//Build a unique cache key for this incidence/prevalence result set
 		Integer incPrevId = isIncidence ? hifConfig.incidence : hifConfig.prevalence;
 		Integer incPrevYear = isIncidence ? hifConfig.incidenceYear : hifConfig.prevalenceYear;
 		
@@ -70,15 +71,18 @@ public class IncidenceApi {
 		Integer genderId = (isIncidence ? hifConfig.incidenceGender : hifConfig.prevalenceGender);
 		genderId = (genderId == 3 ? 4 : genderId);
 		
-		Integer hifAgeStart = hifConfig.startAge;
-		Integer hifAgeEnd = hifConfig.endAge;
+
 		
-		// Now, check the incidenceOrPrevalenceLists to see if we already have data for this function config
-		String cacheKey = incPrevId + "~" + incPrevYear + "~" + h.get("endpoint_id", Integer.class) + "~" + hifConfig.startAge + "~" + hifConfig.endAge
+		//Build a unique cache key for this incidence/prevalence result set
+		String cacheKey = incPrevId + "~" + incPrevYear 
+				+ "~" + h.get("endpoint_id", Integer.class) 
+				+ "~" + hifAgeStart 
+				+ "~" + hifAgeEnd
 				+ "~" + raceId
 				+ "~" + ethnicityId
 				+ "~" + genderId;
 		
+		// Now, check the incidenceOrPrevalenceLists to see if we already have data for this function config
 		if(incidenceOrPrevalenceCacheMap.containsKey(cacheKey)) {
 			// If we found it, just add another reference to this map in the incidenceLists ArrayList
 			incidenceOrPrevalenceLists.add(incidenceOrPrevalenceLists.get(incidenceOrPrevalenceCacheMap.get(cacheKey)));
@@ -88,9 +92,8 @@ public class IncidenceApi {
 		// We don't already have results for this type of config, so keep track in this lookup map in case another function needs it
 		incidenceOrPrevalenceCacheMap.put(cacheKey, incidenceOrPrevalenceLists.size());
 		
-		//Return an average incidence for each population age range for a given hif
-		//TODO: Need to add in handling for race, ethnicity, gender. 
-		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revised.
+		//Return an weighted average incidence for each population age range for a given hif
+		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revisited.
 				
 		//Convert race, ethnicity, gender to single element arrays
 		Integer[] arrRaceId = new Integer[1];
@@ -121,7 +124,6 @@ public class IncidenceApi {
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 
 		// Build a nested map like <grid_cell_id, <age_group_id, incidence_value>>
-		// YY: change age_group_id key to an object which contains age_group_id, race_id, ethnicity_id, and gender_id
 		
 		// FOR EACH GRID CELL
 		for (Entry<Long, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
@@ -130,52 +132,46 @@ public class IncidenceApi {
 
 			// FOR EACH POPULATION AGE RANGE
 			for (Record3<Integer, Short, Short> popAgeRange : popAgeRanges) {
+				Short popAgeStart = popAgeRange.value2();
+				Short popAgeEnd = popAgeRange.value3();
 				
 				// FOR EACH INCIDENCE AGE RANGE
-				int count=0;
 				HashMap<PopulationCategoryKey, Double> demoGroupCount = new HashMap<PopulationCategoryKey, Double>(); //for calculating average later
 				for (GetIncidenceRecord incidenceOrPrevalenceAgeRange : cellIncidence.getValue()) {
-					Short popAgeStart = popAgeRange.value2();
-					Short popAgeEnd = popAgeRange.value3();
 					Short incAgeStart = incidenceOrPrevalenceAgeRange.getStartAge();
 					Short incAgeEnd = incidenceOrPrevalenceAgeRange.getEndAge();
 					
 					//The race,ethnicity,and gender aren't important here because the entire resultset is for the combo that the HIF needs
-					PopulationCategoryKey demoGroup = new PopulationCategoryKey(popAgeRange.value1(), 
-							null, //incidenceOrPrevalenceAgeRange.getRaceId(),
-							null, //incidenceOrPrevalenceAgeRange.getEthnicityId(),
-							null //incidenceOrPrevalenceAgeRange.getGenderId()
-							);
+					//TODO: Initially, we thought we would be needing race,ethnicity,gender in this key. 
+					// Now that we know we don't, we should revert to just using popAgeRange.value1() as the key. 
+					// 8/19/2022 - Leaving as-is for now to maintain stability during testing
+					PopulationCategoryKey demoGroup = new PopulationCategoryKey(popAgeRange.value1(), null, null, null);
 
-					
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
 
 					//Only consider population bins that fall within the incidence range
 					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
 						
-						//calculate pct for mapping inc to pop age range and hif age range. 
+						//calculate pct for mapping inc to intersection with pop age range and hif age range. 
 						double pctIncToPop = (Math.min(popAgeEnd, Math.min(incAgeEnd, hifAgeEnd)) - Math.max(popAgeStart, Math.max(incAgeStart, hifAgeStart)) + 1.0)
 								/ (Math.min(popAgeEnd,hifAgeEnd) - Math.max(popAgeStart,hifAgeStart) + 1.0);
 						
 						if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
 							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * pctIncToPop;
 							incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0) + inc);
-							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0.0) + pctIncToPop);//If we only group by age range, count per group is always 1
+							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0.0) + pctIncToPop);
 						}	
 					}
-					
 				}
 				
-				//Weight average by age range overlap
+				//Weighted average by age range overlap
 				if(!demoGroupCount.isEmpty()) {
 					for(Entry<PopulationCategoryKey, Double> entry : demoGroupCount.entrySet()) {
 						PopulationCategoryKey demoGroup = entry.getKey();
 						double groupCount = entry.getValue();
 						incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0)/groupCount); 						
 					}
-					
 				}
-				
 			}
 			incidenceOrPrevalenceMap.put(cellIncidence.getKey(), incidenceOrPrevalenceCellMap);
 		}
