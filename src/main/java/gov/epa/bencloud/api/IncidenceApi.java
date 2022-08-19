@@ -70,6 +70,9 @@ public class IncidenceApi {
 		Integer genderId = (isIncidence ? hifConfig.incidenceGender : hifConfig.prevalenceGender);
 		genderId = (genderId == 3 ? 4 : genderId);
 		
+		Integer hifAgeStart = hifConfig.startAge;
+		Integer hifAgeEnd = hifConfig.endAge;
+		
 		// Now, check the incidenceOrPrevalenceLists to see if we already have data for this function config
 		String cacheKey = incPrevId + "~" + incPrevYear + "~" + h.get("endpoint_id", Integer.class) + "~" + hifConfig.startAge + "~" + hifConfig.endAge
 				+ "~" + raceId
@@ -124,8 +127,6 @@ public class IncidenceApi {
 		for (Entry<Long, Result<GetIncidenceRecord>> cellIncidence : incRecords.entrySet()) {
 			//HashMap<Integer, Double> incidenceOrPrevalenceCellMap = new HashMap<Integer, Double>();
 			HashMap<PopulationCategoryKey, Double> incidenceOrPrevalenceCellMap = new HashMap<PopulationCategoryKey, Double>();
-			
-			
 
 			// FOR EACH POPULATION AGE RANGE
 			for (Record3<Integer, Short, Short> popAgeRange : popAgeRanges) {
@@ -151,12 +152,12 @@ public class IncidenceApi {
 
 					//Only consider population bins that fall within the incidence range
 					if (popAgeStart <= incAgeEnd && popAgeEnd >= incAgeStart) {
-						//calculate pct for mapping inc to pop age range. 
-						double pctIncToPop = (Math.min(popAgeEnd, incAgeEnd)-Math.max(popAgeStart, incAgeStart) + 1.0)/(popAgeEnd-popAgeStart+1.0);
+						
+						//calculate pct for mapping inc to pop age range and hif age range. 
+						double pctIncToPop = (Math.min(popAgeEnd, Math.min(incAgeEnd, hifAgeEnd)) - Math.max(popAgeStart, Math.max(incAgeStart, hifAgeStart)) + 1.0)
+								/ (Math.min(popAgeEnd,hifAgeEnd) - Math.max(popAgeStart,hifAgeStart) + 1.0);
+						
 						if (popAgeRangeHifMap.containsKey(demoGroup.getAgeRangeId())) {
-							//double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
-							//double popPct = popAgeRangeHifMap.get(demoGroup.getAgeRangeId());
-							
 							double inc = incidenceOrPrevalenceAgeRange.getValue().doubleValue() * pctIncToPop;
 							incidenceOrPrevalenceCellMap.put(demoGroup, incidenceOrPrevalenceCellMap.getOrDefault(demoGroup, 0.0) + inc);
 							demoGroupCount.put(demoGroup, demoGroupCount.getOrDefault(demoGroup, 0.0) + pctIncToPop);//If we only group by age range, count per group is always 1
