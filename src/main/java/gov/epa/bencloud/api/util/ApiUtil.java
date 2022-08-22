@@ -56,19 +56,27 @@ public class ApiUtil {
 	 * 
 	 * @param id
 	 * @param inflationYear
+	 * @param useInflationFactors 
 	 * @return  a map of inflation indices with key = index name, value = index value
 	 */
-	public static Map<String, Double> getInflationIndices(int id, Integer inflationYear) {
+	public static Map<String, Double> getInflationIndices(int id, Integer inflationYear, Boolean useInflationFactors) {
 
-		InflationEntryRecord inflationRecord = DSL.using(JooqUtil.getJooqConfiguration())
-				.selectFrom(INFLATION_ENTRY)
-				.where(INFLATION_ENTRY.INFLATION_DATASET_ID.eq(id).and(INFLATION_ENTRY.ENTRY_YEAR.eq(inflationYear)))
-				.fetchOne();
 		Map<String, Double> inflationIndices = new HashMap<String, Double>();
-		inflationIndices.put("AllGoodsIndex", inflationRecord.getAllGoodsIndex().doubleValue());
-		inflationIndices.put("MedicalCostIndex", inflationRecord.getMedicalCostIndex().doubleValue());		
-		inflationIndices.put("WageIndex", inflationRecord.getWageIndex().doubleValue());
 		
+		if(! useInflationFactors) {
+			inflationIndices.put("AllGoodsIndex", 1.0);
+			inflationIndices.put("MedicalCostIndex", 1.0);		
+			inflationIndices.put("WageIndex", 1.0);
+		} else {
+			InflationEntryRecord inflationRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.selectFrom(INFLATION_ENTRY)
+					.where(INFLATION_ENTRY.INFLATION_DATASET_ID.eq(id).and(INFLATION_ENTRY.ENTRY_YEAR.eq(inflationYear)))
+					.fetchOne();
+	
+			inflationIndices.put("AllGoodsIndex", inflationRecord.getAllGoodsIndex().doubleValue());
+			inflationIndices.put("MedicalCostIndex", inflationRecord.getMedicalCostIndex().doubleValue());		
+			inflationIndices.put("WageIndex", inflationRecord.getWageIndex().doubleValue());
+		}		
 		return inflationIndices;
 	}
 
@@ -76,10 +84,15 @@ public class ApiUtil {
 	 * 
 	 * @param id Income growth adjustment dataset id
 	 * @param popYear
+	 * @param useGrowthFactors 
 	 * @return a map of income growth factors, with key = endpoint group id, value = income growth adjustment dataset id and growth year.
 	 */
-	public static Map<Short, Record2<Short, Double>> getIncomeGrowthFactors(int id, Integer popYear) {
+	public static Map<Short, Record2<Short, Double>> getIncomeGrowthFactors(int id, Integer popYear, Boolean useGrowthFactors) {
 
+		if(! useGrowthFactors) {
+			return null;
+		}
+		
 		Map<Short, Record2<Short, Double>> incomeGrowthFactorRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(INCOME_GROWTH_ADJ_FACTOR.ENDPOINT_GROUP_ID,
 						INCOME_GROWTH_ADJ_FACTOR.MEAN_VALUE)

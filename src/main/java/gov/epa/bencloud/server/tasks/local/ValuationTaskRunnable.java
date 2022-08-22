@@ -121,8 +121,9 @@ public class ValuationTaskRunnable implements Runnable {
 			int inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;
 			valuationTaskConfig.inflationYear = inflationYear;
 			
-			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, inflationYear);
-			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, hifTaskConfig.popYear);
+			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, inflationYear, valuationTaskConfig.useInflationFactors);
+			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, hifTaskConfig.popYear, valuationTaskConfig.useGrowthFactors);
+			
 			valuationTaskConfig.incomeGrowthYear = hifTaskConfig.popYear;
 			
 			//<variableName, <gridCellId, value>>
@@ -174,7 +175,9 @@ public class ValuationTaskRunnable implements Runnable {
 
 						ValuationConfig vfConfig = valuationTaskConfig.valuationFunctions.get(vfIdx);
 						if (vfConfig.hifId.equals(hifResult.get(HIF_RESULT.HIF_ID))) {
-							Record2<Short, Double> tmp = incomeGrowthFactors.getOrDefault(hifResult.get(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID).shortValue(), null);
+							
+							// Use 1.0 if growth factor is not found or was disabled via valuationTaskConfig.useGrowthFactorsuse
+							Record2<Short, Double> tmp = incomeGrowthFactors != null ? incomeGrowthFactors.getOrDefault(hifResult.get(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID).shortValue(), null) : null;
 							double incomeGrowthFactor = tmp == null ? 1.0 : tmp.value2().doubleValue();
 							
 							double hifEstimate = hifResult.get(HIF_RESULT.RESULT).doubleValue();
@@ -184,11 +187,11 @@ public class ValuationTaskRunnable implements Runnable {
 							Record vfDefinition = vfDefinitionList.get(vfIdx);
 							double[] betaDist = vfBetaDistributionLists.get(vfIdx);
 
-							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
 							valuationFunction.vfArguments.allGoodsIndex = inflationIndices.get("AllGoodsIndex");
 							valuationFunction.vfArguments.medicalCostIndex = inflationIndices.get("MedicalCostIndex");
 							valuationFunction.vfArguments.wageIndex = inflationIndices.get("WageIndex");
 
+							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
 							//TODO: Need to improve handling of variables
 							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
 								if(variable.getKey().equalsIgnoreCase("median_income")) {
