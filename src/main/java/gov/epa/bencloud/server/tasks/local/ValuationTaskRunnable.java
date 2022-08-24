@@ -118,13 +118,13 @@ public class ValuationTaskRunnable implements Runnable {
 			
 			HIFTaskConfig hifTaskConfig = HIFApi.getHifTaskConfigFromDb(valuationTaskConfig.hifResultDatasetId);
 
-			int inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;
-			valuationTaskConfig.inflationYear = inflationYear;
-			
-			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, inflationYear, valuationTaskConfig.useInflationFactors);
-			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, hifTaskConfig.popYear, valuationTaskConfig.useGrowthFactors);
-			
-			valuationTaskConfig.incomeGrowthYear = hifTaskConfig.popYear;
+			//TODO: 2020 is the hardcoded max based on current data. This could be more dynamic.
+			valuationTaskConfig.inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;			
+			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, valuationTaskConfig.inflationYear, valuationTaskConfig.useInflationFactors);
+
+			//TODO: 2050 is the hardcoded max based on current data. This could be more dynamic.
+			valuationTaskConfig.incomeGrowthYear = hifTaskConfig.popYear > 2050 ? 2050 : hifTaskConfig.popYear;
+			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, valuationTaskConfig.incomeGrowthYear, valuationTaskConfig.useGrowthFactors);
 			
 			//<variableName, <gridCellId, value>>
 			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
@@ -285,8 +285,8 @@ public class ValuationTaskRunnable implements Runnable {
 									rec.setResultVariance(statsPercentiles.getVariance());
 									//rec.setStandardDev(distStats.getStandardDeviation());
 									//rec.setResultVariance(distStats.getPopulationVariance());
-									//log.debug("Pop Var: " + distStats.getPopulationVariance());
-									//log.debug("Var: " + distStats.getVariance());
+									log.debug("Pop Var: " + distStats.getPopulationVariance());
+									log.debug("Var: " + distStats.getVariance());
 
 								}
 							} catch (Exception e) {

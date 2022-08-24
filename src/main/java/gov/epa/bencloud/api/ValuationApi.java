@@ -11,6 +11,8 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jetbrains.annotations.NotNull;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
@@ -21,6 +23,7 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record21;
+import org.jooq.Record22;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -127,7 +130,8 @@ public class ValuationApi {
 								gridId))
 				.asTable("vf_result_records");
 		
-		Cursor<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords;
+		Result<?> vfRecordsClean = null;
+		Result<Record22<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]>> vfRecords;
 		try {
 			vfRecords = create.select(
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
@@ -150,7 +154,8 @@ public class ValuationApi {
 				vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
-				vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5)
+				vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
+				vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES)
 				)
 				.from(vfResultRecords)
 				.join(VALUATION_RESULT_FUNCTION_CONFIG)
@@ -173,8 +178,28 @@ public class ValuationApi {
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
-				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
-				.fetchLazy();
+				.fetch();
+			
+				//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
+				if(ValuationApi.getBaselineGridForValuationResults(id) != gridId) {
+					for(Record res : vfRecords) {
+						DescriptiveStatistics stats = new DescriptiveStatistics();
+						Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
+						for (int j = 0; j < pct.length; j++) {
+							stats.addValue(pct[j]);
+						}
+						
+						res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
+						
+						//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+						stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
+						res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
+						res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+					}
+				}
+				//Remove percentiles by keeping all other fields
+				vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21));
+			
 		} catch (DataAccessException e) {
 			e.printStackTrace();
 			response.status(400);
@@ -183,13 +208,11 @@ public class ValuationApi {
 		
 		try {
 			response.type("application/json");
-			vfRecords.formatJSON(response.raw().getWriter(), new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+			vfRecordsClean.formatJSON(response.raw().getWriter(), new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 		} catch (Exception e) {
 			log.error("Error in Valuation export", e);
 		} finally {
-			if(vfRecords != null && !vfRecords.isClosed()) {
-				vfRecords.close();
-			}
+
 		}
 		
 	}
@@ -260,7 +283,8 @@ public class ValuationApi {
 		}
 		
 		for(int i=0; i < gridIds.length; i++) {
-			Result<Record21<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double>> vfRecords;
+			Result<?> vfRecordsClean = null;
+			Result<Record22<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]>> vfRecords;
 			try {
 				Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 						GET_VALUATION_RESULTS(
@@ -291,7 +315,8 @@ public class ValuationApi {
 						vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
 						vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
-						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5)
+						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
+						vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES)
 						)
 						.from(vfResultRecords)
 						.join(VALUATION_RESULT_FUNCTION_CONFIG)
@@ -313,6 +338,27 @@ public class ValuationApi {
 						.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 						.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 						.fetch();
+				
+				
+						//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
+						if(ValuationApi.getBaselineGridForValuationResults(id) != gridIds[i]) {
+							for(Record res : vfRecords) {
+								DescriptiveStatistics stats = new DescriptiveStatistics();
+								Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
+								for (int j = 0; j < pct.length; j++) {
+									stats.addValue(pct[j]);
+								}
+								
+								res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
+								
+								//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+								stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
+								res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
+								res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+							}
+						}
+						//Remove percentiles by keeping all other fields
+						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21));
 			} catch (DataAccessException e) {
 				e.printStackTrace();
 				response.status(400);
@@ -320,7 +366,7 @@ public class ValuationApi {
 			}
 			try {
 				zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-				vfRecords.formatCSV(zipStream);
+				vfRecordsClean.formatCSV(zipStream);
 			} catch (Exception e) {
 				log.error("Error in Valuation export", e);
 			} finally {

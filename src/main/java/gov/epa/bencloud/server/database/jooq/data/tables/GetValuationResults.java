@@ -9,7 +9,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationRes
 
 import org.jooq.Field;
 import org.jooq.Name;
-import org.jooq.Row10;
+import org.jooq.Row11;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -90,6 +90,11 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
      */
     public final TableField<GetValuationResultsRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
+    /**
+     * The column <code>data.get_valuation_results.percentiles</code>.
+     */
+    public final TableField<GetValuationResultsRecord, Double[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
     private GetValuationResults(Name alias, Table<GetValuationResultsRecord> aliased) {
         this(alias, aliased, new Field[] {
             DSL.val(null, SQLDataType.INTEGER),
@@ -156,12 +161,12 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row10 type methods
+    // Row11 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row10<Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double> fieldsRow() {
-        return (Row10) super.fieldsRow();
+    public Row11<Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
+        return (Row11) super.fieldsRow();
     }
 
     /**
