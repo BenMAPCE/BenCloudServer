@@ -253,7 +253,7 @@ public class HIFTaskRunnable implements Runnable {
 					if((int)hifRecord.get("metric_statistic") == 0) { // NONE
 						seasonalScalar = hifConfig.totalDays.doubleValue();
 					}
-					
+										
 					double beta = ((Double) hifRecord.get("beta")).doubleValue();
 
 					// BenMAP-CE stores air quality values as floats but performs HIF estimates using doubles.
@@ -478,6 +478,7 @@ public class HIFTaskRunnable implements Runnable {
 		//This is a temporary solution to the fact that user's can't select incidence and 
 		//the standard EPA functions don't have incidence assigned in the db
 		// If the UI passes the year and incidence hints to the methods that get health impact functions, these should already be set
+		// TODO: 8/25/2022 - This should be reviewed and, probably, removed at this point
 		if(h.get("function_text", String.class).toLowerCase().contains("incidence")) {
 			if(hif.incidence==null) {
 				if(h.get("endpoint_group_id").equals(12)) {
@@ -503,6 +504,12 @@ public class HIFTaskRunnable implements Runnable {
 				hif.startDay = 1;
 			} else {
 				hif.startDay = h.get("start_day", Integer.class);
+			}
+			// TODO: TEMPORARY OVERRIDE - With 1.5.8.15, the desktop changed the ozone season to April - September. 
+			// The cloud db still has May - September. We are forcing the desktop season here for now
+			// Until we can revisit this topic
+			if(h.get("pollutant_id", Integer.class) == 4) {
+				hif.startDay = 90;
 			}
 		}
 		if(hif.endDay == null) {

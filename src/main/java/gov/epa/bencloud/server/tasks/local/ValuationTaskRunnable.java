@@ -283,10 +283,6 @@ public class ValuationTaskRunnable implements Runnable {
 									
 									rec.setStandardDev(statsPercentiles.getStandardDeviation());
 									rec.setResultVariance(statsPercentiles.getVariance());
-									//rec.setStandardDev(distStats.getStandardDeviation());
-									//rec.setResultVariance(distStats.getPopulationVariance());
-									log.debug("Pop Var: " + distStats.getPopulationVariance());
-									log.debug("Var: " + distStats.getVariance());
 
 								}
 							} catch (Exception e) {
