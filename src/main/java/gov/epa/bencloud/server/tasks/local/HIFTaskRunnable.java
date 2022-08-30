@@ -319,8 +319,7 @@ public class HIFTaskRunnable implements Runnable {
 								&& (hifConfig.race == 5 || hifConfig.race == popRace)
 								&& (hifConfig.ethnicity == 3 || hifConfig.ethnicity == popEthnicity)
 								&& (hifConfig.gender == 3 || hifConfig.gender == popGender)) {
-							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
-							//YY: Incidence average is updated in addIncidenceOrPrevalenceEntryGroups. Need review.
+
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
 							
 							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popCatKey, 0.0);
@@ -415,7 +414,6 @@ public class HIFTaskRunnable implements Runnable {
 					hifResults.clear();
 					messages.get(messages.size()-1).setMessage("Running health impact functions");
 					TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
-					//System.out.println("hifResults capacity after clear: " + hifResults.capacity());
 				}
 				
 			}
@@ -443,6 +441,11 @@ public class HIFTaskRunnable implements Runnable {
 		log.info("HIF Task Complete: " + taskUuid);
 	}
 
+	/**
+	 * Load the HIFConfig data from the database
+	 * @param hif
+	 * @param h
+	 */
 	private void updateHifConfigValues(HIFConfig hif, Record h) {
 		if(hif.startAge == null) {
 			hif.startAge = h.get("start_age", Integer.class);
@@ -506,8 +509,8 @@ public class HIFTaskRunnable implements Runnable {
 				hif.startDay = h.get("start_day", Integer.class);
 			}
 			// TODO: TEMPORARY OVERRIDE - With 1.5.8.15, the desktop changed the ozone season to April - September. 
-			// The cloud db still has May - September. We are forcing the desktop season here for now
-			// Until we can revisit this topic
+			// The cloud db still has May - September. We are forcing the new season definition here for now
+			// until we can revisit this topic
 			if(h.get("pollutant_id", Integer.class) == 4) {
 				hif.startDay = 90;
 			}
@@ -535,8 +538,6 @@ public class HIFTaskRunnable implements Runnable {
 	 * @return a list of maps with keys = population age range, 
 	 * 			and values = percentage of population in that age range that applies to a given HIF.
 	 */
-	
-	//YY: change to public so that it can be used when calculating incidence
 	public static ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
 		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = new ArrayList<HashMap<Integer, Double>>();
 		
