@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row12;
+import org.jooq.Row11;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -103,12 +103,6 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
      */
     public final TableField<AirQualityLayerMetricsRecord, Double> PCT_97_5 = createField(DSL.name("pct_97_5"), SQLDataType.DOUBLE, this, "");
 
-    /**
-     * The column
-     * <code>data.air_quality_layer_metrics.cell_count_above_lrl</code>.
-     */
-    public final TableField<AirQualityLayerMetricsRecord, Integer> CELL_COUNT_ABOVE_LRL = createField(DSL.name("cell_count_above_lrl"), SQLDataType.INTEGER, this, "");
-
     private AirQualityLayerMetrics(Name alias, Table<AirQualityLayerMetricsRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -186,11 +180,11 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     }
 
     // -------------------------------------------------------------------------
-    // Row12 type methods
+    // Row11 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<Integer, Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Integer> fieldsRow() {
-        return (Row12) super.fieldsRow();
+    public Row11<Integer, Integer, Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double> fieldsRow() {
+        return (Row11) super.fieldsRow();
     }
 }

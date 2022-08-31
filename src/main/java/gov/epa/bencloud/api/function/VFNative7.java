@@ -11,6 +11,6 @@ public class VFNative7 implements VFNative{
      */
     @Override
     public double calculate(VFArguments args) {
-        return args.a * args.allGoodsIndex + args.b;
+        return args.a * args.allGoodsIndex * args.b;
     }
 }

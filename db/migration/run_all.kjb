@@ -1018,7 +1018,7 @@
       <attributes_kjc/>
     </entry>
     <entry>
-      <name>load_population_entry_2010_2050</name>
+      <name>load_population_entry_2000_2050</name>
       <description/>
       <type>TRANS</type>
       <attributes/>
@@ -1906,13 +1906,13 @@
       <attributes_kjc/>
     </entry>
     <entry>
-      <name>load_population_value_2010_2050</name>
+      <name>load_population_value_2000_2050</name>
       <description/>
       <type>TRANS</type>
       <attributes/>
       <specification_method>filename</specification_method>
       <trans_object_id/>
-      <filename>${Internal.Entry.Current.Directory}/load_population_value_12km_2010_2050.ktr</filename>
+      <filename>${Internal.Entry.Current.Directory}/load_population_value_12km_2000_2050.ktr</filename>
       <transname/>
       <arg_from_previous>N</arg_from_previous>
       <params_from_previous>N</params_from_previous>
@@ -2110,7 +2110,7 @@
     </hop>
     <hop>
       <from>load_population_dataset</from>
-      <to>load_population_entry_2010_2050</to>
+      <to>load_population_entry_2000_2050</to>
       <from_nr>0</from_nr>
       <to_nr>0</to_nr>
       <enabled>Y</enabled>
@@ -2316,8 +2316,8 @@
       <unconditional>N</unconditional>
     </hop>
     <hop>
-      <from>load_population_entry_2010_2050</from>
-      <to>load_population_value_2010_2050</to>
+      <from>load_population_entry_2000_2050</from>
+      <to>load_population_value_2000_2050</to>
       <from_nr>0</from_nr>
       <to_nr>0</to_nr>
       <enabled>Y</enabled>
@@ -2325,7 +2325,7 @@
       <unconditional>N</unconditional>
     </hop>
     <hop>
-      <from>load_population_value_2010_2050</from>
+      <from>load_population_value_2000_2050</from>
       <to>load_pollutant</to>
       <from_nr>0</from_nr>
       <to_nr>0</to_nr>
@@ -2336,11 +2336,12 @@
   </hops>
   <notepads>
     <notepad>
-      <note>Run stage_population ktrs before this</note>
+      <note>Run stage_population ktrs before this
+Note: 2055 was added 8/2022</note>
       <xloc>768</xloc>
       <yloc>784</yloc>
       <width>207</width>
-      <heigth>26</heigth>
+      <heigth>42</heigth>
       <fontname>Segoe UI</fontname>
       <fontsize>9</fontsize>
       <fontbold>N</fontbold>

@@ -174,93 +174,43 @@ public class HIFApi {
 				.limit(rowsPerPage)
 				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
 				.fetch();
-		} catch(DataAccessException e) {
-			e.printStackTrace();
-			response.status(400);
-			return;
-		}
-		
-		Result<Record> hifRecords = create.select(
-				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
-				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-				ENDPOINT.NAME.as("endpoint"),
-				HEALTH_IMPACT_FUNCTION.AUTHOR,
-				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
-				HEALTH_IMPACT_FUNCTION.LOCATION,
-				HEALTH_IMPACT_FUNCTION.QUALIFIER,
-				HIF_RESULT_FUNCTION_CONFIG.START_AGE,
-				HIF_RESULT_FUNCTION_CONFIG.END_AGE,
-				RACE.NAME.as("race"),
-				ETHNICITY.NAME.as("ethnicity"),
-				GENDER.NAME.as("gender"),
-				POLLUTANT_METRIC.NAME.as("metric"),
-				SEASONAL_METRIC.NAME.as("seasonal_metric"),
-				STATISTIC_TYPE.NAME.as("metric_statistic"),
-				hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
-				hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
-				hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
-				hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
-				hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
-				hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
-				hifResultRecords.field(GET_HIF_RESULTS.MEAN),
-				hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
-				DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
-					.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE)).times(100.0)).as("percent_of_baseline"),
-				hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
-				hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
-				hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
-				hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
-				hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES)
-				)
-				.from(hifResultRecords)
-				.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
-				.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(id).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID))))
-				.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
-				.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
-				.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
-				.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
-				.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-				.offset((page * rowsPerPage) - rowsPerPage)
-				.limit(rowsPerPage)
-				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
-				.fetch();
-
+			
+			
 			if(hifRecords.isEmpty()) {
 				CoreApi.getErrorResponseNotFound(request, response);
 				return;
 			}
-		
-		//If results are geing aggregated, recalc mean, variance, std deviation, and percent of baseline
-		if(HIFApi.getBaselineGridForHifResults(id) != gridId) {
-			for(Record res : hifRecords) {
-				DescriptiveStatistics stats = new DescriptiveStatistics();
-				Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
-				for (int i = 0; i < pct.length; i++) {
-					stats.addValue(pct[i]);
+
+			//If results are geing aggregated, recalc mean, variance, std deviation, and percent of baseline
+			if(HIFApi.getBaselineGridForHifResults(id) != gridId) {
+				for(Record res : hifRecords) {
+					DescriptiveStatistics stats = new DescriptiveStatistics();
+					Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
+					for (int i = 0; i < pct.length; i++) {
+						stats.addValue(pct[i]);
+					}
+					
+					res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
+					res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
+					res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+					res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 				}
 				
-				res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
-				res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
-				res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
-				res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 			}
-			
-		}
-	
-		//TODO: Can we remove percentiles?
 		
-		try {
+			//TODO: Can we remove percentiles?
 			response.type("application/json");
 			hifRecords.formatJSON(response.raw().getWriter(),
 					new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+			
+		} catch(DataAccessException e) {
+			e.printStackTrace();
+			response.status(400);
+			return;
 		} catch (Exception e) {
 			log.error("Error formatting JSON", e);
-		} finally {
-			//if(hifRecords != null && !hifRecords.isClosed()) {
-			//	hifRecords.close();
-			//}
+			response.status(400);
+			return;
 		}
 	}
 	
@@ -356,6 +306,7 @@ public class HIFApi {
 						HEALTH_IMPACT_FUNCTION.QUALIFIER,
 						HIF_RESULT_FUNCTION_CONFIG.START_AGE,
 						HIF_RESULT_FUNCTION_CONFIG.END_AGE,
+						HEALTH_IMPACT_FUNCTION.BETA,
 						RACE.NAME.as("race"),
 						ETHNICITY.NAME.as("ethnicity"),
 						GENDER.NAME.as("gender"),
@@ -410,7 +361,7 @@ public class HIFApi {
 					}
 				}
 				//Remove percentiles by keeping all other fields
-				hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26));
+				hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
 			} catch(DataAccessException e) {
 				e.printStackTrace();
 				response.status(400);
@@ -553,6 +504,7 @@ public class HIFApi {
 		int pollutantId;
 		int baselineId;
 		int scenarioId;
+		boolean userPrefered; //If true, BenMAP will use the incidence/prevalence selected by the user even when there is another dataset which matches the demo groups better.
 		List<Integer> ids;
 
 		try{
@@ -562,6 +514,7 @@ public class HIFApi {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
 			scenarioId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("scenarioId"), 0);
+			userPrefered = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("userPrefered"), false);
 			ids = Stream.of(idsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
@@ -668,7 +621,7 @@ public class HIFApi {
 			function.put("ethnicity_name",r.getValue("ethnicity_name", String.class));
 			
 			//This will select the most appropriate incidence/prevalence dataset and year based on user selection and function definition
-			HIFUtil.setIncidencePrevalence(function, popYear, defaultIncidencePrevalenceDataset, r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID));
+			HIFUtil.setIncidencePrevalence(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
 			
 			functions.add(function);
 			

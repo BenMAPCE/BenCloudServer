@@ -27,13 +27,16 @@ import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record10;
+import org.jooq.Record13;
 import org.jooq.Record14;
+import org.jooq.Record21;
 import org.jooq.Record22;
 import org.jooq.Record6;
 import org.jooq.Record7;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.Table;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.tools.csv.CSVReader;
 import org.pac4j.core.profile.UserProfile;
@@ -86,7 +89,12 @@ public class AirQualityApi {
 		try {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
-			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
+			
+			if(ParameterUtil.getParameterValueAsString(request.raw().getParameter("rowsPerPage"), "").equalsIgnoreCase("0")) {
+				rowsPerPage = 1000000; //Let's use one million as a reasonable approximation of "all"
+			} else {
+				rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);	
+			}
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
@@ -145,7 +153,7 @@ public class AirQualityApi {
 	
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
-		Table<Record14<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer>> metricStatistics = create.select(
+		Table<Record13<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double>> metricStatistics = create.select(
 				AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID,
 				AIR_QUALITY_LAYER_METRICS.METRIC_ID,
 				POLLUTANT_METRIC.NAME.as("metric_name"),
@@ -158,8 +166,7 @@ public class AirQualityApi {
 				AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
 				AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
 				AIR_QUALITY_LAYER_METRICS.PCT_2_5,
-				AIR_QUALITY_LAYER_METRICS.PCT_97_5,
-				AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL)
+				AIR_QUALITY_LAYER_METRICS.PCT_97_5)
 				.from(AIR_QUALITY_LAYER_METRICS)
 				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
 				.join(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
@@ -190,12 +197,11 @@ public class AirQualityApi {
 								metricStatistics.field("max_value"),
 								metricStatistics.field("mean_value"),
 								metricStatistics.field("pct_2_5"),
-								metricStatistics.field("pct_97_5"),
-								metricStatistics.field("cell_count_above_lrl")
+								metricStatistics.field("pct_97_5")
 								)).as("metric_statistics")
 						)
 				.from(AIR_QUALITY_LAYER)
-				.join(metricStatistics).on(((Field<Integer>)metricStatistics.field("air_quality_layer_id")).eq(AIR_QUALITY_LAYER.ID))
+				.leftJoin(metricStatistics).on(((Field<Integer>)metricStatistics.field("air_quality_layer_id")).eq(AIR_QUALITY_LAYER.ID))
 				.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
 				.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
 				.where(filterCondition)
@@ -317,7 +323,7 @@ public class AirQualityApi {
 		
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 		
-		@NotNull Result<Record22<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer, String, Short, Integer, String, Integer, String, String>> aqRecords = 
+		Result<Record21<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, String, Short, Integer, String, Integer, String, String>> aqRecords = 
 			DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
 						AIR_QUALITY_LAYER.ID, 
@@ -334,7 +340,6 @@ public class AirQualityApi {
 						AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
 						AIR_QUALITY_LAYER_METRICS.PCT_2_5,
 						AIR_QUALITY_LAYER_METRICS.PCT_97_5,
-						AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL,
 						AIR_QUALITY_LAYER.USER_ID,
 						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
@@ -423,7 +428,7 @@ public class AirQualityApi {
 		String userId = userProfile.get().getId();
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
-		Table<Record14<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, Integer>> metricStatistics = create.select(
+		Table<Record13<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double>> metricStatistics = create.select(
 				AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID,
 				AIR_QUALITY_LAYER_METRICS.METRIC_ID,
 				POLLUTANT_METRIC.NAME.as("metric_name"),
@@ -436,8 +441,7 @@ public class AirQualityApi {
 				AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
 				AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
 				AIR_QUALITY_LAYER_METRICS.PCT_2_5,
-				AIR_QUALITY_LAYER_METRICS.PCT_97_5,
-				AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL)
+				AIR_QUALITY_LAYER_METRICS.PCT_97_5)
 				.from(AIR_QUALITY_LAYER_METRICS)
 				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
 				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
@@ -467,8 +471,7 @@ public class AirQualityApi {
 						metricStatistics.field("max_value"),
 						metricStatistics.field("mean_value"),
 						metricStatistics.field("pct_2_5"),
-						metricStatistics.field("pct_97_5"),
-						metricStatistics.field("cell_count_above_lrl")
+						metricStatistics.field("pct_97_5")
 						)).as("metric_statistics")
 				)
 		.from(AIR_QUALITY_LAYER)
@@ -1074,6 +1077,8 @@ public class AirQualityApi {
 			return transformValMsgToJSON(validationMsg);
 		}
 		
+		Integer aqLayerId = null;
+		
 		//import data
 		try (InputStream is = request.raw().getPart("file").getInputStream()){
 			CSVReader csvReader = new CSVReader (new InputStreamReader(is));
@@ -1087,6 +1092,8 @@ public class AirQualityApi {
 			.returning(AIR_QUALITY_LAYER.ID, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
 			.fetchOne();
 			
+			aqLayerId = aqRecord.value1();
+		
 			// Read the data rows and write to the db	
 			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Long, Integer, Integer, Integer, Double> batch = DSL.using(JooqUtil.getJooqConfiguration())
 					.insertInto(
@@ -1130,7 +1137,7 @@ public class AirQualityApi {
 				
 				// Add a record to the batch
 				batch.values(
-						aqRecord.value1(), 
+						aqLayerId, 
 						Integer.valueOf(record[columnIdx]), 
 						Integer.valueOf(record[rowIdx]),
 						ApiUtil.getCellId(Integer.valueOf(record[columnIdx]), Integer.valueOf(record[rowIdx])),
@@ -1157,7 +1164,6 @@ public class AirQualityApi {
 					, AIR_QUALITY_LAYER_METRICS.MEAN_VALUE
 					, AIR_QUALITY_LAYER_METRICS.PCT_2_5
 					, AIR_QUALITY_LAYER_METRICS.PCT_97_5
-					, AIR_QUALITY_LAYER_METRICS.CELL_COUNT_ABOVE_LRL
 					)
 			.select(
     		DSL.select(
@@ -1171,10 +1177,9 @@ public class AirQualityApi {
     				, DSL.avg(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("mean_value")
     				, DSL.percentileCont(0.025).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_2_5")
     				, DSL.percentileCont(0.975).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_97_5")
-    				, DSL.val(0).as("cell_count_above_lrl")
     				)
     		.from(AIR_QUALITY_CELL)
-			.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(aqRecord.value1()))
+			.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(aqLayerId))
 			.groupBy(
 					AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID
 					, AIR_QUALITY_CELL.METRIC_ID
@@ -1183,23 +1188,15 @@ public class AirQualityApi {
 			))
 			.execute();
 		
-		/*
-		 			.set(DSL.row(
-					AIR_QUALITY_LAYER_METRICS.METRIC_ID
-					, AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID
-					, AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID
-					, AIR_QUALITY_LAYER_METRICS.CELL_COUNT
-					, AIR_QUALITY_LAYER_METRICS.MIN_VALUE
-					, AIR_QUALITY_LAYER_METRICS.MAX_VALUE
-					, AIR_QUALITY_LAYER_METRICS.MEAN_VALUE
-					, AIR_QUALITY_LAYER_METRICS.PCT_2_5
-					, AIR_QUALITY_LAYER_METRICS.PCT_97_5
-					)
-					
-						//.where(AIR_QUALITY_LAYER.ID.eq(aqRecord.value1()))		
-		 */
 		} catch (Exception e) {
 			log.error("Error importing AQ file", e);
+			
+			response.type("application/json");
+			//response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of air quality file."));
+			deleteAirQualityLayerDefinition(aqLayerId, userProfile);
+			return transformValMsgToJSON(validationMsg);
 		}
 		
 		response.type("application/json");
@@ -1207,6 +1204,20 @@ public class AirQualityApi {
 		return transformValMsgToJSON(validationMsg); 
 	}
 	
+	// This version of this method is used when an error occurs during AQ surface upload to clean up
+	private static void deleteAirQualityLayerDefinition(Integer aqLayerId, Optional<UserProfile> userProfile) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		try {
+			create.deleteFrom(AIR_QUALITY_CELL).where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(aqLayerId)).execute();
+			create.deleteFrom(AIR_QUALITY_LAYER_METRICS).where(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(aqLayerId)).execute();
+			create.deleteFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.ID.eq(aqLayerId)).execute();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			// We want to silently faily in this case. At least we tried to clean up.
+		}
+	}
+
 	/**
 	 * Deletes an air quality layer definition from the database (aq layer id is a request parameter).
 	 * @param request
@@ -1214,17 +1225,26 @@ public class AirQualityApi {
 	 * @param userProfile
 	 * @return
 	 */
-	public static boolean deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
-		// TODO: Add user security enforcement
+	public static Object deleteAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+		
 		Integer id;
 		try {
 			id = Integer.valueOf(request.params("id"));
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
-			CoreApi.getErrorResponseInvalidId(request, response);
-			return false;
+			return CoreApi.getErrorResponseInvalidId(request, response);
 		} 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+		AirQualityLayerRecord layerResult = create.selectFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.ID.eq(id)).fetchAny();
+		if(layerResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+		
+		if(layerResult.getUserId() == null || layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
+			//This is either a shared layer or it belongs to someone else
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
 		
 		int cellRows = create.deleteFrom(AIR_QUALITY_CELL).where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id)).execute();
 		int statRows = create.deleteFrom(AIR_QUALITY_LAYER_METRICS).where(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(id)).execute();
@@ -1232,9 +1252,10 @@ public class AirQualityApi {
 
 		
 		if(cellRows + statRows + headerRows == 0) {
-			return false;
+			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
 		} else {
-			return true;
+			response.status(204);
+			return response;
 		}
 	} 
 	

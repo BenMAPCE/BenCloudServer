@@ -604,7 +604,8 @@
 , OUTLINECOLOR
 FROM GRIDDEFINITIONS
 WHERE setupid = 1
-and griddefinitionid &lt;&gt; 4</sql>
+and griddefinitionid &lt;&gt; 4
+and griddefinitionid &lt;&gt; 33</sql>
     <limit>0</limit>
     <lookup/>
     <execute_each_row>N</execute_each_row>
@@ -826,7 +827,7 @@ and griddefinitionid &lt;&gt; 4</sql>
     <schema>data</schema>
     <table>grid_definition</table>
     <commit>1000</commit>
-    <truncate>N</truncate>
+    <truncate>Y</truncate>
     <ignore_errors>N</ignore_errors>
     <use_batch>Y</use_batch>
     <specify_fields>Y</specify_fields>

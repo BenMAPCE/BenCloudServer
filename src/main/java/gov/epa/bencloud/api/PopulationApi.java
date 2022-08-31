@@ -48,18 +48,35 @@ public class PopulationApi {
         ArrayList<Integer> raceIds = getRacesForHifs(hifTaskConfig);
         Integer arrRaceIds[] = new Integer[raceIds.size()];
         arrRaceIds = raceIds.toArray(arrRaceIds);
-        boolean booGroupByRace = true;  //1ASIAN, 2BLACK, 3NATAMER, 4WHITE, 5All, 6null     
+        boolean booGroupByRace = false;  //1ASIAN, 2BLACK, 3NATAMER, 4WHITE, 5All, 6null  
+		for(Integer race : raceIds) {
+        	if(race != 5) {
+        		booGroupByRace = true;
+        		break;
+        	}
+        }
         
         ArrayList<Integer> ethnicityIds = getEthnicityForHifs(hifTaskConfig);
         Integer arrEthnicityIds[] = new Integer[ethnicityIds.size()];
         arrEthnicityIds = ethnicityIds.toArray(arrEthnicityIds);
-        boolean booGroupByEthnicity = true;  //1NON-HISP, 2HISP, 3All, 4null       
+        boolean booGroupByEthnicity = false;  //1NON-HISP, 2HISP, 3All, 4null       
+		for(Integer ethnicity : ethnicityIds) {
+        	if(ethnicity != 3) {
+        		booGroupByEthnicity = true;
+        		break;
+        	}
+        }
         
         ArrayList<Integer> genderIds = getGendersForHifs(hifTaskConfig);
         Integer arrGenderIds[] = new Integer[genderIds.size()];
         arrGenderIds = genderIds.toArray(arrGenderIds);
-        boolean booGroupByGender = true; //1F, 2M, 3All, 4null 
-        
+        boolean booGroupByGender = false; //1F, 2M, 3All, 4null 
+		for(Integer gender : genderIds) {
+        	if(gender != 3) {
+        		booGroupByGender = true;
+        		break;
+        	}
+        }
         
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
@@ -68,9 +85,9 @@ public class PopulationApi {
 				null, //arrEthnicityIds, 
 				null, //arrGenderIds, 
 				arrAgeRangeIds, 
-				false, //booGroupByRace, 
-				false, //booGroupByEthnicity, 
-				false, //booGroupByGender, 
+				booGroupByRace, 
+				booGroupByEthnicity, 
+				booGroupByGender, 
 				true, //YY: groupbyAgeRange
 				28 //YY: outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);

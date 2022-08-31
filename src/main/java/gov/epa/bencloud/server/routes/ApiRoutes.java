@@ -2,6 +2,7 @@ package gov.epa.bencloud.server.routes;
 
 import java.util.UUID;
 
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,10 +10,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.*;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
+import gov.epa.bencloud.server.tasks.TaskUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import spark.Service;
@@ -129,13 +132,8 @@ public class ApiRoutes extends RoutesBase {
 		 */
 		service.delete(apiPrefix + "/air-quality-data/:id", (request, response) -> {
 
-			if(AirQualityApi.deleteAirQualityLayerDefinition(request, response, getUserProfile(request, response))) {
-				response.status(204);
-			} else {
-				response.status(404);
-			}
-			
-			return "";
+			return AirQualityApi.deleteAirQualityLayerDefinition(request, response, getUserProfile(request, response));
+
 		});
 		
 		/*
@@ -355,17 +353,28 @@ public class ApiRoutes extends RoutesBase {
 			JsonNode params = mapper.readTree(body);
 
 			try {
+				UserProfile profile = getUserProfile(request, response).get();
+				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
+				int taskCount = CoreApi.getTotalTaskCountForUser(profile);
+				if(taskCount >= Constants.MAX_TASKS) {
+					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + Constants.MAX_TASKS + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
+				}
+				
 				Task task = new Task();
+				task.setUserIdentifier(profile.getId());
+				task.setType(params.get("type").asText());
+
+				if(CoreApi.isValidTaskType(task.getType()) == false) {
+					return CoreApi.getErrorResponseBadRequest(request, response);
+				}
+				
 				task.setName(params.get("name").asText());
-			
 				task.setParameters(body);
 				task.setUuid(UUID.randomUUID().toString());
 				JsonNode parentTaskUuid = params.get("parent_task_uuid");
 				if(parentTaskUuid != null) {
 					task.setParentUuid(params.get("parent_task_uuid").asText());
 				}
-				task.setUserIdentifier(getUserProfile(request, response).get().getId());
-				task.setType(params.get("type").asText());
 			
 				TaskQueue.writeTaskToQueue(task);
 				
@@ -375,7 +384,7 @@ public class ApiRoutes extends RoutesBase {
 				return ret;
 			} catch(NullPointerException e) {
 				e.printStackTrace();
-				return CoreApi.getErrorResponseInvalidId(request, response);
+				return CoreApi.getErrorResponseBadRequest(request, response);
 			}
 
 		});
@@ -410,21 +419,14 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */
-		service.get(apiPrefix + "/admin/fix-health-effect-group-name", (request, response) -> {
-			Object data = CoreApi.getFixHealthEffectGroupName(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
-
-		});
+//		service.get(apiPrefix + "/admin/fix-wei-function", (request, response) -> {
+//			Object data = CoreApi.getFixWeiFunction(request, response, getUserProfile(request, response));
+//			response.type("application/json");
+//			return data;
+//
+//		});
 		service.get(apiPrefix + "/admin/purge-results", (request, response) -> {
 			Object data = CoreApi.getPurgeResults(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
-
-		});
-		
-		service.get(apiPrefix + "/admin/run-job", (request, response) -> {
-			Object data = KubernetesUtil.runJob(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return data;
 

@@ -46,6 +46,27 @@ public class CoreApi {
 		return CoreApi.getErrorResponse(request, response, 400, "Invalid id");
 	}
 	
+	public static Object getErrorResponseForbidden(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 403, "Forbidden");
+	}
+
+	public static Object getErrorResponseBadRequest(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 400, "Bad request");
+	}
+	
+	public static Object getSuccessResponse(Request request, Response response, int statusCode, String msg) {
+		response.type("application/json");
+		return "{\"message\":\"" + msg + "\"}";
+	}
+
+	public static Object getAirQualityLayerDeleteSuccessResponse(Request request, Response response) {
+		return CoreApi.getSuccessResponse(request, response, 204, "Successfully deleted AQ layer");
+	}
+
+	public static Object getTaskDeleteSuccessResponse(Request request, Response response) {
+		return CoreApi.getSuccessResponse(request, response, 204, "Successfully deleted task");
+	}	
+
 	/**
 	 * 
 	 * @param request
@@ -265,24 +286,28 @@ public class CoreApi {
 	 * @param userProfile
 	 * @return 
 	 */
-	public static Object getFixHealthEffectGroupName(Request req, Response res, Optional<UserProfile> userProfile) {
+	public static Object getFixWeiFunction(Request req, Response res, Optional<UserProfile> userProfile) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		create.update(HEALTH_IMPACT_FUNCTION_GROUP)
-			.set(HEALTH_IMPACT_FUNCTION_GROUP.NAME, "Results for Regulatory Analysis")
-			.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(7))
-			.execute();
+		create.update(HEALTH_IMPACT_FUNCTION)
+			.set(HEALTH_IMPACT_FUNCTION.START_AGE, 65)
+			.where(HEALTH_IMPACT_FUNCTION.ID.eq(1018))
+			.execute();	
 		
-		create.update(AIR_QUALITY_LAYER)
-		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Baseline")
-		.where(AIR_QUALITY_LAYER.ID.eq(6))
-		.execute();	
-		
-		create.update(AIR_QUALITY_LAYER)
-		.set(AIR_QUALITY_LAYER.NAME, "2023 Policy Implementation")
-		.where(AIR_QUALITY_LAYER.ID.eq(7))
-		.execute();			
-		
-		return "done";
+		return "{'message': 'done'}";
+	}
+
+	public static int getTotalTaskCountForUser(UserProfile profile) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		int pendingCount = create.fetchCount(TASK_QUEUE, TASK_QUEUE.USER_ID.eq(profile.getId()));
+		int completedCount = create.fetchCount(TASK_COMPLETE, TASK_COMPLETE.USER_ID.eq(profile.getId()));
+		return pendingCount + completedCount;
+	}
+
+	public static boolean isValidTaskType(String type) {
+		if(type.equalsIgnoreCase("HIF") || type.equalsIgnoreCase("Valuation")) {
+			return true;
+		}
+		return false;
 	}
 
 }

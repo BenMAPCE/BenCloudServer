@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipp
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsState;
-import gov.epa.bencloud.server.database.jooq.grids.tables.UsaCtGridsDissolve;
 
 import java.util.Arrays;
 import java.util.List;
@@ -59,11 +58,6 @@ public class Grids extends SchemaImpl {
     public final UsState US_STATE = UsState.US_STATE;
 
     /**
-     * The table <code>grids.usa_ct_grids_dissolve</code>.
-     */
-    public final UsaCtGridsDissolve USA_CT_GRIDS_DISSOLVE = UsaCtGridsDissolve.USA_CT_GRIDS_DISSOLVE;
-
-    /**
      * No further instances allowed
      */
     private Grids() {
@@ -83,8 +77,7 @@ public class Grids extends SchemaImpl {
             UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED,
             UsCounty.US_COUNTY,
             UsNation.US_NATION,
-            UsState.US_STATE,
-            UsaCtGridsDissolve.USA_CT_GRIDS_DISSOLVE
+            UsState.US_STATE
         );
     }
 }

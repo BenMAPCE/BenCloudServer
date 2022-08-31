@@ -35,9 +35,10 @@ public class ValuationTaskLog extends TaskLog {
 	/*
 	 * Creates a valuation task log object from a valuation task configuration object
 	 */
-	public ValuationTaskLog(ValuationTaskConfig vfTaskConfig) {
+	public ValuationTaskLog(ValuationTaskConfig vfTaskConfig, String userId) {
 		super();
 		this.vfTaskConfig = vfTaskConfig;
+		this.setUserId(userId);
 	}
 	
 	/**
@@ -95,7 +96,7 @@ public class ValuationTaskLog extends TaskLog {
 			.append(getDbVersion())
 			.append("\n");
 		b.append("User: ")
-			.append("IN DEVELOPMENT")
+			.append(getUserId())
 			.append("\n");
 		b.append("Completed: ")
 			.append(dtf.format(getDtEnd()))

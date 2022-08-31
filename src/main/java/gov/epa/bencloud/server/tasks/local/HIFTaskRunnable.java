@@ -81,7 +81,7 @@ public class HIFTaskRunnable implements Runnable {
 		
 		try {
 			HIFTaskConfig hifTaskConfig = new HIFTaskConfig(task);
-			HIFTaskLog hifTaskLog = new HIFTaskLog(hifTaskConfig);
+			HIFTaskLog hifTaskLog = new HIFTaskLog(hifTaskConfig, task.getUserIdentifier());
 			hifTaskLog.setDtStart(LocalDateTime.now());
 			
 			hifTaskLog.addMessage("Starting HIF analysis");
@@ -253,7 +253,7 @@ public class HIFTaskRunnable implements Runnable {
 					if((int)hifRecord.get("metric_statistic") == 0) { // NONE
 						seasonalScalar = hifConfig.totalDays.doubleValue();
 					}
-					
+										
 					double beta = ((Double) hifRecord.get("beta")).doubleValue();
 
 					// BenMAP-CE stores air quality values as floats but performs HIF estimates using doubles.
@@ -315,9 +315,11 @@ public class HIFTaskRunnable implements Runnable {
 						
 						PopulationCategoryKey popCatKey = new PopulationCategoryKey(popAgeRange, null, null, null); //popRace, popEthnicity, popGender);						
 						
-						if (popAgeRangeHifMap.containsKey(popAgeRange)) {
-							//TODO: Add average incidence calculation here so we can store that in the record when complete. What we're storing right now is wrong.
-							//YY: Incidence average is updated in addIncidenceOrPrevalenceEntryGroups. Need review.
+						if (popAgeRangeHifMap.containsKey(popAgeRange) 
+								&& (hifConfig.race == 5 || hifConfig.race == popRace)
+								&& (hifConfig.ethnicity == 3 || hifConfig.ethnicity == popEthnicity)
+								&& (hifConfig.gender == 3 || hifConfig.gender == popGender)) {
+
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeHifMap.get(popAgeRange);
 							
 							incidence = incidenceCell == null ? 0.0 : incidenceCell.getOrDefault(popCatKey, 0.0);
@@ -412,7 +414,6 @@ public class HIFTaskRunnable implements Runnable {
 					hifResults.clear();
 					messages.get(messages.size()-1).setMessage("Running health impact functions");
 					TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
-					//System.out.println("hifResults capacity after clear: " + hifResults.capacity());
 				}
 				
 			}
@@ -440,6 +441,11 @@ public class HIFTaskRunnable implements Runnable {
 		log.info("HIF Task Complete: " + taskUuid);
 	}
 
+	/**
+	 * Load the HIFConfig data from the database
+	 * @param hif
+	 * @param h
+	 */
 	private void updateHifConfigValues(HIFConfig hif, Record h) {
 		if(hif.startAge == null) {
 			hif.startAge = h.get("start_age", Integer.class);
@@ -475,6 +481,7 @@ public class HIFTaskRunnable implements Runnable {
 		//This is a temporary solution to the fact that user's can't select incidence and 
 		//the standard EPA functions don't have incidence assigned in the db
 		// If the UI passes the year and incidence hints to the methods that get health impact functions, these should already be set
+		// TODO: 8/25/2022 - This should be reviewed and, probably, removed at this point
 		if(h.get("function_text", String.class).toLowerCase().contains("incidence")) {
 			if(hif.incidence==null) {
 				if(h.get("endpoint_group_id").equals(12)) {
@@ -501,6 +508,12 @@ public class HIFTaskRunnable implements Runnable {
 			} else {
 				hif.startDay = h.get("start_day", Integer.class);
 			}
+			// TODO: TEMPORARY OVERRIDE - With 1.5.8.15, the desktop changed the ozone season to April - September. 
+			// The cloud db still has May - September. We are forcing the new season definition here for now
+			// until we can revisit this topic
+			if(h.get("pollutant_id", Integer.class) == 4) {
+				hif.startDay = 90;
+			}
 		}
 		if(hif.endDay == null) {
 			if(h.get("end_day") == null) {
@@ -525,8 +538,6 @@ public class HIFTaskRunnable implements Runnable {
 	 * @return a list of maps with keys = population age range, 
 	 * 			and values = percentage of population in that age range that applies to a given HIF.
 	 */
-	
-	//YY: change to public so that it can be used when calculating incidence
 	public static ArrayList<HashMap<Integer, Double>> getPopAgeRangeMapping(HIFTaskConfig hifTaskConfig) {
 		ArrayList<HashMap<Integer, Double>> hifPopAgeRangeMapping = new ArrayList<HashMap<Integer, Double>>();
 		

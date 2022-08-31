@@ -12,6 +12,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.Nullable;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
@@ -21,11 +22,13 @@ import org.pac4j.core.profile.UserProfile;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
 import gov.epa.bencloud.server.tasks.TaskUtil;
 import spark.Request;
 import spark.Response;
@@ -53,19 +56,27 @@ public class ApiUtil {
 	 * 
 	 * @param id
 	 * @param inflationYear
+	 * @param useInflationFactors 
 	 * @return  a map of inflation indices with key = index name, value = index value
 	 */
-	public static Map<String, Double> getInflationIndices(int id, Integer inflationYear) {
+	public static Map<String, Double> getInflationIndices(int id, Integer inflationYear, Boolean useInflationFactors) {
 
-		InflationEntryRecord inflationRecord = DSL.using(JooqUtil.getJooqConfiguration())
-				.selectFrom(INFLATION_ENTRY)
-				.where(INFLATION_ENTRY.INFLATION_DATASET_ID.eq(id).and(INFLATION_ENTRY.ENTRY_YEAR.eq(inflationYear)))
-				.fetchOne();
 		Map<String, Double> inflationIndices = new HashMap<String, Double>();
-		inflationIndices.put("AllGoodsIndex", inflationRecord.getAllGoodsIndex().doubleValue());
-		inflationIndices.put("MedicalCostIndex", inflationRecord.getMedicalCostIndex().doubleValue());		
-		inflationIndices.put("WageIndex", inflationRecord.getWageIndex().doubleValue());
 		
+		if(! useInflationFactors) {
+			inflationIndices.put("AllGoodsIndex", 1.0);
+			inflationIndices.put("MedicalCostIndex", 1.0);		
+			inflationIndices.put("WageIndex", 1.0);
+		} else {
+			InflationEntryRecord inflationRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.selectFrom(INFLATION_ENTRY)
+					.where(INFLATION_ENTRY.INFLATION_DATASET_ID.eq(id).and(INFLATION_ENTRY.ENTRY_YEAR.eq(inflationYear)))
+					.fetchOne();
+	
+			inflationIndices.put("AllGoodsIndex", inflationRecord.getAllGoodsIndex().doubleValue());
+			inflationIndices.put("MedicalCostIndex", inflationRecord.getMedicalCostIndex().doubleValue());		
+			inflationIndices.put("WageIndex", inflationRecord.getWageIndex().doubleValue());
+		}		
 		return inflationIndices;
 	}
 
@@ -73,10 +84,15 @@ public class ApiUtil {
 	 * 
 	 * @param id Income growth adjustment dataset id
 	 * @param popYear
+	 * @param useGrowthFactors 
 	 * @return a map of income growth factors, with key = endpoint group id, value = income growth adjustment dataset id and growth year.
 	 */
-	public static Map<Short, Record2<Short, Double>> getIncomeGrowthFactors(int id, Integer popYear) {
+	public static Map<Short, Record2<Short, Double>> getIncomeGrowthFactors(int id, Integer popYear, Boolean useGrowthFactors) {
 
+		if(! useGrowthFactors) {
+			return null;
+		}
+		
 		Map<Short, Record2<Short, Double>> incomeGrowthFactorRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(INCOME_GROWTH_ADJ_FACTOR.ENDPOINT_GROUP_ID,
 						INCOME_GROWTH_ADJ_FACTOR.MEAN_VALUE)
@@ -168,23 +184,26 @@ public class ApiUtil {
 	 */
 	public static Object deleteTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		String uuid = req.params("uuid");
-		// TODO: Add user security enforcement 		
-		Result<Record> completedTasks = 
-				DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
-				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
-				.fetch();
 
-		if (completedTasks.size() > 0) {
-			Record taskCompleteRecord = completedTasks.get(0);
-			
-			if (taskCompleteRecord.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
-				TaskUtil.deleteHifResults(uuid);
-			} else if (taskCompleteRecord.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
-				TaskUtil.deleteValuationResults(uuid);
-			}
+		TaskCompleteRecord completedTask = DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(TASK_COMPLETE)
+				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+				.fetchAny();
+
+		if(completedTask == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
 		}
 		
-		return null;
+		if(CoreApi.isAdmin(userProfile) == false && completedTask.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
+		}
+
+		if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+			TaskUtil.deleteHifResults(uuid);
+		} else if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+			TaskUtil.deleteValuationResults(uuid);
+		}
+		res.status(204);
+		return res;
 	}
 
 	// Note that this implementation is currently incomplete. 

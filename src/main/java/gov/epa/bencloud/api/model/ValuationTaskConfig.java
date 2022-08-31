@@ -34,6 +34,10 @@ public class ValuationTaskConfig {
 	public Integer inflationYear = null;
 	public Integer incomeGrowthYear = null;
 	
+	public Boolean useInflationFactors = true;
+	public Boolean useGrowthFactors = true;
+	
+	
 	public List<ValuationConfig> valuationFunctions = new ArrayList<ValuationConfig>();
 	
 	/*
@@ -53,6 +57,20 @@ public class ValuationTaskConfig {
 			JsonNode params = mapper.readTree(task.getParameters());
 
 			this.name = task.getName();
+			
+
+			// **********************************************************************************
+			// 8/23/2022
+			// This is temporarily overridden so we won't use inflation or growth data.
+			// these factors are only applied in the desktop tool when the user opens the 
+			// advanced settings dialog and clicks OK.
+			// This code helps us better match the BenMAP-CE Desktop results
+			// 8/24/2022
+			// After discussion with EPA, it was determined that we should revert to previous behavior
+			// growth and inflation years will be set to the closest year possible to population year
+			// **********************************************************************************
+			this.useInflationFactors = true; //params.has("useInflationFactors") ? params.get("useInflationFactors").asBoolean(false) : false;
+			this.useGrowthFactors = true; //params.has("useGrowthFactors") ? params.get("useGrowthFactors").asBoolean(false) : false;
 			
 			this.hifTaskUuid = params.get("parent_task_uuid").asText();
 
@@ -118,7 +136,9 @@ public class ValuationTaskConfig {
 			}
 		}
 		
-
+		//b.append("ADVANCED SETTINGS\n\n");
+		//b.append("Use Inflation Factors: ").append(useInflationFactors ? "Yes" : "No (used for matching BenMAP desktop results)").append("\n");
+		//b.append("Use Growth Factors: ").append(useGrowthFactors ? "Yes" : "No (used for matching BenMAP desktop results)").append("\n");
 		
 		return b.toString();
 	}
