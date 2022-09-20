@@ -10,7 +10,7 @@
           * psql --username=postgres
           * when prompted, enter the password used during installation
         * Once in, run:
-          * CREATE ROLE benmap_system with SUPERUSER LOGIN PASSWORD 'set a password here';
+          * CREATE ROLE benmap_system with LOGIN PASSWORD 'set a password here';
         * In the PostgreSQL program file folder, navigate to PostgreSQL/11/data
     * In pg_hba.conf, add:
         * "host	all	benmap_system	127.0.0.1/32	md5" to the bottom of the file
