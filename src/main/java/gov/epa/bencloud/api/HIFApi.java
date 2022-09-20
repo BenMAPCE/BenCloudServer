@@ -99,7 +99,7 @@ public class HIFApi {
 
 		try {
 			hifIdsParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifId"), "");
-			gridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);
+			gridId = 47; // HARDCODE GLOBAL OZONE ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
 			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 1000);
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");

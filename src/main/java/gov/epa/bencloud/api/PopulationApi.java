@@ -89,7 +89,7 @@ public class PopulationApi {
 				booGroupByEthnicity, 
 				booGroupByGender, 
 				true, //YY: groupbyAgeRange
-				28 //YY: outputGridDefinitionId
+				48 //HARDCODE - GLOBAL_OZONE
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
 
 		return popRecords;
