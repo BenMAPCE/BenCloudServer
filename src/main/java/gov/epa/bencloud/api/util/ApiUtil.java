@@ -49,7 +49,9 @@ public class ApiUtil {
 	 * https://en.wikipedia.org/wiki/Pairing_function
 	 */
 	public static long getCellId(int columnIdx, int rowIdx) {
-		return (long)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
+		long columnIdxLong = (long)columnIdx;
+		long rowIdxLong = (long)rowIdx;
+		return (long)(((columnIdxLong+rowIdxLong)*(columnIdxLong+rowIdxLong+1)*0.5)+rowIdxLong);
 	}
 
 	/**
