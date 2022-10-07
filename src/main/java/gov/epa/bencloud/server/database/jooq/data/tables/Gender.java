@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GenderRecord;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row2;
@@ -48,7 +47,7 @@ public class Gender extends TableImpl<GenderRecord> {
     /**
      * The column <code>data.gender.id</code>.
      */
-    public final TableField<GenderRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<GenderRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.gender_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.gender.name</code>.
@@ -91,11 +90,6 @@ public class Gender extends TableImpl<GenderRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<GenderRecord, Integer> getIdentity() {
-        return (Identity<GenderRecord, Integer>) super.getIdentity();
     }
 
     @Override

@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayer
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row11;
@@ -48,7 +47,7 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     /**
      * The column <code>data.air_quality_layer_metrics.id</code>.
      */
-    public final TableField<AirQualityLayerMetricsRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<AirQualityLayerMetricsRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.air_quality_layer_metrics_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column
@@ -141,11 +140,6 @@ public class AirQualityLayerMetrics extends TableImpl<AirQualityLayerMetricsReco
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<AirQualityLayerMetricsRecord, Integer> getIdentity() {
-        return (Identity<AirQualityLayerMetricsRecord, Integer>) super.getIdentity();
     }
 
     @Override

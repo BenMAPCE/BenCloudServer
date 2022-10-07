@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecor
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -49,7 +48,7 @@ public class TaskConfig extends TableImpl<TaskConfigRecord> {
     /**
      * The column <code>data.task_config.id</code>.
      */
-    public final TableField<TaskConfigRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<TaskConfigRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.task_config_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.task_config.name</code>.
@@ -112,11 +111,6 @@ public class TaskConfig extends TableImpl<TaskConfigRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<TaskConfigRecord, Integer> getIdentity() {
-        return (Identity<TaskConfigRecord, Integer>) super.getIdentity();
     }
 
     @Override

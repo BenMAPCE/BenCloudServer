@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.StatisticTypeRe
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row2;
@@ -48,7 +47,7 @@ public class StatisticType extends TableImpl<StatisticTypeRecord> {
     /**
      * The column <code>data.statistic_type.id</code>.
      */
-    public final TableField<StatisticTypeRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<StatisticTypeRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.statistic_type_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.statistic_type.name</code>.
@@ -91,11 +90,6 @@ public class StatisticType extends TableImpl<StatisticTypeRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<StatisticTypeRecord, Integer> getIdentity() {
-        return (Identity<StatisticTypeRecord, Integer>) super.getIdentity();
     }
 
     @Override

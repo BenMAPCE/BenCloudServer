@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.PollutantRecord
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row5;
@@ -48,7 +47,7 @@ public class Pollutant extends TableImpl<PollutantRecord> {
     /**
      * The column <code>data.pollutant.id</code>.
      */
-    public final TableField<PollutantRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<PollutantRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.pollutant_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.pollutant.name</code>.
@@ -106,11 +105,6 @@ public class Pollutant extends TableImpl<PollutantRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<PollutantRecord, Integer> getIdentity() {
-        return (Identity<PollutantRecord, Integer>) super.getIdentity();
     }
 
     @Override

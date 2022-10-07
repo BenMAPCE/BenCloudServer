@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResult
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -49,7 +48,7 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     /**
      * The column <code>data.valuation_result_dataset.id</code>.
      */
-    public final TableField<ValuationResultDatasetRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<ValuationResultDatasetRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.valuation_result_dataset_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.valuation_result_dataset.task_uuid</code>.
@@ -126,11 +125,6 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<ValuationResultDatasetRecord, Integer> getIdentity() {
-        return (Identity<ValuationResultDatasetRecord, Integer>) super.getIdentity();
     }
 
     @Override

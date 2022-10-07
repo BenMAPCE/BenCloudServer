@@ -3,7 +3,7 @@
   <!-- Configure the database connection here -->
   <jdbc>
     <driver>org.postgresql.Driver</driver>
-    <url>jdbc:postgresql://localhost:5432/benmap</url>
+    <url>jdbc:postgresql://localhost:5432/benmap_global_ozone</url>
     <user>benmap_system</user>
     <password>benmap</password>
   </jdbc>

@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.VariableEntryRe
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row4;
@@ -48,7 +47,7 @@ public class VariableEntry extends TableImpl<VariableEntryRecord> {
     /**
      * The column <code>data.variable_entry.id</code>.
      */
-    public final TableField<VariableEntryRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<VariableEntryRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.variable_entry_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.variable_entry.variable_dataset_id</code>.
@@ -101,11 +100,6 @@ public class VariableEntry extends TableImpl<VariableEntryRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<VariableEntryRecord, Integer> getIdentity() {
-        return (Identity<VariableEntryRecord, Integer>) super.getIdentity();
     }
 
     @Override

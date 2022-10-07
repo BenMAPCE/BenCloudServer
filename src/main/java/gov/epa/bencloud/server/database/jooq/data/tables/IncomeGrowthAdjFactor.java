@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row5;
@@ -51,7 +50,7 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
     /**
      * The column <code>data.income_growth_adj_factor.id</code>.
      */
-    public final TableField<IncomeGrowthAdjFactorRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<IncomeGrowthAdjFactorRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.income_growth_adj_factor_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column
@@ -112,11 +111,6 @@ public class IncomeGrowthAdjFactor extends TableImpl<IncomeGrowthAdjFactorRecord
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<IncomeGrowthAdjFactorRecord, Integer> getIdentity() {
-        return (Identity<IncomeGrowthAdjFactorRecord, Integer>) super.getIdentity();
     }
 
     @Override

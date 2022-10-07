@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row6;
@@ -51,7 +50,7 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     /**
      * The column <code>data.air_quality_layer.id</code>.
      */
-    public final TableField<AirQualityLayerRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<AirQualityLayerRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.air_quality_layer_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.air_quality_layer.name</code>.
@@ -114,11 +113,6 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<AirQualityLayerRecord, Integer> getIdentity() {
-        return (Identity<AirQualityLayerRecord, Integer>) super.getIdentity();
     }
 
     @Override

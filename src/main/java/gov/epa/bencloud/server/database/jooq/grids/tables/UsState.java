@@ -14,7 +14,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -53,7 +52,7 @@ public class UsState extends TableImpl<UsStateRecord> {
     /**
      * The column <code>grids.us_state.gid</code>.
      */
-    public final TableField<UsStateRecord, Integer> GID = createField(DSL.name("gid"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<UsStateRecord, Integer> GID = createField(DSL.name("gid"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('grids.us_state_gid_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>grids.us_state.state_name</code>.
@@ -125,11 +124,6 @@ public class UsState extends TableImpl<UsStateRecord> {
     @Override
     public List<Index> getIndexes() {
         return Arrays.asList(Indexes.US_STATE_GEOM_IDX);
-    }
-
-    @Override
-    public Identity<UsStateRecord, Integer> getIdentity() {
-        return (Identity<UsStateRecord, Integer>) super.getIdentity();
     }
 
     @Override

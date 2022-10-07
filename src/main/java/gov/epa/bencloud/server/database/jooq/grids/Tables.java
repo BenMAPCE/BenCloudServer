@@ -4,6 +4,7 @@
 package gov.epa.bencloud.server.database.jooq.grids;
 
 
+import gov.epa.bencloud.server.database.jooq.grids.tables.FinalRffCountries;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipped;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
@@ -16,6 +17,11 @@ import gov.epa.bencloud.server.database.jooq.grids.tables.UsState;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>grids.final_rff_countries</code>.
+     */
+    public static final FinalRffCountries FINAL_RFF_COUNTRIES = FinalRffCountries.FINAL_RFF_COUNTRIES;
 
     /**
      * The table <code>grids.us_cmaq_12km_nation</code>.

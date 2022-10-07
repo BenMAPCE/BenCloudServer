@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionR
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row8;
@@ -48,7 +47,7 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
     /**
      * The column <code>data.grid_definition.id</code>.
      */
-    public final TableField<GridDefinitionRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<GridDefinitionRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.grid_definition_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.grid_definition.name</code>.
@@ -121,11 +120,6 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<GridDefinitionRecord, Integer> getIdentity() {
-        return (Identity<GridDefinitionRecord, Integer>) super.getIdentity();
     }
 
     @Override

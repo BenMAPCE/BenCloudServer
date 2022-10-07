@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -54,7 +53,7 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     /**
      * The column <code>data.task_complete.task_id</code>.
      */
-    public final TableField<TaskCompleteRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<TaskCompleteRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.task_complete_task_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.task_complete.task_uuid</code>.
@@ -172,11 +171,6 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     @Override
     public List<Index> getIndexes() {
         return Arrays.asList(Indexes.TASK_COMPLETE_ON_DATE, Indexes.TASK_COMPLETE_ON_UUID);
-    }
-
-    @Override
-    public Identity<TaskCompleteRecord, Integer> getIdentity() {
-        return (Identity<TaskCompleteRecord, Integer>) super.getIdentity();
     }
 
     @Override

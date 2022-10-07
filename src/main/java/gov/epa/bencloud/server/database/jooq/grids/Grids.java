@@ -5,6 +5,7 @@ package gov.epa.bencloud.server.database.jooq.grids;
 
 
 import gov.epa.bencloud.server.database.jooq.DefaultCatalog;
+import gov.epa.bencloud.server.database.jooq.grids.tables.FinalRffCountries;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipped;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jooq.Catalog;
+import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 
@@ -31,6 +33,11 @@ public class Grids extends SchemaImpl {
      * The reference instance of <code>grids</code>
      */
     public static final Grids GRIDS = new Grids();
+
+    /**
+     * The table <code>grids.final_rff_countries</code>.
+     */
+    public final FinalRffCountries FINAL_RFF_COUNTRIES = FinalRffCountries.FINAL_RFF_COUNTRIES;
 
     /**
      * The table <code>grids.us_cmaq_12km_nation</code>.
@@ -71,8 +78,25 @@ public class Grids extends SchemaImpl {
     }
 
     @Override
+    public final List<Sequence<?>> getSequences() {
+        return Arrays.asList(
+            Sequences.US_CMAQ_12KM_NATION_CLIPPED_GID_SEQ,
+            Sequences.US_CMAQ_12KM_NATION_CLIPPED_GID_SEQ1,
+            Sequences.US_CMAQ_12KM_NATION_GID_SEQ,
+            Sequences.US_CMAQ_12KM_NATION_GID_SEQ1,
+            Sequences.US_COUNTY_GID_SEQ,
+            Sequences.US_COUNTY_GID_SEQ1,
+            Sequences.US_NATION_GID_SEQ,
+            Sequences.US_NATION_GID_SEQ1,
+            Sequences.US_STATE_GID_SEQ,
+            Sequences.US_STATE_GID_SEQ1
+        );
+    }
+
+    @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            FinalRffCountries.FINAL_RFF_COUNTRIES,
             UsCmaq_12kmNation.US_CMAQ_12KM_NATION,
             UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED,
             UsCounty.US_COUNTY,
