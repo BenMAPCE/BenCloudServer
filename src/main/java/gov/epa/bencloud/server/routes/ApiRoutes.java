@@ -10,13 +10,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.*;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
-import gov.epa.bencloud.server.tasks.TaskUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import spark.Service;
 
@@ -355,9 +354,19 @@ public class ApiRoutes extends RoutesBase {
 			try {
 				UserProfile profile = getUserProfile(request, response).get();
 				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
-				int taskCount = CoreApi.getTotalTaskCountForUser(profile);
-				if(taskCount >= Constants.MAX_TASKS) {
-					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + Constants.MAX_TASKS + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
+				int taskCount = CoreApi.getTotalTaskCountForUser(profile);			
+				int maxTasks = 20;
+				
+				String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
+				
+				try {
+					maxTasks = Integer.parseInt(sMaxTaskPerUser);
+				} catch(NumberFormatException e) {
+					//If this is no set in the properties, we will use the default of 20.
+				}
+						
+				if(maxTasks != 0 && taskCount >= maxTasks) {
+					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + maxTasks + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
 				}
 				
 				Task task = new Task();
