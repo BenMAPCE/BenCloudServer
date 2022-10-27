@@ -1,4 +1,4 @@
-# This document is a draft and needs to be updated
+# Developer Setup
 
 1. Install [PostgreSQL 11](https://www.postgresql.org/download/)
     * Default inputs in the setup wizard should work fine
@@ -16,7 +16,7 @@
         * "host	all	benmap_system	127.0.0.1/32	md5" to the bottom of the file
     * In postgresql.conf, make sure that listen_addresses = "*"
     * Run:
-        * psql --username=benmap_system 
+        * psql --username=postgres 
         * and enter the password set when creating the role. No errors should occur.
     * Enable the postgis extensions
         * CREATE EXTENSION postgis;
@@ -31,11 +31,11 @@
 
 3. Install [Java Corretto 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
 4. Install [gradle](https://gradle.org/install/)
-5. Install [Visual Studio Code](https://code.visualstudio.com/)
+5. Install [Visual Studio Code](https://code.visualstudio.com/) (or Eclipse, if preferred)
 6. Install the Extension Pack for Java in VS Code
 7. Create local clone of [BenCloudServer repository](https://github.com/BenMAPCE/BenCloudServer)
 8. Open BenCloudServer folder in VS Code
-9. Create bencloud-local.properties with IP and password of your postgres server
+9. Create bencloud-local.properties with IP and password of your benmap_system user and your postgres server
     * In the BenCloudServer folder, create a file called bencloud-local.properties
     * Example contents:
   

@@ -1,6 +1,6 @@
 # Database Migration
 
-The BenMAP cloud database is derived from the data that ships with the BenMAP-CE desktop tool. This is accomplished by running a repeatable, automated process impelemented using the open-source [Pentaho Data Integration](https://sourceforge.net/projects/pentaho/files/Pentaho-9.3/client-tools/pdi-ce-9.3.0.0-428.zip/download) tool. 
+The BenMAP cloud database is derived from the data that ships with the BenMAP-CE desktop tool. This is accomplished by running a repeatable, automated process implemented using the open-source [Pentaho Data Integration](https://sourceforge.net/projects/pentaho/files/Pentaho-9.3/client-tools/pdi-ce-9.3.0.0-428.zip/download) tool. 
 
 To configure the Postgres and Firebird database connections in Pentaho Data Integration on Windows 10, the following steps are required:
 1.	Replace the included lib/jaybird-2.1.6.jar file with jaybird-full-4.0.3.java8.jar

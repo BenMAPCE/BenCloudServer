@@ -8,6 +8,8 @@ servers:
     description: Local Development
   - url: https://benmapdev.epa.gov/api
     description: EPA DevSecOps Development
+  - url: https://benmapstg.epa.gov/api
+    description: EPA DevSecOps Staging
 components:
   securitySchemes:
     headerUid:

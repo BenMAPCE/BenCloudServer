@@ -8,14 +8,10 @@
 * No work should ever be performed directly in the develop or main branch.
 
 
+The "develop" branch will automatically build and deploy to the EPA development environment.
 
+The "main" branch will automatically build and deploy to the EPA stage environment.
 
-The "develop" branch will automatically build and deploy to the development environment.
-
-The "main" branch will automatically build and deploy to the stage environment.
-
-Only tagged builds from the main branch will be deployed to the production environment.
-
-
+Only scanned and approved builds from the main branch will be deployed to the production environment.
 
 This process applies to the BenCloudServer and BenCloudApp repositories.
