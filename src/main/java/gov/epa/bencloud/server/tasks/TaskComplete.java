@@ -10,6 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jooq.Condition;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -26,6 +27,9 @@ import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.DataUtil;
+import gov.epa.bencloud.server.util.ParameterUtil;
+import spark.Request;
+import spark.Response;
 
 /*
  * 
@@ -108,11 +112,13 @@ public class TaskComplete {
 
 	/**
 	 * 
+	 * @param response 
+	 * @param request 
 	 * @param userProfile
 	 * @param postParameters
 	 * @return an ObjectNode representation of all of a user's completed tasks.
 	 */
-	public static ObjectNode getCompletedTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
+	public static ObjectNode getCompletedTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
 //		System.out.println("getCompletedTasks");
 //		System.out.println("userIdentifier: " + userIdentifier);
@@ -124,7 +130,7 @@ public class TaskComplete {
 //		System.out.println("sortDirection: " + postParameters.get("sortDirection")[0]);
 
 		String userId = userProfile.get().getId();
-
+		boolean showAll;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         ObjectMapper mapper = new ObjectMapper();
@@ -134,14 +140,20 @@ public class TaskComplete {
         ObjectNode task = mapper.createObjectNode();
         ObjectNode wrappedObject = mapper.createObjectNode();
 
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
         int records = 0;
 
 		try {
 
+			Condition filterCondition = DSL.trueCondition();
+			
+			// Skip the following for an admin user that wants to see all data
+			if(!showAll || !CoreApi.isAdmin(userProfile)) {
+				filterCondition = filterCondition.and(TASK_QUEUE.USER_ID.eq(userId));
+			}
+			
 			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
-					.where(TASK_COMPLETE.USER_ID.eq(userId)
-							.or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.noCondition()) //Show all completed results to admins for now
-						)
+					.where(filterCondition) 
 					.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
 					.fetch();
 
