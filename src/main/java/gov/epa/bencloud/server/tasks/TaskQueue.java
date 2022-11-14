@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jooq.Condition;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -20,9 +21,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.RawValue;
 
+import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.util.ParameterUtil;
+import spark.Request;
+import spark.Response;
 
 public class TaskQueue {
 
@@ -239,12 +244,12 @@ public class TaskQueue {
 		}
 	}
 
-	public static ObjectNode getPendingTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
+	public static ObjectNode getPendingTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
 		//System.out.println("getPendingTasks");
 //		System.out.println("userIdentifier: " + userIdentifier);
 		String userId = userProfile.get().getId();
-
+		boolean showAll;
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 		ObjectMapper mapper = new ObjectMapper();
@@ -254,6 +259,8 @@ public class TaskQueue {
 		ObjectNode task = mapper.createObjectNode();
 		ObjectNode wrappedObject = mapper.createObjectNode();
 
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+		
 		int records = 0;
 
 //		if (null != userIdentifier) {
@@ -261,9 +268,15 @@ public class TaskQueue {
 			try {
 				LocalDateTime now = LocalDateTime.now();
 				try {
-
+					Condition filterCondition = DSL.trueCondition();
+					
+					// Skip the following for an admin user that wants to see all data
+					if(!showAll || !CoreApi.isAdmin(userProfile)) {
+						filterCondition = filterCondition.and(TASK_QUEUE.USER_ID.eq(userId));
+					}
+					
 					Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
-							.where(TASK_QUEUE.USER_ID.eq(userId))
+							.where(filterCondition)
 							.orderBy(TASK_QUEUE.TASK_SUBMITTED_DATE.asc())
 							.fetch();
 

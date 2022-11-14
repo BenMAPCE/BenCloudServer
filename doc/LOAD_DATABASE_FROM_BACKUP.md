@@ -16,7 +16,7 @@ The version of the benmap database will be included in the name of the backup fi
 **Create the benmap_system user and give it access to the data**
 
 ```bash
-psql --host "[HOST]" --username=postgres --password
+psql --host "[HOST]" --username=postgres --password -d benmap
 ```
 
 ```sql

@@ -330,7 +330,7 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
-			ObjectNode data = TaskQueue.getPendingTasks(getUserProfile(request, response), getPostParametersAsMap(request));
+			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
 			response.type("application/json");
 			return data;
 
@@ -338,7 +338,7 @@ public class ApiRoutes extends RoutesBase {
 		
 		service.get(apiPrefix + "/tasks/completed", (request, response) -> {
 
-			ObjectNode data = TaskComplete.getCompletedTasks(getUserProfile(request, response), getPostParametersAsMap(request));
+			ObjectNode data = TaskComplete.getCompletedTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
 			response.type("application/json");
 			return data;
 

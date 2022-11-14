@@ -57,7 +57,7 @@ dependencies {
 	implementation 'com.squareup.tape2:tape:2.0.0-beta1'
 	implementation 'org.quartz-scheduler:quartz:2.3.1'
 
-    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.0.6'
+    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.0.7'
     
     implementation 'io.kubernetes:client-java-extended:14.0.0'
 

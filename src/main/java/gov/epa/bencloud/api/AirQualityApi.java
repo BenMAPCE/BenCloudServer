@@ -86,6 +86,7 @@ public class AirQualityApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+		boolean showAll;
 		try {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -98,6 +99,8 @@ public class AirQualityApi {
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+			
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -135,7 +138,10 @@ public class AirQualityApi {
 
 			// System.out.println(filterCondition);
 		}
-		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		// Skip the following for an admin user that wants to see all data
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		}
 
 		//System.out.println(orderFields);
 	
@@ -264,6 +270,7 @@ public class AirQualityApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+		boolean showAll;
 		try {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -271,6 +278,7 @@ public class AirQualityApi {
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -306,8 +314,10 @@ public class AirQualityApi {
 
 			// System.out.println(filterCondition);
 		}
-		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
-
+		// Skip the following for an admin user that wants to see all data
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		}
 		//System.out.println(orderFields);
 	
 
@@ -479,7 +489,7 @@ public class AirQualityApi {
 		.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
 		.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
 		.where(AIR_QUALITY_LAYER.ID.eq(id))
-		.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)))
+		.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()))
 		.groupBy(AIR_QUALITY_LAYER.ID
 				, AIR_QUALITY_LAYER.NAME
 				, AIR_QUALITY_LAYER.USER_ID
@@ -554,7 +564,7 @@ public class AirQualityApi {
 		if (!"".equals(filter)) {
 			filterCondition = filterCondition.and(buildAirQualityCellsFilterCondition(filter));
 		}
-		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()));
 	
 		List<OrderField<?>> orderFields = new ArrayList<>();
 		
@@ -1214,7 +1224,7 @@ public class AirQualityApi {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			// We want to silently faily in this case. At least we tried to clean up.
+			// We want to silently fail in this case. At least we tried to clean up.
 		}
 	}
 
@@ -1241,7 +1251,7 @@ public class AirQualityApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 		
-		if(layerResult.getUserId() == null || layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
+		if(layerResult.getUserId() == null || !layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || !CoreApi.isAdmin(userProfile) )  {
 			//This is either a shared layer or it belongs to someone else
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
