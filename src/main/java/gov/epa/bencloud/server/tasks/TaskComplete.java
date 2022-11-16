@@ -149,10 +149,11 @@ public class TaskComplete {
 			
 			// Skip the following for an admin user that wants to see all data
 			if(!showAll || !CoreApi.isAdmin(userProfile)) {
-				filterCondition = filterCondition.and(TASK_QUEUE.USER_ID.eq(userId));
+				filterCondition = filterCondition.and(TASK_COMPLETE.USER_ID.eq(userId));
 			}
 			
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
+			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					.from(TASK_COMPLETE)
 					.where(filterCondition) 
 					.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
 					.fetch();

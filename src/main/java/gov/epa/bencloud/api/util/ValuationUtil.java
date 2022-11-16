@@ -137,34 +137,36 @@ public class ValuationUtil {
 				.fetchOne(VALUATION_RESULT_DATASET.ID);
 		
 		if(vfResultDatasetId == null) {
-		// Valuation result dataset record links the result dataset id to the task uuid
-		ValuationResultDatasetRecord valuationResultDatasetRecord = create.insertInto(VALUATION_RESULT_DATASET
-				, VALUATION_RESULT_DATASET.TASK_UUID
-				, VALUATION_RESULT_DATASET.NAME
-				, VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID
-				, VALUATION_RESULT_DATASET.VARIABLE_DATASET_ID)
-		.values(task.getUuid()
-				,task.getName()
-				,valuationTaskConfig.hifResultDatasetId
-				,valuationTaskConfig.variableDatasetId)
-		.returning(VALUATION_RESULT_DATASET.ID)
-		.fetchOne();
-
-		vfResultDatasetId = valuationResultDatasetRecord.getId();
-		valuationTaskConfig.resultDatasetId = vfResultDatasetId;
-		
-		// Each HIF result function config contains the details of how the function was configured
-		for(ValuationConfig vf : valuationTaskConfig.valuationFunctions) {
-			create.insertInto(VALUATION_RESULT_FUNCTION_CONFIG
-					, VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID
-					, VALUATION_RESULT_FUNCTION_CONFIG.VF_ID
-					, VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID)
-			.values(vfResultDatasetId
-					, vf.vfId
-					, vf.hifId)
-			.execute();
+			// Valuation result dataset record links the result dataset id to the task uuid
+			ValuationResultDatasetRecord valuationResultDatasetRecord = create.insertInto(VALUATION_RESULT_DATASET
+					, VALUATION_RESULT_DATASET.TASK_UUID
+					, VALUATION_RESULT_DATASET.NAME
+					, VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID
+					, VALUATION_RESULT_DATASET.VARIABLE_DATASET_ID
+					, VALUATION_RESULT_DATASET.GRID_DEFINITION_ID)
+			.values(task.getUuid()
+					,task.getName()
+					,valuationTaskConfig.hifResultDatasetId
+					,valuationTaskConfig.variableDatasetId
+					,valuationTaskConfig.gridDefinitionId)
+			.returning(VALUATION_RESULT_DATASET.ID)
+			.fetchOne();
+	
+			vfResultDatasetId = valuationResultDatasetRecord.getId();
+			valuationTaskConfig.resultDatasetId = vfResultDatasetId;
 			
-		}
+			// Each HIF result function config contains the details of how the function was configured
+			for(ValuationConfig vf : valuationTaskConfig.valuationFunctions) {
+				create.insertInto(VALUATION_RESULT_FUNCTION_CONFIG
+						, VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID
+						, VALUATION_RESULT_FUNCTION_CONFIG.VF_ID
+						, VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID)
+				.values(vfResultDatasetId
+						, vf.vfId
+						, vf.hifId)
+				.execute();
+				
+			}
 		}
 		// Finally, store the actual estimates
 		for(ValuationResultRecord valuationResult : valuationResults) {

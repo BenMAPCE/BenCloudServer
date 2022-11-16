@@ -39,8 +39,8 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "0.3.0";
-	public static final int minimumDbVersion = 3;
+	public static final String appVersion = "0.3.1";
+	public static final int minimumDbVersion = 11;
 	
 	/**
 	 * @param columnIdx
@@ -215,9 +215,10 @@ public class ApiUtil {
 	 * 
 	 * @param valuationTaskConfig
 	 * @param vfDefinitionList
+	 * @param gridId 
 	 * @return
 	 */
-	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
+	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList, Integer gridId) {
 		 // Load list of functions from the database
 		
 		//TODO: Change this to only load what we need
@@ -231,7 +232,7 @@ public class ApiUtil {
 		Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 				1, 
 				allVariableNames.get(0), 
-				28);
+				gridId);
 		//Look at all valuation functions to determine which variables are needed
 		for(String variableName: allVariableNames) {
 			for(Record function : vfDefinitionList) {

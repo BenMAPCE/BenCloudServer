@@ -42,7 +42,7 @@ public class HIFTaskConfig {
 	public Integer popYear = 0;
 	public Boolean preserveLegacyBehavior = false;
 	public List<HIFConfig> hifs = new ArrayList<HIFConfig>();
-	
+	public Integer gridDefinitionId = 0;
 	/*
 	 * Default constructor
 	 */
@@ -67,6 +67,8 @@ public class HIFTaskConfig {
 				switch (aqLayer.get("type").asText().toLowerCase()) {
 				case "baseline":
 					this.aqBaselineId = aqLayer.get("id").asInt();
+					Integer gridDefinitionId = AirQualityApi.getAirQualityLayerGridId(aqBaselineId);
+					this.gridDefinitionId = gridDefinitionId;
 					break;
 				case "scenario":
 					this.aqScenarioId = aqLayer.get("id").asInt();
