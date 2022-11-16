@@ -1251,8 +1251,10 @@ public class AirQualityApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 		
-		if(layerResult.getUserId() == null || !layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || !CoreApi.isAdmin(userProfile) )  {
-			//This is either a shared layer or it belongs to someone else
+		//Nobody can delete shared layers
+		//All users can delete their own layers
+		//Admins can delete any non-shared layers
+		if(layerResult.getShareScope() == Constants.SHARING_ALL || !(layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 		

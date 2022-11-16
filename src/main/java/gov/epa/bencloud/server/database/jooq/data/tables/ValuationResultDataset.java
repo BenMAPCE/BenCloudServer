@@ -14,7 +14,7 @@ import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row8;
+import org.jooq.Row9;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -87,6 +87,11 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
      * The column <code>data.valuation_result_dataset.sharing_scope</code>.
      */
     public final TableField<ValuationResultDatasetRecord, Short> SHARING_SCOPE = createField(DSL.name("sharing_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.valuation_result_dataset.grid_definition_id</code>.
+     */
+    public final TableField<ValuationResultDatasetRecord, Integer> GRID_DEFINITION_ID = createField(DSL.name("grid_definition_id"), SQLDataType.INTEGER, this, "");
 
     private ValuationResultDataset(Name alias, Table<ValuationResultDatasetRecord> aliased) {
         this(alias, aliased, null);
@@ -165,11 +170,11 @@ public class ValuationResultDataset extends TableImpl<ValuationResultDatasetReco
     }
 
     // -------------------------------------------------------------------------
-    // Row8 type methods
+    // Row9 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, String, Integer, String, Integer, JSON, String, Short> fieldsRow() {
-        return (Row8) super.fieldsRow();
+    public Row9<Integer, String, Integer, String, Integer, JSON, String, Short, Integer> fieldsRow() {
+        return (Row9) super.fieldsRow();
     }
 }

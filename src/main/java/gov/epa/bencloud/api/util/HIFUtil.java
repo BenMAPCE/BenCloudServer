@@ -183,6 +183,7 @@ public class HIFUtil {
 					, HIF_RESULT_DATASET.POPULATION_YEAR
 					, HIF_RESULT_DATASET.BASELINE_AQ_LAYER_ID
 					, HIF_RESULT_DATASET.SCENARIO_AQ_LAYER_ID
+					, HIF_RESULT_DATASET.GRID_DEFINITION_ID
 					)
 			.values(
 					task.getUuid()
@@ -190,7 +191,8 @@ public class HIFUtil {
 					, hifTaskConfig.popId
 					, hifTaskConfig.popYear
 					, hifTaskConfig.aqBaselineId
-					, hifTaskConfig.aqScenarioId)
+					, hifTaskConfig.aqScenarioId
+					, hifTaskConfig.gridDefinitionId)
 			.returning(HIF_RESULT_DATASET.ID)
 			.fetchOne();
 			

@@ -14,7 +14,7 @@ import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row10;
+import org.jooq.Row11;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -96,6 +96,11 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
      */
     public final TableField<HifResultDatasetRecord, Short> SHARING_SCOPE = createField(DSL.name("sharing_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
+    /**
+     * The column <code>data.hif_result_dataset.grid_definition_id</code>.
+     */
+    public final TableField<HifResultDatasetRecord, Integer> GRID_DEFINITION_ID = createField(DSL.name("grid_definition_id"), SQLDataType.INTEGER, this, "");
+
     private HifResultDataset(Name alias, Table<HifResultDatasetRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -171,11 +176,11 @@ public class HifResultDataset extends TableImpl<HifResultDatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row10 type methods
+    // Row11 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row10<Integer, String, String, Integer, Integer, Integer, Integer, JSON, String, Short> fieldsRow() {
-        return (Row10) super.fieldsRow();
+    public Row11<Integer, String, String, Integer, Integer, Integer, Integer, JSON, String, Short, Integer> fieldsRow() {
+        return (Row11) super.fieldsRow();
     }
 }
