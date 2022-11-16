@@ -289,6 +289,7 @@ public class TaskQueue {
 						task.put("task_uuid", record.getValue(TASK_QUEUE.TASK_UUID));
 						task.put("task_submitted_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
 						task.put("task_type", record.getValue(TASK_QUEUE.TASK_TYPE));
+						task.put("task_user_id", record.getValue(TASK_QUEUE.USER_ID));
 
 						wrappedObject = mapper.createObjectNode();
 
