@@ -184,6 +184,7 @@ public class HIFUtil {
 					, HIF_RESULT_DATASET.BASELINE_AQ_LAYER_ID
 					, HIF_RESULT_DATASET.SCENARIO_AQ_LAYER_ID
 					, HIF_RESULT_DATASET.GRID_DEFINITION_ID
+					, HIF_RESULT_DATASET.USER_ID
 					)
 			.values(
 					task.getUuid()
@@ -192,7 +193,8 @@ public class HIFUtil {
 					, hifTaskConfig.popYear
 					, hifTaskConfig.aqBaselineId
 					, hifTaskConfig.aqScenarioId
-					, hifTaskConfig.gridDefinitionId)
+					, hifTaskConfig.gridDefinitionId
+					, task.getUserIdentifier())
 			.returning(HIF_RESULT_DATASET.ID)
 			.fetchOne();
 			

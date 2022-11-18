@@ -143,12 +143,14 @@ public class ValuationUtil {
 					, VALUATION_RESULT_DATASET.NAME
 					, VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID
 					, VALUATION_RESULT_DATASET.VARIABLE_DATASET_ID
-					, VALUATION_RESULT_DATASET.GRID_DEFINITION_ID)
+					, VALUATION_RESULT_DATASET.GRID_DEFINITION_ID
+					, VALUATION_RESULT_DATASET.USER_ID)
 			.values(task.getUuid()
 					,task.getName()
 					,valuationTaskConfig.hifResultDatasetId
 					,valuationTaskConfig.variableDatasetId
-					,valuationTaskConfig.gridDefinitionId)
+					,valuationTaskConfig.gridDefinitionId
+					,task.getUserIdentifier())
 			.returning(VALUATION_RESULT_DATASET.ID)
 			.fetchOne();
 	

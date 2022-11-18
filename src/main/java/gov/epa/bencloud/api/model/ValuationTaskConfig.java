@@ -76,7 +76,7 @@ public class ValuationTaskConfig {
 
 			this.hifResultDatasetId = params.get("hif_result_dataset_id").asInt();
 			this.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
-			this.gridDefinitionId = params.get("incidence_aggregation_grid")==null || params.get("grid_definition_id").isEmpty() ? null : params.get("grid_definition_id").asInt();
+			this.gridDefinitionId = params.get("grid_definition_id")==null || params.get("grid_definition_id").isEmpty() ? null : params.get("grid_definition_id").asInt();
 			
 			JsonNode functions = params.get("functions");
 
