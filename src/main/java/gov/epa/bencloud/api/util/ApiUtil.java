@@ -322,4 +322,23 @@ public class ApiUtil {
 	public static Integer getMultipartFormParameterAsInteger(Request request, String paramName) {
 		return Integer.valueOf(getMultipartFormParameterAsString(request, paramName));
 	}
+	
+	/**
+	 * 
+	 * @param userId
+	 * @return a list of all task names for a given user id.
+	 */
+	public static List<String> getAllTaskNamesByUser(String userId) {
+		if(userId == null) {
+			return null;
+		}
+
+		List<String> allTaskNames = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(TASK_CONFIG.NAME)
+				.from(TASK_CONFIG)
+				.where(TASK_CONFIG.USER_ID.equal(userId))
+				.orderBy(TASK_CONFIG.USER_ID)
+				.fetch(TASK_CONFIG.NAME);
+		return allTaskNames;
+	}
 }

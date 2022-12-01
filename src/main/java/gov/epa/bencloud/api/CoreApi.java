@@ -2,6 +2,7 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.jooq.DSLContext;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
+import gov.epa.bencloud.api.util.ApiUtil;
 
 import spark.Request;
 import spark.Response;
@@ -129,6 +131,14 @@ public class CoreApi {
 			e.printStackTrace();
 			response.status(400);
 			return null;
+		}
+		
+		//make sure the new task name is unique among this user's tasks
+		List<String>taskNames = ApiUtil.getAllTaskNamesByUser(userProfile.get().getId());
+		if (taskNames.contains(name.toLowerCase())) {
+			response.status(400);
+			String errorMsg = "A task named " + name + " already exists. Please enter a different name.";			
+			return errorMsg;
 		}
 		
 		
