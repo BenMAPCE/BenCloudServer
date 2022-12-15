@@ -2,6 +2,7 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.jooq.DSLContext;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
+import gov.epa.bencloud.api.util.ApiUtil;
 
 import spark.Request;
 import spark.Response;
@@ -131,6 +133,13 @@ public class CoreApi {
 			return null;
 		}
 		
+		//make sure the new template name is unique among this user's templates
+		List<String>templateNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
+		if (templateNames.contains(name)) {
+			response.status(250);
+			String errorMsg = "A template named " + name + " already exists. Please enter a different name.";            
+			return errorMsg;
+		}
 		
 		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
 		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
