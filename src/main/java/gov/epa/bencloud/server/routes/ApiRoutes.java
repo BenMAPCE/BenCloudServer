@@ -409,9 +409,11 @@ public class ApiRoutes extends RoutesBase {
 			String ret = CoreApi.postTaskConfig(request, response, getUserProfile(request, response));
 
 			if(response.status() == 400) {
-				//return CoreApi.getErrorResponseInvalidId(request, response);
-				response.type("application/json");
-				return ret;
+                return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			if(response.status() == 250) {
+				return CoreApi.getErrorResponse(request, response, 250, ret);
 			}
 
 			response.type("application/json");

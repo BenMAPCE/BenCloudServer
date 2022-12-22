@@ -75,8 +75,8 @@ public class ValuationTaskConfig {
 			this.hifTaskUuid = params.get("parent_task_uuid").asText();
 
 			this.hifResultDatasetId = params.get("hif_result_dataset_id").asInt();
-			this.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
-			this.gridDefinitionId = params.get("grid_definition_id")==null || params.get("grid_definition_id").isEmpty() ? null : params.get("grid_definition_id").asInt();
+			this.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").toString().isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
+			this.gridDefinitionId = params.get("grid_definition_id")==null || params.get("grid_definition_id").toString().isEmpty() ? null : params.get("grid_definition_id").asInt();
 			
 			JsonNode functions = params.get("functions");
 

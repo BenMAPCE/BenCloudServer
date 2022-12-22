@@ -168,14 +168,14 @@ public class CoreApi {
 			return null;
 		}
 		
-		//make sure the new task name is unique among this user's tasks
-		List<String>taskNames = ApiUtil.getAllTaskNamesByUser(userProfile.get().getId());
-		if (taskNames.contains(name.toLowerCase())) {
+
+		//make sure the new template name is unique among this user's templates
+		List<String>taskNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
+		if (taskNames.contains(name)) {
 			response.status(200);
 			String errorMsg = "A task named " + name + " already exists. Please enter a different name.";
 			return "{\"message\": \"" + errorMsg + "\"}";
-		}
-		
+		}	
 		
 		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
 		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
