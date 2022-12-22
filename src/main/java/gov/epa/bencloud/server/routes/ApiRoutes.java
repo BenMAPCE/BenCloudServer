@@ -420,6 +420,14 @@ public class ApiRoutes extends RoutesBase {
 			return ret;
 
 		});
+		
+		/*
+		 * DELETE selected template
+		 */
+		service.delete(apiPrefix + "/task-configs/:id", (request, response) -> {
+			return CoreApi.deleteTaskConfig(request, response, getUserProfile(request, response));
+
+		});
 
 		service.get(apiPrefix + "/user", (request, response) -> {
 			Object ret = CoreApi.getUserInfo(request, response, getUserProfile(request, response));

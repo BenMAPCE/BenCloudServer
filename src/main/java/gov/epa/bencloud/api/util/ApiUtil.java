@@ -322,7 +322,6 @@ public class ApiUtil {
 	public static Integer getMultipartFormParameterAsInteger(Request request, String paramName) {
 		return Integer.valueOf(getMultipartFormParameterAsString(request, paramName));
 	}
-
 	    
     /**
      * 
@@ -342,4 +341,5 @@ public class ApiUtil {
                 .fetch(TASK_CONFIG.NAME);
         return allTemplateNames;
     }
+
 }

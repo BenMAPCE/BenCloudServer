@@ -5,12 +5,14 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.util.List;
 import java.util.Optional;
 
+import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
+import org.jooq.Record1;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.api.util.ApiUtil;
 
@@ -92,6 +95,38 @@ public class CoreApi {
 	
 
 	//TODO: Add deleteTaskConfig, update?
+	public static Object deleteTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+		
+		
+		//Users can only delete templates created by themselves 		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());	
+		Result<Record1<Integer>> res = create.select(TASK_CONFIG.ID)
+				.from(TASK_CONFIG)
+				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
+				.and(TASK_CONFIG.ID.eq(id))
+				.fetch();
+		
+		if(res==null) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}		
+		
+		int configRows = create.deleteFrom(TASK_CONFIG).where(TASK_CONFIG.ID.eq(id)).execute();
+		
+		if(configRows == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
+		} else {
+			response.status(204);
+			return response;
+		}
+		
+	}
 
 	/**
 	 * 
@@ -133,13 +168,14 @@ public class CoreApi {
 			return null;
 		}
 		
+
 		//make sure the new template name is unique among this user's templates
-		List<String>templateNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
-		if (templateNames.contains(name)) {
-			response.status(250);
-			String errorMsg = "A template named " + name + " already exists. Please enter a different name.";            
-			return errorMsg;
-		}
+		List<String>taskNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
+		if (taskNames.contains(name)) {
+			response.status(200);
+			String errorMsg = "A task named " + name + " already exists. Please enter a different name.";
+			return "{\"message\": \"" + errorMsg + "\"}";
+		}	
 		
 		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
 		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
