@@ -409,11 +409,21 @@ public class ApiRoutes extends RoutesBase {
 			String ret = CoreApi.postTaskConfig(request, response, getUserProfile(request, response));
 
 			if(response.status() == 400) {
-				return CoreApi.getErrorResponseInvalidId(request, response);
+				//return CoreApi.getErrorResponseInvalidId(request, response);
+				response.type("application/json");
+				return ret;
 			}
 
 			response.type("application/json");
 			return ret;
+
+		});
+		
+		/*
+		 * DELETE selected template
+		 */
+		service.delete(apiPrefix + "/task-configs/:id", (request, response) -> {
+			return CoreApi.deleteTaskConfig(request, response, getUserProfile(request, response));
 
 		});
 
