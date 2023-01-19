@@ -327,7 +327,7 @@ public class HIFApi {
 						hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
 						hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
 						hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
-						hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES)
+						HIFApi.getBaselineGridForHifResults(id) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
 						)
 						.from(hifResultRecords)
 						.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))

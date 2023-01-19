@@ -316,7 +316,7 @@ public class ValuationApi {
 						vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
 						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
-						vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES)
+						ValuationApi.getBaselineGridForValuationResults(id) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
 						)
 						.from(vfResultRecords)
 						.join(VALUATION_RESULT_FUNCTION_CONFIG)
