@@ -120,14 +120,14 @@ public class TaskComplete {
 	 */
 	public static ObjectNode getCompletedTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
-//		System.out.println("getCompletedTasks");
-//		System.out.println("userIdentifier: " + userIdentifier);
+//		log.info("getCompletedTasks");
+//		log.info("userIdentifier: " + userIdentifier);
 		
-//		System.out.println("length: " + postParameters.get("length")[0]);
-//		System.out.println("start: " + postParameters.get("start")[0]);
-//		System.out.println("searchValue: " + postParameters.get("searchValue")[0]);
-//		System.out.println("sortColumn: " + postParameters.get("sortColumn")[0]);
-//		System.out.println("sortDirection: " + postParameters.get("sortDirection")[0]);
+//		log.info("length: " + postParameters.get("length")[0]);
+//		log.info("start: " + postParameters.get("start")[0]);
+//		log.info("searchValue: " + postParameters.get("searchValue")[0]);
+//		log.info("sortColumn: " + postParameters.get("sortColumn")[0]);
+//		log.info("sortDirection: " + postParameters.get("sortDirection")[0]);
 
 		String userId = userProfile.get().getId();
 		boolean showAll;
@@ -270,9 +270,9 @@ public class TaskComplete {
 					.fetch();
 
 			if (result.size() == 0) {
-				System.out.println("no uuid in complete");
+				log.info("no uuid in complete");
 			} else if (result.size() > 1) {
-				System.out.println("received more than 1 uuid record");
+				log.info("received more than 1 uuid record");
 			} else {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_COMPLETE.TASK_NAME));

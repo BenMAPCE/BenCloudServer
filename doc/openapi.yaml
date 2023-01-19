@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BenMAP API
   description: REST API support for benmap.epa.gov
-  version: 0.2.0
+  version: 0.3.1
 servers:
   - url: http://localhost:4567/api
     description: Local Development
@@ -779,6 +779,14 @@ paths:
   /health-impact-function-groups:
     get:
       summary: Returns the list of health impact function groups.
+      parameters:
+        - in: query
+          name: pollutantId
+          required: true
+          description: Filter by pollutant
+          schema:
+            type: integer
+            default: 6
       responses:
         '200':
           description: Successfully returned an array of health impact function groups.
@@ -805,7 +813,7 @@ paths:
                         example: 861, 881, 890
   /health-impact-function-groups/{id}:
     get:
-      summary: Returns a health impact function group.
+      summary: Returns one or more health impact function groups and functions in preparation for configuring an analysis.
       parameters:
         - in: path
           name: id
@@ -814,6 +822,13 @@ paths:
           schema:
             type: integer
             default: 1
+        - in: query
+          name: pollutantId
+          required: true
+          description: Filter by pollutant
+          schema:
+            type: integer
+            default: 6
       responses:
         '200':
           description: Successfully returned a single health impact function group.

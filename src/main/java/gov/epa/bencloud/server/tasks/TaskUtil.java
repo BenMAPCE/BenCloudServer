@@ -34,7 +34,7 @@ public class TaskUtil {
 					.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
 					.execute();
 				} else if (hifResultDatasets.size() > 1) {
-					System.out.println("recieved more than 1 HIF Result Dataset record");
+					log.info("recieved more than 1 HIF Result Dataset record");
 				} else {
 
 					Record hifResultDataset = hifResultDatasets.get(0);
@@ -86,7 +86,7 @@ public class TaskUtil {
 					.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
 					.execute();
 				} else if (valuationResultDatasets.size() > 1) {
-					System.out.println("recieved more than 1 Valuation Result Dataset record");
+					log.info("recieved more than 1 Valuation Result Dataset record");
 				} else {
 
 					Record valuationResultDataset = valuationResultDatasets.get(0);

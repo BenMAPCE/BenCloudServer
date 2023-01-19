@@ -14,12 +14,12 @@ public class TaskManager {
 		int maxTaskWorkers = TaskWorker.getMaxTaskWorkers();
 		int currentTaskWorkers = TaskWorker.getTaskWorkersCount();
 		
-//		System.out.println("processTask: " + uuid);
-//		System.out.println("max Task Workers: " + maxTaskWorkers);
-//		System.out.println("current Task Workers: " + currentTaskWorkers);
+//		log.info("processTask: " + uuid);
+//		log.info("max Task Workers: " + maxTaskWorkers);
+//		log.info("current Task Workers: " + currentTaskWorkers);
 		
 		if (currentTaskWorkers + 1 > maxTaskWorkers) {
-			System.out.println("Already have max TaskWorkers");
+			log.info("Already have max TaskWorkers");
 			TaskQueue.returnTaskToQueue(uuid);
 		} else {
 			

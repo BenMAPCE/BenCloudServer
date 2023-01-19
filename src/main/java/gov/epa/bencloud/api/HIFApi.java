@@ -297,7 +297,7 @@ public class HIFApi {
 							null, 
 							gridIds[i]))
 					.asTable("hif_result_records");
-	
+				log.info("Before fetch");
 				Result<Record> hifRecords = create.select(
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
@@ -329,7 +329,7 @@ public class HIFApi {
 						hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
 						hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
 						hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
-						hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES)
+						HIFApi.getBaselineGridForHifResults(id) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
 						)
 						.from(hifResultRecords)
 						.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
@@ -342,6 +342,7 @@ public class HIFApi {
 						.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 						.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 						.fetch();
+				log.info("After fetch");
 				
 				//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
 				if(HIFApi.getBaselineGridForHifResults(id) != gridIds[i]) {
@@ -371,8 +372,11 @@ public class HIFApi {
 			}
 			
 			try {
+				
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+					log.info("Before formatCSV");
 					hifRecordsClean.formatCSV(zipStream);
+					log.info("After formatCSV");
 					zipStream.closeEntry();
 					
 			} catch (Exception e) {

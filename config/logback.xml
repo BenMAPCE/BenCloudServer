@@ -13,24 +13,35 @@
   </appender>
     
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/bencloud-api.log</file>
+    <file>logs/api.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>logs/bencloud-api.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+      <fileNamePattern>logs/api.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
     </rollingPolicy>
 
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
  
   <appender name="DATABASE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/bencloud-database.log</file>
+    <file>logs/database.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>logs/bencloud-database.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+      <fileNamePattern>logs/database.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
     </rollingPolicy>
 
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logs/access.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>logs/access.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
 
@@ -67,6 +78,10 @@
   
    <logger name="gov.epa.bencloud" additivity="false" level="debug">
     <appender-ref ref="FILE" />
+  </logger>
+  
+     <logger name="access" additivity="false" level="debug">
+    <appender-ref ref="ACCESS" />
   </logger>
   
 </configuration>

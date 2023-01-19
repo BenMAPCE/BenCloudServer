@@ -80,9 +80,9 @@ public class TaskWorker {
 						.fetch();
 
 				if (result.size() == 0) {
-					System.out.println("no task worker for task uuid: " + taskWorkerUuid);
+					log.info("no task worker for task uuid: " + taskWorkerUuid);
 				} else if (result.size() > 1) {
-					System.out.println("recieved more than 1 task worker record for task uuid: " + taskWorkerUuid);
+					log.info("recieved more than 1 task worker record for task uuid: " + taskWorkerUuid);
 				} else {
 
 					DSL.using(ctx).update(TASK_WORKER)
@@ -152,7 +152,7 @@ public class TaskWorker {
 			DSL.using(JooqUtil.getJooqConfiguration())
 			.transaction(ctx -> {
 
-				//System.out.println("updating heartbeat for: " + taskWorkerUuid);
+				//log.info("updating heartbeat for: " + taskWorkerUuid);
 				
 				DSL.using(ctx).update(TASK_WORKER)
 				.set(TASK_WORKER.LAST_HEARTBEAT_DATE, LocalDateTime.now())
@@ -173,7 +173,7 @@ public class TaskWorker {
 			DSL.using(JooqUtil.getJooqConfiguration())
 			.transaction(ctx -> {
 
-				//System.out.println("updating heartbeat for: " + taskWorkerUuid);
+				//log.info("updating heartbeat for: " + taskWorkerUuid);
 				
 				DSL.using(ctx).update(TASK_WORKER)
 				.set(TASK_WORKER.LAST_HEARTBEAT_DATE, localDateTime)
@@ -207,7 +207,7 @@ public class TaskWorker {
 							.minusMinutes(UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES))
 							.isAfter(lastHeartBeatDate)) {
 
-						System.out.println("*** Found unresponsive task worker");
+						log.info("*** Found unresponsive task worker");
 
 						TaskQueue.returnTaskToQueue(record.getValue(TASK_WORKER.TASK_UUID));
 						

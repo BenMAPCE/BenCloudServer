@@ -60,9 +60,9 @@ public class TaskQueue {
 
 						
 						if (result.size() == 0) {
-							// System.out.println("no tasks to process");
+							// log.info("no tasks to process");
 						} else if (result.size() > 1) {
-							System.out.println("recieved more than 1 task record");
+							log.info("recieved more than 1 task record");
 						} else {
 							Record record = result.get(0);
 
@@ -116,9 +116,9 @@ public class TaskQueue {
 						.fetch();
 
 				if (result.size() == 0) {
-					// System.out.println("no tasks to process");
+					// log.info("no tasks to process");
 				} else if (result.size() > 1) {
-					System.out.println("recieved more than 1 task record");
+					log.info("recieved more than 1 task record");
 				} else {
 					Record record = result.get(0);
 
@@ -151,9 +151,9 @@ public class TaskQueue {
 						.fetch();
 
 				if (result.size() == 0) {
-					// System.out.println("no tasks to process");
+					// log.info("no tasks to process");
 				} else if (result.size() > 1) {
-					System.out.println("recieved more than 1 task record");
+					log.info("recieved more than 1 task record");
 				} else {
 					Record record = result.get(0);
 
@@ -187,13 +187,13 @@ public class TaskQueue {
 						.fetch();
 
 				if (result.size() == 0) {
-					System.out.println("no task for uuid: " + uuid);
+					log.info("no task for uuid: " + uuid);
 				} else if (result.size() > 1) {
-					System.out.println("recieved more than 1 task record for uuid: " + uuid);
+					log.info("recieved more than 1 task record for uuid: " + uuid);
 				} else {
 					Record record = result.get(0);
 
-					System.out.println("making job available again: " + 
+					log.info("making job available again: " + 
 							record.get(TASK_QUEUE.TASK_NAME));
 
 					DSL.using(ctx).update(TASK_QUEUE)
@@ -201,7 +201,7 @@ public class TaskQueue {
 					.where(TASK_QUEUE.TASK_UUID.eq(record.getValue(TASK_QUEUE.TASK_UUID)))
 					.execute();
 				}
-				System.out.println("returning task to Queue: " + uuid);
+				log.info("returning task to Queue: " + uuid);
 			});
 		} catch (Exception e) {
 			log.error("Error returning task", e);
@@ -212,7 +212,7 @@ public class TaskQueue {
 
 	public static void writeTaskToQueue(Task task) {
 
-		// System.out.println("writeTaskToQueue: " + task.getUuid());
+		// log.info("writeTaskToQueue: " + task.getUuid());
 
 		try {
 			DSL.using(JooqUtil.getJooqConfiguration()).insertInto(TASK_QUEUE,
@@ -246,8 +246,8 @@ public class TaskQueue {
 
 	public static ObjectNode getPendingTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
-		//System.out.println("getPendingTasks");
-//		System.out.println("userIdentifier: " + userIdentifier);
+		//log.info("getPendingTasks");
+//		log.info("userIdentifier: " + userIdentifier);
 		String userId = userProfile.get().getId();
 		boolean showAll;
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -351,7 +351,7 @@ public class TaskQueue {
 	
 	public static Task getTaskFromQueueRecord(String uuid) {
 
-		// System.out.println("getTaskFromQueueRecord: " + uuid);
+		// log.info("getTaskFromQueueRecord: " + uuid);
 
 		Task task = new Task();
 
@@ -361,9 +361,9 @@ public class TaskQueue {
 					.fetch();
 
 			if (result.size() == 0) {
-				System.out.println("no uuid in queue");
+				log.info("no uuid in queue");
 			} else if (result.size() > 1) {
-				System.out.println("recieved more than 1 uuid record");
+				log.info("recieved more than 1 uuid record");
 			} else {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_QUEUE.TASK_NAME));
@@ -386,7 +386,7 @@ public class TaskQueue {
 
 	public static Task getChildValuationTaskFromQueueRecord(String parentUuid) {
 
-		// System.out.println("getTaskFromQueueRecord: " + uuid);
+		// log.info("getTaskFromQueueRecord: " + uuid);
 
 		Task task = new Task();
 
@@ -397,9 +397,9 @@ public class TaskQueue {
 					.fetch();
 
 			if (result.size() == 0) {
-				System.out.println("no uuid in queue");
+				log.info("no uuid in queue");
 			} else if (result.size() > 1) {
-				System.out.println("recieved more than 1 uuid record");
+				log.info("recieved more than 1 uuid record");
 			} else {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_QUEUE.TASK_NAME));

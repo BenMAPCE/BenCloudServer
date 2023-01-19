@@ -40,7 +40,7 @@ public class GridDefinitionApi {
 				.from(GRID_DEFINITION)
 				.orderBy(GRID_DEFINITION.NAME)
 				.fetch();
-		log.debug("Requested all grid definitions: " + (userProfile.isPresent() ? userProfile.get().getId() : "Anonymous"));
+		//log.debug("Requested all grid definitions: " + (userProfile.isPresent() ? userProfile.get().getId() : "Anonymous"));
 		response.type("application/json");
 		return gridRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
