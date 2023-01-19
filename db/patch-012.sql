@@ -20,3 +20,5 @@ ALTER TABLE "data".hif_result ADD hif_instance_id int4;
 ALTER TABLE "data".valuation_result_function_config ADD hif_instance_id int4, ADD vf_instance_id int4;
 ALTER TABLE "data".valuation_result ADD hif_instance_id int4, ADD vf_instance_id int4;
 
+-- Removing 12km trimmed from the list of grids for now
+DELETE FROM "data".grid_definition WHERE id=27;
