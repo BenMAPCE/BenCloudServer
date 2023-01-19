@@ -108,7 +108,7 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: 15G
+          memory: 16G
           cpu: 4
         livenessProbe:
          tcpSocket:
@@ -163,9 +163,9 @@ metadata:
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
     nginx.ingress.kubernetes.io/proxy-body-size: 100m
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600s"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600s"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600s"
 spec:
   tls:
     - hosts:
