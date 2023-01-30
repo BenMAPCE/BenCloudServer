@@ -49,6 +49,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
 import gov.epa.bencloud.server.database.jooq.data.tables.Settings;
 import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
+import gov.epa.bencloud.server.database.jooq.data.tables.TaskBatch;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
@@ -656,6 +657,11 @@ public class Data extends SchemaImpl {
     public final StatisticType STATISTIC_TYPE = StatisticType.STATISTIC_TYPE;
 
     /**
+     * The table <code>data.task_batch</code>.
+     */
+    public final TaskBatch TASK_BATCH = TaskBatch.TASK_BATCH;
+
+    /**
      * The table <code>data.task_complete</code>.
      */
     public final TaskComplete TASK_COMPLETE = TaskComplete.TASK_COMPLETE;
@@ -775,6 +781,7 @@ public class Data extends SchemaImpl {
             SeasonalMetricSeason.SEASONAL_METRIC_SEASON,
             Settings.SETTINGS,
             StatisticType.STATISTIC_TYPE,
+            TaskBatch.TASK_BATCH,
             TaskComplete.TASK_COMPLETE,
             TaskConfig.TASK_CONFIG,
             TaskQueue.TASK_QUEUE,
