@@ -11,7 +11,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row5;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -58,6 +58,18 @@ public class ValuationResultFunctionConfig extends TableImpl<ValuationResultFunc
      * The column <code>data.valuation_result_function_config.hif_id</code>.
      */
     public final TableField<ValuationResultFunctionConfigRecord, Integer> HIF_ID = createField(DSL.name("hif_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column
+     * <code>data.valuation_result_function_config.hif_instance_id</code>.
+     */
+    public final TableField<ValuationResultFunctionConfigRecord, Integer> HIF_INSTANCE_ID = createField(DSL.name("hif_instance_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column
+     * <code>data.valuation_result_function_config.vf_instance_id</code>.
+     */
+    public final TableField<ValuationResultFunctionConfigRecord, Integer> VF_INSTANCE_ID = createField(DSL.name("vf_instance_id"), SQLDataType.INTEGER, this, "");
 
     private ValuationResultFunctionConfig(Name alias, Table<ValuationResultFunctionConfigRecord> aliased) {
         this(alias, aliased, null);
@@ -127,11 +139,11 @@ public class ValuationResultFunctionConfig extends TableImpl<ValuationResultFunc
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row5 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Integer, Integer, Integer> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row5<Integer, Integer, Integer, Integer, Integer> fieldsRow() {
+        return (Row5) super.fieldsRow();
     }
 }

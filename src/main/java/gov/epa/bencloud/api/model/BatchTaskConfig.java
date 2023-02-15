@@ -24,7 +24,6 @@ import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.GridDefinitionApi;
 import gov.epa.bencloud.api.PopulationApi;
 import gov.epa.bencloud.api.util.AirQualityUtil;
-import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 
 /*
@@ -36,8 +35,12 @@ public class BatchTaskConfig {
 	
 	public String name;
 	public Integer gridDefinitionId = 0;
-	
-	
+	public Integer aqBaselineId = 0;
+	public Integer popId = 0;
+	public String pollutantName;
+	public Boolean preserveLegacyBehavior = true;
+	public List<Scenario> aqScenarios = new ArrayList<Scenario>();
+	public List<BatchHIFGroup> batchHifGroups = new ArrayList<BatchHIFGroup>();
 	
 	/*
 	 * Default constructor
@@ -54,40 +57,26 @@ public class BatchTaskConfig {
 		super();
 		
 		try {
-			//TODO - edit all this
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode params = mapper.readTree(task.getParameters());
-			JsonNode aqLayers = params.get("air_quality_data");
+			JsonNode config = params.get("configuration");
 
 			this.name = task.getName();
+			this.pollutantName = config.get("pollutant").asText();
+			this.gridDefinitionId = params.get("valuation_grid").asInt();
+			this.aqBaselineId = config.get("pre_policy_aq_id").asInt();
+			this.popId = config.get("population_id").asInt();
 
-			for (JsonNode aqLayer : aqLayers) {
-				switch (aqLayer.get("type").asText().toLowerCase()) {
-				case "baseline":
-					//this.aqBaselineId = aqLayer.get("id").asInt();
-					//Integer gridDefinitionId = AirQualityApi.getAirQualityLayerGridId(aqBaselineId);
-					this.gridDefinitionId = gridDefinitionId;
-					break;
-				case "scenario":
-					//this.aqScenarioId = aqLayer.get("id").asInt();
-					break;
-				}
+			JsonNode scenarios = config.get("scenarios");
+
+			for (JsonNode scenario : scenarios) {
+				this.aqScenarios.add(new Scenario(scenario));
 			}
-			JsonNode popConfig = params.get("population");
-			//this.popId = popConfig.get("id").asInt();
-			//this.popYear = popConfig.get("year").asInt();
 
-			// **********************************************************************************
-			// TODO: This is temporarily overridden so we will always run with legacy behavior.
-			// This uses floats, rather than doubles, when calculating health impact estimates
-			// in order to better match the BenMAP-CE Desktop results
-			// **********************************************************************************
-			//this.preserveLegacyBehavior = true; // params.has("preserveLegacyBehavior") ? params.get("preserveLegacyBehavior").asBoolean(false) : false;
+			JsonNode functionGroups = params.get("hif_function_groups");
 
-			JsonNode functions = params.get("functions");
-
-			for (JsonNode function : functions) {
-				//this.hifs.add(new HIFConfig(function));
+			for (JsonNode functionGroup : functionGroups) {
+				this.batchHifGroups.add(new BatchHIFGroup(functionGroup));
 			}
 
 		} catch (JsonMappingException e) {
@@ -107,20 +96,17 @@ public class BatchTaskConfig {
 	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		
-		//TODO: Edit all this
-		//Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
-		//Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
+		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
 		
 		b.append("Task Name: ").append(name).append("\n\n");
 		
-		//Record3<String, Integer, String> populationInfo = PopulationApi.getPopulationDatasetInfo(popId);
-		//b.append("Analysis Year: ").append(popYear).append("\n\n");
+		Record3<String, Integer, String> populationInfo = PopulationApi.getPopulationDatasetInfo(popId);
 		
 		/*
 		 * Pollutant
 		 */
-		//String pollMetrics = AirQualityUtil.getPollutantMetricList((Integer)baselineAq.getValue("pollutant_id"));
-		/*
+		String pollMetrics = AirQualityUtil.getPollutantMetricList((Integer)baselineAq.getValue("pollutant_id"));
+		
 		b.append("POLLUTANT\n\n");
 		b.append("Pollutant Name: ")
 			.append(baselineAq.getValue("pollutant_friendly_name"))
@@ -129,11 +115,10 @@ public class BatchTaskConfig {
 			.append("\n\n");
 
 		b.append("AIR QUALITY DATA\n\n");
-		*/
 		/*
 		 * Pre-policy AQ
 		 */
-		/*
+		
 		b.append("Pre-policy Air Quality Surface\n");
 		b.append("Name: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
 		b.append("Source: ")
@@ -166,89 +151,78 @@ public class BatchTaskConfig {
 				
 			}
 		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		*/
 		
+		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> scenarioAq = null;
 		/*
 		 * Post-policy AQ
 		 */
-		b.append("\nPost-policy Air Quality Surface\n");
-		//b.append("Name: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
-		b.append("Source: ")
-			.append("Model")
-			.append("\n");	
-		//gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(scenarioAq.getValue(AIR_QUALITY_LAYER.GRID_DEFINITION_ID));
-		//b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
-		//b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
-		//b.append("Row: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.ROW_COUNT)).append("\n\n");
-		//metricStatisticsJson = scenarioAq.getValue("metric_statistics", JSON.class);
+		b.append("\nPost-Policy Air Quality Surfaces selected: ").append(aqScenarios.size()).append("\n");
+		for(Scenario scenario : aqScenarios) {
+			scenarioAq = AirQualityApi.getAirQualityLayerDefinition(scenario.id, userProfile);
+			b.append("\nPost-policy Air Quality Surface\n");
+			b.append("Name: ").append(scenario.name).append("\n");
+			b.append("Source: ")
+				.append("Model")
+				.append("\n");	
+			gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(gridDefinitionId);
+			b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
+			// b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
+			// b.append("Row: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.ROW_COUNT)).append("\n\n");
+			b.append(scenario.toString());
 
-		//If we can't parse the metric statistics, we'll just skip them for now
-		//try {
+			metricStatisticsJson = scenarioAq.getValue("metric_statistics", JSON.class);
+	
+			//If we can't parse the metric statistics, we'll just skip them for now
+			try {
+				metricStats = mapper.readTree(metricStatisticsJson.data());
+				if(metricStats.isArray()) {
+					for(JsonNode stat : metricStats) {
+						b.append("Metric: ").append(stat.get("metric_name").asText()).append("\n");
+						b.append("- Seasonal Metric: ").append(stat.get("seasonal_metric_name").asText("Null")).append("\n");
+						b.append("- Annual Statistic: ").append(stat.get("annual_statistic_name").asText("Null")).append("\n");
+						b.append("- Cell Count: ").append(stat.get("cell_count").asInt()).append("\n");
+						b.append("- Min/Max/Mean: ")
+							.append(stat.get("min_value"))
+							.append("/")
+							.append(stat.get("max_value"))
+							.append("/")
+							.append(stat.get("mean_value"))
+							.append("\n");
+					}	
+				}
 			
-//			metricStats = mapper.readTree(metricStatisticsJson.data());
-//			if(metricStats.isArray()) {
-//				for(JsonNode stat : metricStats) {
-//					b.append("Metric: ").append(stat.get("metric_name").asText()).append("\n");
-//					b.append("- Seasonal Metric: ").append(stat.get("seasonal_metric_name").asText("Null")).append("\n");
-//					b.append("- Annual Statistic: ").append(stat.get("annual_statistic_name").asText("Null")).append("\n");
-//					b.append("- Cell Count: ").append(stat.get("cell_count").asInt()).append("\n");
-//					b.append("- Min/Max/Mean: ")
-//						.append(stat.get("min_value"))
-//						.append("/")
-//						.append(stat.get("max_value"))
-//						.append("/")
-//						.append(stat.get("mean_value"))
-//						.append("\n");
-//				}	
-//			}
-			
-		//} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
-		//} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
-		//}
+			} catch (JsonMappingException e) {
+				e.printStackTrace();
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+			}
+		}
 		
 		/*
 		 * Population
 		 */
 		b.append("\nPOPULATION DATA\n\n");
-		//b.append("Population Dataset: ").append(populationInfo.getValue(POPULATION_DATASET.NAME)).append("\n");
-		//b.append("Population Year: ").append(popYear).append("\n");
-		//b.append("Grid Definition: ").append(populationInfo.getValue(GRID_DEFINITION.NAME)).append("\n\n");
+		b.append("Population Dataset: ").append(populationInfo.getValue(POPULATION_DATASET.NAME)).append("\n");
+		b.append("Grid Definition: ").append(populationInfo.getValue(GRID_DEFINITION.NAME)).append("\n\n");
 		
 		/*
-		 * Health Impact Functions
+		 * Health Impact Groups
 		 */
-//		b.append("HEALTH IMPACT FUNCTIONS\n\n");
-//		b.append("Health Effect Groups Analyzed:\n")
-//		.append(HIFUtil.getHealthEffectGroupsListFromHifs(hifs))
-//		.append("\n");
+		b.append("HEALTH IMPACT GROUPS\n\n");
+		b.append("Health Effect Groups Analyzed:\n");
+
+		for(BatchHIFGroup batchHifGroup : batchHifGroups) {
+			b.append(batchHifGroup.toString());
+		}
 		
-//		b.append("Functions Selected: ").append(hifs.size()).append("\n\n");
-//
-//		//hifs are sorted by endpoint group and endpoint by default
-//		for(int i=0; i < hifs.size(); i++) {
-//			HIFConfig hif = hifs.get(i);
-//			b.append("Function ").append(i+1).append(":\n");
-//			b.append(hif.toString());
-//			b.append("\n");
-//		}
-//		
-//		b.append("ADVANCED SETTINGS\n\n");
-//		b.append("BenMAP-CE Desktop Backward Compatibility Mode: ").append(preserveLegacyBehavior ? "Enabled" : "Disabled").append("\n");
+		b.append("ADVANCED SETTINGS\n\n");
+		b.append("BenMAP-CE Desktop Backward Compatibility Mode: ").append(preserveLegacyBehavior ? "Enabled" : "Disabled").append("\n");
 
 		return b.toString();
 	}
-	
-	
-
 	
 }

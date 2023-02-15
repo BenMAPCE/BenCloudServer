@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row16;
+import org.jooq.Row17;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -131,6 +131,11 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
      */
     public final TableField<TaskCompleteRecord, Short> SHARING_SCOPE = createField(DSL.name("sharing_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
+    /**
+     * The column <code>data.task_complete.task_batch_id</code>.
+     */
+    public final TableField<TaskCompleteRecord, Integer> TASK_BATCH_ID = createField(DSL.name("task_batch_id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("0", SQLDataType.INTEGER)), this, "");
+
     private TaskComplete(Name alias, Table<TaskCompleteRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -211,11 +216,11 @@ public class TaskComplete extends TableImpl<TaskCompleteRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row16 type methods
+    // Row17 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row16<Integer, String, String, Integer, String, String, String, String, String, Boolean, String, LocalDateTime, LocalDateTime, LocalDateTime, String, Short> fieldsRow() {
-        return (Row16) super.fieldsRow();
+    public Row17<Integer, String, String, Integer, String, String, String, String, String, Boolean, String, LocalDateTime, LocalDateTime, LocalDateTime, String, Short, Integer> fieldsRow() {
+        return (Row17) super.fieldsRow();
     }
 }
