@@ -5,6 +5,8 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.util.List;
 import java.util.Optional;
 
+import javax.servlet.MultipartConfigElement;
+
 import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
@@ -94,7 +96,7 @@ public class CoreApi {
 	}
 	
 
-	//TODO: Add deleteTaskConfig, update?
+	
 	public static Object deleteTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
 		Integer id;
 		try {
@@ -124,6 +126,52 @@ public class CoreApi {
 		} else {
 			response.status(204);
 			return response;
+		}
+		
+	}
+	
+	public static Object renameTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
+		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+		Integer id;
+		String newName;
+		try {
+			//id = Integer.valueOf(ApiUtil.getMultipartFormParameterAsString(request,"id"));
+			id=Integer.valueOf(request.params("id"));
+			newName = ApiUtil.getMultipartFormParameterAsString(request, "newName");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}		
+		
+		//make sure the new template name is unique among this user's templates
+			List<String>taskNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
+			if (taskNames.contains(newName)) {
+				response.status(200);
+				String errorMsg = "A task named " + newName + " already exists. Please enter a different name.";
+				return "{\"message\": \"" + errorMsg + "\"}";
+			}			
+		
+		//Users can only edit templates created by themselves 		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());	
+		Result<Record1<Integer>> res = create.select(TASK_CONFIG.ID)
+				.from(TASK_CONFIG)
+				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
+				.and(TASK_CONFIG.ID.eq(id))
+				.fetch();
+		
+		if(res==null) {
+			return CoreApi.getErrorResponse(request, response, 400, "You can only rename tasks created by yourself.");
+		}		
+		
+		int configRows = create.update(TASK_CONFIG)
+				.set(TASK_CONFIG.NAME, newName)
+				.where(TASK_CONFIG.ID.eq(id))
+				.execute();
+		
+		if(configRows == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
+		} else {
+			return CoreApi.getSuccessResponse(request, response, 204, "Successfully renamed.");
 		}
 		
 	}
