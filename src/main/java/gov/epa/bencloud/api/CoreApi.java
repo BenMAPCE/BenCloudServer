@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import javax.servlet.MultipartConfigElement;
 
-import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
@@ -29,7 +28,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.api.util.ApiUtil;
 
@@ -134,9 +132,9 @@ public class CoreApi {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		Integer id;
 		String newName;
+
 		try {
-			//id = Integer.valueOf(ApiUtil.getMultipartFormParameterAsString(request,"id"));
-			id=Integer.valueOf(request.params("id"));
+			id = Integer.valueOf(request.params("id"));
 			newName = ApiUtil.getMultipartFormParameterAsString(request, "newName");
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
@@ -160,6 +158,7 @@ public class CoreApi {
 				.fetch();
 		
 		if(res==null) {
+			response.status(400);
 			return CoreApi.getErrorResponse(request, response, 400, "You can only rename tasks created by yourself.");
 		}		
 		
@@ -169,8 +168,10 @@ public class CoreApi {
 				.execute();
 		
 		if(configRows == 0) {
+			response.status(400);
 			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
 		} else {
+			response.status(204);
 			return CoreApi.getSuccessResponse(request, response, 204, "Successfully renamed.");
 		}
 		
