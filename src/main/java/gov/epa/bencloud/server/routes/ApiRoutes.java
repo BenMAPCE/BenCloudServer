@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.api.*;
+import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
@@ -184,6 +185,29 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/health-impact-function-groups/:ids", (request, response) -> {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
+
+		/*
+		 * GET a partially populated batch task config
+
+		 * TODO: Update the parameters here and think of a better name
+
+		 * PARAMETERS:
+		 *  :ids (comma separated list of health impact function group ids
+		 *  popYear=
+		 *  incidencePrevalenceDataset=
+		 *  pollutantId=
+		 *  baselineId=
+		 *  scenarioId=
+		 *  
+		 *  Parameters are used to filter the list of functions to only those relevant to the current analysis
+		 *  
+		 *  Response will include array of complete function definitions within each group
+		 */	
+		service.get(apiPrefix + "/batch-task-config/:ids", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfig(request, response, null);
+			response.type("application/json");
+			return b;
+		}, objectMapper::writeValueAsString);
 		
 		/*
 		 * GET a list of incidence datasets
@@ -354,7 +378,7 @@ public class ApiRoutes extends RoutesBase {
 			try {
 				UserProfile profile = getUserProfile(request, response).get();
 				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
-				int taskCount = CoreApi.getTotalTaskCountForUser(profile);			
+				int taskCount = TaskApi.getTotalTaskCountForUser(profile);			
 				int maxTasks = 20;
 				
 				String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
@@ -399,14 +423,14 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		service.get(apiPrefix + "/task-configs", (request, response) -> {
-			Object data = CoreApi.getTaskConfigs(request, response, getUserProfile(request, response));
+			Object data = TaskApi.getTaskConfigs(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return data;
 
 		});
 		
 		service.post(apiPrefix + "/task-configs", (request, response) -> {
-			String ret = CoreApi.postTaskConfig(request, response, getUserProfile(request, response));
+			String ret = TaskApi.postTaskConfig(request, response, getUserProfile(request, response));
 
 			if(response.status() == 400) {
                 return CoreApi.getErrorResponseInvalidId(request, response);
@@ -425,7 +449,7 @@ public class ApiRoutes extends RoutesBase {
 		 * DELETE selected template
 		 */
 		service.delete(apiPrefix + "/task-configs/:id", (request, response) -> {
-			return CoreApi.deleteTaskConfig(request, response, getUserProfile(request, response));
+			return TaskApi.deleteTaskConfig(request, response, getUserProfile(request, response));
 
 		});
 		
@@ -433,7 +457,7 @@ public class ApiRoutes extends RoutesBase {
 		 * Rename selected template
 		 */
 		service.put(apiPrefix + "/task-configs/:id", (request, response) -> {
-			return CoreApi.renameTaskConfig(request, response, getUserProfile(request, response));
+			return TaskApi.renameTaskConfig(request, response, getUserProfile(request, response));
 
 		});
 
