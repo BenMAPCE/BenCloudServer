@@ -121,9 +121,10 @@ public class TaskApi {
 		//make sure the new template name is unique among this user's templates
 			List<String>taskNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
 			if (taskNames.contains(newName)) {
-				response.status(200);
+				response.status(201);
 				String errorMsg = "A task named " + newName + " already exists. Please enter a different name.";
-				return "{\"message\": \"" + errorMsg + "\"}";
+				//return "{\"message\": \"" + errorMsg + "\"}";
+				return CoreApi.getSuccessResponse(request, response, 201, errorMsg);
 			}			
 		
 		//Users can only edit templates created by themselves 		
@@ -148,8 +149,8 @@ public class TaskApi {
 			response.status(400);
 			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
 		} else {
-			response.status(204);
-			return CoreApi.getSuccessResponse(request, response, 204, "Successfully renamed.");
+			response.status(200);
+			return CoreApi.getSuccessResponse(request, response, 200, "Successfully renamed.");
 		}
 		
 	}
