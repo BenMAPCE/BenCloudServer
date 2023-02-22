@@ -61,6 +61,7 @@ public class CoreApi {
 	
 	public static Object getSuccessResponse(Request request, Response response, int statusCode, String msg) {
 		response.type("application/json");
+		response.status(statusCode);
 		return "{\"message\":\"" + msg + "\"}";
 	}
 
