@@ -1,4 +1,3 @@
-
 plugins {
     id 'java-library'
 }
@@ -12,21 +11,10 @@ repositories {
 
 dependencies {
 
-	implementation 'com.sparkjava:spark-core:2.9.3'
-	constraints {
-        implementation('org.eclipse.jetty:jetty-server:9.4.44.v20210927') {
-            because 'Previous versions have security vulnerabilities'
-        }
-       implementation('org.eclipse.jetty:jetty-webapp:9.4.44.v20210927') {
-            because 'Previous versions have security vulnerabilities'
-        }
-       implementation('commons-beanutils:commons-beanutils:1.9.4') {
-            because 'Previous versions have security vulnerabilities'
-        }
-    }
+	implementation 'com.sparkjava:spark-core:2.9.4'
     
-	implementation 'org.pac4j:spark-pac4j:5.0.0'
-	implementation 'org.pac4j:pac4j-http:5.4.3'
+	implementation 'org.pac4j:spark-pac4j:5.0.1'
+	implementation 'org.pac4j:pac4j-http:5.6.1'
 
 	// database related
 	
@@ -47,8 +35,8 @@ dependencies {
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.3'
 
 	implementation 'io.vavr:vavr:0.10.0'
-	implementation 'org.slf4j:slf4j-api:1.7.26'
-	implementation 'ch.qos.logback:logback-classic:1.2.3'
+	implementation 'org.slf4j:slf4j-api:2.0.6'
+	implementation 'ch.qos.logback:logback-classic:1.4.5'
 	implementation 'commons-cli:commons-cli:1.4'
 	implementation 'com.opencsv:opencsv:4.6'
 	implementation 'org.apache.commons:commons-lang3:3.9'
@@ -57,7 +45,7 @@ dependencies {
 	implementation 'com.squareup.tape2:tape:2.0.0-beta1'
 	implementation 'org.quartz-scheduler:quartz:2.3.1'
 
-    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.0.7'
+    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
     implementation 'io.kubernetes:client-java-extended:14.0.0'
 

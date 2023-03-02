@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row11;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -77,6 +77,31 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
      * The column <code>data.air_quality_layer.share_scope</code>.
      */
     public final TableField<AirQualityLayerRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.aq_year</code>.
+     */
+    public final TableField<AirQualityLayerRecord, String> AQ_YEAR = createField(DSL.name("aq_year"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.description</code>.
+     */
+    public final TableField<AirQualityLayerRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.source</code>.
+     */
+    public final TableField<AirQualityLayerRecord, String> SOURCE = createField(DSL.name("source"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.data_type</code>.
+     */
+    public final TableField<AirQualityLayerRecord, String> DATA_TYPE = createField(DSL.name("data_type"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.filename</code>.
+     */
+    public final TableField<AirQualityLayerRecord, String> FILENAME = createField(DSL.name("filename"), SQLDataType.CLOB, this, "");
 
     private AirQualityLayer(Name alias, Table<AirQualityLayerRecord> aliased) {
         this(alias, aliased, null);
@@ -175,11 +200,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row11 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Integer, String, Integer, Integer, String, Short> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row11<Integer, String, Integer, Integer, String, Short, String, String, String, String, String> fieldsRow() {
+        return (Row11) super.fieldsRow();
     }
 }
