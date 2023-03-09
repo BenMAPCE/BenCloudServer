@@ -86,7 +86,7 @@ public class BenCloudServer {
 			response.header("Access-Control-Allow-Origin", "*");
 			response.header("Content-Security-Policy", "default-src 'self';");
 			
-			logAccess.info("{} {} {}, uid: {}, ismemberof: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
+			logAccess.info("{} REQUEST {} {}, uid: {}, ismemberof: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
 
 			//Exclude OPTIONS calls from security filter
 			if(!request.requestMethod().equalsIgnoreCase(HttpConstants.HTTP_METHOD.OPTIONS.name())) {
@@ -96,7 +96,7 @@ public class BenCloudServer {
 		
 		benCloudService.after((request, response) -> {
 			
-			logAccess.info("{} {} {}, uid: {}, ismemberof: {}, status: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"), response.status());
+			logAccess.info("{} RESPONSE {} {}, uid: {}, ismemberof: {}, status: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"), response.status());
 		});
 
 		Spark.exception(Exception.class, (exception, request, response) -> {
