@@ -12,6 +12,13 @@ public class BatchHIFGroup {
 	public List<HIFConfig> hifs = new ArrayList<HIFConfig>();
 
 	/**
+	 * Default constructor
+	 */
+	public BatchHIFGroup() {
+
+	}
+
+	/**
 	 * Creates an object from the HIF group parameter object
 	 * @param batchHifGroup
 	 */

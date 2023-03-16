@@ -11,6 +11,14 @@ public class Scenario {
     public String name;
     public List<ScenarioPopConfig> popConfigs = new ArrayList<ScenarioPopConfig>();
 
+
+    /**
+     * Default constructor
+     */
+    public Scenario() {
+
+    }
+
     /**
      * Creates an object from the task parameter object
      * @param scenario
@@ -33,8 +41,8 @@ public class Scenario {
      */
     public String toString(Optional<UserProfile> userProfile) {
         StringBuilder b = new StringBuilder();
-        b.append("Scenario id: ").append(id).append("\n");
-        b.append("Population Configurations:\n");
+        b.append("Surface id: ").append(id).append("\n");
+        b.append("Population Configurations selected: ").append(popConfigs.size()).append("\n");
         for(int i = 0; i < popConfigs.size(); i++) {
             b.append(popConfigs.get(i).toString(userProfile, i+1)).append("\n");
         }

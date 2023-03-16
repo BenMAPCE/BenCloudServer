@@ -11,6 +11,15 @@ public class ScenarioPopConfig {
     public Integer popYear = null;
     public List<ScenarioHIFConfig> scenarioHifConfigs = new ArrayList<ScenarioHIFConfig>();
 
+
+	/**
+	 *Default constructor
+	 */
+	public ScenarioPopConfig() {
+		
+	}
+
+
 	/**
 	 * Creates an object from the scenario pop config parameter object
 	 * @param scenarioPopConfig
@@ -32,9 +41,9 @@ public class ScenarioPopConfig {
 	 */
 	public String toString(Optional<UserProfile> userProfile, Integer count) {
 		StringBuilder b = new StringBuilder();
-		b.append("Population Configuration (").append(count).append("):\n");
+		b.append("Population Configuration:\n");
 		b.append("Population year: ").append(popYear).append("\n");
-		b.append("Scenario HIF Configurations:\n");
+		b.append("Scenario HIF Configurations selected: ").append(scenarioHifConfigs.size()).append("\n");
 		for(int i = 0; i < scenarioHifConfigs.size(); i++) {
 			b.append(scenarioHifConfigs.get(i).toString(userProfile, i+1)).append("\n");
 		}

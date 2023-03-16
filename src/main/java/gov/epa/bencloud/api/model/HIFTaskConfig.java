@@ -60,7 +60,7 @@ public class HIFTaskConfig {
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode params = mapper.readTree(task.getParameters());
 			JsonNode aqLayers = params.get("air_quality_data");
-
+			System.out.println(task);
 			this.name = task.getName();
 
 			for (JsonNode aqLayer : aqLayers) {
@@ -77,6 +77,10 @@ public class HIFTaskConfig {
 			}
 			JsonNode popConfig = params.get("population");
 			this.popId = popConfig.get("id").asInt();
+
+			JsonNode functions = params.get("functions");
+			System.out.println(functions);
+			
 			this.popYear = popConfig.get("year").asInt();
 
 			// **********************************************************************************
@@ -86,7 +90,7 @@ public class HIFTaskConfig {
 			// **********************************************************************************
 			this.preserveLegacyBehavior = true; // params.has("preserveLegacyBehavior") ? params.get("preserveLegacyBehavior").asBoolean(false) : false;
 
-			JsonNode functions = params.get("functions");
+
 
 			for (JsonNode function : functions) {
 				this.hifs.add(new HIFConfig(function));
