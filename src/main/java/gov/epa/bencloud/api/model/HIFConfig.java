@@ -2,6 +2,7 @@ package gov.epa.bencloud.api.model;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.HashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -50,7 +51,7 @@ public class HIFConfig {
 	public Integer totalDays = null;
 	public int arrayIdx = 0;
 	
-	public Map<String, Object> hifRecord = null; //This map will contain the full HIF record
+	public Map<String, Object> hifRecord = new HashMap<String, Object> (); //This map will contain the full HIF record
 	
 	/**
 	 * Creates an object from the task parameter object

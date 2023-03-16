@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.ArrayList;
 
 import javax.servlet.MultipartConfigElement;
 
@@ -41,6 +42,11 @@ import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.server.util.ParameterUtil;
+import gov.epa.bencloud.api.model.Scenario;
+import gov.epa.bencloud.api.model.ScenarioHIFConfig;
+import gov.epa.bencloud.api.model.ScenarioPopConfig;
+import gov.epa.bencloud.api.model.BatchHIFGroup;
+
 
 /**
  * @author jimanderton
@@ -237,38 +243,93 @@ public class TaskApi {
 		//TODO: Update this to create a partial batch task config to populate the Value of Effects page
 		BatchTaskConfig b = new BatchTaskConfig();
 		b.name = "Hello World";
-		return b;
-		/*
-		String idsParam;
-		int popYear;
+
 		int defaultIncidencePrevalenceDataset;
+		int gridDefinitionId;
 		int pollutantId;
+		String pollutantName;
+		int populationId;
 		int baselineId;
-		int scenarioId;
+		String hifIdsParam;
+		List<Integer> hifIds;
+		String scenarioIdsParam;
+		List<Integer> scenarioIdsList;
+		String scenarioNamesParam;
+		List<String> scenarioNamesList;
+		String popYearsParam;
+		List<String> popYearsList;
+		List<Scenario> scenarios = new ArrayList<Scenario>();
+		List<BatchHIFGroup> hifGroups = new ArrayList<BatchHIFGroup>();	
+		String hifGroupParam;
+		List<Integer> hifGroupList;
 		boolean userPrefered; //If true, BenMAP will use the incidence/prevalence selected by the user even when there is another dataset which matches the demo groups better.
-		List<Integer> ids;
+		Boolean preserveLegacyBehavior = true;
 
 		try{
-			idsParam = String.valueOf(request.params("ids").replace(" ", ""));
-			popYear = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("popYear"), 0);
+			hifIdsParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifIds"), "");
+			hifIds = Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
-			scenarioId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("scenarioId"), 0);
 			userPrefered = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("userPrefered"), false);
-			ids = Stream.of(idsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+
+			// Need to figure out how to structure all of this into a multi-dimensional object in the front end,
+			// and break it into component parts to use here
+
+
+			// Scenario-specific data (ids, names, years) are passed in order (nth index of each contains the data for one scenario)
+			// In front-end, ids are stored as an array, names are stored as a map (key = id, value = name),
+			//		popYears are stored as a map (key = id, value = array of years)
+
+			// Scenario ids passed as a comma-separated list of integers
+			scenarioIdsParam = String.valueOf(request.params("scenarioIds").replace(" ", ""));
+			scenarioIdsList = Stream.of(scenarioIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+
+			// Scenario ids passed as a tilde-separated list of names
+			scenarioNamesParam = String.valueOf(request.params("scenarioNames").replace(" ", ""));
+			scenarioNamesList = Stream.of(scenarioIdsParam.split("~")).collect(Collectors.toList());
+
+			// Population years passed as a tilde-separated list of comma-separated years
+			popYearsParam = String.valueOf(request.params("popYears").replace(" ", ""));
+			popYearsList = Stream.of(scenarioIdsParam.split("~")).collect(Collectors.toList());
+			
+			// HIF group ids passed as a comma-separated list of integers
+			hifGroupParam = String.valueOf(request.params("scenarioIds").replace(" ", ""));
+			hifGroupList = Stream.of(hifGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+
+			for(int i = 0; i < scenarioIdsList.size(); i++) {
+				Scenario tempScenario = new Scenario();
+				tempScenario.id = scenarioIdsList.get(i);
+				tempScenario.name = scenarioNamesList.get(i);
+				List<Integer> years = Stream.of(popYearsList.get(i).split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+
+				for(int j = 0; j < years.size(); j++) {
+					ScenarioPopConfig tempPopConfig = new ScenarioPopConfig();
+					tempPopConfig.popYear = years.get(j);
+					for(int k = 0; k < hifIds.size(); k++) {
+						ScenarioHIFConfig tempHifConfig = new ScenarioHIFConfig();
+
+						tempPopConfig.scenarioHifConfigs.add(tempHifConfig);
+					}
+
+					tempScenario.popConfigs.add(tempPopConfig);
+				}
+				scenarios.add(tempScenario);
+			}
+
+			for(int i = 0; i < hifGroupList.size(); i++) {
+				BatchHIFGroup tempHifGroup = new BatchHIFGroup();
+				tempHifGroup.id = hifGroupList.get(i);
+				
+			}
+
+
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
-		}
-		
-		
-		List<Integer> supportedMetricIds = null; 
-		if(baselineId != 0 && scenarioId != 0) {
-			supportedMetricIds = AirQualityUtil.getSupportedMetricIds(baselineId, scenarioId);
 		}
 		
 		
@@ -291,17 +352,12 @@ public class TaskApi {
 				.join(RACE).on(HEALTH_IMPACT_FUNCTION.RACE_ID.eq(RACE.ID))
 				.join(GENDER).on(HEALTH_IMPACT_FUNCTION.GENDER_ID.eq(GENDER.ID))
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
-				.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(ids)
+				.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(hifGroupList)
 						.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId))
-				//TODO: Add this constrain back in once we have beter requirements.
-				//		.and(supportedMetricIds == null ? DSL.noCondition() : HEALTH_IMPACT_FUNCTION.METRIC_ID.in(supportedMetricIds))
 						)
 				.orderBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME)
 				.fetch();
 
-		if(hifGroupRecords.isEmpty()) {
-			return CoreApi.getErrorResponseNotFound(request, response);
-		}
 		
 		ObjectMapper mapper = new ObjectMapper();
 		ArrayNode groups = mapper.createArrayNode();
@@ -362,13 +418,20 @@ public class TaskApi {
 			function.put("ethnicity_name",r.getValue("ethnicity_name", String.class));
 			
 			//This will select the most appropriate incidence/prevalence dataset and year based on user selection and function definition
-			HIFUtil.setIncidencePrevalence(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
+			//HIFUtil.setIncidencePrevalence(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
 			
 			functions.add(function);
 			
 		}
-		
-		*/
+		//b.gridDefinitionId = gridDefinitionId;
+		b.pollutantId = pollutantId;
+		//b.pollutantName = pollutantName;
+		//b.popId = populationId;
+		b.aqBaselineId = baselineId;
+		b.aqScenarios = scenarios;
+		b.preserveLegacyBehavior = preserveLegacyBehavior;
+		b.batchHifGroups = hifGroups;
+		return b;
 
 	}
 }

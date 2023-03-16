@@ -9,6 +9,14 @@ public class ScenarioHIFConfig {
     public Integer incidenceYear = null;
     public Integer prevalenceYear = null;
 
+
+	/**
+	 * Default constructor
+	 */
+	public ScenarioHIFConfig() {
+
+	}
+
 	/**
 	 * Creates an object from the scenario hif config parameter object
 	 * @param scenarioHifConfig
@@ -26,7 +34,7 @@ public class ScenarioHIFConfig {
 	 */
 	public String toString(Optional<UserProfile> userProfile, Integer count) {
 		StringBuilder b = new StringBuilder();
-		b.append("Scenario HIF Configuration (").append(count).append("):\n");
+		b.append("Scenario HIF Configuration:\n");
 		b.append("HIF instance id: ").append(hifInstanceId).append("\n");
 		b.append("Incidence year: ").append(incidenceYear).append("\n");
 		b.append("Prevalance year: ").append(prevalenceYear).append("\n");

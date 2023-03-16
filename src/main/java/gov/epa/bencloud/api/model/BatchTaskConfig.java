@@ -38,6 +38,7 @@ public class BatchTaskConfig {
 	public Integer aqBaselineId = 0;
 	public Integer popId = 0;
 	public String pollutantName;
+	public Integer pollutantId = 0;
 	public Boolean preserveLegacyBehavior = true;
 	public List<Scenario> aqScenarios = new ArrayList<Scenario>();
 	public List<BatchHIFGroup> batchHifGroups = new ArrayList<BatchHIFGroup>();
@@ -59,10 +60,12 @@ public class BatchTaskConfig {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode params = mapper.readTree(task.getParameters());
+			System.out.println(params.toString());
 			JsonNode config = params.get("configuration");
 
-			this.name = task.getName();
+			this.name = params.get("name").asText();
 			this.pollutantName = config.get("pollutant").asText();
+			this.pollutantId = config.get("pollutant_id").asInt();
 			this.gridDefinitionId = params.get("valuation_grid").asInt();
 			this.aqBaselineId = config.get("pre_policy_aq_id").asInt();
 			this.popId = config.get("population_id").asInt();
@@ -172,7 +175,6 @@ public class BatchTaskConfig {
 			b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
 			// b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
 			// b.append("Row: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.ROW_COUNT)).append("\n\n");
-			b.append(scenario.toString());
 
 			metricStatisticsJson = scenarioAq.getValue("metric_statistics", JSON.class);
 	
@@ -200,6 +202,7 @@ public class BatchTaskConfig {
 			} catch (JsonProcessingException e) {
 				e.printStackTrace();
 			}
+			b.append(scenario.toString(userProfile));
 		}
 		
 		/*
@@ -216,7 +219,7 @@ public class BatchTaskConfig {
 		b.append("Health Effect Groups Analyzed:\n");
 
 		for(BatchHIFGroup batchHifGroup : batchHifGroups) {
-			b.append(batchHifGroup.toString());
+			b.append(batchHifGroup.toString(userProfile));
 		}
 		
 		b.append("ADVANCED SETTINGS\n\n");
