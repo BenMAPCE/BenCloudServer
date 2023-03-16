@@ -204,7 +204,13 @@ public class ApiRoutes extends RoutesBase {
 		 *  Response will include array of complete function definitions within each group
 		 */	
 		service.get(apiPrefix + "/batch-task-config/:ids", (request, response) -> {
-			Object b = TaskApi.getBatchTaskConfig(request, response, null);
+			Object b = TaskApi.getBatchTaskConfig(request, response, getUserProfile(request, response));
+			response.type("application/json");
+			return b;
+		}, objectMapper::writeValueAsString);
+
+		service.get(apiPrefix + "/batch-task-config-example", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfigExample(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return b;
 		}, objectMapper::writeValueAsString);
@@ -419,6 +425,17 @@ public class ApiRoutes extends RoutesBase {
 				e.printStackTrace();
 				return CoreApi.getErrorResponseBadRequest(request, response);
 			}
+
+		});
+
+		/*
+		 * Accepts a BatchTaskConfig object in json format
+		 * Returns 200 if object submission was successful
+		 * Else, returns the appropriate http error code along with a {"message":"string"} json object
+		 */
+		service.post(apiPrefix + "/batch-tasks", (request, response) -> {
+
+			return TaskApi.postBatchTask(request, response, getUserProfile(request, response));
 
 		});
 		
