@@ -853,6 +853,66 @@ paths:
                       items:
                         type: integer
                         example: 861, 881, 890
+  /batch-task-config/{id}:
+    get:
+      summary: Return new batch task config.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by health impact function group ids
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pollutantId
+          required: true
+          description: Filter by pollutant
+          schema:
+            type: integer
+            default: 6
+      responses:
+        '200':
+          description: Successfully returned a single health impact function group.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "Premature Death - Primary"
+                    id:
+                      type: integer
+                      example: 5
+                    help_text:
+                      type: string
+                      example: "some help text"
+                    functions:
+                      type: array
+                      items:
+                        type: integer
+                        example: 861, 881, 890
+  /batch-task-config-example:
+    get:
+      summary: Return new batch task config example.
+      parameters:
+        - in: query
+          name: pollutantId
+          required: true
+          description: Filter by pollutant
+          schema:
+            type: integer
+            default: 6
+      responses:
+        '200':
+          description: Successfully returned a single health impact function group.
+          content:
+            application/json:
+              schema:
+                type: object
   /incidence:
     get:
       summary: Returns a list of incidence datasets.
@@ -1643,6 +1703,22 @@ paths:
                     example: "Valuation"
         '500':
           description: Server or System Error.
+  /batch-tasks:
+    post:
+      summary: Add a batch of tasks
+      requestBody:
+        description: JSON representation of batchTaskConfig
+        content: 
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
   /task-configs:
     get:
       summary: Returns a list of task configurations.

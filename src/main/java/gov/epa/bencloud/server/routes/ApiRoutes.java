@@ -189,19 +189,19 @@ public class ApiRoutes extends RoutesBase {
 		/*
 		 * GET a partially populated batch task config
 
-		 * TODO: Update the parameters here and think of a better name
-
 		 * PARAMETERS:
-		 *  :ids (comma separated list of health impact function group ids
+		 *  ids= comma separated list of health impact function group ids
 		 *  popYear=
 		 *  incidencePrevalenceDataset=
 		 *  pollutantId=
 		 *  baselineId=
-		 *  scenarioId=
-		 *  
+		 *  scenarioId[1-N] = Repeated for each post-policy scenario AQ surface selected
+		 *  popYear[1-N] = comma separated lsit of population years selected for each post-policy scenario
 		 *  Parameters are used to filter the list of functions to only those relevant to the current analysis
-		 *  
+		 *  and also to configure the incidence and prevalence datasets and years
 		 *  Response will include array of complete function definitions within each group
+		 *  
+		 *  Note that the array of valuation functions that are nested within each HIF will not be populated at this point.
 		 */	
 		service.get(apiPrefix + "/batch-task-config/:ids", (request, response) -> {
 			Object b = TaskApi.getBatchTaskConfig(request, response, getUserProfile(request, response));

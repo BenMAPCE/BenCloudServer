@@ -44,6 +44,7 @@ import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
 public class ValuationTaskRunnable implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(ValuationTaskRunnable.class);
+    protected static ObjectMapper objectMapper = new ObjectMapper();
 	
 	private String taskUuid;
 	private String taskWorkerUuid;
@@ -69,7 +70,14 @@ public class ValuationTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
-			ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig(task);
+			ValuationTaskConfig valuationTaskConfig = null;
+			if(task.getBatchId() == null) {
+				// This is an old task, from before batch tasks were implemented
+				valuationTaskConfig = new ValuationTaskConfig(task);	
+			} else {
+				valuationTaskConfig = objectMapper.readValue(task.getParameters(), ValuationTaskConfig.class);
+			}	
+			
 			ValuationTaskLog valuationTaskLog = new ValuationTaskLog(valuationTaskConfig, task.getUserIdentifier());
 			valuationTaskLog.setDtStart(LocalDateTime.now());
 			

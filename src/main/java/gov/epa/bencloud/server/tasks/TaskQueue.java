@@ -218,6 +218,7 @@ public class TaskQueue {
 			DSL.using(JooqUtil.getJooqConfiguration()).insertInto(TASK_QUEUE,
 					TASK_QUEUE.USER_ID,
 					TASK_QUEUE.TASK_PRIORITY,
+					TASK_QUEUE.TASK_BATCH_ID,
 					TASK_QUEUE.TASK_UUID,
 					TASK_QUEUE.TASK_PARENT_UUID,
 					TASK_QUEUE.TASK_NAME,
@@ -229,6 +230,7 @@ public class TaskQueue {
 			.values(
 					task.getUserIdentifier(),
 					Integer.valueOf(10),
+					task.getBatchId(),
 					task.getUuid(),
 					task.getParentUuid(),
 					task.getName(),
@@ -370,6 +372,7 @@ public class TaskQueue {
 				task.setDescription(record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
 				task.setUserIdentifier(record.getValue(TASK_QUEUE.USER_ID));
 				task.setPriority(record.getValue(TASK_QUEUE.TASK_PRIORITY));
+				task.setBatchId(record.getValue(TASK_QUEUE.TASK_BATCH_ID));
 				task.setUuid(record.getValue(TASK_QUEUE.TASK_UUID));
 				task.setParentUuid(record.getValue(TASK_QUEUE.TASK_PARENT_UUID));
 				task.setParameters(record.getValue(TASK_QUEUE.TASK_PARAMETERS));
@@ -406,6 +409,7 @@ public class TaskQueue {
 				task.setDescription(record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
 				task.setUserIdentifier(record.getValue(TASK_QUEUE.USER_ID));
 				task.setPriority(record.getValue(TASK_QUEUE.TASK_PRIORITY));
+				task.setBatchId(record.getValue(TASK_QUEUE.TASK_BATCH_ID));
 				task.setUuid(record.getValue(TASK_QUEUE.TASK_UUID));
 				task.setParentUuid(record.getValue(TASK_QUEUE.TASK_PARENT_UUID));
 				task.setParameters(record.getValue(TASK_QUEUE.TASK_PARAMETERS));

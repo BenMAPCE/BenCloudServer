@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class ValuationConfig {
 	public Integer hifId = null;
+	public Integer hifInstanceId = null;
 	public Integer vfId = null;
 	
 	public Map<String, Object> vfRecord = null; //This map will contain the full valuation record
@@ -19,6 +20,7 @@ public class ValuationConfig {
 	 */
 	public ValuationConfig(JsonNode function) {
 		this.hifId = function.get("hif_id").asInt();
+		this.hifInstanceId = function.get("hif_isntance_id").asInt();
 		this.vfId = function.get("vf_id").asInt();
 	}
 	
@@ -34,6 +36,8 @@ public class ValuationConfig {
 	 */
 	@Override
 	public String toString() {
+		//TODO: Add error handling for partially populated object
+		
 		StringBuilder b = new StringBuilder();
 
 		if(vfRecord.get("qualifier") != null) {
@@ -71,29 +75,6 @@ public class ValuationConfig {
 				.append("Value D: ").append(vfRecord.getOrDefault("val_d", "")).append("\n");
 			}
 		}
-
-		/*
-<Valuation.Function.#2.(VSL.based.on.26.value-of-life.studies.with.Cessation.Lag.3%.d.r.)>
-Dataset: EPA Standard Valuation Functions (2021)
-Endpoint group: Mortality
-Endpoint: Mortality, All Cause
-Start Age: 0
-End age: 99
-Reference: 0
-Function: A*AllGoodsIndex*B
-Name A: mean VSL in 2015$
-A: 8705114.255
-Dist A: Weibull
-P1A: 9648168.299
-P2A: 1.509588003
-Name B: 3% d.r. Cessation Lag
-B: 0.90605998
-Name C: 0
-C: 0
-Name D: 0
-D: 0
-</Valuation.Function.#2.(VSL.based.on.26.value-of-life.studies.with.Cessation.Lag.3%.d.r.)>
-		 */
 		
 		return b.toString();
 	}
