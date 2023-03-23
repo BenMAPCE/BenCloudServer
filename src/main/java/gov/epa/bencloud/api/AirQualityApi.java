@@ -517,6 +517,15 @@ public class AirQualityApi {
 		.fetchOne().value1();
 	}
 	
+	public static String getAirQualityLayerName(Integer id) {
+		return DSL.using(JooqUtil.getJooqConfiguration())
+		.select(
+				AIR_QUALITY_LAYER.NAME)
+		.from(AIR_QUALITY_LAYER)
+		.where(AIR_QUALITY_LAYER.ID.eq(id))
+		.fetchOne().value1();	
+	}
+	
 	/**
 	 * 
 	 * @param request
@@ -1510,4 +1519,5 @@ public class AirQualityApi {
 		return recordsJSON;
 		
 	}
+
 }

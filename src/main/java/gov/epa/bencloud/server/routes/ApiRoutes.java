@@ -203,7 +203,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  
 		 *  Note that the array of valuation functions that are nested within each HIF will not be populated at this point.
 		 */	
-		service.get(apiPrefix + "/batch-task-config/:ids", (request, response) -> {
+		service.get(apiPrefix + "/batch-task-config", (request, response) -> {
 			Object b = TaskApi.getBatchTaskConfig(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return b;

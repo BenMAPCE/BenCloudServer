@@ -853,17 +853,17 @@ paths:
                       items:
                         type: integer
                         example: 861, 881, 890
-  /batch-task-config/{id}:
+  /batch-task-config:
     get:
       summary: Return new batch task config.
       parameters:
-        - in: path
-          name: id
+        - in: query
+          name: groupIds
           required: true
           description: Filter by health impact function group ids
           schema:
             type: integer
-            default: 1
+            default: 5
         - in: query
           name: pollutantId
           required: true
@@ -871,6 +871,41 @@ paths:
           schema:
             type: integer
             default: 6
+        - in: query
+          name: baselineId
+          required: true
+          description: baseline AQ surface
+          schema:
+            type: integer
+            default: 15
+        - in: query
+          name: populationId
+          required: true
+          description: population dataset id
+          schema:
+            type: integer
+            default: 40
+        - in: query
+          name: gridDefinitionId
+          required: true
+          description: grid definition id for aggregation before valuation
+          schema:
+            type: integer
+            default: 18
+        - in: query
+          name: scenarios
+          required: true
+          description: grid definition id for aggregation before valuation
+          schema:
+            type: string
+            default: 24|2030~2035,22|2030~2035
+        - in: query
+          name: incidencePrevalenceDataset
+          required: true
+          description: user's preferred incidence/prevalence dataset
+          schema:
+            type: integer
+            default: 1
       responses:
         '200':
           description: Successfully returned a single health impact function group.

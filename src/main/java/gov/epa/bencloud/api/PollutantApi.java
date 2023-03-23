@@ -41,4 +41,13 @@ public class PollutantApi {
 		response.type("application/json");
 		return aqRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
+	
+	public static String getPollutantName(Integer id) {
+		return DSL.using(JooqUtil.getJooqConfiguration())
+		.select(
+				POLLUTANT.NAME)
+		.from(POLLUTANT)
+		.where(POLLUTANT.ID.eq(id))
+		.fetchOne().value1();	
+	}
 }

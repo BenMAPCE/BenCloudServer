@@ -244,6 +244,7 @@ public class TaskApi {
 	}	
 	
 	/**
+	 * Create a partial batch task config to populate the Value of Effects page
 	 * 
 	 * @param request
 	 * @param response
@@ -253,24 +254,36 @@ public class TaskApi {
 	 */
 	public static Object getBatchTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
 		
-		//TODO: Update this to create a partial batch task config to populate the Value of Effects page
+		/*
+		 * /api/batch-task-config
+		 * ?id=5
+		 * &pollutantId=5
+		 * &baselineId=15
+		 * &populationId=40
+		 * &gridDefinitionId=18
+		 * scenarios=24|2030~2035,22|2030~2035  //Note the elaborate delimiting
+		 * &incidencePrevalenceDataset=1
+		 * 
+		 */
+		// 
+		// 
 		BatchTaskConfig b = new BatchTaskConfig();
-		b.name = "Hello World";
+		b.name = null;
 
 		int defaultIncidencePrevalenceDataset;
 		int gridDefinitionId;
 		int pollutantId;
-		String pollutantName;
+		//String pollutantName;
 		int populationId;
 		int baselineId;
-		String hifIdsParam;
-		List<Integer> hifIds;
-		String scenarioIdsParam;
-		List<Integer> scenarioIdsList;
-		String scenarioNamesParam;
-		List<String> scenarioNamesList;
-		String popYearsParam;
-		List<String> popYearsList;
+		//String hifIdsParam;
+		//List<Integer> hifIds;
+		String scenariosParam;
+		//List<Integer> scenarioIdsList;
+		//String scenarioNamesParam;
+		//List<String> scenarioNamesList;
+		//String popYearsParam;
+		//List<String> popYearsList;
 		List<Scenario> scenarios = new ArrayList<Scenario>();
 		List<BatchHIFGroup> hifGroups = new ArrayList<BatchHIFGroup>();	
 		String hifGroupParam;
@@ -279,11 +292,13 @@ public class TaskApi {
 		Boolean preserveLegacyBehavior = true;
 
 		try{
-			hifIdsParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifIds"), "");
-			hifIds = Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			//hifIdsParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifIds"), "");
+			//hifIds = Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
+			populationId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("populationId"), 0);
+			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), 0);
 			userPrefered = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("userPrefered"), false);
 
 			// Need to figure out how to structure all of this into a multi-dimensional object in the front end,
@@ -295,39 +310,42 @@ public class TaskApi {
 			//		popYears are stored as a map (key = id, value = array of years)
 
 			// Scenario ids passed as a comma-separated list of integers
-			scenarioIdsParam = String.valueOf(request.params("scenarioIds").replace(" ", ""));
-			scenarioIdsList = Stream.of(scenarioIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			scenariosParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("scenarios"), "");
+			String[] scenariosSplit = scenariosParam.split(",");
 
 			// Scenario ids passed as a tilde-separated list of names
-			scenarioNamesParam = String.valueOf(request.params("scenarioNames").replace(" ", ""));
-			scenarioNamesList = Stream.of(scenarioIdsParam.split("~")).collect(Collectors.toList());
+			//scenarioNamesParam = String.valueOf(request.params("scenarioNames").replace(" ", ""));
+			//scenarioNamesList = Stream.of(scenarioIdsParam.split("~")).collect(Collectors.toList());
 
 			// Population years passed as a tilde-separated list of comma-separated years
-			popYearsParam = String.valueOf(request.params("popYears").replace(" ", ""));
-			popYearsList = Stream.of(scenarioIdsParam.split("~")).collect(Collectors.toList());
+			//popYearsParam = String.valueOf(request.params("popYears").replace(" ", ""));
+			//popYearsList = Stream.of(scenarioIdsParam.split("~")).collect(Collectors.toList());
 			
 			// HIF group ids passed as a comma-separated list of integers
-			hifGroupParam = String.valueOf(request.params("scenarioIds").replace(" ", ""));
+			hifGroupParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("groupIds"), "").replace(" ", "");
 			hifGroupList = Stream.of(hifGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 
-			for(int i = 0; i < scenarioIdsList.size(); i++) {
-				Scenario tempScenario = new Scenario();
-				tempScenario.id = scenarioIdsList.get(i);
-				tempScenario.name = scenarioNamesList.get(i);
-				List<Integer> years = Stream.of(popYearsList.get(i).split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			for(int i = 0; i < scenariosSplit.length; i++) {
+				Scenario scenario = new Scenario();
+				String[] scenarioComponents = scenariosSplit[i].split("\\|");
+				
+				scenario.id = Integer.parseInt(scenarioComponents[0]);
+				scenario.name = AirQualityApi.getAirQualityLayerName(scenario.id);     
+				List<Integer> years = Stream.of(scenarioComponents[1].split("~")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 
 				for(int j = 0; j < years.size(); j++) {
 					ScenarioPopConfig tempPopConfig = new ScenarioPopConfig();
 					tempPopConfig.popYear = years.get(j);
-					for(int k = 0; k < hifIds.size(); k++) {
-						ScenarioHIFConfig tempHifConfig = new ScenarioHIFConfig();
+					//TODO: Will need to do this AFTER we have looked up the HIF groups and assigned the hifs instanceIds
+//					for(int k = 0; k < hifIds.size(); k++) {
+//						ScenarioHIFConfig tempHifConfig = new ScenarioHIFConfig();
+//
+//						tempPopConfig.scenarioHifConfigs.add(tempHifConfig);
+//					}
 
-						tempPopConfig.scenarioHifConfigs.add(tempHifConfig);
-					}
-
-					tempScenario.popConfigs.add(tempPopConfig);
+					scenario.popConfigs.add(tempPopConfig);
 				}
-				scenarios.add(tempScenario);
+				scenarios.add(scenario);
 			}
 
 			for(int i = 0; i < hifGroupList.size(); i++) {
@@ -343,6 +361,10 @@ public class TaskApi {
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponse(request, response, 400, "Unable to process request");
+			
 		}
 		
 		
@@ -372,6 +394,7 @@ public class TaskApi {
 				.fetch();
 
 		
+		//TODO: Modify this code to populate hifGroups (which will be placed into b.batchHifGroups) instead of populating "groups"
 		ObjectMapper mapper = new ObjectMapper();
 		ArrayNode groups = mapper.createArrayNode();
 		ObjectNode group = null;
@@ -431,15 +454,16 @@ public class TaskApi {
 			function.put("ethnicity_name",r.getValue("ethnicity_name", String.class));
 			
 			//This will select the most appropriate incidence/prevalence dataset and year based on user selection and function definition
+			//TODO: This needs to be integrated into the loop that populates the scenarioHifConfigs
 			//HIFUtil.setIncidencePrevalence(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
 			
 			functions.add(function);
 			
 		}
-		//b.gridDefinitionId = gridDefinitionId;
+		b.gridDefinitionId = gridDefinitionId;
 		b.pollutantId = pollutantId;
-		//b.pollutantName = pollutantName;
-		//b.popId = populationId;
+		b.pollutantName = PollutantApi.getPollutantName(pollutantId);
+		b.popId = populationId;
 		b.aqBaselineId = baselineId;
 		b.aqScenarios = scenarios;
 		b.preserveLegacyBehavior = preserveLegacyBehavior;
