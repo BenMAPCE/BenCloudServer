@@ -37,12 +37,14 @@ public class HIFConfig {
 	//incidence and prevlance may use different race, ethnicity, and/or gender than 
 	//the functions configuration due to data availability
 	public Integer incidence = null;
+	public String incidenceName = null;
 	public Integer incidenceYear = null;
 	public Integer incidenceRace = null;
 	public Integer incidenceEthnicity = null;
 	public Integer incidenceGender = null;
 	
 	public Integer prevalence = null;
+	public String prevalenceName = null;
 	public Integer prevalenceYear = null;
 	public Integer prevalenceRace = null;
 	public Integer prevalenceEthnicity = null;
