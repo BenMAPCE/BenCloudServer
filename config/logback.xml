@@ -48,11 +48,11 @@
   <logger name="ch.qos.logback.core.rolling" additivity="false" level="error">
   </logger>
   
-  <root level="OFF">
+<!--   <root level="OFF">
     <appender-ref ref="STDOUT" />
-  </root>
+  </root> -->
   
-  <root level="error">
+  <root level="info">
     <appender-ref ref="STDOUT" />
   </root>
   
@@ -61,15 +61,15 @@
   </root>
   
   <logger name="com.zaxxer.hikari" additivity="false" level="info">
-    <appender-ref ref="DATABASE" />
+    <appender-ref ref="STDOUT" />
   </logger>
 
   <logger name="org.jooq.tools.LoggerListener" additivity="false" level="info">
-    <appender-ref ref="DATABASE" />
+    <appender-ref ref="STDOUT" />
   </logger>
     
   <logger name="org.jooq" additivity="false" level="info">
-    <appender-ref ref="DATABASE" />
+    <appender-ref ref="STDOUT" />
   </logger>
   
   <logger name="gov.epa.bencloud" additivity="false" level="debug">
@@ -77,11 +77,11 @@
   </logger>
   
    <logger name="gov.epa.bencloud" additivity="false" level="debug">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="STDOUT" />
   </logger>
   
      <logger name="access" additivity="false" level="debug">
-    <appender-ref ref="ACCESS" />
+    <appender-ref ref="STDOUT" />
   </logger>
   
 </configuration>
