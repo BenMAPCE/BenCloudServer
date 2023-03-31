@@ -12,7 +12,7 @@
         </layout>
   </appender>
     
-  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+<!--   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>logs/api.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>logs/api.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
@@ -43,7 +43,7 @@
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
-  </appender>
+  </appender> -->
 
   <logger name="ch.qos.logback.core.rolling" additivity="false" level="error">
   </logger>
@@ -56,9 +56,9 @@
     <appender-ref ref="STDOUT" />
   </root>
   
-  <root level="OFF">
+<!--   <root level="OFF">
   	<appender-ref ref="FILE" />
-  </root>
+  </root> -->
   
   <logger name="com.zaxxer.hikari" additivity="false" level="info">
     <appender-ref ref="STDOUT" />
@@ -71,10 +71,10 @@
   <logger name="org.jooq" additivity="false" level="info">
     <appender-ref ref="STDOUT" />
   </logger>
-  
+<!--   
   <logger name="gov.epa.bencloud" additivity="false" level="debug">
     <appender-ref ref="STDOUT" />
-  </logger>
+  </logger> -->
   
    <logger name="gov.epa.bencloud" additivity="false" level="debug">
     <appender-ref ref="STDOUT" />
