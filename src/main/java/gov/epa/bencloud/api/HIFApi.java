@@ -646,7 +646,7 @@ public class HIFApi {
 			function.put("ethnicity_name",r.getValue("ethnicity_name", String.class));
 			
 			//This will select the most appropriate incidence/prevalence dataset and year based on user selection and function definition
-			HIFUtil.setIncidencePrevalence(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
+			HIFUtil.setIncidencePrevalenceV1(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
 			
 			functions.add(function);
 			
