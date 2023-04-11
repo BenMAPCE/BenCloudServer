@@ -29,6 +29,8 @@ import org.jooq.Record1;
 import org.jooq.Record10;
 import org.jooq.Record13;
 import org.jooq.Record14;
+import org.jooq.Record15;
+import org.jooq.Record18;
 import org.jooq.Record21;
 import org.jooq.Record22;
 import org.jooq.Record6;
@@ -180,7 +182,7 @@ public class AirQualityApi {
 				.asTable("metric_statistics");
 		
 		@SuppressWarnings("unchecked")
-		@NotNull Result<Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON>> aqRecords = 
+		@NotNull Result<Record15<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, String, String, String, JSON>> aqRecords = 
 			create.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
@@ -191,6 +193,11 @@ public class AirQualityApi {
 						POLLUTANT.NAME.as("pollutant_name"), 
 						POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name"),
 						GRID_DEFINITION.NAME.as("grid_definition_name"),
+						AIR_QUALITY_LAYER.AQ_YEAR,
+						AIR_QUALITY_LAYER.DESCRIPTION,
+						AIR_QUALITY_LAYER.SOURCE,
+						AIR_QUALITY_LAYER.DATA_TYPE,
+						AIR_QUALITY_LAYER.FILENAME,
 						DSL.jsonArrayAgg(DSL.jsonbObject(
 								metricStatistics.field("metric_id"),
 								metricStatistics.field("metric_name"),
@@ -219,7 +226,12 @@ public class AirQualityApi {
 						AIR_QUALITY_LAYER.POLLUTANT_ID,
 						POLLUTANT.NAME, 
 						POLLUTANT.FRIENDLY_NAME,
-						GRID_DEFINITION.NAME)
+						GRID_DEFINITION.NAME,
+						AIR_QUALITY_LAYER.AQ_YEAR,
+						AIR_QUALITY_LAYER.DESCRIPTION,
+						AIR_QUALITY_LAYER.SOURCE,
+						AIR_QUALITY_LAYER.DATA_TYPE,
+						AIR_QUALITY_LAYER.FILENAME)
 				.orderBy(orderFields)
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
@@ -417,7 +429,7 @@ public class AirQualityApi {
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
 		
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id, userProfile);
+		Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> aqRecord = getAirQualityLayerDefinition(id, userProfile);
 		response.type("application/json");
 		if(aqRecord == null) {
 			return CoreApi.getErrorResponseNotFound(request, response);
@@ -434,7 +446,7 @@ public class AirQualityApi {
 	 * @return a representation of an air quality layer definition.
 	 */
 	@SuppressWarnings("unchecked")
-	public static @Nullable Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
+	public static @Nullable Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
 		String userId = userProfile.get().getId();
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
@@ -481,8 +493,18 @@ public class AirQualityApi {
 						metricStatistics.field("max_value"),
 						metricStatistics.field("mean_value"),
 						metricStatistics.field("pct_2_5"),
-						metricStatistics.field("pct_97_5")
-						)).as("metric_statistics")
+						metricStatistics.field("pct_97_5"),
+						metricStatistics.field("AQ_YEAR"),
+						metricStatistics.field("description"),
+						metricStatistics.field("source"),
+						metricStatistics.field("data_type"),
+						metricStatistics.field("filename")
+						)).as("metric_statistics"),
+				AIR_QUALITY_LAYER.AQ_YEAR,
+				AIR_QUALITY_LAYER.DESCRIPTION,
+				AIR_QUALITY_LAYER.SOURCE,
+				AIR_QUALITY_LAYER.DATA_TYPE,
+				AIR_QUALITY_LAYER.FILENAME
 				)
 		.from(AIR_QUALITY_LAYER)
 		.join(metricStatistics).on(((Field<Integer>)metricStatistics.field("air_quality_layer_id")).eq(AIR_QUALITY_LAYER.ID))
@@ -499,6 +521,11 @@ public class AirQualityApi {
 				, POLLUTANT.NAME
 				, POLLUTANT.FRIENDLY_NAME
 				, GRID_DEFINITION.NAME
+				, AIR_QUALITY_LAYER.AQ_YEAR
+				, AIR_QUALITY_LAYER.DESCRIPTION
+				, AIR_QUALITY_LAYER.SOURCE
+				, AIR_QUALITY_LAYER.DATA_TYPE
+				, AIR_QUALITY_LAYER.FILENAME
 				)
 		.fetchOne();
 	}
@@ -740,10 +767,21 @@ public class AirQualityApi {
 		String layerName;
 		Integer pollutantId;
 		Integer gridId;
+		String aqYear;
+		String description;
+		String source;
+		String dataType;
+		String filename;
+		
 		try{
 			layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
 			pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
 			gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
+			aqYear = ApiUtil.getMultipartFormParameterAsString(request, "aqYear");
+			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
+			source = ApiUtil.getMultipartFormParameterAsString(request, "source");
+			dataType = ApiUtil.getMultipartFormParameterAsString(request, "dataType");
+			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -1106,8 +1144,19 @@ public class AirQualityApi {
 			
 			//Create the air_quality_layer record
 			aqRecord = DSL.using(JooqUtil.getJooqConfiguration())
-			.insertInto(AIR_QUALITY_LAYER, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID, AIR_QUALITY_LAYER.USER_ID, AIR_QUALITY_LAYER.SHARE_SCOPE)
-			.values(layerName, pollutantId, gridId, userProfile.get().getId(), Constants.SHARING_NONE)
+			.insertInto(AIR_QUALITY_LAYER
+					, AIR_QUALITY_LAYER.NAME
+					, AIR_QUALITY_LAYER.POLLUTANT_ID
+					, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
+					, AIR_QUALITY_LAYER.USER_ID
+					, AIR_QUALITY_LAYER.SHARE_SCOPE
+					, AIR_QUALITY_LAYER.AQ_YEAR
+					, AIR_QUALITY_LAYER.DESCRIPTION
+					, AIR_QUALITY_LAYER.SOURCE
+					, AIR_QUALITY_LAYER.DATA_TYPE
+					, AIR_QUALITY_LAYER.FILENAME)
+			.values(layerName, pollutantId, gridId, userProfile.get().getId(), Constants.SHARING_NONE
+					,aqYear, description, source, dataType, filename)
 			.returning(AIR_QUALITY_LAYER.ID, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
 			.fetchOne();
 			
