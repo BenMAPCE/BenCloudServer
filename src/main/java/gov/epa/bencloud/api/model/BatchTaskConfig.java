@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import org.jooq.JSON;
 import org.jooq.Record10;
+import org.jooq.Record15;
 import org.jooq.Record3;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -99,7 +100,7 @@ public class BatchTaskConfig {
 	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
+		Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
 		
 		b.append("Task Name: ").append(name).append("\n\n");
 		
@@ -159,7 +160,7 @@ public class BatchTaskConfig {
 			e.printStackTrace();
 		}
 		
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> scenarioAq = null;
+		Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> scenarioAq = null;
 		/*
 		 * Post-policy AQ
 		 */

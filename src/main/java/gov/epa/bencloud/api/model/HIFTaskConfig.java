@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import org.jooq.JSON;
 import org.jooq.Record10;
+import org.jooq.Record15;
 import org.jooq.Record3;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -112,8 +113,8 @@ public class HIFTaskConfig {
 	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
+		Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
+		Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
 		
 		b.append("Task Name: ").append(name).append("\n\n");
 		
