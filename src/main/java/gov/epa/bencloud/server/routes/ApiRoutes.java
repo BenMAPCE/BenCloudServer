@@ -358,6 +358,33 @@ public class ApiRoutes extends RoutesBase {
 			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * Accepts a BatchTaskConfig object in json format
+		 * Returns 200 if object submission was successful
+		 * Else, returns the appropriate http error code along with a {"message":"string"} json object
+		 */
+		service.post(apiPrefix + "/batch-tasks", (request, response) -> {
+			return TaskApi.postBatchTask(request, response, getUserProfile(request, response));
+
+		});
+		
+		service.delete(apiPrefix + "/batch-tasks/:id", (request, response) -> {
+			//TODO: Implement this
+			return CoreApi.getErrorResponseUnimplemented(request, response);
+
+		});
+
+		service.get(apiPrefix + "/batch-tasks/pending", (request, response) -> {
+			//TODO: Implement this
+			return CoreApi.getErrorResponseUnimplemented(request, response);
+		});
+		
+		service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
+			//TODO: Implement this
+			return CoreApi.getErrorResponseUnimplemented(request, response);
+		});
+		
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
 			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
@@ -425,17 +452,6 @@ public class ApiRoutes extends RoutesBase {
 				e.printStackTrace();
 				return CoreApi.getErrorResponseBadRequest(request, response);
 			}
-
-		});
-
-		/*
-		 * Accepts a BatchTaskConfig object in json format
-		 * Returns 200 if object submission was successful
-		 * Else, returns the appropriate http error code along with a {"message":"string"} json object
-		 */
-		service.post(apiPrefix + "/batch-tasks", (request, response) -> {
-
-			return TaskApi.postBatchTask(request, response, getUserProfile(request, response));
 
 		});
 		

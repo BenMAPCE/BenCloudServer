@@ -8,6 +8,7 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,7 +17,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row11;
+import org.jooq.Row12;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -102,6 +103,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
      * The column <code>data.air_quality_layer.filename</code>.
      */
     public final TableField<AirQualityLayerRecord, String> FILENAME = createField(DSL.name("filename"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.upload_date</code>.
+     */
+    public final TableField<AirQualityLayerRecord, LocalDateTime> UPLOAD_DATE = createField(DSL.name("upload_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
     private AirQualityLayer(Name alias, Table<AirQualityLayerRecord> aliased) {
         this(alias, aliased, null);
@@ -200,11 +206,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row11 type methods
+    // Row12 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row11<Integer, String, Integer, Integer, String, Short, String, String, String, String, String> fieldsRow() {
-        return (Row11) super.fieldsRow();
+    public Row12<Integer, String, Integer, Integer, String, Short, String, String, String, String, String, LocalDateTime> fieldsRow() {
+        return (Row12) super.fieldsRow();
     }
 }

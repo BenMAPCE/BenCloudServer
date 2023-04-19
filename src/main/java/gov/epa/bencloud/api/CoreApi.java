@@ -59,6 +59,10 @@ public class CoreApi {
 		return CoreApi.getErrorResponse(request, response, 400, "Bad request");
 	}
 	
+	public static Object getErrorResponseUnimplemented(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 405, "Method not yet implemented");
+	}
+	
 	public static Object getSuccessResponse(Request request, Response response, int statusCode, String msg) {
 		response.type("application/json");
 		response.status(statusCode);
