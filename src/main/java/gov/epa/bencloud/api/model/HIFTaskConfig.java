@@ -4,6 +4,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYE
 import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POPULATION_DATASET;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import java.util.Optional;
 import org.jooq.JSON;
 import org.jooq.Record10;
 import org.jooq.Record15;
+import org.jooq.Record16;
 import org.jooq.Record3;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -113,8 +115,8 @@ public class HIFTaskConfig {
 	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		
-		Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
-		Record15<Integer, String, String, Short, Integer, Integer, String, String, String, JSON, String, String, String, String, String> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
+		Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
+		Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
 		
 		b.append("Task Name: ").append(name).append("\n\n");
 		

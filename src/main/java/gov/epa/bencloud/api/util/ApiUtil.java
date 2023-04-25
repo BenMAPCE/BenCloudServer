@@ -3,6 +3,9 @@ package gov.epa.bencloud.api.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -310,6 +313,24 @@ public class ApiUtil {
 			e.printStackTrace();
 			return null;
 		}
+    }
+    
+    public static LocalDateTime getMultipartFormParameterAsLocalDateTime(Request request, String paramName, String strFormatter) {
+        String strParaValue = getMultipartFormParameterAsString(request, paramName);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(strFormatter);
+        LocalDateTime dateTime = null;
+        try {
+            dateTime = LocalDateTime.parse(strParaValue, formatter);
+        } catch (DateTimeParseException e) {
+        	try{
+        		dateTime = LocalDateTime.parse(strParaValue);
+        	}
+        	catch(DateTimeParseException e2) {
+        		return null;
+        	}        	
+        	
+        }    	
+    	return dateTime;
     }
 
 
