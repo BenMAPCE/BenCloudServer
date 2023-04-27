@@ -29,17 +29,6 @@ include:
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
-# Set K8s context of GitLab Agent
-.kube-dev-context:
-  before_script:
-  - kubectl config use-context "$KUBE_DEV_CONTEXT";
-
-
-.kube-stg-context:
-  before_script:
-  - kubectl config use-context "$KUBE_STG_CONTEXT";
-
-
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
@@ -196,7 +185,11 @@ deploy_testdev:
   image: dtzar/helm-kubectl
   script:
     - apk add gettext
-    - kubectl config use-context "$KUBE_CONTEXT"
+    - kubectl config set-cluster benmap-shared-dev00 --server="$KUBE_URL"
+    - kubectl config set-cluster benmap-shared-dev00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
+    - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
+    - kubectl config set-context default --cluster=benmap-shared-dev00 --user=gitlab --namespace="benmap-dev"
+    - kubectl config use-context default
     - envsubst < k8s/bencloud-dev-server.yml | kubectl apply -f -
   environment:
     name: testdev
@@ -206,8 +199,6 @@ deploy_testdev:
 
 deploy_staging:
   stage: deploy_nonprod
-  variables:
-    KUBE_CONTEXT: $KUBE_CONTEXT
   only: 
     - main
   tags:
@@ -216,7 +207,11 @@ deploy_staging:
   image: dtzar/helm-kubectl
   script:
     - apk add gettext
-    - kubectl config use-context "$KUBE_CONTEXT"
+    - kubectl config set-cluster benmap-shared-stg00 --server="$KUBE_URL"
+    - kubectl config set-cluster benmap-shared-stg00 --certificate-authority=$KUBE_CA_PEM_FILE --embed-certs=true
+    - kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
+    - kubectl config set-context default --cluster=benmap-shared-stg00 --user=gitlab --namespace="benmap-stg"
+    - kubectl config use-context default
     - envsubst < k8s/bencloud-stage-server.yml | kubectl apply -f -
   environment:
     name: staging
