@@ -29,17 +29,6 @@ include:
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
-# Set K8s context of GitLab Agent
-.kube-dev-context:
-  before_script:
-  - kubectl config use-context "$KUBE_DEV_CONTEXT";
-
-
-.kube-stg-context:
-  before_script:
-  - kubectl config use-context "$KUBE_STG_CONTEXT";
-
-
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
