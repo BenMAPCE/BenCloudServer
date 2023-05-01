@@ -227,6 +227,7 @@ public class PopulationApi {
 						GRID_DEFINITION.NAME)
 				.from(POPULATION_DATASET)
 				.join(GRID_DEFINITION).on(POPULATION_DATASET.GRID_DEFINITION_ID.eq(GRID_DEFINITION.ID))
+				.where(POPULATION_DATASET.ID.eq(id))
 				.fetchOne();
 		
 		return record;
