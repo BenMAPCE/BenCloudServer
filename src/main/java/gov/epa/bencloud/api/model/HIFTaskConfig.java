@@ -141,9 +141,11 @@ public class HIFTaskConfig {
 		 */
 		b.append("Pre-policy Air Quality Surface\n");
 		b.append("Name: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
-		b.append("Source: ")
-			.append("Model")
-			.append("\n");		
+		b.append("Year: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.AQ_YEAR)).append("\n");
+		b.append("Description: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.DESCRIPTION)).append("\n");
+		b.append("Source: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.SOURCE)).append("\n");
+		b.append("Data Type: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.DATA_TYPE)).append("\n");
+		
 		Record3<String, Integer, Integer> gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(baselineAq.getValue(AIR_QUALITY_LAYER.GRID_DEFINITION_ID));
 		b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
 		//b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
@@ -183,9 +185,10 @@ public class HIFTaskConfig {
 		 */
 		b.append("\nPost-policy Air Quality Surface\n");
 		b.append("Name: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
-		b.append("Source: ")
-			.append("Model")
-			.append("\n");	
+		b.append("Year: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.AQ_YEAR)).append("\n");
+		b.append("Description: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.DESCRIPTION)).append("\n");
+		b.append("Source: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.SOURCE)).append("\n");
+		b.append("Data Type: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.DATA_TYPE)).append("\n");
 		gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(scenarioAq.getValue(AIR_QUALITY_LAYER.GRID_DEFINITION_ID));
 		b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
 		//b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
