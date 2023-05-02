@@ -502,6 +502,14 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
+		service.get(apiPrefix + "/version", (request, response) -> {
+			Object ret = CoreApi.getVersion(request, response, getUserProfile(request, response));
+
+			response.type("application/json");
+			return ret;
+
+		});
+		
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */

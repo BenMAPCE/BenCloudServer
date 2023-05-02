@@ -502,6 +502,8 @@ public class TaskApi {
 			}
 		}
 		
+		boolean hasValuation = valuationTaskConfig.valuationFunctions.size() > 0;
+		
 		// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
 		for (Scenario scenario : batchTaskConfig.aqScenarios) {
 			hifTaskConfig.aqScenarioId = scenario.id;
@@ -554,18 +556,21 @@ public class TaskApi {
 					hifTask.setUuid(hifTaskUUID);
 					TaskQueue.writeTaskToQueue(hifTask);
 					
-					valuationTaskConfig.hifTaskUuid = hifTaskUUID;
-
-					Task valuationTask = new Task();
-					valuationTask.setUserIdentifier(userProfile.get().getId());
-					valuationTask.setType("Valuation");
-					valuationTask.setBatchId(batchTaskId);
-					valuationTask.setName(hifTaskConfig.name + "-Valuation");
-					valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
-					valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
-					String valuationTaskUUID = UUID.randomUUID().toString(); 
-					valuationTask.setUuid(valuationTaskUUID);
-					TaskQueue.writeTaskToQueue(valuationTask);			
+					//Only add the valuation task if there are valuation functions to run
+					if(hasValuation) {
+						valuationTaskConfig.hifTaskUuid = hifTaskUUID;
+	
+						Task valuationTask = new Task();
+						valuationTask.setUserIdentifier(userProfile.get().getId());
+						valuationTask.setType("Valuation");
+						valuationTask.setBatchId(batchTaskId);
+						valuationTask.setName(hifTaskConfig.name + "-Valuation");
+						valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
+						valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
+						String valuationTaskUUID = UUID.randomUUID().toString(); 
+						valuationTask.setUuid(valuationTaskUUID);
+						TaskQueue.writeTaskToQueue(valuationTask);	
+					}
 					
 				} catch (JsonProcessingException e) {
 					e.printStackTrace();

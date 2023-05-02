@@ -211,6 +211,26 @@ public class CoreApi {
 
 		return userNode;
 	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userOptionalProfile
+	 * @return an ObjectNode representation of the application and database version.
+	 */
+	public static Object getVersion(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
+
+		UserProfile userProfile = userOptionalProfile.get();
+
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode responseNode = mapper.createObjectNode();
+
+		responseNode.put("apiVersion", ApiUtil.appVersion);
+		responseNode.put("dbVersion", ApiUtil.getDatabaseVersion());
+
+		return responseNode;
+	}
 
 	/**
 	 * 
