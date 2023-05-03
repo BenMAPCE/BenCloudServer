@@ -292,7 +292,7 @@ public class TaskApi {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
 			populationId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("populationId"), 0);
-			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), 0);
+			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), AirQualityApi.getAirQualityLayerGridId(baselineId));
 			//userPrefered = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("userPrefered"), false);
 
 			// Scenario ids passed as a comma-separated list of strings. Each scenario represents an AQ surface ID and associated population years
