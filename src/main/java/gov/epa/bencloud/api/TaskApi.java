@@ -292,7 +292,7 @@ public class TaskApi {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
 			populationId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("populationId"), 0);
-			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), 0);
+			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), AirQualityApi.getAirQualityLayerGridId(baselineId));
 			//userPrefered = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("userPrefered"), false);
 
 			// Scenario ids passed as a comma-separated list of strings. Each scenario represents an AQ surface ID and associated population years
@@ -502,6 +502,8 @@ public class TaskApi {
 			}
 		}
 		
+		boolean hasValuation = valuationTaskConfig.valuationFunctions.size() > 0;
+		
 		// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
 		for (Scenario scenario : batchTaskConfig.aqScenarios) {
 			hifTaskConfig.aqScenarioId = scenario.id;
@@ -554,18 +556,21 @@ public class TaskApi {
 					hifTask.setUuid(hifTaskUUID);
 					TaskQueue.writeTaskToQueue(hifTask);
 					
-					valuationTaskConfig.hifTaskUuid = hifTaskUUID;
-
-					Task valuationTask = new Task();
-					valuationTask.setUserIdentifier(userProfile.get().getId());
-					valuationTask.setType("Valuation");
-					valuationTask.setBatchId(batchTaskId);
-					valuationTask.setName(hifTaskConfig.name + "-Valuation");
-					valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
-					valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
-					String valuationTaskUUID = UUID.randomUUID().toString(); 
-					valuationTask.setUuid(valuationTaskUUID);
-					TaskQueue.writeTaskToQueue(valuationTask);			
+					//Only add the valuation task if there are valuation functions to run
+					if(hasValuation) {
+						valuationTaskConfig.hifTaskUuid = hifTaskUUID;
+	
+						Task valuationTask = new Task();
+						valuationTask.setUserIdentifier(userProfile.get().getId());
+						valuationTask.setType("Valuation");
+						valuationTask.setBatchId(batchTaskId);
+						valuationTask.setName(hifTaskConfig.name + "-Valuation");
+						valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
+						valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
+						String valuationTaskUUID = UUID.randomUUID().toString(); 
+						valuationTask.setUuid(valuationTaskUUID);
+						TaskQueue.writeTaskToQueue(valuationTask);	
+					}
 					
 				} catch (JsonProcessingException e) {
 					e.printStackTrace();

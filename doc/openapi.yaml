@@ -1906,3 +1906,20 @@ paths:
                   userId:
                     type: integer
                     example: 123
+  /version:
+    get:
+      summary: Returns the api and db version.
+      responses:
+        '200':
+          description: Version info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiVersion:
+                    type: integer
+                    example: 123
+                  dbVersion:
+                    type: integer
+                    example: 123
