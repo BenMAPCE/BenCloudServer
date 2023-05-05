@@ -79,6 +79,7 @@ metadata:
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
 spec:
+  revisionHistoryLimit: 0
   replicas: 1
   selector:
     matchLabels:

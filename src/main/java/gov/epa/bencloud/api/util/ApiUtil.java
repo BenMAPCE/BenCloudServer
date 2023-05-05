@@ -42,7 +42,7 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "0.3.1";
+	public static final String appVersion = "0.3.2";
 	public static final int minimumDbVersion = 11;
 	
 	/**
@@ -222,9 +222,8 @@ public class ApiUtil {
 	 * @return
 	 */
 	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList, Integer gridId) {
-		 // Load list of functions from the database
 		
-		//TODO: Change this to only load what we need
+		// Get all the possible variable names
 		List<String> allVariableNames = ApiUtil.getAllVariableNames(valuationTaskConfig.variableDatasetId);
 		
 		//TODO: Temp override until we can improve variable selection
