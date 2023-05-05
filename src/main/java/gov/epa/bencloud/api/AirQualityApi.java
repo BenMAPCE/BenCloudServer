@@ -504,12 +504,7 @@ public class AirQualityApi {
 						metricStatistics.field("max_value"),
 						metricStatistics.field("mean_value"),
 						metricStatistics.field("pct_2_5"),
-						metricStatistics.field("pct_97_5"),
-						metricStatistics.field("AQ_YEAR"),
-						metricStatistics.field("description"),
-						metricStatistics.field("source"),
-						metricStatistics.field("data_type"),
-						metricStatistics.field("filename")
+						metricStatistics.field("pct_97_5")
 						)).as("metric_statistics")
 				)
 		.from(AIR_QUALITY_LAYER)
