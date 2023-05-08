@@ -159,6 +159,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: bencloudserver-ingress
+  namespace: benmap-stg
   annotations:
     kubernetes.io/ingress.class: "nginx"
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
