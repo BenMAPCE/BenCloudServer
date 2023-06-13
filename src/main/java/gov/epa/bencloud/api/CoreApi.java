@@ -2,7 +2,10 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.List;
 import java.util.Optional;
+
+import javax.servlet.MultipartConfigElement;
 
 import org.jooq.DSLContext;
 import org.jooq.JSON;
@@ -10,6 +13,7 @@ import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
+import org.jooq.Record1;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.LoggerFactory;
@@ -25,6 +29,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
+import gov.epa.bencloud.api.util.ApiUtil;
 
 import spark.Request;
 import spark.Response;
@@ -54,8 +59,13 @@ public class CoreApi {
 		return CoreApi.getErrorResponse(request, response, 400, "Bad request");
 	}
 	
+	public static Object getErrorResponseUnimplemented(Request request, Response response) {
+		return CoreApi.getErrorResponse(request, response, 405, "Method not yet implemented");
+	}
+	
 	public static Object getSuccessResponse(Request request, Response response, int statusCode, String msg) {
 		response.type("application/json");
+		response.status(statusCode);
 		return "{\"message\":\"" + msg + "\"}";
 	}
 
@@ -63,83 +73,6 @@ public class CoreApi {
 		return CoreApi.getSuccessResponse(request, response, 204, "Successfully deleted AQ layer");
 	}
 
-	public static Object getTaskDeleteSuccessResponse(Request request, Response response) {
-		return CoreApi.getSuccessResponse(request, response, 204, "Successfully deleted task");
-	}	
-
-	/**
-	 * 
-	 * @param request
-	 * @param response
-	 * @param userProfile
-	 * @return a JSON representation of the current user's task configurations.
-	 */
-	public static Object getTaskConfigs(Request request, Response response, Optional<UserProfile> userProfile) {
-		//TODO: Add type filter to select HIF or Valuation
-
-		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(TASK_CONFIG.asterisk())
-				.from(TASK_CONFIG)
-				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
-				.orderBy(TASK_CONFIG.NAME)
-				.fetch();
-		
-		response.type("application/json");
-		return res.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-	}
-	
-
-	//TODO: Add deleteTaskConfig, update?
-
-	/**
-	 * 
-	 * @param request HTTP request body contains task configuration parameters
-	 * @param response
-	 * @param userProfile
-	 * @return add a task configuration to the database.
-	 */
-	public static String postTaskConfig(Request request, Response response, Optional<UserProfile> userProfile) {
-		ObjectMapper mapper = new ObjectMapper();
-		String body = request.body();
-		
-		JsonNode jsonPost = null;
-		
-		try {
-			jsonPost = mapper.readTree(body);
-		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			response.status(400);
-			return null;
-		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			response.status(400);
-			return null;
-		} 
-		
-		String name;
-		String type;
-		JSON params;
-		try {
-			name = jsonPost.get("name").asText();
-			type = jsonPost.get("type").asText();
-			params = JSON.json(jsonPost.get("parameters").toString());
-		} catch (NullPointerException e) {
-			e.printStackTrace();
-			response.status(400);
-			return null;
-		}
-		
-		
-		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
-		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
-		.values(name, type, params, userProfile.get().getId())
-		.returning(TASK_CONFIG.asterisk())
-		.fetchOne();
-		
-		return rec.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-	}
 
 
 	/**
@@ -278,6 +211,26 @@ public class CoreApi {
 
 		return userNode;
 	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userOptionalProfile
+	 * @return an ObjectNode representation of the application and database version.
+	 */
+	public static Object getVersion(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
+
+		UserProfile userProfile = userOptionalProfile.get();
+
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode responseNode = mapper.createObjectNode();
+
+		responseNode.put("apiVersion", ApiUtil.appVersion);
+		responseNode.put("dbVersion", ApiUtil.getDatabaseVersion());
+
+		return responseNode;
+	}
 
 	/**
 	 * 
@@ -294,13 +247,6 @@ public class CoreApi {
 			.execute();	
 		
 		return "{'message': 'done'}";
-	}
-
-	public static int getTotalTaskCountForUser(UserProfile profile) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		int pendingCount = create.fetchCount(TASK_QUEUE, TASK_QUEUE.USER_ID.eq(profile.getId()));
-		int completedCount = create.fetchCount(TASK_COMPLETE, TASK_COMPLETE.USER_ID.eq(profile.getId()));
-		return pendingCount + completedCount;
 	}
 
 	public static boolean isValidTaskType(String type) {

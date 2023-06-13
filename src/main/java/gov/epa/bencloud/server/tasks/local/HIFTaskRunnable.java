@@ -32,6 +32,7 @@ import gov.epa.bencloud.api.PopulationApi;
 import gov.epa.bencloud.api.function.HIFunction;
 import gov.epa.bencloud.api.model.AirQualityCell;
 import gov.epa.bencloud.api.model.AirQualityCellMetric;
+import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
@@ -53,7 +54,8 @@ import gov.epa.bencloud.server.tasks.model.TaskMessage;
  */
 public class HIFTaskRunnable implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(HIFTaskRunnable.class);
-	
+    protected static ObjectMapper objectMapper = new ObjectMapper();
+    
 	private String taskUuid;
 	private String taskWorkerUuid;
 
@@ -80,7 +82,15 @@ public class HIFTaskRunnable implements Runnable {
 		int rowsSaved = 0;
 		
 		try {
-			HIFTaskConfig hifTaskConfig = new HIFTaskConfig(task);
+			HIFTaskConfig hifTaskConfig = null;
+			if(task.getBatchId() == null) {
+				// This is an old task, from before batch tasks were implemented
+				hifTaskConfig = new HIFTaskConfig(task);	
+			} else {
+				hifTaskConfig = objectMapper.readValue(task.getParameters(), HIFTaskConfig.class);
+				hifTaskConfig.gridDefinitionId = AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId);
+			}
+			
 			HIFTaskLog hifTaskLog = new HIFTaskLog(hifTaskConfig, task.getUserIdentifier());
 			hifTaskLog.setDtStart(LocalDateTime.now());
 			
@@ -226,10 +236,11 @@ public class HIFTaskRunnable implements Runnable {
 					continue;
 				}
 
+				Boolean preserveLegacyBehavior = hifTaskConfig.preserveLegacyBehavior;
 				/*
 				 * FOR EACH FUNCTION THE USER SELECTED
 				 */
-							
+				
 				hifTaskConfig.hifs.parallelStream().forEach((hifConfig) -> {
 					HIFunction hifFunction = hifFunctionList.get(hifConfig.arrayIdx);
 					HIFunction hifBaselineFunction = hifBaselineList.get(hifConfig.arrayIdx);
@@ -259,8 +270,8 @@ public class HIFTaskRunnable implements Runnable {
 					// BenMAP-CE stores air quality values as floats but performs HIF estimates using doubles.
 					// Testing has shown that float to double conversion can cause small changes in values 
 					// Normal operation in BenCloud will use all doubles but, during validation with BenMAP results, it may be useful to preserve the legacy behavior
-					baselineValue = hifTaskConfig.preserveLegacyBehavior ? (float)baselineValue : baselineValue;
-					scenarioValue = hifTaskConfig.preserveLegacyBehavior ? (float)scenarioValue : scenarioValue;
+					baselineValue = preserveLegacyBehavior ? (float)baselineValue : baselineValue;
+					scenarioValue = preserveLegacyBehavior ? (float)scenarioValue : scenarioValue;
 					double deltaQ = baselineValue - scenarioValue;	
 
 					Expression hifFunctionExpression = null;

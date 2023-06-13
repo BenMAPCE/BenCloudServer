@@ -48,6 +48,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
 import gov.epa.bencloud.server.database.jooq.data.tables.Settings;
 import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
+import gov.epa.bencloud.server.database.jooq.data.tables.TaskBatch;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
@@ -640,6 +641,11 @@ public class Tables {
      * The table <code>data.statistic_type</code>.
      */
     public static final StatisticType STATISTIC_TYPE = StatisticType.STATISTIC_TYPE;
+
+    /**
+     * The table <code>data.task_batch</code>.
+     */
+    public static final TaskBatch TASK_BATCH = TaskBatch.TASK_BATCH;
 
     /**
      * The table <code>data.task_complete</code>.

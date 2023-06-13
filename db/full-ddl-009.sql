@@ -1,6 +1,6 @@
 -- DROP SCHEMA "data";
 
-CREATE SCHEMA "data" AUTHORIZATION benmap_system;
+CREATE SCHEMA "data" AUTHORIZATION jimanderton;
 
 -- DROP SEQUENCE "data".age_range_id_seq;
 
@@ -343,7 +343,6 @@ CREATE TABLE "data".air_quality_layer_metrics (
 	mean_value float8 NULL,
 	pct_2_5 float8 NULL,
 	pct_97_5 float8 NULL,
-	cell_count_above_lrl int4 NULL,
 	CONSTRAINT air_quality_layer_metrics_pkey PRIMARY KEY (id)
 );
 
@@ -569,6 +568,8 @@ CREATE TABLE "data".hif_result_dataset (
 	baseline_aq_layer_id int4 NULL,
 	scenario_aq_layer_id int4 NULL,
 	task_log json NULL,
+	user_id text NULL,
+	sharing_scope int2 NULL DEFAULT 0,
 	CONSTRAINT hif_result_dataset_pkey PRIMARY KEY (id)
 );
 
@@ -728,7 +729,6 @@ CREATE TABLE "data".task_complete (
 	task_id serial4 NOT NULL,
 	task_uuid text NULL,
 	task_parent_uuid text NULL,
-	task_user_identifier text NULL,
 	task_priority int4 NULL,
 	task_name text NULL,
 	task_description text NULL,
@@ -740,6 +740,8 @@ CREATE TABLE "data".task_complete (
 	task_submitted_date timestamp NULL,
 	task_started_date timestamp NULL,
 	task_completed_date timestamp NULL,
+	user_id text NULL,
+	sharing_scope int2 NULL DEFAULT 0,
 	CONSTRAINT task_complete_pkey PRIMARY KEY (task_id)
 );
 CREATE INDEX task_complete_on_date ON data.task_complete USING btree (task_completed_date);
@@ -757,6 +759,8 @@ CREATE TABLE "data".task_config (
 	"name" text NULL,
 	"type" text NULL,
 	parameters json NULL,
+	user_id text NULL,
+	sharing_scope int2 NULL DEFAULT 0,
 	CONSTRAINT task_config_dataset_pkey PRIMARY KEY (id)
 );
 
@@ -769,7 +773,6 @@ CREATE TABLE "data".task_config (
 
 CREATE TABLE "data".task_queue (
 	task_id serial4 NOT NULL,
-	task_user_identifier text NULL,
 	task_priority int4 NULL,
 	task_uuid text NULL,
 	task_parent_uuid text NULL,
@@ -782,6 +785,8 @@ CREATE TABLE "data".task_queue (
 	task_in_process bool NULL DEFAULT false,
 	task_submitted_date timestamp NULL,
 	task_started_date timestamp NULL,
+	user_id text NULL,
+	sharing_scope int2 NULL DEFAULT 0,
 	CONSTRAINT task_queue_pkey PRIMARY KEY (task_id)
 );
 CREATE INDEX task_queue_on_date ON data.task_queue USING btree (task_submitted_date);
@@ -888,6 +893,8 @@ CREATE TABLE "data".valuation_result_dataset (
 	"name" text NULL,
 	variable_dataset_id int4 NULL,
 	task_log json NULL,
+	user_id text NULL,
+	sharing_scope int2 NULL DEFAULT 0,
 	CONSTRAINT valuation_result_dataset_pkey PRIMARY KEY (id)
 );
 
@@ -914,7 +921,6 @@ CREATE TABLE "data".valuation_result_function_config (
 CREATE TABLE "data".variable_dataset (
 	id serial4 NOT NULL,
 	"name" text NOT NULL,
-	grid_definition_id int4 NULL,
 	CONSTRAINT variable_dataset_pkey PRIMARY KEY (id)
 );
 
@@ -929,6 +935,7 @@ CREATE TABLE "data".variable_entry (
 	id serial4 NOT NULL,
 	variable_dataset_id int4 NULL,
 	"name" text NOT NULL,
+	grid_definition_id int4 NULL,
 	CONSTRAINT variable_entry_pkey PRIMARY KEY (id)
 );
 
@@ -976,7 +983,8 @@ CREATE TABLE "data".air_quality_layer (
 	"name" text NULL,
 	pollutant_id int4 NULL,
 	grid_definition_id int4 NULL,
-	"locked" bool NULL DEFAULT false,
+	user_id text NULL,
+	share_scope int2 NULL DEFAULT 0,
 	CONSTRAINT air_quality_layer_pkey PRIMARY KEY (id),
 	CONSTRAINT air_quality_layer_grid_definition_id_fkey FOREIGN KEY (grid_definition_id) REFERENCES "data".grid_definition(id),
 	CONSTRAINT air_quality_layer_pollutant_id_fkey FOREIGN KEY (pollutant_id) REFERENCES "data".pollutant(id)
@@ -1583,7 +1591,7 @@ $function$
 ;
 
 CREATE OR REPLACE FUNCTION data.get_valuation_results(_dataset_id integer, _hif_id integer[], _vf_id integer[], _output_grid_definition_id integer)
- RETURNS TABLE(grid_col integer, grid_row integer, hif_id integer, vf_id integer, point_estimate double precision, mean double precision, standard_dev double precision, variance double precision, pct_2_5 double precision, pct_97_5 double precision)
+ RETURNS TABLE(grid_col integer, grid_row integer, hif_id integer, vf_id integer, point_estimate double precision, mean double precision, standard_dev double precision, variance double precision, pct_2_5 double precision, pct_97_5 double precision, percentiles double precision[])
  LANGUAGE plpgsql
 AS $function$
 declare
@@ -1634,7 +1642,29 @@ begin
 				sum(vr.standard_dev * ce.percentage) as standard_dev,
        			sum(vr.result_variance * ce.percentage) as "variance",
        			sum(vr.pct_2_5 * ce.percentage) as pct_2_5,
-       			sum(vr.pct_97_5 * ce.percentage) as pct_97_5 
+       			sum(vr.pct_97_5 * ce.percentage) as pct_97_5,
+       			ARRAY[
+       				sum(vr.percentiles[1] * ce.percentage),
+       				sum(vr.percentiles[2] * ce.percentage),
+       				sum(vr.percentiles[3] * ce.percentage),
+       				sum(vr.percentiles[4] * ce.percentage),
+       				sum(vr.percentiles[5] * ce.percentage),
+       				sum(vr.percentiles[6] * ce.percentage),
+       				sum(vr.percentiles[7] * ce.percentage),
+       				sum(vr.percentiles[8] * ce.percentage),
+       				sum(vr.percentiles[9] * ce.percentage),
+       				sum(vr.percentiles[10] * ce.percentage),
+       				sum(vr.percentiles[11] * ce.percentage),
+       				sum(vr.percentiles[12] * ce.percentage),
+       				sum(vr.percentiles[13] * ce.percentage),
+       				sum(vr.percentiles[14] * ce.percentage),
+       				sum(vr.percentiles[15] * ce.percentage),
+       				sum(vr.percentiles[16] * ce.percentage),
+       				sum(vr.percentiles[17] * ce.percentage),
+       				sum(vr.percentiles[18] * ce.percentage),
+       				sum(vr.percentiles[19] * ce.percentage),
+       				sum(vr.percentiles[20] * ce.percentage)
+       			] as percentiles
   			FROM 
        			data.valuation_result vr 
 			Inner Join
@@ -1668,7 +1698,8 @@ begin
 				vr.standard_dev as standard_dev,
        			vr.result_variance as "variance",
        			vr.pct_2_5 as pct_2_5,
-       			vr.pct_97_5 as pct_97_5 
+       			vr.pct_97_5 as pct_97_5,
+       			vr.percentiles
   			FROM 
        			data.valuation_result vr 					
  			WHERE
@@ -1685,7 +1716,7 @@ end
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION data.get_variable(_dataset_id integer, _variable_name text[], _output_grid_definition_id integer)
+CREATE OR REPLACE FUNCTION data.get_variable(_dataset_id integer, _variable_name text, _output_grid_definition_id integer)
  RETURNS TABLE(variable_name text, grid_cell_id bigint, value double precision)
  LANGUAGE plpgsql
 AS $function$
@@ -1704,10 +1735,10 @@ begin
 			USING HINT = 'Parameter cannot be NULL';
 	end if;
 -- Throw exception if data_set_id is not found in data.variable_dataset.id
-	SELECT grid_definition_id FROM data.incidence_dataset WHERE id = _dataset_id LIMIT 1
+	SELECT grid_definition_id FROM data.variable_entry WHERE variable_dataset_id = _dataset_id and name = _variable_name LIMIT 1
 		into _source_grid_definition_id;
 	if _source_grid_definition_id IS NULL then
-		RAISE EXCEPTION 'Invalid Parameter - dataset_id = %', _dataset_id USING HINT = 'Value not found in variable_dataset';
+		RAISE EXCEPTION 'Invalid Parameter - dataset_id = %', _dataset_id USING HINT = 'Value not found in variable_entry';
 	end if;
 -- Throw exception if source data set grid ID is != output grid definition ID AND
 -- there is no mapping in crosswalk_dataset to do a conversion
@@ -1736,7 +1767,7 @@ begin
 		  join data.crosswalk_entry ce on vv.grid_cell_id = ce.target_grid_cell_id and ce.crosswalk_id = _crosswalk_dataset_id
 		where (
 		  ve.variable_dataset_id = _dataset_id
-		  and (_variable_name is null or ve."name" = any(_variable_name))
+		  and ve."name" = _variable_name
 		)
 		group by
    		  ve."name",
@@ -1755,7 +1786,7 @@ begin
 		  join data.variable_value vv on vv.variable_entry_id = ve.id
 		where (
 		  ve.variable_dataset_id = _dataset_id
-		  and (_variable_name is null or ve."name" = any(_variable_name))
+		  and ve."name" = _variable_name
 		)
 		order by
 			ve.name,
@@ -1767,7 +1798,7 @@ $function$
 
 -- DROP SCHEMA grids;
 
-CREATE SCHEMA grids AUTHORIZATION benmap_system;
+CREATE SCHEMA grids AUTHORIZATION jimanderton;
 
 -- DROP SEQUENCE grids.us_cmaq_12km_nation_clipped_gid_seq;
 
@@ -1813,15 +1844,6 @@ CREATE SEQUENCE grids.us_state_gid_seq
 	MAXVALUE 2147483647
 	START 1
 	CACHE 1
-	NO CYCLE;
--- DROP SEQUENCE grids.usa_ct_grids_dissolve_gid_seq;
-
-CREATE SEQUENCE grids.usa_ct_grids_dissolve_gid_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	START 1
-	CACHE 1
 	NO CYCLE;-- grids.us_cmaq_12km_nation definition
 
 -- Drop table
@@ -1843,7 +1865,7 @@ CREATE TABLE grids.us_cmaq_12km_nation (
 	wuscol numeric NULL,
 	wusrow numeric NULL,
 	wuscr numeric NULL,
-	geom geometry(multipolygon, 4269) NULL,
+	geom public.geometry(multipolygon, 4269) NULL,
 	CONSTRAINT us_cmaq_12km_nation_pkey PRIMARY KEY (gid)
 );
 CREATE INDEX us_cmaq_12km_nation_geom_idx ON grids.us_cmaq_12km_nation USING gist (geom);
@@ -1874,7 +1896,7 @@ CREATE TABLE grids.us_cmaq_12km_nation_clipped (
 	row_1 float8 NULL,
 	"column" float8 NULL,
 	newcr_1 float8 NULL,
-	geom geometry(multipolygon, 4269) NULL,
+	geom public.geometry(multipolygon, 4269) NULL,
 	CONSTRAINT us_cmaq_12km_nation_clipped_pkey PRIMARY KEY (gid)
 );
 CREATE INDEX us_cmaq_12km_nation_clipped_geom_idx ON grids.us_cmaq_12km_nation_clipped USING gist (geom);
@@ -1895,7 +1917,7 @@ CREATE TABLE grids.us_county (
 	fips varchar(5) NULL,
 	col int2 NULL,
 	"row" int2 NULL,
-	geom geometry(multipolygon, 4269) NULL,
+	geom public.geometry(multipolygon, 4269) NULL,
 	CONSTRAINT us_county_pkey PRIMARY KEY (gid)
 );
 CREATE INDEX us_county_geom_idx ON grids.us_county USING gist (geom);
@@ -1911,7 +1933,7 @@ CREATE TABLE grids.us_nation (
 	gid serial4 NOT NULL,
 	col int2 NULL,
 	"row" int2 NULL,
-	geom geometry(multipolygon, 4269) NULL,
+	geom public.geometry(multipolygon, 4269) NULL,
 	CONSTRAINT us_nation_pkey PRIMARY KEY (gid)
 );
 CREATE INDEX us_nation_geom_idx ON grids.us_nation USING gist (geom);
@@ -1929,23 +1951,7 @@ CREATE TABLE grids.us_state (
 	state_fips varchar(2) NULL,
 	col int2 NULL,
 	"row" int2 NULL,
-	geom geometry(multipolygon, 4269) NULL,
+	geom public.geometry(multipolygon, 4269) NULL,
 	CONSTRAINT us_state_pkey PRIMARY KEY (gid)
 );
 CREATE INDEX us_state_geom_idx ON grids.us_state USING gist (geom);
-
-
--- grids.usa_ct_grids_dissolve definition
-
--- Drop table
-
--- DROP TABLE grids.usa_ct_grids_dissolve;
-
-CREATE TABLE grids.usa_ct_grids_dissolve (
-	gid serial4 NOT NULL,
-	"row" numeric NULL,
-	col numeric NULL,
-	geom geometry(multipolygon, 4269) NULL,
-	CONSTRAINT usa_ct_grids_dissolve_pkey PRIMARY KEY (gid)
-);
-CREATE INDEX usa_ct_grids_dissolve_geom_idx ON grids.usa_ct_grids_dissolve USING gist (geom);

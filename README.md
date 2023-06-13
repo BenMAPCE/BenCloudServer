@@ -1,10 +1,20 @@
 # BenCloudServer
 
-    Read the DATABASE_CONFIGURATION.md for info on configuring your database.
+The BenMAP web tool is comprised of two components: the API and the User Interface (UI).
+
+The API is implemented as a Java-based REST service and is hosted in the BenCloudServer repository.
+
+The UI is implemented as a Quasar-based single page application and is hosted in the BenCloudApp repository.
+
+Both components are implemented in EPA's Kubernetes-based DevSecOps environment. In that context, they run as docker containers deployed via Gitlab CI/CD. Details can be found in the docker and k8s folders as well as the .gitlab-ci.yml file.
+
+Outside of this environment, each tool can be run directly and can be hosted on most platforms for local development, testing, or analysis work.
+
+    See the doc directory for important information regarding database configuration, security, developer setup, etc.
 
 ## Run the BenCloud Server inside Eclipse
 
-go to the BenCloudServer.java and right click and select "Run as ... Java Application"
+right click BenCloudServer.java and select "Run as ... Java Application"
 
 ## Build the BenCloud Server
 

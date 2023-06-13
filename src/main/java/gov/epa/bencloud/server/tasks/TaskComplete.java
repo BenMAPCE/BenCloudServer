@@ -10,6 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jooq.Condition;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -26,6 +27,9 @@ import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.DataUtil;
+import gov.epa.bencloud.server.util.ParameterUtil;
+import spark.Request;
+import spark.Response;
 
 /*
  * 
@@ -108,23 +112,25 @@ public class TaskComplete {
 
 	/**
 	 * 
+	 * @param response 
+	 * @param request 
 	 * @param userProfile
 	 * @param postParameters
 	 * @return an ObjectNode representation of all of a user's completed tasks.
 	 */
-	public static ObjectNode getCompletedTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
+	public static ObjectNode getCompletedTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
-//		System.out.println("getCompletedTasks");
-//		System.out.println("userIdentifier: " + userIdentifier);
+//		log.info("getCompletedTasks");
+//		log.info("userIdentifier: " + userIdentifier);
 		
-//		System.out.println("length: " + postParameters.get("length")[0]);
-//		System.out.println("start: " + postParameters.get("start")[0]);
-//		System.out.println("searchValue: " + postParameters.get("searchValue")[0]);
-//		System.out.println("sortColumn: " + postParameters.get("sortColumn")[0]);
-//		System.out.println("sortDirection: " + postParameters.get("sortDirection")[0]);
+//		log.info("length: " + postParameters.get("length")[0]);
+//		log.info("start: " + postParameters.get("start")[0]);
+//		log.info("searchValue: " + postParameters.get("searchValue")[0]);
+//		log.info("sortColumn: " + postParameters.get("sortColumn")[0]);
+//		log.info("sortDirection: " + postParameters.get("sortDirection")[0]);
 
 		String userId = userProfile.get().getId();
-
+		boolean showAll;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         ObjectMapper mapper = new ObjectMapper();
@@ -134,14 +140,21 @@ public class TaskComplete {
         ObjectNode task = mapper.createObjectNode();
         ObjectNode wrappedObject = mapper.createObjectNode();
 
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
         int records = 0;
 
 		try {
 
-			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
-					.where(TASK_COMPLETE.USER_ID.eq(userId)
-							.or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.noCondition()) //Show all completed results to admins for now
-						)
+			Condition filterCondition = DSL.trueCondition();
+			
+			// Skip the following for an admin user that wants to see all data
+			if(!showAll || !CoreApi.isAdmin(userProfile)) {
+				filterCondition = filterCondition.and(TASK_COMPLETE.USER_ID.eq(userId));
+			}
+			
+			Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					.from(TASK_COMPLETE)
+					.where(filterCondition) 
 					.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
 					.fetch();
 
@@ -257,9 +270,9 @@ public class TaskComplete {
 					.fetch();
 
 			if (result.size() == 0) {
-				System.out.println("no uuid in complete");
+				log.info("no uuid in complete");
 			} else if (result.size() > 1) {
-				System.out.println("received more than 1 uuid record");
+				log.info("received more than 1 uuid record");
 			} else {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_COMPLETE.TASK_NAME));

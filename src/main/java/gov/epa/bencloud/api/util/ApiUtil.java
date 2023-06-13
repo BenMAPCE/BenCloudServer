@@ -3,6 +3,9 @@ package gov.epa.bencloud.api.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +42,8 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "0.3.0";
-	public static final int minimumDbVersion = 3;
+	public static final String appVersion = "0.3.2";
+	public static final int minimumDbVersion = 11;
 	
 	/**
 	 * @param columnIdx
@@ -49,7 +52,9 @@ public class ApiUtil {
 	 * https://en.wikipedia.org/wiki/Pairing_function
 	 */
 	public static long getCellId(int columnIdx, int rowIdx) {
-		return (long)(((columnIdx+rowIdx)*(columnIdx+rowIdx+1)*0.5)+rowIdx);
+		long columnIdxLong = (long)columnIdx;
+		long rowIdxLong = (long)rowIdx;
+		return (long)(((columnIdxLong+rowIdxLong)*(columnIdxLong+rowIdxLong+1)*0.5)+rowIdxLong);
 	}
 
 	/**
@@ -213,12 +218,12 @@ public class ApiUtil {
 	 * 
 	 * @param valuationTaskConfig
 	 * @param vfDefinitionList
+	 * @param gridId 
 	 * @return
 	 */
-	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList) {
-		 // Load list of functions from the database
+	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList, Integer gridId) {
 		
-		//TODO: Change this to only load what we need
+		// Get all the possible variable names
 		List<String> allVariableNames = ApiUtil.getAllVariableNames(valuationTaskConfig.variableDatasetId);
 		
 		//TODO: Temp override until we can improve variable selection
@@ -229,7 +234,7 @@ public class ApiUtil {
 		Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 				1, 
 				allVariableNames.get(0), 
-				28);
+				gridId);
 		//Look at all valuation functions to determine which variables are needed
 		for(String variableName: allVariableNames) {
 			for(Record function : vfDefinitionList) {
@@ -308,6 +313,24 @@ public class ApiUtil {
 			return null;
 		}
     }
+    
+    public static LocalDateTime getMultipartFormParameterAsLocalDateTime(Request request, String paramName, String strFormatter) {
+        String strParaValue = getMultipartFormParameterAsString(request, paramName);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(strFormatter);
+        LocalDateTime dateTime = null;
+        try {
+            dateTime = LocalDateTime.parse(strParaValue, formatter);
+        } catch (DateTimeParseException e) {
+        	try{
+        		dateTime = LocalDateTime.parse(strParaValue);
+        	}
+        	catch(DateTimeParseException e2) {
+        		return null;
+        	}        	
+        	
+        }    	
+    	return dateTime;
+    }
 
 
 	/**
@@ -319,4 +342,24 @@ public class ApiUtil {
 	public static Integer getMultipartFormParameterAsInteger(Request request, String paramName) {
 		return Integer.valueOf(getMultipartFormParameterAsString(request, paramName));
 	}
+	    
+    /**
+     * 
+     * @param userId
+     * @return a list of all template names for a given user id.
+     */
+    public static List<String> getAllTemplateNamesByUser(String userId) {
+        if(userId == null) {
+            return null;
+        }
+
+        List<String> allTemplateNames = DSL.using(JooqUtil.getJooqConfiguration())
+                .select(TASK_CONFIG.NAME)
+                .from(TASK_CONFIG)
+                .where(TASK_CONFIG.USER_ID.equal(userId))
+                .orderBy(TASK_CONFIG.USER_ID)
+                .fetch(TASK_CONFIG.NAME);
+        return allTemplateNames;
+    }
+
 }

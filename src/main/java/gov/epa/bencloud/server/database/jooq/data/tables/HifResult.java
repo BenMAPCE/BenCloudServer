@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row18;
+import org.jooq.Row19;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -137,6 +137,11 @@ public class HifResult extends TableImpl<HifResultRecord> {
      */
     public final TableField<HifResultRecord, Double[]> PERCENTILES = createField(DSL.name("percentiles"), SQLDataType.FLOAT.getArrayDataType(), this, "");
 
+    /**
+     * The column <code>data.hif_result.hif_instance_id</code>.
+     */
+    public final TableField<HifResultRecord, Integer> HIF_INSTANCE_ID = createField(DSL.name("hif_instance_id"), SQLDataType.INTEGER, this, "");
+
     private HifResult(Name alias, Table<HifResultRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -207,11 +212,11 @@ public class HifResult extends TableImpl<HifResultRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row18 type methods
+    // Row19 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row18<Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
-        return (Row18) super.fieldsRow();
+    public Row19<Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[], Integer> fieldsRow() {
+        return (Row19) super.fieldsRow();
     }
 }

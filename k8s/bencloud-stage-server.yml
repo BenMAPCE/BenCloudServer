@@ -79,6 +79,7 @@ metadata:
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
 spec:
+  revisionHistoryLimit: 0
   replicas: 1
   selector:
     matchLabels:
@@ -108,7 +109,7 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: 16G
+          memory: 15G
           cpu: 4
         livenessProbe:
          tcpSocket:
@@ -158,6 +159,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: bencloudserver-ingress
+  namespace: benmap-stg
   annotations:
     kubernetes.io/ingress.class: "nginx"
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}

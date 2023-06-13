@@ -13,6 +13,7 @@ import java.util.zip.ZipOutputStream;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
@@ -35,6 +36,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.util.AirQualityUtil;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
@@ -295,7 +297,7 @@ public class HIFApi {
 							null, 
 							gridIds[i]))
 					.asTable("hif_result_records");
-	
+				log.info("Before fetch");
 				Result<Record> hifRecords = create.select(
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
@@ -340,6 +342,7 @@ public class HIFApi {
 						.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 						.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 						.fetch();
+				log.info("After fetch");
 				
 				//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
 				if(HIFApi.getBaselineGridForHifResults(id) != gridIds[i]) {
@@ -369,8 +372,11 @@ public class HIFApi {
 			}
 			
 			try {
+				
 					zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+					log.info("Before formatCSV");
 					hifRecordsClean.formatCSV(zipStream);
+					log.info("After formatCSV");
 					zipStream.closeEntry();
 					
 			} catch (Exception e) {
@@ -399,26 +405,45 @@ public class HIFApi {
 	 * Returns hif results needed for valuation purposes.
 	 * @param id
 	 * @param hifId
+	 * @param incidenceAggregationGrid 
 	 * @return hif results for a given hifId.
 	 */
-	public static Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
-				HIF_RESULT.GRID_CELL_ID,
-				HIF_RESULT.GRID_COL,
-				HIF_RESULT.GRID_ROW,
-				HIF_RESULT.HIF_ID,
-				HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID,
-				HIF_RESULT.RESULT,
-				HIF_RESULT.PERCENTILES
-				)
-				.from(HIF_RESULT)
-				.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(HIF_RESULT.HIF_RESULT_DATASET_ID).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT.HIF_ID)))
-				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(HIF_RESULT.HIF_ID))
-				.where(HIF_RESULT.HIF_RESULT_DATASET_ID.eq(id)
-						.and(HIF_RESULT.HIF_ID.eq(hifId)))
-				.orderBy(HIF_RESULT.GRID_COL, HIF_RESULT.GRID_ROW).fetch();
+	public static Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> getHifResultsForValuation(Integer id, Integer hifId, Integer incidenceAggregationGrid) {
+		
+		Integer[] hifIds = new Integer[1];
+		hifIds[0] = hifId;
 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
+				GET_HIF_RESULTS(
+						id, 
+						hifIds, 
+						incidenceAggregationGrid))
+				.asTable("hif_result_records");
+		
+
+		Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifRecords = create.select(
+				DSL.val(0L).as("grid_cell_id"),
+				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL),
+				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW),
+				hifResultRecords.field(GET_HIF_RESULTS.HIF_ID),
+				HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID,
+				hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
+				hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES)
+				)
+				.from(hifResultRecords)
+				.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(id).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID))))
+				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID)))
+				.orderBy(1, 2)
+				.fetch();
+
+		//We can't get the grid cell id from GET_HIF_RESULTS so we'll add it here
+		for(Record res : hifRecords) {
+			res.set(DSL.field("grid_cell_id", Long.class), ApiUtil.getCellId(res.get(1, Integer.class), res.get(2, Integer.class)));
+		}
+		
+		
 		return hifRecords;
 
 	}
@@ -621,7 +646,7 @@ public class HIFApi {
 			function.put("ethnicity_name",r.getValue("ethnicity_name", String.class));
 			
 			//This will select the most appropriate incidence/prevalence dataset and year based on user selection and function definition
-			HIFUtil.setIncidencePrevalence(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
+			HIFUtil.setIncidencePrevalenceV1(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
 			
 			functions.add(function);
 			
@@ -664,9 +689,8 @@ public class HIFApi {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
 		Record1<Integer> aqId = create
-				.select(AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
+				.select(HIF_RESULT_DATASET.GRID_DEFINITION_ID)
 				.from(HIF_RESULT_DATASET)
-				.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_LAYER.ID.eq(HIF_RESULT_DATASET.BASELINE_AQ_LAYER_ID))
 				.where(HIF_RESULT_DATASET.ID.eq(hifResultDatasetId))
 				.fetchOne();
 
@@ -760,15 +784,20 @@ public class HIFApi {
 	/**
 	 * @param hifResultDatasetId
 	 * @param hifIdList
-	 * @return a count of the number of hif result records in the given list of hif ids.
+	 * @param incidenceAggregationGrid 
+	 * @return a count of the number of hif result records in the given list of hif ids after any aggregation has been applied.
 	 */
-	public static int getHifResultsRecordCount(Integer hifResultDatasetId, ArrayList<Integer> hifIdList) {
-		Record1<Integer> hifResultCount = DSL.using(JooqUtil.getJooqConfiguration())
-		.select(DSL.count())
-		.from(HIF_RESULT)
-		.where(HIF_RESULT.HIF_RESULT_DATASET_ID.eq(hifResultDatasetId)
-				.and(HIF_RESULT.HIF_ID.in(hifIdList)))
-		.fetchOne();
+	public static int getHifResultsRecordCount(Integer hifResultDatasetId, ArrayList<Integer> hifIdList, Integer incidenceAggregationGrid) {
+
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+		Record1<Integer> hifResultCount = create
+				.select(DSL.count())
+				.from(GET_HIF_RESULTS(
+						hifResultDatasetId, 
+						hifIdList.toArray(new Integer[0]), 
+						incidenceAggregationGrid))
+				.fetchOne();
 		
 		if(hifResultCount == null) {
 			return 0;

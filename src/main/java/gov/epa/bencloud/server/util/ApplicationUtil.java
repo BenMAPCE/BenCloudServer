@@ -73,7 +73,7 @@ public class ApplicationUtil {
 
 		if (!propertiesFile.exists()) {
 			if (!optional) {
-				System.out.println("Sorry, unable to find " + propertiesFileName);
+				log.info("Sorry, unable to find " + propertiesFileName);
 				return;
 			}
 		} else {
@@ -122,7 +122,7 @@ public class ApplicationUtil {
 //		}
 
 		if (null == getProperty("max.task.workers")) {
-			System.out.println("max.task.workers property not defined");
+			log.info("max.task.workers property not defined");
 			propertiesOK = false;
 		} else {
 			int maxTaskWorkers = 0;
@@ -130,7 +130,7 @@ public class ApplicationUtil {
 			try {
 				maxTaskWorkers = Integer.parseInt(getProperty("max.task.workers"));
 				if (maxTaskWorkers <= 0) {
-					System.out.println("max.task.workers must be > 0");
+					log.info("max.task.workers must be > 0");
 				}
 			} catch (NumberFormatException e) {
 				log.error("max.task.workers property is not numeric", e);
@@ -152,7 +152,7 @@ public class ApplicationUtil {
 
 		String directory = getProperty(propertyName);
 		if (null == directory) {
-			System.out.println(propertyName + " property not defined");
+			log.info(propertyName + " property not defined");
 			propertyOK = false;
 		} else {
 			
@@ -163,7 +163,7 @@ public class ApplicationUtil {
 			}
 			
 			if (!new File(directory).exists()) {
-				System.out.println(directory + " does not exist");
+				log.info(directory + " does not exist");
 				propertyOK = false;
 			}
 		}

@@ -7,8 +7,10 @@ public class Task implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
+	
 	private String uuid;
 	private String parentUuid;
+	private Integer batchId;
 	private Integer priority; 
 	private String name;
     private String description;
@@ -74,6 +76,14 @@ public class Task implements Serializable {
 		this.outputFileName = outputFileName;
 	}
 
+	public Integer getBatchId() {
+		return batchId;
+	}
+
+	public void setBatchId(Integer batchId) {
+		this.batchId = batchId;
+	}
+	
 	public Integer getPriority() {
 		return priority;
 	}

@@ -36,7 +36,7 @@ public class PopulationApi {
 	 */
 	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
 
-		//TODO: Need to grow the population using the selected popYear
+		Integer aqGrid = AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId);
 		
 		// Get the array of age ranges to include based on the configured hifs
 		ArrayList<Integer> ageRangeIds = getAgeRangesForHifs(hifTaskConfig);
@@ -89,7 +89,7 @@ public class PopulationApi {
 				booGroupByEthnicity, 
 				booGroupByGender, 
 				true, //YY: groupbyAgeRange
-				28 //YY: outputGridDefinitionId
+				aqGrid //YY: outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
 
 		return popRecords;
@@ -227,6 +227,7 @@ public class PopulationApi {
 						GRID_DEFINITION.NAME)
 				.from(POPULATION_DATASET)
 				.join(GRID_DEFINITION).on(POPULATION_DATASET.GRID_DEFINITION_ID.eq(GRID_DEFINITION.ID))
+				.where(POPULATION_DATASET.ID.eq(id))
 				.fetchOne();
 		
 		return record;

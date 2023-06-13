@@ -4,12 +4,15 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYE
 import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POPULATION_DATASET;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.jooq.JSON;
 import org.jooq.Record10;
+import org.jooq.Record15;
+import org.jooq.Record16;
 import org.jooq.Record3;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -42,7 +45,7 @@ public class HIFTaskConfig {
 	public Integer popYear = 0;
 	public Boolean preserveLegacyBehavior = false;
 	public List<HIFConfig> hifs = new ArrayList<HIFConfig>();
-	
+	public Integer gridDefinitionId = 0;
 	/*
 	 * Default constructor
 	 */
@@ -60,13 +63,15 @@ public class HIFTaskConfig {
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode params = mapper.readTree(task.getParameters());
 			JsonNode aqLayers = params.get("air_quality_data");
-
+			System.out.println(task);
 			this.name = task.getName();
 
 			for (JsonNode aqLayer : aqLayers) {
 				switch (aqLayer.get("type").asText().toLowerCase()) {
 				case "baseline":
 					this.aqBaselineId = aqLayer.get("id").asInt();
+					Integer gridDefinitionId = AirQualityApi.getAirQualityLayerGridId(aqBaselineId);
+					this.gridDefinitionId = gridDefinitionId;
 					break;
 				case "scenario":
 					this.aqScenarioId = aqLayer.get("id").asInt();
@@ -75,6 +80,10 @@ public class HIFTaskConfig {
 			}
 			JsonNode popConfig = params.get("population");
 			this.popId = popConfig.get("id").asInt();
+
+			JsonNode functions = params.get("functions");
+			System.out.println(functions);
+			
 			this.popYear = popConfig.get("year").asInt();
 
 			// **********************************************************************************
@@ -84,7 +93,7 @@ public class HIFTaskConfig {
 			// **********************************************************************************
 			this.preserveLegacyBehavior = true; // params.has("preserveLegacyBehavior") ? params.get("preserveLegacyBehavior").asBoolean(false) : false;
 
-			JsonNode functions = params.get("functions");
+
 
 			for (JsonNode function : functions) {
 				this.hifs.add(new HIFConfig(function));
@@ -106,8 +115,8 @@ public class HIFTaskConfig {
 	public String toString(Optional<UserProfile> userProfile) {
 		StringBuilder b = new StringBuilder();
 		
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
+		Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> baselineAq = AirQualityApi.getAirQualityLayerDefinition(aqBaselineId, userProfile);
+		Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> scenarioAq = AirQualityApi.getAirQualityLayerDefinition(aqScenarioId, userProfile);
 		
 		b.append("Task Name: ").append(name).append("\n\n");
 		
@@ -132,9 +141,11 @@ public class HIFTaskConfig {
 		 */
 		b.append("Pre-policy Air Quality Surface\n");
 		b.append("Name: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
-		b.append("Source: ")
-			.append("Model")
-			.append("\n");		
+		b.append("Year: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.AQ_YEAR)).append("\n");
+		b.append("Description: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.DESCRIPTION)).append("\n");
+		b.append("Source: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.SOURCE)).append("\n");
+		b.append("Data Type: ").append(baselineAq.getValue(AIR_QUALITY_LAYER.DATA_TYPE)).append("\n");
+		
 		Record3<String, Integer, Integer> gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(baselineAq.getValue(AIR_QUALITY_LAYER.GRID_DEFINITION_ID));
 		b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
 		//b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");
@@ -174,9 +185,10 @@ public class HIFTaskConfig {
 		 */
 		b.append("\nPost-policy Air Quality Surface\n");
 		b.append("Name: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.NAME)).append("\n");
-		b.append("Source: ")
-			.append("Model")
-			.append("\n");	
+		b.append("Year: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.AQ_YEAR)).append("\n");
+		b.append("Description: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.DESCRIPTION)).append("\n");
+		b.append("Source: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.SOURCE)).append("\n");
+		b.append("Data Type: ").append(scenarioAq.getValue(AIR_QUALITY_LAYER.DATA_TYPE)).append("\n");
 		gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(scenarioAq.getValue(AIR_QUALITY_LAYER.GRID_DEFINITION_ID));
 		b.append("Grid Definition: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\n");
 		//b.append("Columns: ").append(gridDefinitionInfo.getValue(GRID_DEFINITION.COL_COUNT)).append("\n");

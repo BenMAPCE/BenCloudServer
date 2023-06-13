@@ -37,8 +37,17 @@ public class PollutantApi {
 				.from(POLLUTANT)
 				.orderBy(POLLUTANT.NAME)
 				.fetch();
-		log.debug("Requested all pollutants: " + userProfile.get().getId());
+		//log.debug("Requested all pollutants: " + userProfile.get().getId());
 		response.type("application/json");
 		return aqRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+	}
+	
+	public static String getPollutantName(Integer id) {
+		return DSL.using(JooqUtil.getJooqConfiguration())
+		.select(
+				POLLUTANT.NAME)
+		.from(POLLUTANT)
+		.where(POLLUTANT.ID.eq(id))
+		.fetchOne().value1();	
 	}
 }

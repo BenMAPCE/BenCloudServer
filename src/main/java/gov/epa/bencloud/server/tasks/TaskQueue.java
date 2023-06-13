@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jooq.Condition;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -20,9 +21,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.RawValue;
 
+import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.util.ParameterUtil;
+import spark.Request;
+import spark.Response;
 
 public class TaskQueue {
 
@@ -55,9 +60,9 @@ public class TaskQueue {
 
 						
 						if (result.size() == 0) {
-							// System.out.println("no tasks to process");
+							// log.info("no tasks to process");
 						} else if (result.size() > 1) {
-							System.out.println("recieved more than 1 task record");
+							log.info("recieved more than 1 task record");
 						} else {
 							Record record = result.get(0);
 
@@ -111,9 +116,9 @@ public class TaskQueue {
 						.fetch();
 
 				if (result.size() == 0) {
-					// System.out.println("no tasks to process");
+					// log.info("no tasks to process");
 				} else if (result.size() > 1) {
-					System.out.println("recieved more than 1 task record");
+					log.info("recieved more than 1 task record");
 				} else {
 					Record record = result.get(0);
 
@@ -146,9 +151,9 @@ public class TaskQueue {
 						.fetch();
 
 				if (result.size() == 0) {
-					// System.out.println("no tasks to process");
+					// log.info("no tasks to process");
 				} else if (result.size() > 1) {
-					System.out.println("recieved more than 1 task record");
+					log.info("recieved more than 1 task record");
 				} else {
 					Record record = result.get(0);
 
@@ -182,13 +187,13 @@ public class TaskQueue {
 						.fetch();
 
 				if (result.size() == 0) {
-					System.out.println("no task for uuid: " + uuid);
+					log.info("no task for uuid: " + uuid);
 				} else if (result.size() > 1) {
-					System.out.println("recieved more than 1 task record for uuid: " + uuid);
+					log.info("recieved more than 1 task record for uuid: " + uuid);
 				} else {
 					Record record = result.get(0);
 
-					System.out.println("making job available again: " + 
+					log.info("making job available again: " + 
 							record.get(TASK_QUEUE.TASK_NAME));
 
 					DSL.using(ctx).update(TASK_QUEUE)
@@ -196,7 +201,7 @@ public class TaskQueue {
 					.where(TASK_QUEUE.TASK_UUID.eq(record.getValue(TASK_QUEUE.TASK_UUID)))
 					.execute();
 				}
-				System.out.println("returning task to Queue: " + uuid);
+				log.info("returning task to Queue: " + uuid);
 			});
 		} catch (Exception e) {
 			log.error("Error returning task", e);
@@ -207,12 +212,13 @@ public class TaskQueue {
 
 	public static void writeTaskToQueue(Task task) {
 
-		// System.out.println("writeTaskToQueue: " + task.getUuid());
+		// log.info("writeTaskToQueue: " + task.getUuid());
 
 		try {
 			DSL.using(JooqUtil.getJooqConfiguration()).insertInto(TASK_QUEUE,
 					TASK_QUEUE.USER_ID,
 					TASK_QUEUE.TASK_PRIORITY,
+					TASK_QUEUE.TASK_BATCH_ID,
 					TASK_QUEUE.TASK_UUID,
 					TASK_QUEUE.TASK_PARENT_UUID,
 					TASK_QUEUE.TASK_NAME,
@@ -224,6 +230,7 @@ public class TaskQueue {
 			.values(
 					task.getUserIdentifier(),
 					Integer.valueOf(10),
+					task.getBatchId(),
 					task.getUuid(),
 					task.getParentUuid(),
 					task.getName(),
@@ -239,12 +246,12 @@ public class TaskQueue {
 		}
 	}
 
-	public static ObjectNode getPendingTasks(Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
+	public static ObjectNode getPendingTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
 
-		//System.out.println("getPendingTasks");
-//		System.out.println("userIdentifier: " + userIdentifier);
+		//log.info("getPendingTasks");
+//		log.info("userIdentifier: " + userIdentifier);
 		String userId = userProfile.get().getId();
-
+		boolean showAll;
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 		ObjectMapper mapper = new ObjectMapper();
@@ -254,6 +261,8 @@ public class TaskQueue {
 		ObjectNode task = mapper.createObjectNode();
 		ObjectNode wrappedObject = mapper.createObjectNode();
 
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+		
 		int records = 0;
 
 //		if (null != userIdentifier) {
@@ -261,9 +270,15 @@ public class TaskQueue {
 			try {
 				LocalDateTime now = LocalDateTime.now();
 				try {
-
+					Condition filterCondition = DSL.trueCondition();
+					
+					// Skip the following for an admin user that wants to see all data
+					if(!showAll || !CoreApi.isAdmin(userProfile)) {
+						filterCondition = filterCondition.and(TASK_QUEUE.USER_ID.eq(userId));
+					}
+					
 					Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
-							.where(TASK_QUEUE.USER_ID.eq(userId))
+							.where(filterCondition)
 							.orderBy(TASK_QUEUE.TASK_SUBMITTED_DATE.asc())
 							.fetch();
 
@@ -276,6 +291,7 @@ public class TaskQueue {
 						task.put("task_uuid", record.getValue(TASK_QUEUE.TASK_UUID));
 						task.put("task_submitted_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
 						task.put("task_type", record.getValue(TASK_QUEUE.TASK_TYPE));
+						task.put("task_user_id", record.getValue(TASK_QUEUE.USER_ID));
 
 						wrappedObject = mapper.createObjectNode();
 
@@ -337,7 +353,7 @@ public class TaskQueue {
 	
 	public static Task getTaskFromQueueRecord(String uuid) {
 
-		// System.out.println("getTaskFromQueueRecord: " + uuid);
+		// log.info("getTaskFromQueueRecord: " + uuid);
 
 		Task task = new Task();
 
@@ -347,15 +363,16 @@ public class TaskQueue {
 					.fetch();
 
 			if (result.size() == 0) {
-				System.out.println("no uuid in queue");
+				log.info("no uuid in queue");
 			} else if (result.size() > 1) {
-				System.out.println("recieved more than 1 uuid record");
+				log.info("recieved more than 1 uuid record");
 			} else {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_QUEUE.TASK_NAME));
 				task.setDescription(record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
 				task.setUserIdentifier(record.getValue(TASK_QUEUE.USER_ID));
 				task.setPriority(record.getValue(TASK_QUEUE.TASK_PRIORITY));
+				task.setBatchId(record.getValue(TASK_QUEUE.TASK_BATCH_ID));
 				task.setUuid(record.getValue(TASK_QUEUE.TASK_UUID));
 				task.setParentUuid(record.getValue(TASK_QUEUE.TASK_PARENT_UUID));
 				task.setParameters(record.getValue(TASK_QUEUE.TASK_PARAMETERS));
@@ -372,7 +389,7 @@ public class TaskQueue {
 
 	public static Task getChildValuationTaskFromQueueRecord(String parentUuid) {
 
-		// System.out.println("getTaskFromQueueRecord: " + uuid);
+		// log.info("getTaskFromQueueRecord: " + uuid);
 
 		Task task = new Task();
 
@@ -383,15 +400,16 @@ public class TaskQueue {
 					.fetch();
 
 			if (result.size() == 0) {
-				System.out.println("no uuid in queue");
+				log.info("no uuid in queue");
 			} else if (result.size() > 1) {
-				System.out.println("recieved more than 1 uuid record");
+				log.info("recieved more than 1 uuid record");
 			} else {
 				Record record = result.get(0);
 				task.setName(record.getValue(TASK_QUEUE.TASK_NAME));
 				task.setDescription(record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
 				task.setUserIdentifier(record.getValue(TASK_QUEUE.USER_ID));
 				task.setPriority(record.getValue(TASK_QUEUE.TASK_PRIORITY));
+				task.setBatchId(record.getValue(TASK_QUEUE.TASK_BATCH_ID));
 				task.setUuid(record.getValue(TASK_QUEUE.TASK_UUID));
 				task.setParentUuid(record.getValue(TASK_QUEUE.TASK_PARENT_UUID));
 				task.setParameters(record.getValue(TASK_QUEUE.TASK_PARAMETERS));

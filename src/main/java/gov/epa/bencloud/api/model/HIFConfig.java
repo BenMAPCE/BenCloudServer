@@ -1,7 +1,10 @@
 package gov.epa.bencloud.api.model;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -20,6 +23,7 @@ public class HIFConfig {
 	// They are here because they may be overridden by the user as part configuring the analysis.
 	// This values within the hifRecord only serve as a default
 	
+	public Integer hifInstanceId = null;
 	public Integer hifId = null;
 	public Integer startAge = null;
 	public Integer endAge = null;
@@ -33,12 +37,14 @@ public class HIFConfig {
 	//incidence and prevlance may use different race, ethnicity, and/or gender than 
 	//the functions configuration due to data availability
 	public Integer incidence = null;
+	public String incidenceName = null;
 	public Integer incidenceYear = null;
 	public Integer incidenceRace = null;
 	public Integer incidenceEthnicity = null;
 	public Integer incidenceGender = null;
 	
 	public Integer prevalence = null;
+	public String prevalenceName = null;
 	public Integer prevalenceYear = null;
 	public Integer prevalenceRace = null;
 	public Integer prevalenceEthnicity = null;
@@ -50,8 +56,9 @@ public class HIFConfig {
 	public Integer totalDays = null;
 	public int arrayIdx = 0;
 	
-	public Map<String, Object> hifRecord = null; //This map will contain the full HIF record
+	public Map<String, Object> hifRecord = new HashMap<String, Object> (); //This map will contain the full HIF record from the db
 	
+	public List<ValuationConfig> valuationFunctions = new ArrayList<ValuationConfig>();	
 	/**
 	 * Creates an object from the task parameter object
 	 * @param function

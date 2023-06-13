@@ -1,7 +1,6 @@
 package gov.epa.bencloud.server.tasks.local;
 
-import static gov.epa.bencloud.server.database.jooq.data.Tables.HEALTH_IMPACT_FUNCTION;
-import static gov.epa.bencloud.server.database.jooq.data.Tables.HIF_RESULT;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,6 +20,7 @@ import org.jooq.Record;
 import org.jooq.Record2;
 import org.jooq.Record7;
 import org.jooq.Result;
+import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
 import org.slf4j.Logger;
@@ -44,6 +44,7 @@ import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
 public class ValuationTaskRunnable implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(ValuationTaskRunnable.class);
+    protected static ObjectMapper objectMapper = new ObjectMapper();
 	
 	private String taskUuid;
 	private String taskWorkerUuid;
@@ -69,7 +70,14 @@ public class ValuationTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			
-			ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig(task);
+			ValuationTaskConfig valuationTaskConfig = null;
+			if(task.getBatchId() == null) {
+				// This is an old task, from before batch tasks were implemented
+				valuationTaskConfig = new ValuationTaskConfig(task);	
+			} else {
+				valuationTaskConfig = objectMapper.readValue(task.getParameters(), ValuationTaskConfig.class);
+			}	
+			
 			ValuationTaskLog valuationTaskLog = new ValuationTaskLog(valuationTaskConfig, task.getUserIdentifier());
 			valuationTaskLog.setDtStart(LocalDateTime.now());
 			
@@ -118,6 +126,14 @@ public class ValuationTaskRunnable implements Runnable {
 			
 			HIFTaskConfig hifTaskConfig = HIFApi.getHifTaskConfigFromDb(valuationTaskConfig.hifResultDatasetId);
 
+			//If valuationTaskConfig.incidenceAggregationGrid is null, set it to the HIF result grid
+			if(valuationTaskConfig.gridDefinitionId == null ) {
+				valuationTaskConfig.gridDefinitionId = HIFApi.getBaselineGridForHifResults(valuationTaskConfig.hifResultDatasetId);
+			}
+			
+			//TEMP OVERRIDE for testing
+			//valuationTaskConfig.gridDefinitionId = 18; //county
+			
 			//TODO: 2020 is the hardcoded max based on current data. This could be more dynamic.
 			valuationTaskConfig.inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;			
 			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, valuationTaskConfig.inflationYear, valuationTaskConfig.useInflationFactors);
@@ -127,14 +143,14 @@ public class ValuationTaskRunnable implements Runnable {
 			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, valuationTaskConfig.incomeGrowthYear, valuationTaskConfig.useGrowthFactors);
 			
 			//<variableName, <gridCellId, value>>
-			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList);
+			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList, valuationTaskConfig.gridDefinitionId);
 			
 			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
 
 			ArrayList<ValuationResultRecord> valuationResults = new ArrayList<ValuationResultRecord>(maxRowsInMemory);
 			mXparser.setToOverrideBuiltinTokens();
 			
-			int totalCells = HIFApi.getHifResultsRecordCount(valuationTaskConfig.hifResultDatasetId, hifIdList);
+			int totalCells = HIFApi.getHifResultsRecordCount(valuationTaskConfig.hifResultDatasetId, hifIdList, valuationTaskConfig.gridDefinitionId);
 			
 			int currentCell = 0;
 			int prevPct = -999;
@@ -150,7 +166,7 @@ public class ValuationTaskRunnable implements Runnable {
 			
 			for(Integer hifId : hifIdList) {
 
-				hifResults = HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId, hifId);					
+				hifResults = HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId, hifId, valuationTaskConfig.gridDefinitionId);					
 
 				/*
 				 * FOR EACH ROW IN THE HIF RESULTS
@@ -177,10 +193,10 @@ public class ValuationTaskRunnable implements Runnable {
 						if (vfConfig.hifId.equals(hifResult.get(HIF_RESULT.HIF_ID))) {
 							
 							// Use 1.0 if growth factor is not found or was disabled via valuationTaskConfig.useGrowthFactorsuse
-							Record2<Short, Double> tmp = incomeGrowthFactors != null ? incomeGrowthFactors.getOrDefault(hifResult.get(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID).shortValue(), null) : null;
+							Record2<Short, Double> tmp = incomeGrowthFactors != null ? incomeGrowthFactors.getOrDefault(hifResult.get(4, Integer.class).shortValue(), null) : null;
 							double incomeGrowthFactor = tmp == null ? 1.0 : tmp.value2().doubleValue();
 							
-							double hifEstimate = hifResult.get(HIF_RESULT.RESULT).doubleValue();
+							double hifEstimate = hifResult.get(5, Double.class).doubleValue();
 							
 							VFunction valuationFunction = valuationFunctionList.get(vfIdx);
 
@@ -195,7 +211,7 @@ public class ValuationTaskRunnable implements Runnable {
 							//TODO: Need to improve handling of variables
 							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
 								if(variable.getKey().equalsIgnoreCase("median_income")) {
-									valuationFunction.vfArguments.medianIncome =  variable.getValue().getOrDefault(hifResult.get(HIF_RESULT.GRID_CELL_ID), 0.0);	
+									valuationFunction.vfArguments.medianIncome =  variable.getValue().getOrDefault(hifResult.get(0), 0.0);	
 									break;	
 								}
 							}
@@ -204,7 +220,7 @@ public class ValuationTaskRunnable implements Runnable {
 								Expression valuationFunctionExpression = valuationFunction.interpretedFunction;
 								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
 									if(valuationFunctionExpression.getArgument(variable.getKey()) != null) {
-										valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(HIF_RESULT.GRID_CELL_ID), 0.0));		
+										valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));		
 									}
 								}
 								valuationFunctionExpression.setArgumentValue("AllGoodsIndex", valuationFunction.vfArguments.allGoodsIndex);
@@ -220,7 +236,7 @@ public class ValuationTaskRunnable implements Runnable {
 							valuationFunctionEstimate = valuationFunctionEstimate * incomeGrowthFactor * hifEstimate;
 							
 							DescriptiveStatistics distStats = new DescriptiveStatistics();
-							Double[] hifPercentiles = hifResult.get(HIF_RESULT.PERCENTILES);
+							Double[] hifPercentiles = (Double[]) hifResult.get("percentiles");
 							
 							for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
 								for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
@@ -235,9 +251,9 @@ public class ValuationTaskRunnable implements Runnable {
 							}
 							
 							ValuationResultRecord rec = new ValuationResultRecord();
-							rec.setGridCellId(hifResult.get(HIF_RESULT.GRID_CELL_ID));
-							rec.setGridCol(hifResult.get(HIF_RESULT.GRID_COL));
-							rec.setGridRow(hifResult.get(HIF_RESULT.GRID_ROW));
+							rec.setGridCellId(hifResult.get(DSL.field("grid_cell_id", Long.class)));
+							rec.setGridCol(hifResult.get(GET_HIF_RESULTS.GRID_COL));
+							rec.setGridRow(hifResult.get(GET_HIF_RESULTS.GRID_ROW));
 							rec.setHifId(vfConfig.hifId);
 							rec.setVfId(vfConfig.vfId);
 

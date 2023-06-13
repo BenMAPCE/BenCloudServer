@@ -1,18 +1,17 @@
-# This documents needs to be updated
-
 # BenCloudServer Database Configuration
 
-The application is configured so you can run locally from inside Eclipse, or create a local docker instance.
+The application is configured so you can run locally from inside Eclipse, as a stand-alone jar file, or create a local docker instance.
 
-To run locally inside Eclipse, you need to create a file **bencloud-local.properties** with the following contents:
+To run locally, you need to create a file **bencloud-local.properties** with the following contents:
 
     postgresql.host=192.168.0.152  
     postgresql.port=5432. 
     postgresql.database=docker  
     postgresql.user=docker  
-    postgresql.password=docker    
+    postgresql.password=docker
+    default.max.tasks.per.user = 0 #This disables the number of tasks a single user can store    
 
-***Replace the variable values above with ones applicable to you.*** This file does not *(and should not)* get checked int Git.
+***Replace the variable values above with ones applicable to you.*** This file does not *(and should not)* get checked into Git.
 
 When running inside docker (local or deployed) the database properties are set in the **Dockerfile** as below:  
 

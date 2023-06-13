@@ -79,6 +79,7 @@ metadata:
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
 spec:
+  revisionHistoryLimit: 0
   replicas: 1
   selector:
     matchLabels:
@@ -108,7 +109,7 @@ spec:
         imagePullPolicy: Always
         resources:
          requests:
-          memory: 16G
+          memory: 15G
           cpu: 4
         livenessProbe:
          tcpSocket:
@@ -158,14 +159,17 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: bencloudserver-ingress
+  namespace: benmap-dev
   annotations:
     kubernetes.io/ingress.class: "nginx"
     app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
     app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
     nginx.ingress.kubernetes.io/proxy-body-size: 100m
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600s"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "600s"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "600s"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-next-upstream-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-next-upstream-tries: "1"
 spec:
   tls:
     - hosts:

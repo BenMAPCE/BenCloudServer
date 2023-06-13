@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,6 +31,9 @@ import org.jooq.Record1;
 import org.jooq.Record10;
 import org.jooq.Record13;
 import org.jooq.Record14;
+import org.jooq.Record15;
+import org.jooq.Record16;
+import org.jooq.Record18;
 import org.jooq.Record21;
 import org.jooq.Record22;
 import org.jooq.Record6;
@@ -86,6 +91,7 @@ public class AirQualityApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+		boolean showAll;
 		try {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -98,6 +104,8 @@ public class AirQualityApi {
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+			
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -135,7 +143,10 @@ public class AirQualityApi {
 
 			// System.out.println(filterCondition);
 		}
-		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		// Skip the following for an admin user that wants to see all data
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		}
 
 		//System.out.println(orderFields);
 	
@@ -174,7 +185,7 @@ public class AirQualityApi {
 				.asTable("metric_statistics");
 		
 		@SuppressWarnings("unchecked")
-		@NotNull Result<Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON>> aqRecords = 
+		@NotNull Result<Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, String, String, String, LocalDateTime,JSON>> aqRecords = 
 			create.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
@@ -185,6 +196,12 @@ public class AirQualityApi {
 						POLLUTANT.NAME.as("pollutant_name"), 
 						POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name"),
 						GRID_DEFINITION.NAME.as("grid_definition_name"),
+						AIR_QUALITY_LAYER.AQ_YEAR,
+						AIR_QUALITY_LAYER.DESCRIPTION,
+						AIR_QUALITY_LAYER.SOURCE,
+						AIR_QUALITY_LAYER.DATA_TYPE,
+						AIR_QUALITY_LAYER.FILENAME,
+						AIR_QUALITY_LAYER.UPLOAD_DATE,
 						DSL.jsonArrayAgg(DSL.jsonbObject(
 								metricStatistics.field("metric_id"),
 								metricStatistics.field("metric_name"),
@@ -213,7 +230,13 @@ public class AirQualityApi {
 						AIR_QUALITY_LAYER.POLLUTANT_ID,
 						POLLUTANT.NAME, 
 						POLLUTANT.FRIENDLY_NAME,
-						GRID_DEFINITION.NAME)
+						GRID_DEFINITION.NAME,
+						AIR_QUALITY_LAYER.AQ_YEAR,
+						AIR_QUALITY_LAYER.DESCRIPTION,
+						AIR_QUALITY_LAYER.SOURCE,
+						AIR_QUALITY_LAYER.DATA_TYPE,
+						AIR_QUALITY_LAYER.FILENAME,
+						AIR_QUALITY_LAYER.UPLOAD_DATE)
 				.orderBy(orderFields)
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
@@ -264,6 +287,7 @@ public class AirQualityApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+		boolean showAll;
 		try {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -271,6 +295,7 @@ public class AirQualityApi {
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -306,8 +331,10 @@ public class AirQualityApi {
 
 			// System.out.println(filterCondition);
 		}
-		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
-
+		// Skip the following for an admin user that wants to see all data
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		}
 		//System.out.println(orderFields);
 	
 
@@ -407,7 +434,7 @@ public class AirQualityApi {
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
 		
-		Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id, userProfile);
+		Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id, userProfile);
 		response.type("application/json");
 		if(aqRecord == null) {
 			return CoreApi.getErrorResponseNotFound(request, response);
@@ -424,7 +451,7 @@ public class AirQualityApi {
 	 * @return a representation of an air quality layer definition.
 	 */
 	@SuppressWarnings("unchecked")
-	public static @Nullable Record10<Integer, String, String, Short, Integer, Integer, String, String, String, JSON> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
+	public static @Nullable Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
 		String userId = userProfile.get().getId();
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
@@ -456,6 +483,12 @@ public class AirQualityApi {
 				AIR_QUALITY_LAYER.SHARE_SCOPE,
 				AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 				AIR_QUALITY_LAYER.POLLUTANT_ID,
+				AIR_QUALITY_LAYER.AQ_YEAR,
+				AIR_QUALITY_LAYER.DESCRIPTION,
+				AIR_QUALITY_LAYER.SOURCE,
+				AIR_QUALITY_LAYER.DATA_TYPE,
+				AIR_QUALITY_LAYER.FILENAME,
+				AIR_QUALITY_LAYER.UPLOAD_DATE,
 				POLLUTANT.NAME.as("pollutant_name"), 
 				POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name"),
 				GRID_DEFINITION.NAME.as("grid_definition_name"),
@@ -479,16 +512,23 @@ public class AirQualityApi {
 		.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
 		.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
 		.where(AIR_QUALITY_LAYER.ID.eq(id))
-		.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)))
+		.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()))
 		.groupBy(AIR_QUALITY_LAYER.ID
 				, AIR_QUALITY_LAYER.NAME
 				, AIR_QUALITY_LAYER.USER_ID
 				, AIR_QUALITY_LAYER.SHARE_SCOPE
 				, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
 				, AIR_QUALITY_LAYER.POLLUTANT_ID
+				, AIR_QUALITY_LAYER.AQ_YEAR
+				, AIR_QUALITY_LAYER.DESCRIPTION
+				, AIR_QUALITY_LAYER.SOURCE
+				, AIR_QUALITY_LAYER.DATA_TYPE
+				, AIR_QUALITY_LAYER.FILENAME
+				, AIR_QUALITY_LAYER.UPLOAD_DATE				
 				, POLLUTANT.NAME
 				, POLLUTANT.FRIENDLY_NAME
 				, GRID_DEFINITION.NAME
+				
 				)
 		.fetchOne();
 	}
@@ -505,6 +545,15 @@ public class AirQualityApi {
 		.from(AIR_QUALITY_LAYER)
 		.where(AIR_QUALITY_LAYER.ID.eq(id))
 		.fetchOne().value1();
+	}
+	
+	public static String getAirQualityLayerName(Integer id) {
+		return DSL.using(JooqUtil.getJooqConfiguration())
+		.select(
+				AIR_QUALITY_LAYER.NAME)
+		.from(AIR_QUALITY_LAYER)
+		.where(AIR_QUALITY_LAYER.ID.eq(id))
+		.fetchOne().value1();	
 	}
 	
 	/**
@@ -554,7 +603,7 @@ public class AirQualityApi {
 		if (!"".equals(filter)) {
 			filterCondition = filterCondition.and(buildAirQualityCellsFilterCondition(filter));
 		}
-		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()));
 	
 		List<OrderField<?>> orderFields = new ArrayList<>();
 		
@@ -721,10 +770,23 @@ public class AirQualityApi {
 		String layerName;
 		Integer pollutantId;
 		Integer gridId;
+		String aqYear;
+		String description;
+		String source;
+		String dataType;
+		String filename;
+		LocalDateTime uploadDate;
+		
 		try{
 			layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
 			pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
 			gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
+			aqYear = ApiUtil.getMultipartFormParameterAsString(request, "aqYear");
+			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
+			source = ApiUtil.getMultipartFormParameterAsString(request, "source");
+			dataType = ApiUtil.getMultipartFormParameterAsString(request, "dataType");
+			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
+			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -1087,8 +1149,20 @@ public class AirQualityApi {
 			
 			//Create the air_quality_layer record
 			aqRecord = DSL.using(JooqUtil.getJooqConfiguration())
-			.insertInto(AIR_QUALITY_LAYER, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID, AIR_QUALITY_LAYER.USER_ID, AIR_QUALITY_LAYER.SHARE_SCOPE)
-			.values(layerName, pollutantId, gridId, userProfile.get().getId(), Constants.SHARING_NONE)
+			.insertInto(AIR_QUALITY_LAYER
+					, AIR_QUALITY_LAYER.NAME
+					, AIR_QUALITY_LAYER.POLLUTANT_ID
+					, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
+					, AIR_QUALITY_LAYER.USER_ID
+					, AIR_QUALITY_LAYER.SHARE_SCOPE
+					, AIR_QUALITY_LAYER.AQ_YEAR
+					, AIR_QUALITY_LAYER.DESCRIPTION
+					, AIR_QUALITY_LAYER.SOURCE
+					, AIR_QUALITY_LAYER.DATA_TYPE
+					, AIR_QUALITY_LAYER.FILENAME
+					, AIR_QUALITY_LAYER.UPLOAD_DATE)
+			.values(layerName, pollutantId, gridId, userProfile.get().getId(), Constants.SHARING_NONE
+					,aqYear, description, source, dataType, filename, uploadDate)
 			.returning(AIR_QUALITY_LAYER.ID, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
 			.fetchOne();
 			
@@ -1214,7 +1288,7 @@ public class AirQualityApi {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			// We want to silently faily in this case. At least we tried to clean up.
+			// We want to silently fail in this case. At least we tried to clean up.
 		}
 	}
 
@@ -1241,8 +1315,10 @@ public class AirQualityApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 		
-		if(layerResult.getUserId() == null || layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
-			//This is either a shared layer or it belongs to someone else
+		//Nobody can delete shared layers
+		//All users can delete their own layers
+		//Admins can delete any non-shared layers
+		if(layerResult.getShareScope() == Constants.SHARING_ALL || !(layerResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 		
@@ -1498,4 +1574,5 @@ public class AirQualityApi {
 		return recordsJSON;
 		
 	}
+
 }

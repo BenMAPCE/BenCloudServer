@@ -10,13 +10,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.*;
+import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
-import gov.epa.bencloud.server.tasks.TaskUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import spark.Service;
 
@@ -185,6 +185,35 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/health-impact-function-groups/:ids", (request, response) -> {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
+
+		/*
+		 * GET a partially populated batch task config
+
+		 * PARAMETERS:
+		 *  ids= comma separated list of health impact function group ids
+		 *  popYear=
+		 *  incidencePrevalenceDataset=
+		 *  pollutantId=
+		 *  baselineId=
+		 *  scenarioId[1-N] = Repeated for each post-policy scenario AQ surface selected
+		 *  popYear[1-N] = comma separated lsit of population years selected for each post-policy scenario
+		 *  Parameters are used to filter the list of functions to only those relevant to the current analysis
+		 *  and also to configure the incidence and prevalence datasets and years
+		 *  Response will include array of complete function definitions within each group
+		 *  
+		 *  Note that the array of valuation functions that are nested within each HIF will not be populated at this point.
+		 */	
+		service.get(apiPrefix + "/batch-task-config", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfig(request, response, getUserProfile(request, response));
+			response.type("application/json");
+			return b;
+		}, objectMapper::writeValueAsString);
+
+		service.get(apiPrefix + "/batch-task-config-example", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfigExample(request, response, getUserProfile(request, response));
+			response.type("application/json");
+			return b;
+		}, objectMapper::writeValueAsString);
 		
 		/*
 		 * GET a list of incidence datasets
@@ -329,9 +358,36 @@ public class ApiRoutes extends RoutesBase {
 			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * Accepts a BatchTaskConfig object in json format
+		 * Returns 200 if object submission was successful
+		 * Else, returns the appropriate http error code along with a {"message":"string"} json object
+		 */
+		service.post(apiPrefix + "/batch-tasks", (request, response) -> {
+			return TaskApi.postBatchTask(request, response, getUserProfile(request, response));
+
+		});
+		
+		service.delete(apiPrefix + "/batch-tasks/:id", (request, response) -> {
+			//TODO: Implement this
+			return CoreApi.getErrorResponseUnimplemented(request, response);
+
+		});
+
+		service.get(apiPrefix + "/batch-tasks/pending", (request, response) -> {
+			//TODO: Implement this
+			return CoreApi.getErrorResponseUnimplemented(request, response);
+		});
+		
+		service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
+			//TODO: Implement this
+			return CoreApi.getErrorResponseUnimplemented(request, response);
+		});
+		
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
-			ObjectNode data = TaskQueue.getPendingTasks(getUserProfile(request, response), getPostParametersAsMap(request));
+			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
 			response.type("application/json");
 			return data;
 
@@ -339,7 +395,7 @@ public class ApiRoutes extends RoutesBase {
 		
 		service.get(apiPrefix + "/tasks/completed", (request, response) -> {
 
-			ObjectNode data = TaskComplete.getCompletedTasks(getUserProfile(request, response), getPostParametersAsMap(request));
+			ObjectNode data = TaskComplete.getCompletedTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
 			response.type("application/json");
 			return data;
 
@@ -355,9 +411,19 @@ public class ApiRoutes extends RoutesBase {
 			try {
 				UserProfile profile = getUserProfile(request, response).get();
 				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
-				int taskCount = CoreApi.getTotalTaskCountForUser(profile);
-				if(taskCount >= Constants.MAX_TASKS) {
-					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + Constants.MAX_TASKS + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
+				int taskCount = TaskApi.getTotalTaskCountForUser(profile);			
+				int maxTasks = 20;
+				
+				String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
+				
+				try {
+					maxTasks = Integer.parseInt(sMaxTaskPerUser);
+				} catch(NumberFormatException e) {
+					//If this is no set in the properties, we will use the default of 20.
+				}
+						
+				if(maxTasks != 0 && taskCount >= maxTasks) {
+					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + maxTasks + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
 				}
 				
 				Task task = new Task();
@@ -390,26 +456,54 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		service.get(apiPrefix + "/task-configs", (request, response) -> {
-			Object data = CoreApi.getTaskConfigs(request, response, getUserProfile(request, response));
+			Object data = TaskApi.getTaskConfigs(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return data;
 
 		});
 		
 		service.post(apiPrefix + "/task-configs", (request, response) -> {
-			String ret = CoreApi.postTaskConfig(request, response, getUserProfile(request, response));
+			String ret = TaskApi.postTaskConfig(request, response, getUserProfile(request, response));
 
 			if(response.status() == 400) {
-				return CoreApi.getErrorResponseInvalidId(request, response);
+                return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			if(response.status() == 250) {
+				return CoreApi.getErrorResponse(request, response, 250, ret);
 			}
 
 			response.type("application/json");
 			return ret;
 
 		});
+		
+		/*
+		 * DELETE selected template
+		 */
+		service.delete(apiPrefix + "/task-configs/:id", (request, response) -> {
+			return TaskApi.deleteTaskConfig(request, response, getUserProfile(request, response));
+
+		});
+		
+		/*
+		 * Rename selected template
+		 */
+		service.put(apiPrefix + "/task-configs/:id", (request, response) -> {
+			return TaskApi.renameTaskConfig(request, response, getUserProfile(request, response));
+
+		});
 
 		service.get(apiPrefix + "/user", (request, response) -> {
 			Object ret = CoreApi.getUserInfo(request, response, getUserProfile(request, response));
+
+			response.type("application/json");
+			return ret;
+
+		});
+		
+		service.get(apiPrefix + "/version", (request, response) -> {
+			Object ret = CoreApi.getVersion(request, response, getUserProfile(request, response));
 
 			response.type("application/json");
 			return ret;
