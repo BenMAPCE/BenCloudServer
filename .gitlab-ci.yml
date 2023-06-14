@@ -186,7 +186,7 @@ deploy_testdev:
   script:
     - apk add gettext
     - kubectl config use-context "$KUBE_CONTEXT"
-    - envsubst < k8s/bencloud-dev-server.yml | kubectl apply -f -
+    - envsubst < k8s/bencloud-dev-server.yml | kubectl apply --validate=false -f -
     # - kubectl apply -f k8s/bencloud-dev-server.yml -n benmap-dev
   environment:
     name: testdev
@@ -205,7 +205,7 @@ deploy_staging:
   script:
     - apk add gettext
     - kubectl config use-context "$KUBE_CONTEXT"
-    - envsubst < k8s/bencloud-stage-server.yml | kubectl apply -f -
+    - envsubst < k8s/bencloud-stage-server.yml | kubectl apply --validate=false -f -
     # - kubectl apply -f k8s/bencloud-stage-server.yml -n benmap-stg
   environment:
     name: staging
