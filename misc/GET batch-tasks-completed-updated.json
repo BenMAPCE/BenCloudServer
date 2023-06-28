@@ -1,0 +1,259 @@
+{
+	"data": [
+	{
+		"batch_task_name": "PM NAAQS (Batch, 8)",
+		"batch_task_uuid": "7a8b5a5d-706b-41f9-ba06-7d631804e402",
+		"batch_task_submitted_date": "2023-04-03 11:14:30",
+		"batch_task_started_date": "2023-04-03 11:14:30",
+		"batch_task_completed_date": "2023-04-03 11:18:29",
+		"batch_task_user_id": "test@test.com",
+		"batch_task_wait_time": {
+			"batch_task_wait_time_display": "1 second ",
+			"batch_task_wait_time_seconds": 1
+		},
+		"batch_task_execution_time": {
+			"batch_task_execution_time_display": "10 minutes 45 seconds ",
+			"batch_task_execution_time_seconds": 645
+		},
+		"task_elapsed_time": "10 minutes 45 seconds ",
+		"task_successful": true,
+		"task_message": "Saved 2,491,308 results",
+		"tasks": [
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 11 ug/m3_2030",
+				"task_type": "HIF",
+				"task_description": null,
+				"task_uuid": "1dcb79eb-f06d-428f-9cb5-287869ed9fdb",
+				"task_submitted_date": "2022-09-02 11:26:07",
+				"task_started_date": "2022-09-02 11:26:08",
+				"task_completed_date": "2022-09-02 11:30:07",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "1 second ",
+					"task_wait_time_seconds": 1
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 411,308 results"
+			},
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 11 ug/m3_2030-Valuation",
+				"task_type": "Valuation",
+				"task_description": null,
+				"task_uuid": "5caa4267-c74d-4d92-9c62-2a7a6cc21c77",
+				"task_submitted_date": "2022-12-01 17:15:51",
+				"task_started_date": "2022-12-01 17:15:57",
+				"task_completed_date": "2022-12-01 17:20:00",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "5 seconds ",
+					"task_wait_time_seconds": 5
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 81,308 results"
+			},
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 11 ug/m3_2035",
+				"task_type": "HIF",
+				"task_description": null,
+				"task_uuid": "1dcb79eb-f06d-428f-9cb5-287869ed9fdb",
+				"task_submitted_date": "2022-09-02 11:26:07",
+				"task_started_date": "2022-09-02 11:26:08",
+				"task_completed_date": "2022-09-02 11:30:07",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "1 second ",
+					"task_wait_time_seconds": 1
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 411,308 results"
+			},
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 11 ug/m3_2035-Valuation",
+				"task_type": "Valuation",
+				"task_description": null,
+				"task_uuid": "5caa4267-c74d-4d92-9c62-2a7a6cc21c77",
+				"task_submitted_date": "2022-12-01 17:15:51",
+				"task_started_date": "2022-12-01 17:15:57",
+				"task_completed_date": "2022-12-01 17:20:00",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "5 seconds ",
+					"task_wait_time_seconds": 5
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 81,308 results"
+			},
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 12 ug/m3_2030",
+				"task_type": "HIF",
+				"task_description": null,
+				"task_uuid": "1dcb79eb-f06d-428f-9cb5-287869ed9fdb",
+				"task_submitted_date": "2022-09-02 11:26:07",
+				"task_started_date": "2022-09-02 11:26:08",
+				"task_completed_date": "2022-09-02 11:30:07",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "1 second ",
+					"task_wait_time_seconds": 1
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 411,308 results"
+			},
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 12 ug/m3_2030-Valuation",
+				"task_type": "Valuation",
+				"task_description": null,
+				"task_uuid": "5caa4267-c74d-4d92-9c62-2a7a6cc21c77",
+				"task_submitted_date": "2022-12-01 17:15:51",
+				"task_started_date": "2022-12-01 17:15:57",
+				"task_completed_date": "2022-12-01 17:20:00",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "5 seconds ",
+					"task_wait_time_seconds": 5
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 81,308 results"
+			},
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 12 ug/m3_2035",
+				"task_type": "HIF",
+				"task_description": null,
+				"task_uuid": "1dcb79eb-f06d-428f-9cb5-287869ed9fdb",
+				"task_submitted_date": "2022-09-02 11:26:07",
+				"task_started_date": "2022-09-02 11:26:08",
+				"task_completed_date": "2022-09-02 11:30:07",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "1 second ",
+					"task_wait_time_seconds": 1
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 411,308 results"
+			},
+			{
+				"task_name": "PM NAAQS_PM NAAQS Attain 12 ug/m3_2035-Valuation",
+				"task_type": "Valuation",
+				"task_description": null,
+				"task_uuid": "5caa4267-c74d-4d92-9c62-2a7a6cc21c77",
+				"task_submitted_date": "2022-12-01 17:15:51",
+				"task_started_date": "2022-12-01 17:15:57",
+				"task_completed_date": "2022-12-01 17:20:00",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "5 seconds ",
+					"task_wait_time_seconds": 5
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "2 minutes 15 seconds ",
+					"task_execution_time_seconds": 135
+				},
+				"task_elapsed_time": "2 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 81,308 results"
+			}
+		]
+	},
+	{
+		"batch_task_name": "O3 (Batch, 2)",
+		"batch_task_uuid": "7a8b5a5d-706b-41f9-ba06-7d631804e402",
+		"batch_task_submitted_date": "2023-04-03 11:14:30",
+		"batch_task_started_date": "2023-04-03 11:14:30",
+		"batch_task_completed_date": "2023-04-03 11:18:29",
+		"batch_task_user_id": "test@test.com",
+		"batch_task_wait_time": {
+			"batch_task_wait_time_display": "1 second ",
+			"batch_task_wait_time_seconds": 1
+		},
+		"batch_task_execution_time": {
+			"batch_task_execution_time_display": "3 minutes 59 seconds ",
+			"batch_task_execution_time_seconds": 239
+		},
+		"task_elapsed_time": "3 minutes 59 seconds ",
+		"task_successful": true,
+		"task_message": "Saved 191,050 results",
+		"tasks": [
+			{
+				"task_name": "O3_RCU_O3_MDA8_Final",
+				"task_type": "HIF",
+				"task_description": null,
+				"task_uuid": "1dcb79eb-f06d-428f-9cb5-287869ed9fdb",
+				"task_submitted_date": "2022-09-02 11:26:07",
+				"task_started_date": "2022-09-02 11:26:08",
+				"task_completed_date": "2022-09-02 11:30:07",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "1 second ",
+					"task_wait_time_seconds": 1
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "3 minutes 15 seconds ",
+					"task_execution_time_seconds": 195
+				},
+				"task_elapsed_time": "3 minutes 15 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 191,049 results"
+			},
+			{
+				"task_name": "O3_RCU_O3_MDA8_Final-Valuation",
+				"task_type": "Valuation",
+				"task_description": null,
+				"task_uuid": "5caa4267-c74d-4d92-9c62-2a7a6cc21c77",
+				"task_submitted_date": "2022-12-01 17:15:51",
+				"task_started_date": "2022-12-01 17:15:57",
+				"task_completed_date": "2022-12-01 17:20:00",
+				"task_user_id": "test@test.com",
+				"task_wait_time": {
+					"task_wait_time_display": "5 seconds ",
+					"task_wait_time_seconds": 5
+				},
+				"task_execution_time": {
+					"task_execution_time_display": "34 seconds ",
+					"task_execution_time_seconds": 34
+				},
+				"task_elapsed_time": "34 seconds ",
+				"task_successful": true,
+				"task_message": "Saved 1 results"
+			}
+		]
+	}
+	],
+	"success": true,
+	"recordsFiltered": 10,
+	"recordsTotal": 10
+}

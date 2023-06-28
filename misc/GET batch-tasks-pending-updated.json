@@ -1,0 +1,275 @@
+{
+  "data": [
+  {
+	"batch_task_name": "Hello World (Batch, 8)",
+	"batch_task_uuid": "7a8b5a5d-706b-41f9-ba06-7d631804e402",
+	"batch_task_submitted_date": "2023-04-03 11:14:30",
+	"batch_task_user_id": "test@test.com",
+	"batch_task_status_message": "Started at 2023-04-03 11:14:30",
+	"batch_task_progress_message": "Completed 4 of 8 tasks",
+	"batch_task_percentage": 50,
+	"batch_task_status": true,
+	"tasks": [
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2030",
+		  "task_uuid": "7a8b5a5d-706b-41f9-ba06-7d631804e402",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Started at 2023-04-03 11:14:30",
+		  "task_progress_message": [
+			{
+			  "status": "complete",
+			  "message": "Loading air quality data"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loaded incidence and prevalence for 3 functions"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loading population data"
+			},
+			{
+			  "status": "active",
+			  "message": "Saving progress..."
+			}
+		  ],
+		  "task_percentage": 74,
+		  "task_status": true
+		},
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2030-Valuation",
+		  "task_uuid": "ec58789d-7f3c-46a3-959b-ee0825dee104",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2035",
+		  "task_uuid": "8a575c52-28d6-4329-85f7-59ebcc57547e",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Started at 2023-04-03 11:14:30",
+		  "task_progress_message": [
+			{
+			  "status": "complete",
+			  "message": "Loading air quality data"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loaded incidence and prevalence for 3 functions"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loading population data"
+			},
+			{
+			  "status": "active",
+			  "message": "Saving progress..."
+			}
+		  ],
+		  "task_percentage": 74,
+		  "task_status": true
+		},
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2035-Valuation",
+		  "task_uuid": "20c6ee75-7e65-4c58-bb6a-4dab5ac1a22b",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2030",
+		  "task_uuid": "552efa0a-f68e-4680-a561-862b5c11d70d",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2030-Valuation",
+		  "task_uuid": "f7ad8b80-bcba-4c29-9464-c28435dfdf83",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2035",
+		  "task_uuid": "1a9c1589-f31b-4c51-a1ab-33655dc5f003",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Hello World-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2035-Valuation",
+		  "task_uuid": "9260d08a-368d-4a6f-8e53-27dda18a4170",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		}
+	]
+  },
+  {
+	"batch_task_name": "Batch 2 (Batch, 8)",
+	"batch_task_uuid": "7a8b5a5d-706b-41f9-ba06-7d631804e402",
+	"batch_task_submitted_date": "2023-04-03 11:14:30",
+	"batch_task_user_id": "test@test.com",
+	"batch_task_status_message": "Started at 2023-04-03 11:14:30",
+	"batch_task_progress_message": "Completed 4 of 8 tasks",
+	"batch_task_percentage": 50,
+	"batch_task_status": true,
+	"tasks": [
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2030",
+		  "task_uuid": "7a8b5a5d-706b-41f9-ba06-7d631804e402",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Started at 2023-04-03 11:14:30",
+		  "task_progress_message": [
+			{
+			  "status": "complete",
+			  "message": "Loading air quality data"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loaded incidence and prevalence for 3 functions"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loading population data"
+			},
+			{
+			  "status": "active",
+			  "message": "Saving progress..."
+			}
+		  ],
+		  "task_percentage": 74,
+		  "task_status": true
+		},
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2030-Valuation",
+		  "task_uuid": "ec58789d-7f3c-46a3-959b-ee0825dee104",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2035",
+		  "task_uuid": "8a575c52-28d6-4329-85f7-59ebcc57547e",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Started at 2023-04-03 11:14:30",
+		  "task_progress_message": [
+			{
+			  "status": "complete",
+			  "message": "Loading air quality data"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loaded incidence and prevalence for 3 functions"
+			},
+			{
+			  "status": "complete",
+			  "message": "Loading population data"
+			},
+			{
+			  "status": "active",
+			  "message": "Saving progress..."
+			}
+		  ],
+		  "task_percentage": 74,
+		  "task_status": true
+		},
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032-2035-Valuation",
+		  "task_uuid": "20c6ee75-7e65-4c58-bb6a-4dab5ac1a22b",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2030",
+		  "task_uuid": "552efa0a-f68e-4680-a561-862b5c11d70d",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2030-Valuation",
+		  "task_uuid": "f7ad8b80-bcba-4c29-9464-c28435dfdf83",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2035",
+		  "task_uuid": "1a9c1589-f31b-4c51-a1ab-33655dc5f003",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "HIF",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		},
+		{
+		  "task_name": "Batch 2-PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032-2035-Valuation",
+		  "task_uuid": "9260d08a-368d-4a6f-8e53-27dda18a4170",
+		  "task_submitted_date": "2023-04-03 11:14:30",
+		  "task_type": "Valuation",
+		  "task_user_id": "test@test.com",
+		  "task_status_message": "Pending",
+		  "task_progress_message": null,
+		  "task_percentage": null,
+		  "task_status": false
+		}
+	]
+  }
+  ],
+  "success": true,
+  "recordsFiltered": 16,
+  "recordsTotal": 16
+}
