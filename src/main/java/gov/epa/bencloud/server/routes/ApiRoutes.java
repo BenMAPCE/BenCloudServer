@@ -385,6 +385,7 @@ public class ApiRoutes extends RoutesBase {
 			return CoreApi.getErrorResponseUnimplemented(request, response);
 		});
 		
+		//TODO: Add GET /batch-tasks/:id/scenarios to drive the view results UI
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
 			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
