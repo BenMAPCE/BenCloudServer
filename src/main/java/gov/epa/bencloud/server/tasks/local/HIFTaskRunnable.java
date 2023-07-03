@@ -156,17 +156,9 @@ public class HIFTaskRunnable implements Runnable {
 				boolean ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hifPopAgeRangeMapping, hif, true, h, incidenceLists, incidenceCacheMap);
 				ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hifPopAgeRangeMapping, hif, false, h, prevalenceLists, prevalenceCacheMap);
 				
-				double[] distSamples = getDistributionSamples(h);
-				double[] distBeta = new double[20];
+				double[] distPercentiles = getPercentilesFromDistribution(h);
 				
-				int idxMedian = 0 + distSamples.length / distBeta.length / 2; //the median of the first segment
-				for(int i=0; i < distBeta.length; i++) {
-					// Grab the median from each of the 20 slices of distSamples
-					distBeta[i] = (distSamples[idxMedian]+distSamples[idxMedian-1])/2.0;
-					idxMedian += distSamples.length / distBeta.length;
-				}
-				
-				hifBetaDistributionLists.add(distBeta);
+				hifBetaDistributionLists.add(distPercentiles);
 			}
 			
 			
@@ -617,6 +609,19 @@ public class HIFTaskRunnable implements Runnable {
 		
 		Arrays.sort(samples);
 		return samples;
+	}
+
+	private double[] getPercentilesFromDistribution(Record h) {
+		double[] percentiles = new double[20];
+		
+		RealDistribution distribution = new NormalDistribution(h.get("beta", Double.class), h.get("p1_beta", Double.class));
+
+		for (int i = 0; i < percentiles.length; i++) {
+			double p = 2.5 + 5.0*i;
+			percentiles[i] = distribution.inverseCumulativeProbability(p / 100.0);
+		}
+		
+		return percentiles;
 	}
 
 }
