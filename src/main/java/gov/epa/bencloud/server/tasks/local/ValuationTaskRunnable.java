@@ -111,16 +111,8 @@ public class ValuationTaskRunnable implements Runnable {
 				
 				vfConfig.vfRecord = vfDefinition.intoMap();
 				
-				double[] distBetas = new double[100];
-				double[] distSamples = getDistributionSamples(vfDefinition);
-				int idxMedian = 0 + distSamples.length / distBetas.length / 2; //the median of the first segment
-				
-				for(int i=0; i < distBetas.length; i++) {
-					// Grab the median from each of the 100 slices of distList
-					distBetas[i] = (distSamples[idxMedian]+distSamples[idxMedian-1])/2.0;
-					idxMedian += distSamples.length / distBetas.length;
-				}
-				vfBetaDistributionLists.add(distBetas);
+				double[] vfDistPercentiles = getPercentilesFromDistribution(vfDefinition);
+				vfBetaDistributionLists.add(vfDistPercentiles);
 			}
 			
 			
@@ -359,6 +351,49 @@ public class ValuationTaskRunnable implements Runnable {
 			log.error("Task failed", e);
 		}
 		log.info("Valuation Task Complete: " + taskUuid);
+	}
+
+	/**
+	 * 
+	 * Returns the 0.5, 1.5, 2.5, ... percentiles from the provided valuation function's distribution.
+	 * @param vfRecord
+	 * @return
+	 */
+	private double[] getPercentilesFromDistribution(Record vfRecord) {
+		double[] percentiles = new double[100];
+		String distributionType = vfRecord.get("dist_a", String.class).toLowerCase();
+		RealDistribution distribution;
+
+		switch (distributionType) {
+		case "none":
+			double value = vfRecord.get("val_a", Double.class).doubleValue();
+			for (int i = 0; i < percentiles.length; i++) {
+				percentiles[i] = value;
+			}
+			return percentiles;
+		case "normal":
+			distribution = new NormalDistribution(vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
+			break;
+		case "weibull":
+			distribution = new WeibullDistribution(vfRecord.get("p2a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
+			break;
+		case "lognormal":
+			distribution = new LogNormalDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
+			break;
+		case "triangular":
+			//lower, mode, upper
+			distribution = new TriangularDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
+			break;
+		default:
+			return null;
+		}
+
+		for (int i = 0; i < percentiles.length; i++) {
+			double p = 0.5 + i;
+			percentiles[i] = distribution.inverseCumulativeProbability(p / 100.0);
+		}
+
+		return percentiles;
 	}
 
 	private double[] getDistributionSamples(Record vfRecord) {
