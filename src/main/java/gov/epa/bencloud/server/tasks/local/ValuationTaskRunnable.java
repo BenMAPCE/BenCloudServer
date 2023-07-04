@@ -262,35 +262,20 @@ public class ValuationTaskRunnable implements Runnable {
 									rec.setStandardDev(0.0);
 									rec.setResultVariance(0.0);
 								} else {
-									double[] percentiles = new double[100];
 									Double[] percentiles20 = new Double[20];
-									double[] distValues = distStats.getSortedValues();
-									int idxMedian = distValues.length / percentiles.length / 2; // the median of the first segment
-									int idxMedian20 = distValues.length / percentiles20.length / 2; // the median of the first segment
-									DescriptiveStatistics statsPercentiles = new DescriptiveStatistics();
-									for (int i = 0; i < percentiles.length; i++) {
-										// Grab the median from each of the 100 slices of distStats
-										percentiles[i] = (distValues[idxMedian] + distValues[idxMedian - 1]) / 2.0;
-										//TODO: Maybe it would be faster to create statsPercentiles below and use the other constructor: new DescriptiveStatistics(percentiles);
-										statsPercentiles.addValue(percentiles[i]);
-										idxMedian += distValues.length / percentiles.length;
-									}
+									// The old code used to grab the percentiles, put them into a new DescriptiveStatistics, and calculate the mean and
+									// variance from that. It's probably better to do the statistics directly on distStats
 									for (int i = 0; i < percentiles20.length; i++) {
-										// Grab the median from each of the 20 slices of distStats
-										percentiles20[i] = (distValues[idxMedian20] + distValues[idxMedian20 - 1]) / 2.0;
-										//statsPercentiles.addValue(percentiles[i]);
-										idxMedian20 += distValues.length / percentiles20.length;
+										double p = (100.0 / percentiles20.length * i) + (100.0 / percentiles20.length / 2.0); // 2.5, 7.5, ... 97.5
+										percentiles20[i] = distStats.getPercentile(p);
 									}
-									rec.setPct_2_5((percentiles[1] + percentiles[2]) / 2.0);
-									rec.setPct_97_5((percentiles[96] + percentiles[97]) / 2.0);
+									rec.setPct_2_5(distStats.getPercentile(2.5));
+									rec.setPct_97_5(distStats.getPercentile(97.5));
 									rec.setPercentiles(percentiles20);
-									rec.setResultMean(statsPercentiles.getMean());
-									
-									//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop version
-									statsPercentiles.addValue(valuationFunctionEstimate);
-									
-									rec.setStandardDev(statsPercentiles.getStandardDeviation());
-									rec.setResultVariance(statsPercentiles.getVariance());
+									rec.setResultMean(distStats.getMean());
+								
+									rec.setStandardDev(distStats.getStandardDeviation());
+									rec.setResultVariance(distStats.getVariance());
 
 								}
 							} catch (Exception e) {
