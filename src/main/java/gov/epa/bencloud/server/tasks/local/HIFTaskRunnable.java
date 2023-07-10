@@ -11,6 +11,16 @@ import java.util.Random;
 import java.util.Vector;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.ParetoDistribution;
+import org.apache.commons.math3.distribution.WeibullDistribution;
+import org.apache.commons.math3.distribution.TriangularDistribution;
+import org.apache.commons.math3.distribution.UniformRealDistribution;
+import org.apache.commons.math3.distribution.LogNormalDistribution;
+import org.apache.commons.math3.distribution.LogisticDistribution;
+import org.apache.commons.math3.distribution.BetaDistribution;
+import org.apache.commons.math3.distribution.CauchyDistribution;
+import org.apache.commons.math3.distribution.ExponentialDistribution;
+import org.apache.commons.math3.distribution.GammaDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jooq.Record;
@@ -614,10 +624,75 @@ public class HIFTaskRunnable implements Runnable {
 	private double[] getPercentilesFromDistribution(Record h) {
 		double[] percentiles = new double[20];
 		
-		RealDistribution distribution = new NormalDistribution(h.get("beta", Double.class), h.get("p1_beta", Double.class));
+		String distribution_name = h.get("dist_beta", String.class);
+		RealDistribution distribution;
 
+		double beta = h.get("beta", Double.class).doubleValue();
+		double p1 = h.get("p1_beta", Double.class).doubleValue();
+		double p2 = h.get("p2_beta", Double.class).doubleValue();
+
+		/* AT THE TIME OF WRITING THIS CODE, WE ONLY HAVE TEST DATA FOR NORMAL DISTRIBUTIONS.
+		 * AS SUCH, I HAVEN'T TESTED THE CODE FOR OTHER DISTRIBUTIONS FOR BUGS.
+		 */
+
+		switch (distribution_name.toLowerCase()) {
+		case "none":
+			for (int i = 0; i < percentiles.length; i++) {
+				percentiles[i] = beta;
+			}
+			return percentiles;
+		case "normal":
+			// mean, standard deviation
+			distribution = new NormalDistribution(beta, p1);
+			break;
+		case "weibull":
+			// shape, scale (parameters are flipped to match order from desktop version)
+			distribution = new WeibullDistribution(p2, p1);
+			break;
+		case "lognormal":
+			// scale, shape
+			distribution = new LogNormalDistribution(p1, p2);
+			break;
+		case "triangular":
+			// lower, mode, upper
+			distribution = new TriangularDistribution(p1, beta, p2);
+			break;
+		case "exponential":
+			// mean
+			distribution = new ExponentialDistribution(p1);
+			break;
+		case "uniform":
+			// lower, upper
+			distribution = new UniformRealDistribution(p1, p2);
+			break;
+		case "gamma":
+			// shape, scale
+			distribution = new GammaDistribution(p1, p2);
+			break;
+		case "logistic":
+			// mean, scale
+			distribution = new LogisticDistribution(p1, p2);
+			break;
+		case "beta":
+			// alpha, beta
+			distribution = new BetaDistribution(p1, p2);
+			break;
+		case "pareto":
+			// scale, shape
+			distribution = new ParetoDistribution(p1, p2);
+			break;
+		case "cauchy":
+			// median, width
+			distribution = new CauchyDistribution(p1, p2);
+			break;
+		default:
+			// TODO: Report error back to user? 
+			return null;
+		}
+
+		double step = 100.0 / percentiles.length;
 		for (int i = 0; i < percentiles.length; i++) {
-			double p = 2.5 + 5.0*i;
+			double p = (step / 2) + (step)*i;
 			percentiles[i] = distribution.inverseCumulativeProbability(p / 100.0);
 		}
 		
