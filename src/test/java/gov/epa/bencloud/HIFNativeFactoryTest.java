@@ -17,8 +17,7 @@ import gov.epa.bencloud.api.function.HIFArguments;
 
 public class HIFNativeFactoryTest {
     
-    @DisplayName("HIFNativeFactory should calculate using correct formula")
-    @ParameterizedTest(name = "{0} test")
+    @ParameterizedTest()
     @MethodSource("provideHIFNativeArgs")
     void TestHIFNativeFactory(String functionalForm, HIFArguments args, double expectedResult) {
         HIFNative hif = HIFNativeFactory.create(functionalForm);
@@ -47,12 +46,26 @@ public class HIFNativeFactoryTest {
         sampleHifArgs.prevalence = prevalence;
         sampleHifArgs.population = population;
 
-        // TODO: Add the rest of these cases
         return Stream.of(
             Arguments.of("(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION", sampleHifArgs, (1 - (1.0 / Math.exp(beta*deltaQ)))*incidence*population),
+            Arguments.of("(1-(1/((1-A)*exp(BETA*DELTAQ)+A)))*A*POPULATION*PREVALENCE", sampleHifArgs, (1-(1/((1-a)*Math.exp(beta*deltaQ)+a)))*a*population*prevalence),
+            Arguments.of("(1-(1/((1-INCIDENCE)*exp(BETA*A*DELTAQ)+INCIDENCE)))*INCIDENCE*POPULATION", sampleHifArgs, (1-(1/((1-incidence)*Math.exp(beta*a*deltaQ)+incidence)))*incidence*population),
+            Arguments.of("(1-(1/((1-INCIDENCE)*exp(BETA*B*DELTAQ)+INCIDENCE)))*INCIDENCE*POPULATION*A", sampleHifArgs, (1-(1/((1-incidence)*Math.exp(beta*b*deltaQ)+incidence)))*incidence*population*a),
             Arguments.of("(1-(1/((1-INCIDENCE)*exp(BETA*DELTAQ)+INCIDENCE)))*INCIDENCE*POPULATION", sampleHifArgs, (1-(1/((1-incidence)*Math.exp(beta*deltaQ)+incidence)))*incidence*population),
+            Arguments.of("(1-(1/((1-INCIDENCE)*exp(BETA*DELTAQ)+INCIDENCE)))*INCIDENCE*POPULATION*(1-A)", sampleHifArgs, (1-(1/((1-incidence)*Math.exp(beta*deltaQ)+incidence)))*incidence*population*(1-a)),
             Arguments.of("(1-(1/((1-INCIDENCE)*exp(BETA*DELTAQ)+INCIDENCE)))*INCIDENCE*POPULATION*A", sampleHifArgs, (1-(1/((1-incidence)*Math.exp(beta*deltaQ)+incidence)))*incidence*population*a),
-            Arguments.of("(1-(1/((1-A)*exp(BETA*DELTAQ)+A)))*A*POPULATION*PREVALENCE", (1-(1/((1-a)*Math.exp(beta*deltaQ)+a)))*a*population*prevalence)
+            Arguments.of("(1-(1/((1-PREVALENCE)*exp(BETA*A*DELTAQ)+PREVALENCE)))*PREVALENCE*POPULATION", sampleHifArgs, (1-(1/((1-prevalence)*Math.exp(beta*a*deltaQ)+prevalence)))*prevalence*population),
+            Arguments.of("(1-(1/((1-PREVALENCE)*exp(BETA*DELTAQ)+PREVALENCE)))*PREVALENCE*POPULATION", sampleHifArgs, (1-(1/((1-prevalence)*Math.exp(beta*deltaQ)+prevalence)))*prevalence*population),
+            Arguments.of("(1-(1/exp(BETA*A*DELTAQ)))*INCIDENCE*POPULATION", sampleHifArgs, (1-(1/Math.exp(beta*a*deltaQ)))*incidence*population),
+            Arguments.of("(1-(1/exp(BETA*B*DELTAQ)))*A*POPULATION", sampleHifArgs, (1-(1/Math.exp(beta*b*deltaQ)))*a*population),
+            Arguments.of("(1-(1/exp(BETA*B*DELTAQ)))*INCIDENCE*POPULATION*A", sampleHifArgs, (1-(1/Math.exp(beta*b*deltaQ)))*incidence*population*a),
+            Arguments.of("(1-(1/exp(BETA*DELTAQ)))*A*POPULATION", sampleHifArgs, (1-(1/Math.exp(beta*deltaQ)))*a*population),
+            Arguments.of("(1-(1/exp(BETA*DELTAQ)))*A*POPULATION*PREVALENCE", sampleHifArgs, (1-(1/Math.exp(beta*deltaQ)))*a*population*prevalence),
+            Arguments.of("(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION", sampleHifArgs, (1-(1/Math.exp(beta*deltaQ)))*incidence*population),
+            Arguments.of("(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION*(1-A)", sampleHifArgs, (1-(1/Math.exp(beta*deltaQ)))*incidence*population*(1-a)),
+            Arguments.of("(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION*A", sampleHifArgs, (1-(1/Math.exp(beta*deltaQ)))*incidence*population*a),
+            Arguments.of("(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION*A*B", sampleHifArgs, (1-(1/Math.exp(beta*deltaQ)))*incidence*population*a*b),
+            Arguments.of("(1-exp(-BETA*DELTAQ))*INCIDENCE*POPULATION", sampleHifArgs, (1-Math.exp(-beta*deltaQ))*incidence*population)
         );
     }
 
