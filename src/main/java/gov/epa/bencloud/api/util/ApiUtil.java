@@ -33,6 +33,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableReco
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskQueueRecord;
+import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.TaskUtil;
 import spark.Request;
@@ -232,7 +233,7 @@ public class ApiUtil {
 			return CoreApi.getErrorResponseForbidden(req, res);
 		}
 		//remove from worker and update in_process = false
-		TaskQueue.returnTaskToQueue(uuid);
+		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
 
 		//remove hif and valuation results
 		if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
@@ -448,7 +449,7 @@ public class ApiUtil {
 		}		
 		
 		for (Record record : result) {			
-			//TODO: remove children for parents?
+			//TODO: Do we need to remove children task results before removing parent tasks?
 			String uuid = record.getValue(TASK_COMPLETE.TASK_UUID);
 			if (record.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
 				TaskUtil.deleteHifResults(uuid);
