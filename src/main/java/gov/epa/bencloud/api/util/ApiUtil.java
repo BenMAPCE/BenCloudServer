@@ -233,7 +233,7 @@ public class ApiUtil {
 			return CoreApi.getErrorResponseForbidden(req, res);
 		}
 		//remove from worker and update in_process = false
-		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
+		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
 
 		//remove hif and valuation results
 		if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
