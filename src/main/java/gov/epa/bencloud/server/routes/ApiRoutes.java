@@ -221,6 +221,14 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/incidence", (request, response) -> {
 			return IncidenceApi.getAllIncidenceDatasets(response, getUserProfile(request, response));
 		});
+
+		/*
+		 * POST an incidence dataset
+		 */
+		service.post(apiPrefix + "/incidence-data", (request, response) -> {
+			return IncidenceApi.postIncidenceData(request, response, getUserProfile(request, response));
+		});
+
 		
 		/*
 		 * GET a list of prevalence datasets
