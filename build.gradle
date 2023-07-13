@@ -49,6 +49,8 @@ dependencies {
     
     implementation 'io.kubernetes:client-java-extended:14.0.0'
 
+	testImplementation(platform('org.junit:junit-bom:5.9.3'))
+	testImplementation('org.junit.jupiter:junit-jupiter')
 }
 
 task fatJar(type: Jar) {
@@ -77,4 +79,11 @@ task taskRunnerFatJar(type: Jar) {
 	archiveBaseName = "BenCloudTaskRunner"
 	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
 }

@@ -36,6 +36,6 @@ Note that in order to run the full process, you first need to have the populatio
 `./pg_dump --file "[PATH TO SQL FILE OUTPUT]" --host "[HOST]" --port "5432" --username "benmap_system" --no-owner --no-privileges --exclude-schema=stage --password --verbose --format=plain --blobs "benmap"`
 
 ## Creating and loading from a file
-`./createdb -T template0 benmap --host "[HOST]" --port "5432" --username "benmap_system" --password`
+`./createdb -T template0 --host "[HOST]" --port "5432" --username "benmap_system" --password benmap`
 
 `./psql -d benmap --host "[HOST]" --port "5432" --username "benmap_system" --password -f "[PATH TO SQL FILE INPUT]"`

@@ -366,6 +366,13 @@ public class ApiRoutes extends RoutesBase {
 			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
 
 		});
+		
+		/*
+		 * Cancel a pending task
+		 */
+		service.put(apiPrefix + "/tasks/:uuid", (request, response) -> {
+			return ApiUtil.cancelTaskAndResults(request, response, getUserProfile(request, response));
+		});
 
 		/*
 		 * Accepts a BatchTaskConfig object in json format
@@ -378,8 +385,7 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		service.delete(apiPrefix + "/batch-tasks/:id", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
+			return ApiUtil.deleteBatchTaskResults(request, response, getUserProfile(request, response));
 
 		});
 

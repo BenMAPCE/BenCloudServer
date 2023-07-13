@@ -80,7 +80,9 @@ public class TaskComplete {
 						TASK_COMPLETE.TASK_COMPLETE_MESSAGE,
 						TASK_COMPLETE.TASK_SUBMITTED_DATE,
 						TASK_COMPLETE.TASK_STARTED_DATE,
-						TASK_COMPLETE.TASK_COMPLETED_DATE)
+						TASK_COMPLETE.TASK_COMPLETED_DATE,
+						TASK_COMPLETE.USER_ID,
+						TASK_COMPLETE.TASK_BATCH_ID)
 				.values(
 						task.getUserIdentifier(),
 						task.getPriority(),
@@ -95,7 +97,9 @@ public class TaskComplete {
 						taskCompleteMessage,
 						task.getSubmittedDate(),
 						task.getStartedDate(),
-						LocalDateTime.now())
+						LocalDateTime.now(),
+						task.getUserIdentifier(),
+						task.getBatchId())
 				.execute();
 
 				DSL.using(ctx).delete(TASK_QUEUE)

@@ -32,6 +32,9 @@ import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskQueueRecord;
+import gov.epa.bencloud.server.tasks.TaskComplete;
+import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.TaskUtil;
 import spark.Request;
 import spark.Response;
@@ -210,6 +213,38 @@ public class ApiUtil {
 		res.status(204);
 		return res;
 	}
+	
+	/**
+	 * Cancel a queued task and remove generated results. Task UUID given in the req parameters.
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 */
+	public static Object cancelTaskAndResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		String uuid=req.params("uuid");
+		TaskQueueRecord queueTask = DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(TASK_QUEUE)
+				.where(TASK_QUEUE.TASK_UUID.eq(uuid))
+				.fetchAny();
+		
+		if(queueTask == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		if(CoreApi.isAdmin(userProfile) == false && queueTask.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
+		}
+		//remove from worker and update in_process = false
+		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+
+		//remove hif and valuation results
+		if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+			TaskUtil.deleteHifResults(uuid);
+		} else if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+			TaskUtil.deleteValuationResults(uuid);
+		}
+		res.status(204);
+		return res;
+		
+	}
 
 	// Note that this implementation is currently incomplete. 
 	// It will currently ONLY return data for the median_income variable. 
@@ -361,5 +396,69 @@ public class ApiUtil {
                 .fetch(TASK_CONFIG.NAME);
         return allTemplateNames;
     }
+
+    
+    /**
+	 * Deletes the results of a completed batch_task, task task_batch_id given in the req parameters.
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 * @return null
+	 */
+	public static Object deleteBatchTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		String idParam;
+		Integer batchId;
+		try {
+			idParam = String.valueOf(req.params("id"));
+
+			batchId = Integer.valueOf(idParam);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(req, res);	
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(req, res);
+		}
+		
+
+		
+		Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_BATCH)
+				.where(TASK_BATCH.ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		else if(result.size()==0) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		
+		if(CoreApi.isAdmin(userProfile) == false && result.get(0).getValue(TASK_BATCH.USER_ID).equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
+		}
+		
+		result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
+				.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		else if(result.size()==0) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}		
+		
+		for (Record record : result) {			
+			//TODO: Do we need to remove children task results before removing parent tasks?
+			String uuid = record.getValue(TASK_COMPLETE.TASK_UUID);
+			if (record.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+				TaskUtil.deleteHifResults(uuid);
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+				TaskUtil.deleteValuationResults(uuid);
+			}			
+		}		
+		res.status(204);
+		return null;
+	}
 
 }

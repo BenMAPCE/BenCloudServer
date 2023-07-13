@@ -101,6 +101,7 @@ public class TaskQueue {
 		return uuid;
 
 	}
+	
 
 	public static void updateTaskPercentage(String taskUuid, int percentage) {
 
@@ -189,7 +190,7 @@ public class TaskQueue {
 				if (result.size() == 0) {
 					log.info("no task for uuid: " + uuid);
 				} else if (result.size() > 1) {
-					log.info("recieved more than 1 task record for uuid: " + uuid);
+					log.info("received more than 1 task record for uuid: " + uuid);
 				} else {
 					Record record = result.get(0);
 
