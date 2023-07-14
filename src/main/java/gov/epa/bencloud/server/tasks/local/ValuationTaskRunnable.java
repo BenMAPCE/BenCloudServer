@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -230,14 +231,20 @@ public class ValuationTaskRunnable implements Runnable {
 							DescriptiveStatistics distStats = new DescriptiveStatistics();
 							Double[] hifPercentiles = (Double[]) hifResult.get("percentiles");
 							
-							for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
-								for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
-									//valuation estimate * hif percentiles * betaDist / hif point estimate * A
-									if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
-										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
-										
-									} else {
-										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
+							// If possible, use latin hyper-cube sampling 
+							if (betaDist.length == hifPercentiles.length) {
+								distStats = latinHyperCubeSample(hifPercentiles, betaDist, vfDefinition, valuationFunctionEstimate, hifEstimate);
+							} 
+							// otherwise just calculate every possible combination of the two percentiles
+							else {
+								for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
+									for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
+										//valuation estimate * hif percentiles * betaDist / hif point estimate * A
+										if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
+											distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
+										} else {
+											distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
+										}
 									}
 								}
 							}
@@ -381,42 +388,23 @@ public class ValuationTaskRunnable implements Runnable {
 		return percentiles;
 	}
 
-	private double[] getDistributionSamples(Record vfRecord) {
-		double[] samples = new double[10000];
+	private DescriptiveStatistics latinHyperCubeSample(Double[] hifPercentiles, double[] betaDist, Record vfDefinition, double valuationFunctionEstimate, double hifEstimate) {
+		DescriptiveStatistics distStats = new DescriptiveStatistics();
+
+		List<Double> hifPercentilesShuffled = Arrays.asList(hifPercentiles);
 		Random rng = new Random(1);
-		RealDistribution distribution;
-		
-		switch (vfRecord.get("dist_a", String.class).toLowerCase()) {
-		case "none":		
-			for (int i = 0; i < samples.length; i++)
-			{
-				samples[i]=vfRecord.get("val_a", Double.class).doubleValue();
+		Collections.shuffle(hifPercentilesShuffled, rng);
+
+		for(int i=0; i < hifPercentilesShuffled.size(); i++) {
+			//valuation estimate * hif percentiles * betaDist / hif point estimate * A
+			if (vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
+				distStats.addValue(valuationFunctionEstimate * hifPercentilesShuffled.get(i).doubleValue() / hifEstimate);
+			} else {
+				distStats.addValue(valuationFunctionEstimate * hifPercentilesShuffled.get(i).doubleValue() * betaDist[i] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));
 			}
-			return samples;
-		case "normal":
-			distribution = new NormalDistribution(vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
-			break;
-		case "weibull":
-			distribution = new WeibullDistribution(vfRecord.get("p2a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
-			break;
-		case "lognormal":
-			distribution = new LogNormalDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
-			break;
-		case "triangular":
-			//lower, mode, upper
-			distribution = new TriangularDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
-			break;
-		default:
-			return null;
 		}
-		
-		for (int i = 0; i < samples.length; i++)
-		{
-			double x = distribution.inverseCumulativeProbability(rng.nextDouble());
-			samples[i]=x;
-		}
-		Arrays.sort(samples);
-		return samples;
+
+		return distStats;
 	}
 
 }
