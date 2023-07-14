@@ -82,9 +82,9 @@ public class IncidenceUtil {
      */
     public static Map<String, Integer> getRaceIdLookup() {
         Map<String, Integer> raceMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.field("name", String.class), DSL.field("id", Integer.class))
+            .select(DSL.lower(RACE.NAME), RACE.ID)
             .from(RACE)
-            .fetchMap(DSL.field("name", String.class), DSL.field("id", Integer.class));
+            .fetchMap(DSL.lower(RACE.NAME), RACE.ID);
         return raceMetricMap;}
     
     /**
@@ -93,9 +93,9 @@ public class IncidenceUtil {
      */
     public static Map<String, Integer> getEthnicityIdLookup() {
         Map<String, Integer> ethnicityMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.field("name", String.class), DSL.field("id", Integer.class))
+            .select(DSL.lower(ETHNICITY.NAME), ETHNICITY.ID)
             .from(ETHNICITY)
-            .fetchMap(DSL.field("name", String.class), DSL.field("id", Integer.class));
+            .fetchMap(DSL.lower(ETHNICITY.NAME), ETHNICITY.ID);
         return ethnicityMetricMap;}
     
     /**
@@ -104,9 +104,9 @@ public class IncidenceUtil {
      */
     public static Map<String, Integer> getGenderIdLookup() {
         Map<String, Integer> genderMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.field("name", String.class), DSL.field("id", Integer.class))
+            .select(DSL.lower(GENDER.NAME), GENDER.ID)
             .from(GENDER)
-            .fetchMap(DSL.field("name", String.class), DSL.field("id", Integer.class));
+            .fetchMap(DSL.lower(GENDER.NAME), GENDER.ID);
         return genderMetricMap;}
 
 
@@ -115,12 +115,12 @@ public class IncidenceUtil {
      * @param endpointGroupId
      * @return a mapping of endpoint names to endpoint ids for a given endpoint group Id
      */
-    public static Map<String, Integer> getEndpointIdLookup(int endpointGroupId) {
+    public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
         Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.field("name", String.class), DSL.field("id", Integer.class))
+            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
             .from(ENDPOINT)
-            .where(DSL.field("endpoint_group_id").eq(endpointGroupId))
-            .fetchMap(DSL.field("name", String.class), DSL.field("id", Integer.class));
+            .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
+            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
         return endpointMap;}    
     
     
@@ -130,8 +130,8 @@ public class IncidenceUtil {
      */
     public static Map<String, Integer> getEndpointGroupIdLookup() {
         Map<String, Integer> endpointGroupMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.field("name", String.class), DSL.field("id", Integer.class))
+            .select(DSL.lower(ENDPOINT_GROUP.NAME), ENDPOINT_GROUP.ID)
             .from(ENDPOINT_GROUP)
-            .fetchMap(DSL.field("name", String.class), DSL.field("id", Integer.class));
+            .fetchMap(DSL.lower(ENDPOINT_GROUP.NAME), ENDPOINT_GROUP.ID);
         return endpointGroupMap;}
     }

@@ -483,8 +483,12 @@ public class IncidenceApi {
 			
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
-				//this dictionary is recreated each time since it depends on the endpointGroupId 
-				endpointIdLookup = IncidenceUtil.getEndpointIdLookup(endpointGroupIdLookup.get(record[endpointGroupIdx]));
+				//this dictionary is recreated each time since it depends on the endpointGroupId, there is probably a more efficient method? 
+				// System.out.println(endpointGroupIdLookup);
+				// System.out.println(IncidenceUtil.getEndpointIdLookup((short)12));
+				// System.out.println(record[endpointGroupIdx]);
+				short shortEndpointGroupId = (short) ((int) endpointGroupIdLookup.get(record[endpointGroupIdx].toLowerCase()));
+				endpointIdLookup = IncidenceUtil.getEndpointIdLookup(shortEndpointGroupId);
 
 
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
@@ -802,6 +806,7 @@ public class IncidenceApi {
 
 			
 			incidenceDatasetId = incRecord.value1();
+			// log.debug("the id of the new dataset is " + incidenceDatasetId);
 
 			InsertValuesStep5<IncidenceValueRecord, Integer, Long, Integer, Integer, Double> batch2 = DSL.using(JooqUtil.getJooqConfiguration())
 					.insertInto(
@@ -817,9 +822,22 @@ public class IncidenceApi {
 
 		while ((record = csvReader.readNext()) != null) {
 			//use the hashmaps created from incidenceUtil to get the id of each column metric
+			// String str = record[endpointGroupIdx];
+			// log.debug("/n the string is " + str);
 				int endpointGroupId = endpointGroupIdLookup.get(record[endpointGroupIdx].toLowerCase());
 				int endpointId = endpointIdLookup.get(record[endpointIdx].toLowerCase());
-				int raceId = raceIdLookup.get(record[raceIdx].toLowerCase());
+				
+				// System.out.println(raceIdx);
+				// log.debug("the race is " + record[2]);
+				String raceName = record[raceIdx].toLowerCase();
+				if (raceName == ""){
+					raceName = "null";
+				}
+				System.out.println(raceName);
+				System.out.println(raceIdLookup);
+				log.debug("the raceId is " +   raceIdLookup.get("null") );
+				log.debug("the raceId for Asian is " +   raceIdLookup.get("asian") );
+				int raceId = raceIdLookup.get(raceName);
 				int genderId = genderIdLookup.get(record[genderIdx].toLowerCase());
 				int ethnicityId = ethnicityIdLookup.get(record[ethnicityIdx].toLowerCase());
 				short startAge = Short.valueOf(record[startAgeIdx]);
