@@ -604,14 +604,11 @@ public class IncidenceApi {
 			
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
-				//this dictionary is recreated each time since it depends on the endpointGroupId, there is probably a more efficient method? 
-				// System.out.println(endpointGroupIdLookup);
-				// System.out.println(IncidenceUtil.getEndpointIdLookup((short)12));
-				// System.out.println(record[endpointGroupIdx]);
-				// short shortEndpointGroupId = (short) ((int) endpointGroupIdLookup.get(record[endpointGroupIdx].toLowerCase()));
+				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
 				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
 				if (!endpointIdLookup.containsKey(endpointGroupName)){
 					Integer endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
+					//endpoint group id is a short in endpoint data but an Integer in endpoint group data
 					short shortEndpointGroupId = (short) (int) endpointGroupId;
 					endpointIdLookup.put(endpointGroupName, IncidenceUtil.getEndpointIdLookup(shortEndpointGroupId));
 				}
@@ -794,6 +791,7 @@ public class IncidenceApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
+
 			if(lstUndefinedEthnicities.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -816,6 +814,7 @@ public class IncidenceApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
+
 			if(lstUndefinedRaces.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -838,6 +837,7 @@ public class IncidenceApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
+
 			if(lstUndefinedGenders.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -860,6 +860,7 @@ public class IncidenceApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
+
 			if(lstUndefinedEndpoints.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -882,6 +883,7 @@ public class IncidenceApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
+
 			if(lstUndefinedEndpointGroups.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -948,28 +950,23 @@ public class IncidenceApi {
 
 		while ((record = csvReader.readNext()) != null) {
 			//use the hashmaps created from incidenceUtil to get the id of each column metric
-			// String str = record[endpointGroupIdx];
-			// log.debug("/n the string is " + str);
 				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
 				int endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
 				int endpointId = endpointIdLookup.get(endpointGroupName).get(record[endpointIdx].toLowerCase());
 				
-				// System.out.println(raceIdx);
-				// log.debug("the race is " + record[2]);
+
 				String raceName = record[raceIdx].toLowerCase();
 				if (raceName.equals("")){
 					raceName = null;
 				}
-				// System.out.println(raceName);
-				// System.out.println(raceIdLookup);
-				// log.debug("the raceId is " +   raceIdLookup.get(null) );
-				// log.debug("the raceId for Asian is " +   raceIdLookup.get("asian") );
 				int raceId = raceIdLookup.get(raceName);
+
 				String genderName = record[genderIdx].toLowerCase();
 				if (genderName.equals("")){
 					genderName = null;
 				}
 				int genderId = genderIdLookup.get(genderName);
+
 				String ethnicityName = record[ethnicityIdx].toLowerCase();
 				if (ethnicityName.equals("")){
 					ethnicityName = null;
