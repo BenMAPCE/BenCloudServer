@@ -15,16 +15,22 @@ import javax.servlet.MultipartConfigElement;
 
 import java.util.Map.Entry;
 
+import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.InsertValuesStep5;
 import org.jooq.InsertValuesStep9;
+import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record3;
 import org.jooq.Record4;
 import org.jooq.Result;
+import org.jooq.Table;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record13;
+import org.jooq.Record16;
 import org.jooq.impl.DSL;
 import org.jooq.tools.csv.CSVReader;
 import org.pac4j.core.profile.UserProfile;
@@ -275,12 +281,11 @@ public class IncidenceApi {
 	/**
 	 *  @return the names of all the incidence or prevalence datasets
 	 */
-	public static List<String> getAllIncidencePrevalenceDatasetNames(boolean prevalence) {
+	public static List<String> getAllIncidencePrevalenceDatasetNames() {
     Result<Record1<String>> datasetNames = DSL.using(JooqUtil.getJooqConfiguration())
             .select(INCIDENCE_DATASET.NAME)
             .from(INCIDENCE_DATASET)
             .join(INCIDENCE_ENTRY).on(INCIDENCE_DATASET.ID.eq(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID))
-            .where(INCIDENCE_ENTRY.PREVALENCE.eq(prevalence))
             .groupBy(INCIDENCE_DATASET.NAME)
             .orderBy(INCIDENCE_DATASET.NAME)
             .fetch();
@@ -288,6 +293,120 @@ public class IncidenceApi {
     List<String> names = datasetNames.map(Record1::value1);
     return names;
 	}
+
+	//code from air quality example of how to get dataset info to be viewed as table
+// 		/**
+// 	 * @param request - expected to contain id param
+// 	 * @param response
+// 	 * @param optional
+// 	 * @return Single air quality layer definition as json string 
+// 	 */
+// 	public static Object getIncidenceDataset(Request request, Response response, Optional<UserProfile> userProfile) {
+		
+// 		Integer id;
+// 		try {
+// 			id = Integer.valueOf(request.params("id"));
+// 		} catch (NumberFormatException e) {
+// 			e.printStackTrace();
+// 			return CoreApi.getErrorResponseInvalidId(request, response);
+// 		}
+		
+// 		Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id, userProfile);
+// 		response.type("application/json");
+// 		if(aqRecord == null) {
+// 			return CoreApi.getErrorResponseNotFound(request, response);
+// 		} else {
+// 			return aqRecord.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+// 		}
+// 	}
+// /**
+// 	 * 
+// 	 * @param id
+// 	 * @param userProfile
+// 	 * @return a representation of an air quality layer definition.
+// 	 */
+// 	@SuppressWarnings("unchecked")
+// 	public static @Nullable Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
+// 		String userId = userProfile.get().getId();
+// 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+// 		Table<Record13<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double>> metricStatistics = create.select(
+// 				AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID,
+// 				AIR_QUALITY_LAYER_METRICS.METRIC_ID,
+// 				POLLUTANT_METRIC.NAME.as("metric_name"),
+// 				AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID,
+// 				SEASONAL_METRIC.NAME.as("seasonal_metric_name"),
+// 				AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID,
+// 				STATISTIC_TYPE.NAME.as("annual_statistic_name"),
+// 				AIR_QUALITY_LAYER_METRICS.CELL_COUNT,
+// 				AIR_QUALITY_LAYER_METRICS.MIN_VALUE,
+// 				AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
+// 				AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
+// 				AIR_QUALITY_LAYER_METRICS.PCT_2_5,
+// 				AIR_QUALITY_LAYER_METRICS.PCT_97_5)
+// 				.from(AIR_QUALITY_LAYER_METRICS)
+// 				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
+// 				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
+// 				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID))
+// 				.asTable("metric_statistics");
+		
+
+// 		return create.select(
+// 				AIR_QUALITY_LAYER.ID, 
+// 				AIR_QUALITY_LAYER.NAME,
+// 				AIR_QUALITY_LAYER.USER_ID,
+// 				AIR_QUALITY_LAYER.SHARE_SCOPE,
+// 				AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
+// 				AIR_QUALITY_LAYER.POLLUTANT_ID,
+// 				AIR_QUALITY_LAYER.AQ_YEAR,
+// 				AIR_QUALITY_LAYER.DESCRIPTION,
+// 				AIR_QUALITY_LAYER.SOURCE,
+// 				AIR_QUALITY_LAYER.DATA_TYPE,
+// 				AIR_QUALITY_LAYER.FILENAME,
+// 				AIR_QUALITY_LAYER.UPLOAD_DATE,
+// 				POLLUTANT.NAME.as("pollutant_name"), 
+// 				POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name"),
+// 				GRID_DEFINITION.NAME.as("grid_definition_name"),
+// 				DSL.jsonArrayAgg(DSL.jsonbObject(
+// 						metricStatistics.field("metric_id"),
+// 						metricStatistics.field("metric_name"),
+// 						metricStatistics.field("seasonal_metric_id"),
+// 						metricStatistics.field("seasonal_metric_name"),
+// 						metricStatistics.field("annual_statistic_id"),
+// 						metricStatistics.field("annual_statistic_name"),
+// 						metricStatistics.field("cell_count"),
+// 						metricStatistics.field("min_value"),
+// 						metricStatistics.field("max_value"),
+// 						metricStatistics.field("mean_value"),
+// 						metricStatistics.field("pct_2_5"),
+// 						metricStatistics.field("pct_97_5")
+// 						)).as("metric_statistics")
+// 				)
+// 		.from(AIR_QUALITY_LAYER)
+// 		.join(metricStatistics).on(((Field<Integer>)metricStatistics.field("air_quality_layer_id")).eq(AIR_QUALITY_LAYER.ID))
+// 		.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
+// 		.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
+// 		.where(AIR_QUALITY_LAYER.ID.eq(id))
+// 		.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()))
+// 		.groupBy(AIR_QUALITY_LAYER.ID
+// 				, AIR_QUALITY_LAYER.NAME
+// 				, AIR_QUALITY_LAYER.USER_ID
+// 				, AIR_QUALITY_LAYER.SHARE_SCOPE
+// 				, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
+// 				, AIR_QUALITY_LAYER.POLLUTANT_ID
+// 				, AIR_QUALITY_LAYER.AQ_YEAR
+// 				, AIR_QUALITY_LAYER.DESCRIPTION
+// 				, AIR_QUALITY_LAYER.SOURCE
+// 				, AIR_QUALITY_LAYER.DATA_TYPE
+// 				, AIR_QUALITY_LAYER.FILENAME
+// 				, AIR_QUALITY_LAYER.UPLOAD_DATE				
+// 				, POLLUTANT.NAME
+// 				, POLLUTANT.FRIENDLY_NAME
+// 				, GRID_DEFINITION.NAME
+				
+// 				)
+// 		.fetchOne();
+// 	}
 
 	public static Object postIncidenceData(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
@@ -331,7 +450,7 @@ public class IncidenceApi {
 
 		// //step 0: make sure incidenceName is not the same as any existing ones
 		
-		List<String>incidenceNames = getAllIncidencePrevalenceDatasetNames(false);
+		List<String>incidenceNames = getAllIncidencePrevalenceDatasetNames();
 		if (incidenceNames.contains(incidenceName.toLowerCase())) {
 			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","An incidence dataset " + incidenceName + " already exists. Please enter a different name."));
@@ -351,13 +470,12 @@ public class IncidenceApi {
 		int startAgeIdx=-999;
 		int endAgeIdx=-999;
 		int typeIdx=-999;
-		int prevalenceIdx=-999;
 		int valueIdx=-999;
 		
 		Map<String, Integer> raceIdLookup = new HashMap<>();		
 		Map<String, Integer> ethnicityIdLookup = new HashMap<>();		
 		Map<String, Integer> genderIdLookup = new HashMap<>();
-		Map<String, Integer> endpointIdLookup = new HashMap<>();
+		HashMap<String,Map<String,Integer>> endpointIdLookup = new HashMap<String,Map<String,Integer>>();
 		Map<String, Integer> endpointGroupIdLookup = new HashMap<>();
 
 		
@@ -450,6 +568,9 @@ public class IncidenceApi {
 			raceIdLookup = IncidenceUtil.getRaceIdLookup();
 			genderIdLookup = IncidenceUtil.getGenderIdLookup();
 			endpointGroupIdLookup = IncidenceUtil.getEndpointGroupIdLookup();
+			// HashMap<String,HashMap<String,Integer>> endpointIdLookup = new HashMap<String,HashMap<String,Integer>>();
+		
+
 			// System.out.println(record[endpointGroupIdx]);
 			// System.out.println(endpointGroupIdLookup.get(record[endpointGroupIdx]));
 			// endpointIdLookup = IncidenceUtil.getEndpointIdLookup(endpointGroupIdLookup.get(record[endpointGroupIdx]));
@@ -487,8 +608,13 @@ public class IncidenceApi {
 				// System.out.println(endpointGroupIdLookup);
 				// System.out.println(IncidenceUtil.getEndpointIdLookup((short)12));
 				// System.out.println(record[endpointGroupIdx]);
-				short shortEndpointGroupId = (short) ((int) endpointGroupIdLookup.get(record[endpointGroupIdx].toLowerCase()));
-				endpointIdLookup = IncidenceUtil.getEndpointIdLookup(shortEndpointGroupId);
+				// short shortEndpointGroupId = (short) ((int) endpointGroupIdLookup.get(record[endpointGroupIdx].toLowerCase()));
+				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
+				if (!endpointIdLookup.containsKey(endpointGroupName)){
+					Integer endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
+					short shortEndpointGroupId = (short) (int) endpointGroupId;
+					endpointIdLookup.put(endpointGroupName, IncidenceUtil.getEndpointIdLookup(shortEndpointGroupId));
+				}
 
 
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
@@ -529,7 +655,7 @@ public class IncidenceApi {
 				if(str == "") {
 					countMissingEndpoint ++;
 				}
-				if(!endpointIdLookup.containsKey(str.toLowerCase()) ) {
+				if(!endpointIdLookup.get(endpointGroupName).containsKey(str.toLowerCase()) ) {
 					if (!lstUndefinedEndpoints.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedEndpoints.add(String.valueOf(str.toLowerCase()));
 					}
@@ -824,28 +950,37 @@ public class IncidenceApi {
 			//use the hashmaps created from incidenceUtil to get the id of each column metric
 			// String str = record[endpointGroupIdx];
 			// log.debug("/n the string is " + str);
-				int endpointGroupId = endpointGroupIdLookup.get(record[endpointGroupIdx].toLowerCase());
-				int endpointId = endpointIdLookup.get(record[endpointIdx].toLowerCase());
+				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
+				int endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
+				int endpointId = endpointIdLookup.get(endpointGroupName).get(record[endpointIdx].toLowerCase());
 				
 				// System.out.println(raceIdx);
 				// log.debug("the race is " + record[2]);
 				String raceName = record[raceIdx].toLowerCase();
-				if (raceName == ""){
-					raceName = "null";
+				if (raceName.equals("")){
+					raceName = null;
 				}
-				System.out.println(raceName);
-				System.out.println(raceIdLookup);
-				log.debug("the raceId is " +   raceIdLookup.get("null") );
-				log.debug("the raceId for Asian is " +   raceIdLookup.get("asian") );
+				// System.out.println(raceName);
+				// System.out.println(raceIdLookup);
+				// log.debug("the raceId is " +   raceIdLookup.get(null) );
+				// log.debug("the raceId for Asian is " +   raceIdLookup.get("asian") );
 				int raceId = raceIdLookup.get(raceName);
-				int genderId = genderIdLookup.get(record[genderIdx].toLowerCase());
-				int ethnicityId = ethnicityIdLookup.get(record[ethnicityIdx].toLowerCase());
+				String genderName = record[genderIdx].toLowerCase();
+				if (genderName.equals("")){
+					genderName = null;
+				}
+				int genderId = genderIdLookup.get(genderName);
+				String ethnicityName = record[ethnicityIdx].toLowerCase();
+				if (ethnicityName.equals("")){
+					ethnicityName = null;
+				}
+				int ethnicityId = ethnicityIdLookup.get(ethnicityName);
 				short startAge = Short.valueOf(record[startAgeIdx]);
 				short endAge = Short.valueOf(record[endAgeIdx]);
-				boolean prevalence = "prevalence".equalsIgnoreCase(record[prevalenceIdx]);
+				boolean prevalence = "prevalence".equalsIgnoreCase(record[typeIdx]);
 
 				//check if there is a matching incidence_entry_id for the current row's metrics
-				String entryQuery = String.format("incidence_dataset_id=%d and grid_definition_id=%d and endpoint_group_id=%d and endpoint_id=%d and race_id=%d and gender_id=%d and start_age=%d and end_age=%d and prevalence='%s' and ethnicity_id=%d",
+				String entryQuery = String.format("incidence_dataset_id=%d and grid_definition_id=%d and endpoint_group_id=%d and endpoint_id=%d and race_id=%d and gender_id=%d and start_age=%d and end_age=%d and type='%s' and ethnicity_id=%d",
 				incidenceDatasetId,
 				gridId,
 				endpointGroupId,
@@ -883,7 +1018,7 @@ public class IncidenceApi {
 						genderId,
 						Short.valueOf(record[startAgeIdx]),
 						Short.valueOf(record[endAgeIdx]),
-						"prevalence".equalsIgnoreCase(record[prevalenceIdx]),
+						"prevalence".equalsIgnoreCase(record[typeIdx]),
 						ethnicityId
 					)
 					.returning(INCIDENCE_ENTRY.ID,INCIDENCE_ENTRY.INCIDENCE_DATASET_ID,

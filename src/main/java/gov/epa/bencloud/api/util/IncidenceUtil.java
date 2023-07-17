@@ -80,6 +80,7 @@ public class IncidenceUtil {
      * 
      * @return a mapping of race names to Ids
      */
+    //TODO: change null key to a string "null" key 
     public static Map<String, Integer> getRaceIdLookup() {
         Map<String, Integer> raceMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
             .select(DSL.lower(RACE.NAME), RACE.ID)
