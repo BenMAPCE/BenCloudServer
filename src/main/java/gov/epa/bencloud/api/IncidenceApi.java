@@ -2,10 +2,13 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +18,9 @@ import javax.servlet.MultipartConfigElement;
 
 import java.util.Map.Entry;
 
+import org.apache.commons.compress.archivers.dump.DumpArchiveEntry.TYPE;
 import org.jetbrains.annotations.Nullable;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.InsertValuesStep5;
@@ -24,11 +29,16 @@ import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record3;
 import org.jooq.Record4;
+import org.jooq.Record6;
 import org.jooq.Result;
+import org.jooq.SortOrder;
 import org.jooq.Table;
 import org.jooq.JSONFormat.RecordFormat;
+import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record10;
+import org.jooq.Record11;
 import org.jooq.Record13;
 import org.jooq.Record16;
 import org.jooq.impl.DSL;
@@ -37,8 +47,13 @@ import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.HIFConfig;
@@ -54,8 +69,8 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRec
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceEntryRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceValueRecord;
-
-
+import gov.epa.bencloud.server.util.DataConversionUtil;
+import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
 
@@ -407,6 +422,150 @@ public class IncidenceApi {
 // 				)
 // 		.fetchOne();
 // 	}
+/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of the incidence dataset details for a given incidence dataset (incidence dataset id is a request parameter).
+	 */
+	public static Object getIncidenceDatasetDetails(Request request, Response response, Optional<UserProfile> userProfile) {
+		
+		String userId = userProfile.get().getId();
+		
+		int id;
+		int page;
+		int rowsPerPage;
+		String sortBy;
+		boolean descending;
+		String filter;
+		try {
+			id = Integer.valueOf(request.params("id"));
+			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
+			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);
+			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
+			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
+			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+		//System.out.println("id: " + id);
+		//System.out.println("filter: " + filter);
+		//System.out.println("rowsPerPage: " + rowsPerPage);
+
+		Condition filterCondition = DSL.trueCondition();
+		Condition incidenceDatasetCondition = DSL.trueCondition();
+		
+		if (id != 0) {
+			incidenceDatasetCondition = DSL.field(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID).eq(id);
+			filterCondition = filterCondition.and(incidenceDatasetCondition);
+		}
+
+		if (!"".equals(filter)) {
+			filterCondition = filterCondition.and(buildIncidenceCellsFilterCondition(filter));
+		}
+		// filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()));
+	
+		List<OrderField<?>> orderFields = new ArrayList<>();
+		
+		//System.out.println("sortBy: " + sortBy);
+		
+		setIncidenceCellsSortOrder(sortBy, descending, orderFields);
+
+
+		Integer filteredRecordsCount = 
+				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
+				.from(INCIDENCE_VALUE)
+				.join(INCIDENCE_ENTRY).on(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.eq(INCIDENCE_ENTRY.ID))
+				.join(INCIDENCE_DATASET).on(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(INCIDENCE_DATASET.ID))
+				.leftJoin(ENDPOINT).on(INCIDENCE_ENTRY.ID.eq(ENDPOINT.ID))
+				.leftJoin(ENDPOINT_GROUP).on(INCIDENCE_ENTRY.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
+				.leftJoin(RACE).on(INCIDENCE_ENTRY.RACE_ID.eq(RACE.ID))
+				.leftJoin(GENDER).on(INCIDENCE_ENTRY.GENDER_ID.eq(GENDER.ID))
+				.leftJoin(ETHNICITY).on(INCIDENCE_ENTRY.ETHNICITY_ID.eq(ETHNICITY.ID))
+				.where(filterCondition)
+				.fetchOne(DSL.count());
+
+		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
+
+		Result<Record11<Integer, Integer, String, String, String, String, String, Short, Short, Boolean, Double>> incRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(
+						// AIR_QUALITY_CELL.GRID_COL,
+						// AIR_QUALITY_CELL.GRID_ROW,
+						// POLLUTANT_METRIC.NAME.as("metric"),
+						// SEASONAL_METRIC.NAME.as("seasonal_metric"),
+						// STATISTIC_TYPE.NAME.as("annual_statistic"),
+						// AIR_QUALITY_CELL.VALUE
+						INCIDENCE_VALUE.GRID_COL,
+						INCIDENCE_VALUE.GRID_ROW,
+						ENDPOINT.NAME.as("endpoint"),
+						ENDPOINT_GROUP.NAME.as("endpoint_group"),
+						RACE.NAME.as("race"),
+						GENDER.NAME.as("gender"),
+						ETHNICITY.NAME.as("ethnicity"),
+						INCIDENCE_ENTRY.START_AGE,
+						INCIDENCE_ENTRY.END_AGE,
+						INCIDENCE_ENTRY.PREVALENCE.as("type"),
+						INCIDENCE_VALUE.VALUE
+						)
+				.from(INCIDENCE_VALUE)
+				.join(INCIDENCE_ENTRY).on(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.eq(INCIDENCE_ENTRY.ID))
+				.join(INCIDENCE_DATASET).on(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(INCIDENCE_DATASET.ID))
+				.leftJoin(ENDPOINT).on(INCIDENCE_ENTRY.ID.eq(ENDPOINT.ID))
+				.leftJoin(ENDPOINT_GROUP).on(INCIDENCE_ENTRY.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
+				.leftJoin(RACE).on(INCIDENCE_ENTRY.RACE_ID.eq(RACE.ID))
+				.leftJoin(GENDER).on(INCIDENCE_ENTRY.GENDER_ID.eq(GENDER.ID))
+				.leftJoin(ETHNICITY).on(INCIDENCE_ENTRY.ETHNICITY_ID.eq(ETHNICITY.ID))
+				.where(filterCondition)
+				.orderBy(orderFields)
+				.offset((page * rowsPerPage) - rowsPerPage)
+				.limit(rowsPerPage)
+				.fetch();
+		
+		Record1<String> datasetInfo = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(INCIDENCE_DATASET.NAME)
+				.from(INCIDENCE_DATASET)
+				.where(INCIDENCE_DATASET.ID.eq(id))
+				.fetchOne();
+
+		if(request.headers("Accept").equalsIgnoreCase("text/csv")) {
+			String fileName = createFilename(datasetInfo.get(INCIDENCE_DATASET.NAME));
+			response.type("text/csv");
+			response.header("Content-Disposition", "attachment; filename="+ fileName);
+			response.header("Access-Control-Expose-Headers", "Content-Disposition");
+						
+			return incRecords.formatCSV();
+		} else {
+
+			//System.out.println("aqRecords: " + aqRecords.size());
+
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode data = mapper.createObjectNode();
+			
+			data.put("filteredRecordsCount", filteredRecordsCount);
+
+			try {
+				JsonFactory factory = mapper.getFactory();
+				JsonParser jp = factory.createParser(
+						incRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
+				JsonNode actualObj = mapper.readTree(jp);
+				data.set("records", actualObj);
+			} catch (JsonParseException e) {
+				log.error("Error parsing JSON",e);
+			} catch (JsonProcessingException e) {
+				log.error("Error processing JSON",e);
+			} catch (IOException e) {
+				log.error("IO Exception", e);
+			}
+
+			response.type("application/json");
+			return data;
+		}
+	}
 
 	public static Object postIncidenceData(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
@@ -947,6 +1106,7 @@ public class IncidenceApi {
 						);
 		
 		Map<String, Integer> incidenceEntryIds= new HashMap<String,Integer>();
+		
 
 		while ((record = csvReader.readNext()) != null) {
 			//use the hashmaps created from incidenceUtil to get the id of each column metric
@@ -991,13 +1151,12 @@ public class IncidenceApi {
 				);
 
 				int incidenceEntryId = -999;
-				//if the metric combo isn't in hashmap, add to database and updata hashmap
+				//if the metric combo isn't in hashmap, add to database and update hashmap
 				if (!incidenceEntryIds.containsKey(entryQuery)){
 					entryRecord = DSL.using(JooqUtil.getJooqConfiguration())
 					.insertInto(
 							INCIDENCE_ENTRY, 
 							INCIDENCE_ENTRY.INCIDENCE_DATASET_ID,
-							// INCIDENCE_ENTRY.YEAR,
 							INCIDENCE_ENTRY.ENDPOINT_GROUP_ID,
 							INCIDENCE_ENTRY.ENDPOINT_ID,
 							INCIDENCE_ENTRY.RACE_ID,
@@ -1030,6 +1189,7 @@ public class IncidenceApi {
 					.fetchOne();
 
 					incidenceEntryId = entryRecord.value1();
+					System.out.println(incidenceEntryId);
 					incidenceEntryIds.put(entryQuery, incidenceEntryId);
 				}
 				else{
@@ -1049,7 +1209,6 @@ public class IncidenceApi {
 				
 			}
 			
-
 			batch2.execute();
 
 			
@@ -1064,6 +1223,220 @@ public class IncidenceApi {
 		return transformValMsgToJSON(validationMsg); 
 	}
 
+
+	/**
+	 * 
+	 * @param filterValue
+	 * @return a condition object representing an air quality layer filter condition.
+	 */
+	private static Condition buildIncidenceDatasetFilterCondition(String filterValue) {
+
+		Condition filterCondition = DSL.trueCondition();
+		Condition searchCondition = DSL.falseCondition();
+
+		Integer filterValueAsInteger = DataConversionUtil.getFilterValueAsInteger(filterValue);
+		Long filterValueAsLong = DataConversionUtil.getFilterValueAsLong(filterValue);
+		Double filterValueAsDouble = DataConversionUtil.getFilterValueAsDouble(filterValue);
+		Date filterValueAsDate = DataConversionUtil.getFilterValueAsDate(filterValue, "MM/dd/yyyy");
+		
+		searchCondition = 
+				searchCondition.or(INCIDENCE_DATASET.NAME
+						.containsIgnoreCase(filterValue));
+
+		searchCondition = 
+				searchCondition.or(GRID_DEFINITION.NAME
+						.containsIgnoreCase(filterValue));
+
+
+		filterCondition = filterCondition.and(searchCondition);
+
+		return filterCondition;
+	}
+
+	/**
+	 * 
+	 * @param filterValue
+	 * @return a condition object representing an air quality cell filter condition.
+	 */
+	private static Condition buildIncidenceCellsFilterCondition(String filterValue) {
+
+		Condition filterCondition = DSL.trueCondition();
+		Condition searchCondition = DSL.falseCondition();
+
+		Integer filterValueAsInteger = DataConversionUtil.getFilterValueAsInteger(filterValue);
+		Long filterValueAsLong = DataConversionUtil.getFilterValueAsLong(filterValue);
+		Double filterValueAsDouble = DataConversionUtil.getFilterValueAsDouble(filterValue);
+		BigDecimal filterValueAsBigDecimal = DataConversionUtil.getFilterValueAsBigDecimal(filterValue);
+		Date filterValueAsDate = DataConversionUtil.getFilterValueAsDate(filterValue, "MM/dd/yyyy");
+		
+
+		searchCondition = 
+				searchCondition.or(ENDPOINT_GROUP.NAME
+						.containsIgnoreCase(filterValue));
+
+		searchCondition = 
+				searchCondition.or(ETHNICITY.NAME
+						.containsIgnoreCase(filterValue));
+
+		searchCondition = 
+				searchCondition.or(ENDPOINT.NAME
+						.containsIgnoreCase(filterValue));
+
+		searchCondition = 
+				searchCondition.or(ENDPOINT_GROUP.NAME
+						.containsIgnoreCase(filterValue));			
+						
+		searchCondition = 
+				searchCondition.or(GENDER.NAME
+						.containsIgnoreCase(filterValue));				
+
+
+		if (null != filterValueAsInteger) {
+
+			searchCondition = 
+					searchCondition.or(INCIDENCE_VALUE.GRID_COL
+							.eq(filterValueAsInteger));
+
+			searchCondition = 
+					searchCondition.or(INCIDENCE_VALUE.GRID_ROW
+							.eq(filterValueAsInteger));
+		}
+
+		if (null != filterValueAsDouble) {
+			searchCondition = 
+					searchCondition.or(INCIDENCE_VALUE.VALUE
+							.eq(filterValueAsDouble));		
+		}
+		
+		filterCondition = filterCondition.and(searchCondition);
+
+		return filterCondition;
+	}
+
+	/**
+	 * Sets the sort order of the air quality layers.
+	 * @param sortBy
+	 * @param descending
+	 * @param orderFields
+	 */
+	private static void setIncidenceDatasetsSortOrder(
+			String sortBy, Boolean descending, List<OrderField<?>> orderFields) {
+		
+		if (!"".equals(sortBy)) {
+			
+			SortOrder sortDirection = SortOrder.ASC;
+			Field<?> sortField = null;
+			
+			sortDirection = descending ? SortOrder.DESC : SortOrder.ASC;
+			
+			switch (sortBy) {
+			case "name":
+				sortField = DSL.field(sortBy, String.class.getName());
+				break;
+
+			case "grid_definition_name":
+				sortField = DSL.field(sortBy, Integer.class.getName());
+				break;
+
+			default:
+				sortField = DSL.field(sortBy, String.class.getName());
+				break;
+			}
+			
+			orderFields.add(sortField.sort(sortDirection));
+			
+		} else {
+			orderFields.add(DSL.field("name", String.class.getName()).sort(SortOrder.ASC));	
+		}
+	}
+
+	/**
+	 * Sets the sort order of the air quality cells.
+	 * @param sortBy
+	 * @param descending
+	 * @param orderFields
+	 */
+	private static void setIncidenceCellsSortOrder(
+			String sortBy, Boolean descending, List<OrderField<?>> orderFields) {
+		
+		if (null != sortBy) {
+			
+			SortOrder sortDirection = SortOrder.ASC;
+			Field<?> sortField = null;
+			
+			sortDirection = descending ? SortOrder.DESC : SortOrder.ASC;
+			
+			switch (sortBy) {
+			case "grid_col":
+				sortField = DSL.field(sortBy, Integer.class.getName());
+				orderFields.add(sortField.sort(sortDirection));
+				break;
+
+			case "grid_row":
+				sortField = DSL.field(sortBy, Integer.class.getName());
+				orderFields.add(sortField.sort(sortDirection));
+				break;
+
+			case "gender":
+				sortField = DSL.field(sortBy, String.class.getName());
+				orderFields.add(sortField.sort(sortDirection));
+				break;
+
+			case "race":
+				sortField = DSL.field(sortBy, String.class.getName());
+				orderFields.add(sortField.sort(sortDirection));
+				break;
+
+			case "ethnicity":
+				sortField = DSL.field(sortBy, Double.class.getName());
+				orderFields.add(sortField.sort(sortDirection));
+				break;
+
+			case "type":
+				sortField = DSL.field(sortBy, Double.class.getName());
+				orderFields.add(sortField.sort(sortDirection));
+				break;
+
+			default:
+				//System.out.println("... in default...");
+				orderFields.add(DSL.field("grid_col", Integer.class.getName()).sort(SortOrder.ASC));	
+				orderFields.add(DSL.field("grid_row", Integer.class.getName()).sort(SortOrder.ASC));	
+				break;
+			}
+			
+		} else {
+			orderFields.add(DSL.field("grid_col", Integer.class.getName()).sort(SortOrder.ASC));	
+			orderFields.add(DSL.field("grid_row", Integer.class.getName()).sort(SortOrder.ASC));	
+		}
+	}
+
+	/**
+	 * Transforms records into a JsonNode.
+	 * @param records
+	 * @return the trasformed records as a JsonNode.
+	 */
+	private static JsonNode transformRecordsToJSON(Record records) {
+		
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode data = mapper.createObjectNode();
+
+        JsonNode recordsJSON = null;
+		try {
+			JsonFactory factory = mapper.getFactory();
+			JsonParser jp = factory.createParser(
+					records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
+			recordsJSON = mapper.readTree(jp);
+		} catch (JsonParseException e) {
+			log.error("Error parsing JSON",e);
+		} catch (JsonProcessingException e) {
+			log.error("Error processing JSON",e);
+		} catch (IOException e) {
+			log.error("IO Exception", e);
+		}
+		
+		return recordsJSON;
+		
+	}
 	
 		/**
 	 * Transforms a validation message into a JsonNode
@@ -1083,6 +1456,15 @@ public class IncidenceApi {
 		
 		return recordsJSON;
 		
+	}
+		/**
+	 * 
+	 * @param layerName
+	 * @return a csv file name for a given dataset name.
+	 */
+	public static String createFilename(String datasetName) {
+		// Currently allowing periods so we don't break extensions. Need to improve this.
+		return datasetName.replaceAll("[^A-Za-z0-9._-]+", "") + ".csv";
 	}
 
 }
