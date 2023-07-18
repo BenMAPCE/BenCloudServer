@@ -20,7 +20,7 @@ public class ValuationConfig {
 	 */
 	public ValuationConfig(JsonNode function) {
 		this.hifId = function.get("hif_id").asInt();
-		this.hifInstanceId = function.get("hif_isntance_id").asInt();
+		this.hifInstanceId = function.get("hif_instance_id").asInt();
 		this.vfId = function.get("vf_id").asInt();
 	}
 	
