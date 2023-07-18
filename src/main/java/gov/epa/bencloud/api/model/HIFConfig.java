@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import gov.epa.bencloud.api.IncidenceApi;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.api.util.JSONUtil;
 
 /**
  * @author jimanderton
@@ -64,26 +65,26 @@ public class HIFConfig {
 	 * @param function
 	 */
 	public HIFConfig(JsonNode function) {
-		this.hifId = function.get("id").asInt();
-		this.startAge = function.has("start_age") ? function.get("start_age").asInt() : null;
-		this.endAge = function.has("end_age") ? function.get("end_age").asInt() : null;
-		this.race = function.has("race_id") ? function.get("race_id").asInt() : null;
-		this.ethnicity = function.has("ethnicity_id") ? function.get("ethnicity_id").asInt() : null;
-		this.gender = function.has("gender_id") ? function.get("gender_id").asInt() : null;
+		this.hifId = JSONUtil.getInteger(function, "id");
+		this.startAge = JSONUtil.getInteger(function, "start_age");
+		this.endAge = JSONUtil.getInteger(function, "end_age");
+		this.race = JSONUtil.getInteger(function, "race_id");
+		this.ethnicity = JSONUtil.getInteger(function, "ethnicity_id");
+		this.gender = JSONUtil.getInteger(function, "gender_id");
 		
-		this.incidence = function.has("incidence_dataset_id") ? function.get("incidence_dataset_id").asInt() : null;
-		this.incidenceYear = function.has("incidence_year") ? function.get("incidence_year").asInt() : null;
-		this.incidenceRace = function.has("incidence_race") ? function.get("incidence_race").asInt() : null;
-		this.incidenceEthnicity = function.has("incidence_ethnicity") ? function.get("incidence_ethnicity").asInt() : null;
-		this.incidenceGender = function.has("incidence_gender") ? function.get("incidence_gender").asInt() : null;
+		this.incidence = JSONUtil.getInteger(function, "incidence_dataset_id");
+		this.incidenceYear = JSONUtil.getInteger(function, "incidence_year");
+		this.incidenceRace = JSONUtil.getInteger(function, "incidence_race");
+		this.incidenceEthnicity = JSONUtil.getInteger(function, "incidence_ethnicity");
+		this.incidenceGender = JSONUtil.getInteger(function, "incidence_gender");
 		
-		this.prevalence = function.has("prevalence_dataset_id") ? function.get("prevalence_dataset_id").asInt() : null;
-		this.prevalenceYear = function.has("prevalence_year") ? function.get("prevalence_year").asInt() : null;
-		this.prevalenceRace = function.has("prevalence_race") ? function.get("prevalence_race").asInt() : null;
-		this.prevalenceEthnicity = function.has("prevalence_ethnicity") ? function.get("prevalence_ethnicity").asInt() : null;
-		this.prevalenceGender = function.has("prevalence_gender") ? function.get("prevalence_gender").asInt() : null;
+		this.prevalence = JSONUtil.getInteger(function, "prevalence_dataset_id");
+		this.prevalenceYear = JSONUtil.getInteger(function, "prevalence_year");
+		this.prevalenceRace = JSONUtil.getInteger(function, "prevalence_race");
+		this.prevalenceEthnicity = JSONUtil.getInteger(function, "prevalence_ethnicity");
+		this.prevalenceGender = JSONUtil.getInteger(function, "prevalence_gender");
 		
-		this.variable = function.has("variable") ? function.get("variable").asInt() : null;
+		this.variable = JSONUtil.getInteger(function, "variable");
 		//TODO: Add code to allow user to specify metric, seasonal metric, and metric statistic?
 	}
 	
