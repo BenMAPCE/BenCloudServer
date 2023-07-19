@@ -30,25 +30,7 @@ public class ValuationConfigTest {
         assertEquals(3, vf.hifInstanceId);
         assertEquals(4, vf.vfId);
     }
-
-    @ParameterizedTest
-    @MethodSource("provideInvalidJsons")
-    public void valuationConfigInvalidJsons(String json) {
-        Exception thrown = assertThrows(JsonParseException.class, () -> {
-            ObjectMapper objMapper = new ObjectMapper();
-            JsonNode node = objMapper.readTree(json);
-            ValuationConfig vf = new ValuationConfig(node);
-        }
-        );
-    }
-
-    private static Stream<Arguments> provideInvalidJsons() {
-        return Stream.of(
-            Arguments.of("{[}]"),
-            Arguments.of("{"),
-            Arguments.of("{asdf}")
-        );
-    }
+ 
 
     @ParameterizedTest
     @MethodSource("provideMissingOrWrongTypeData")

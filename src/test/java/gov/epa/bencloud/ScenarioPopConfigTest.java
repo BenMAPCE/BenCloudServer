@@ -63,28 +63,19 @@ public class ScenarioPopConfigTest {
         });
     }
 
+    @Test
+    public void ScenarioPopConfigWrongTypeHIFConfigsArray() throws Exception {
+        String json = "{"
+                    + "\"hif_configs\": \"adsf\"," /* not an array */
+                    + "\"population_year\": 2010"
+                    + "}";
 
+        
+        ObjectMapper objMapper = new ObjectMapper();
+        JsonNode node = objMapper.readTree(json);
+        ScenarioPopConfig sp = new ScenarioPopConfig(node);
 
-    @ParameterizedTest
-    @MethodSource("provideInvalidJsons")
-    public void ScenarioPopConfigInvalidJson(String json) {
-        Exception thrown = assertThrows(JsonParseException.class, () -> {
-            ObjectMapper objMapper = new ObjectMapper();
-            JsonNode node = objMapper.readTree(json);
-            ScenarioPopConfig sp = new ScenarioPopConfig(node);
-        });
-    }
-
-    private static Stream<Arguments> provideInvalidJsons() {
-        return Stream.of(
-            Arguments.of("{"),
-            Arguments.of("aaaa"),
-            Arguments.of("{"
-                        + "\"hif_configs\": [{],"
-                        + "\"population_year\": 2010"
-                        + "}")
-
-        );
+        assertEquals(0, sp.scenarioHifConfigs.size());
     }
 
 

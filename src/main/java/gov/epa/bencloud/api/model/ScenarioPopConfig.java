@@ -3,6 +3,9 @@ package gov.epa.bencloud.api.model;
 import java.util.List;
 import java.util.ArrayList;
 import com.fasterxml.jackson.databind.JsonNode;
+
+import gov.epa.bencloud.api.util.JSONUtil;
+
 import java.util.Optional;
 import org.pac4j.core.profile.UserProfile;
 
@@ -25,7 +28,7 @@ public class ScenarioPopConfig {
 	 * @param scenarioPopConfig
 	 */
 	public ScenarioPopConfig(JsonNode scenarioPopConfig) {
-		popYear = scenarioPopConfig.has("population_year") ? scenarioPopConfig.get("population_year").asInt() : null;
+		popYear = JSONUtil.getInteger(scenarioPopConfig, "population_year");
 		JsonNode scenarioHifConfigsJson = scenarioPopConfig.has("hif_configs") ? scenarioPopConfig.get("hif_configs") : null;
 		if(scenarioHifConfigsJson != null) {
 			for(JsonNode scenarioHifConfig : scenarioHifConfigsJson) {
