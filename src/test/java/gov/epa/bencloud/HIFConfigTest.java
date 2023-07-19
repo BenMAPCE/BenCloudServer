@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +16,6 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import io.vavr.collection.Stream;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 
@@ -97,6 +95,7 @@ public class HIFConfigTest {
     @ParameterizedTest
     @MethodSource("provideMissingOrWrongTypeData")
     public void HIFConfigMissingOrWrongTypeData(String json) {
+        // TODO: Figure out the best way to fail if passsed incorrect json
         Exception thrown = assertThrows(NullPointerException.class, () -> {
             ObjectMapper objMapper = new ObjectMapper();
             JsonNode node = objMapper.readTree(json);
