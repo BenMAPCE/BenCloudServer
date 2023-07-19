@@ -33,6 +33,7 @@ import org.jooq.Record6;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.Table;
+import org.jooq.exception.DataAccessException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.OrderField;
 import org.jooq.Record;
@@ -65,6 +66,8 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceEntry;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceEntryRecord;
@@ -1222,6 +1225,108 @@ public class IncidenceApi {
 		validationMsg.success = true;
 		return transformValMsgToJSON(validationMsg); 
 	}
+
+	// // This version of this method is used when an error occurs during AQ surface upload to clean up
+	// private static void deleteIncidenceDataset(Integer id, Optional<UserProfile> userProfile) {
+	// 	DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+	// 	try {
+	// 		//first delete the dataset from the incidence datasets table
+	// 		create.deleteFrom(INCIDENCE_DATASET).where(INCIDENCE_DATASET.ID.eq(id)).execute();
+
+	// 		//then delete the entries and store the entry ids for deletion of incidence values since values table doesn't have dataset ID foreign key
+	// 		List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
+
+	// 		Result<IncidenceEntryRecord> result = create.deleteFrom(INCIDENCE_ENTRY)
+	// 			.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+	// 			.returning(INCIDENCE_ENTRY.ID)
+	// 			.fetch();
+			
+	// 		return result.getValues(INCIDENCE_ENTRY.ID);
+
+	// 		});
+
+	// 		//then delete from incidence table if it is in the list of incidence entry ids to delete
+	// 		create.deleteFrom(INCIDENCE_VALUE)
+	// 			.where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(deletedIncidenceEntryIds))
+	// 			.execute();
+	// 	} catch (Exception e) {
+	// 		// TODO Auto-generated catch block
+	// 		e.printStackTrace();
+	// 		// We want to silently fail in this case. At least we tried to clean up.
+	// 	}
+	// }
+
+	/**
+	 * Deletes an air quality layer definition from the database (aq layer id is a request parameter).
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return
+	 */
+	public static Object deleteIncidenceDataset(Request request, Response response, Optional<UserProfile> userProfile) {
+		
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+		IncidenceDatasetRecord datasetResult = create.selectFrom(INCIDENCE_DATASET).where(INCIDENCE_DATASET.ID.eq(id)).fetchAny();
+		if(datasetResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+		
+		//Nobody can delete shared layers
+		//All users can delete their own layers
+		//Admins can delete any non-shared layers
+		// if(datasetResult.getShareScope() == Constants.SHARING_ALL || !(datasetResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+		// 	return CoreApi.getErrorResponseForbidden(request, response);
+		// }
+		
+
+
+	//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
+	List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
+    DSLContext context = DSL.using(configuration);
+
+    Result<IncidenceValueRecord> result = context
+            .deleteFrom(INCIDENCE_VALUE)
+            .where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
+                context.select(INCIDENCE_ENTRY.ID)
+                       .from(INCIDENCE_ENTRY)
+                       .where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+            ))
+            .returning(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID)
+            .fetch();
+
+    return result.getValues(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID);
+});
+
+	// Next, delete the entries using the collected incidence entry IDs
+	try {
+		create.deleteFrom(INCIDENCE_ENTRY)
+			.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+			.execute();
+	} catch (DataAccessException e) {
+	}
+
+	// Finally, delete the dataset from the incidence datasets table
+	int numDeletedDatasets = create.deleteFrom(INCIDENCE_DATASET)
+								.where(INCIDENCE_DATASET.ID.eq(id))
+								.execute();
+			
+		//if no datasets were deleted, return an error
+		if(numDeletedDatasets == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
+		} else {
+			response.status(204);
+			return response;
+		}
+	} 
+	
 
 
 	/**

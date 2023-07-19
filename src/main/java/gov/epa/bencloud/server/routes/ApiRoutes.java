@@ -229,28 +229,16 @@ public class ApiRoutes extends RoutesBase {
 			return IncidenceApi.postIncidenceData(request, response, getUserProfile(request, response));
 		});
 
-		// 		/*
-		//  * GET a single incidence
-		//  * PARAMETERS:
-		//  *  :id
-		//  */
-		// service.get(apiPrefix + "/air-quality-data/:id", (request, response) -> {
-		// 	return AirQualityApi.getAirQualityLayerDefinition(request, response, getUserProfile(request, response));
-		// });
-
-		/*
-		 * GET the contents of a single incidence dataset
+			/*
+		 * DELETE a single air quality surface definition
 		 * PARAMETERS:
 		 *  :id
-		 *  page=
-		 *  rowsPerPage=
-		 *  sortBy=
-		 *  descending=
-		 *  filter=
-		 *  
-		 *  REQUEST HEADER Accept=text/csv will produce a CSV file
-		 *  else, application/json response
 		 */
+		service.delete(apiPrefix + "/incidence/:id", (request, response) -> {
+
+			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
+
+		});
 		service.get(apiPrefix + "/incidence/:id/contents", (request, response) -> {
 			return IncidenceApi.getIncidenceDatasetDetails(request, response, getUserProfile(request, response));
 		});
