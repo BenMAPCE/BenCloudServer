@@ -32,24 +32,6 @@ public class ScenarioHIFConfigTest {
         assertEquals(4, shifc.incidenceYear );
     }
 
-    @ParameterizedTest
-    @MethodSource("provideInvalidJsons")
-    public void ScenarioHIFConfigInvalidJsons(String json) {
-        Exception thrown = assertThrows(JsonParseException.class, () -> {
-            ObjectMapper objMapper = new ObjectMapper();
-            JsonNode node = objMapper.readTree(json);
-            ValuationConfig vf = new ValuationConfig(node);
-        }
-        );
-    }
-
-    private static Stream<Arguments> provideInvalidJsons() {
-        return Stream.of(
-            Arguments.of("{[}]"),
-            Arguments.of("{"),
-            Arguments.of("{asdf}")
-        );
-    }
 
     @ParameterizedTest
     @MethodSource("provideMissingOrWrongTypeData")

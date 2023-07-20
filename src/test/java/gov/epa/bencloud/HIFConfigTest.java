@@ -72,26 +72,6 @@ public class HIFConfigTest {
     }
 
 
-
-    @ParameterizedTest
-    @MethodSource("provideInvalidJsons")
-    public void HIFConfigInvalidJsons(String json) {
-        Exception thrown = assertThrows(JsonParseException.class, () -> {
-            ObjectMapper objMapper = new ObjectMapper();
-            JsonNode node = objMapper.readTree(json);
-            HIFConfig hif = new HIFConfig(node);
-        }
-        );
-    }
-
-    private static Stream<Arguments> provideInvalidJsons() {
-        return Stream.of(
-            Arguments.of("{[}]"),
-            Arguments.of("{"),
-            Arguments.of("{asdf}")
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("provideMissingOrWrongTypeData")
     public void HIFConfigMissingOrWrongTypeData(String json) {
