@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -227,71 +228,13 @@ public class ValuationTaskRunnable implements Runnable {
 
 							valuationFunctionEstimate = valuationFunctionEstimate * incomeGrowthFactor * hifEstimate;
 							
-							DescriptiveStatistics distStats = new DescriptiveStatistics();
+							DescriptiveStatistics distStats;
 							Double[] hifPercentiles = (Double[]) hifResult.get("percentiles");
 							
-							for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
-								for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
-									//valuation estimate * hif percentiles * betaDist / hif point estimate * A
-									if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
-										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
-										
-									} else {
-										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
-									}
-								}
-							}
+							// If possible, use latin hyper-cube sampling 
+							distStats = combineUncertainty(hifPercentiles, betaDist, vfDefinition, valuationFunctionEstimate, hifEstimate);
 							
-							ValuationResultRecord rec = new ValuationResultRecord();
-							rec.setGridCellId(hifResult.get(DSL.field("grid_cell_id", Long.class)));
-							rec.setGridCol(hifResult.get(GET_HIF_RESULTS.GRID_COL));
-							rec.setGridRow(hifResult.get(GET_HIF_RESULTS.GRID_ROW));
-							rec.setHifId(vfConfig.hifId);
-							rec.setVfId(vfConfig.vfId);
-
-							rec.setResult(valuationFunctionEstimate);
-							try {
-
-								if (valuationFunctionEstimate == 0.0) {
-									rec.setPct_2_5(0.0);
-									rec.setPct_97_5(0.00);
-									Double[] percentiles20 = new Double[20];
-									Arrays.fill(percentiles20, 0.0);
-									rec.setPercentiles(percentiles20);
-									rec.setResultMean(0.0);
-									rec.setStandardDev(0.0);
-									rec.setResultVariance(0.0);
-								} else {
-									Double[] percentiles20 = new Double[20];
-									// The old code used to grab the percentiles, put them into a new DescriptiveStatistics, and calculate the mean and
-									// variance from that. It's probably better to do the statistics directly on distStats
-									for (int i = 0; i < percentiles20.length; i++) {
-										double p = (100.0 / percentiles20.length * i) + (100.0 / percentiles20.length / 2.0); // 2.5, 7.5, ... 97.5
-										percentiles20[i] = distStats.getPercentile(p);
-									}
-									rec.setPct_2_5(distStats.getPercentile(2.5));
-									rec.setPct_97_5(distStats.getPercentile(97.5));
-									rec.setPercentiles(percentiles20);
-									rec.setResultMean(distStats.getMean());
-								
-									rec.setStandardDev(distStats.getStandardDeviation());
-									rec.setResultVariance(distStats.getVariance());
-
-								}
-							} catch (Exception e) {
-								rec.setPct_2_5(0.0);
-								rec.setPct_97_5(0.0);
-								Double[] percentiles20 = new Double[20];
-								Arrays.fill(percentiles20, 0.0);
-								rec.setPercentiles(percentiles20);
-								rec.setStandardDev(0.0);
-								rec.setResultMean(0.0);
-								rec.setResultVariance(0.0);
-								log.info("Error populating valuation estimate", e);
-							}
-
-
-							
+							ValuationResultRecord rec = createResultsRecord(hifResult, vfConfig, valuationFunctionEstimate, distStats);
 							valuationResults.add(rec);
 
 							// Control the size of the results vector by saving partial results along the way
@@ -338,14 +281,68 @@ public class ValuationTaskRunnable implements Runnable {
 		log.info("Valuation Task Complete: " + taskUuid);
 	}
 
+	private ValuationResultRecord createResultsRecord(
+			Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]> hifResult, ValuationConfig vfConfig,
+			double valuationFunctionEstimate, DescriptiveStatistics distStats) {
+		ValuationResultRecord rec = new ValuationResultRecord();
+		rec.setGridCellId(hifResult.get(DSL.field("grid_cell_id", Long.class)));
+		rec.setGridCol(hifResult.get(GET_HIF_RESULTS.GRID_COL));
+		rec.setGridRow(hifResult.get(GET_HIF_RESULTS.GRID_ROW));
+		rec.setHifId(vfConfig.hifId);
+		rec.setVfId(vfConfig.vfId);
+
+		rec.setResult(valuationFunctionEstimate);
+		try {
+
+			if (valuationFunctionEstimate == 0.0) {
+				rec.setPct_2_5(0.0);
+				rec.setPct_97_5(0.00);
+				Double[] percentiles20 = new Double[20];
+				Arrays.fill(percentiles20, 0.0);
+				rec.setPercentiles(percentiles20);
+				rec.setResultMean(0.0);
+				rec.setStandardDev(0.0);
+				rec.setResultVariance(0.0);
+			} else {
+				Double[] percentiles20 = new Double[20];
+				// The old code used to grab the percentiles, put them into a new DescriptiveStatistics, and calculate the mean and
+				// variance from that. It's probably better to do the statistics directly on distStats
+				for (int i = 0; i < percentiles20.length; i++) {
+					double p = (100.0 / percentiles20.length * i) + (100.0 / percentiles20.length / 2.0); // 2.5, 7.5, ... 97.5
+					percentiles20[i] = distStats.getPercentile(p);
+				}
+				rec.setPct_2_5(distStats.getPercentile(2.5));
+				rec.setPct_97_5(distStats.getPercentile(97.5));
+				rec.setPercentiles(percentiles20);
+				rec.setResultMean(distStats.getMean());
+			
+				rec.setStandardDev(distStats.getStandardDeviation());
+				rec.setResultVariance(distStats.getVariance());
+
+			}
+		} catch (Exception e) {
+			rec.setPct_2_5(0.0);
+			rec.setPct_97_5(0.0);
+			Double[] percentiles20 = new Double[20];
+			Arrays.fill(percentiles20, 0.0);
+			rec.setPercentiles(percentiles20);
+			rec.setStandardDev(0.0);
+			rec.setResultMean(0.0);
+			rec.setResultVariance(0.0);
+			log.info("Error populating valuation estimate", e);
+		}
+
+		return rec;
+	}
+
 	/**
 	 * 
-	 * Returns the 0.5, 1.5, 2.5, ... percentiles from the provided valuation function's distribution.
+	 * Returns the 2.5, 7.5, ... percentiles from the provided valuation function's distribution.
 	 * @param vfRecord
 	 * @return
 	 */
 	private double[] getPercentilesFromDistribution(Record vfRecord) {
-		double[] percentiles = new double[100];
+		double[] percentiles = new double[20];
 		String distributionType = vfRecord.get("dist_a", String.class).toLowerCase();
 		RealDistribution distribution;
 
@@ -374,49 +371,29 @@ public class ValuationTaskRunnable implements Runnable {
 		}
 
 		for (int i = 0; i < percentiles.length; i++) {
-			double p = 0.5 + i;
+			double p = (100.0/percentiles.length/2) + i*(100.0/percentiles.length);
 			percentiles[i] = distribution.inverseCumulativeProbability(p / 100.0);
 		}
 
 		return percentiles;
 	}
 
-	private double[] getDistributionSamples(Record vfRecord) {
-		double[] samples = new double[10000];
-		Random rng = new Random(1);
-		RealDistribution distribution;
-		
-		switch (vfRecord.get("dist_a", String.class).toLowerCase()) {
-		case "none":		
-			for (int i = 0; i < samples.length; i++)
-			{
-				samples[i]=vfRecord.get("val_a", Double.class).doubleValue();
+	private DescriptiveStatistics combineUncertainty(Double[] hifPercentiles, double[] betaDist, Record vfDefinition, double valuationFunctionEstimate, double hifEstimate) {
+		DescriptiveStatistics distStats = new DescriptiveStatistics();
+
+		for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
+			for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
+				//valuation estimate * hif percentiles * betaDist / hif point estimate * A
+				if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
+					distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
+				} else {
+					distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
+				}
 			}
-			return samples;
-		case "normal":
-			distribution = new NormalDistribution(vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
-			break;
-		case "weibull":
-			distribution = new WeibullDistribution(vfRecord.get("p2a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
-			break;
-		case "lognormal":
-			distribution = new LogNormalDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
-			break;
-		case "triangular":
-			//lower, mode, upper
-			distribution = new TriangularDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
-			break;
-		default:
-			return null;
 		}
-		
-		for (int i = 0; i < samples.length; i++)
-		{
-			double x = distribution.inverseCumulativeProbability(rng.nextDouble());
-			samples[i]=x;
-		}
-		Arrays.sort(samples);
-		return samples;
+
+		return distStats;
 	}
+
 
 }

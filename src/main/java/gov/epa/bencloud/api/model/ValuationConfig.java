@@ -19,9 +19,9 @@ public class ValuationConfig {
 	 * Creates the object from the task parameter object
 	 */
 	public ValuationConfig(JsonNode function) {
-		this.hifId = function.get("hif_id").asInt();
-		this.hifInstanceId = function.get("hif_isntance_id").asInt();
-		this.vfId = function.get("vf_id").asInt();
+		this.hifId = function.has("hif_id") && function.get("hif_id").isInt() ? function.get("hif_id").asInt() : null;
+		this.hifInstanceId = function.has("hif_instance_id") && function.get("hif_instance_id").isInt() ? function.get("hif_instance_id").asInt() : null;
+		this.vfId = function.has("vf_id") && function.get("vf_id").isInt() ? function.get("vf_id").asInt() : null;
 	}
 	
 	/*

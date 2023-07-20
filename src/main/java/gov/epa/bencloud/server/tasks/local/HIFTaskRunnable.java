@@ -316,7 +316,7 @@ public class HIFTaskRunnable implements Runnable {
 					double hifBaselineEstimate = 0.0;
 					double incidence = 0.0;
 					double prevalence = 0.0;
-					Double[] resultPercentiles = new Double[20];
+					Double[] resultPercentiles = new Double[100];
 					Arrays.fill(resultPercentiles, 0.0);
 					
 					for (GetPopulationRecord popCategory : populationCell) {
@@ -394,8 +394,8 @@ public class HIFTaskRunnable implements Runnable {
 						rec.setScenarioAq(scenarioValue);
 						rec.setIncidence(incidence);
 						rec.setResult(hifFunctionEstimate);
-						rec.setPct_2_5(resultPercentiles[0]);
-						rec.setPct_97_5(resultPercentiles[19]);
+						rec.setPct_2_5(resultPercentiles[2]);
+						rec.setPct_97_5(resultPercentiles[97]);
 
 						rec.setPercentiles(resultPercentiles);
 
@@ -604,25 +604,11 @@ public class HIFTaskRunnable implements Runnable {
 		return hifPopAgeRangeMapping;
 	}
 	
-	private double[] getDistributionSamples(Record h) {
-		//TODO: At the moment, all HIFs are normal distribution. Need to build this out to support other types.
-		double[] samples = new double[10000];
-		
-		RealDistribution distribution = new NormalDistribution(h.get("beta", Double.class), h.get("p1_beta", Double.class));
-		
-		Random rng = new Random(1);
-		for (int i = 0; i < samples.length; i++)
-		{
-			double x = distribution.inverseCumulativeProbability(rng.nextDouble());
-			samples[i]=x;
-		}
-		
-		Arrays.sort(samples);
-		return samples;
-	}
-
+	/* 
+	 * Gets the 0.5, 1.5... 99.5 percentiles from the specified distribution.
+	 */
 	private double[] getPercentilesFromDistribution(Record h) {
-		double[] percentiles = new double[20];
+		double[] percentiles = new double[100];
 		
 		String distribution_name = h.get("dist_beta", String.class);
 		RealDistribution distribution;

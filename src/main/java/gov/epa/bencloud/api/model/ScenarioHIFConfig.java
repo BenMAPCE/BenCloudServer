@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Optional;
 import org.pac4j.core.profile.UserProfile;
 
+import gov.epa.bencloud.api.util.JSONUtil;
+import io.kubernetes.client.openapi.JSON;
+
 public class ScenarioHIFConfig {
     public Integer hifInstanceId = null;
     public Integer incidenceYear = null;
@@ -22,9 +25,9 @@ public class ScenarioHIFConfig {
 	 * @param scenarioHifConfig
 	 */
 	public ScenarioHIFConfig(JsonNode scenarioHifConfig) {
-		hifInstanceId = scenarioHifConfig.has("hif_instance_id") ? scenarioHifConfig.get("hif_instance_id").asInt() : null;
-		incidenceYear = scenarioHifConfig.has("incidence_year") ? scenarioHifConfig.get("incidence_year").asInt() : null;
-		prevalenceYear = scenarioHifConfig.has("prevalence_year") ? scenarioHifConfig.get("prevalence_year").asInt() : null;
+		hifInstanceId = JSONUtil.getInteger(scenarioHifConfig, "hif_instance_id");
+		incidenceYear = JSONUtil.getInteger(scenarioHifConfig, "incidence_year");
+		prevalenceYear = JSONUtil.getInteger(scenarioHifConfig, "prevalence_year");
 	}
 
 	/**
