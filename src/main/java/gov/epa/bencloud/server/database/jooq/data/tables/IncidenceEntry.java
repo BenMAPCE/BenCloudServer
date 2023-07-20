@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row11;
+import org.jooq.Row15;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -102,6 +102,26 @@ public class IncidenceEntry extends TableImpl<IncidenceEntryRecord> {
      * The column <code>data.incidence_entry.ethnicity_id</code>.
      */
     public final TableField<IncidenceEntryRecord, Integer> ETHNICITY_ID = createField(DSL.name("ethnicity_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.incidence_entry.timeframe</code>.
+     */
+    public final TableField<IncidenceEntryRecord, String> TIMEFRAME = createField(DSL.name("timeframe"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.incidence_entry.units</code>.
+     */
+    public final TableField<IncidenceEntryRecord, String> UNITS = createField(DSL.name("units"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.incidence_entry.distribution</code>.
+     */
+    public final TableField<IncidenceEntryRecord, String> DISTRIBUTION = createField(DSL.name("distribution"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.incidence_entry.standard_error</code>.
+     */
+    public final TableField<IncidenceEntryRecord, Double> STANDARD_ERROR = createField(DSL.name("standard_error"), SQLDataType.DOUBLE, this, "");
 
     private IncidenceEntry(Name alias, Table<IncidenceEntryRecord> aliased) {
         this(alias, aliased, null);
@@ -192,11 +212,11 @@ public class IncidenceEntry extends TableImpl<IncidenceEntryRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row11 type methods
+    // Row15 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row11<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Short, Short, Boolean, Integer> fieldsRow() {
-        return (Row11) super.fieldsRow();
+    public Row15<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Short, Short, Boolean, Integer, String, String, String, Double> fieldsRow() {
+        return (Row15) super.fieldsRow();
     }
 }

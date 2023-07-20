@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row4;
+import org.jooq.Row5;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -64,6 +64,11 @@ public class VariableEntry extends TableImpl<VariableEntryRecord> {
      * The column <code>data.variable_entry.grid_definition_id</code>.
      */
     public final TableField<VariableEntryRecord, Integer> GRID_DEFINITION_ID = createField(DSL.name("grid_definition_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.variable_entry.help_text</code>.
+     */
+    public final TableField<VariableEntryRecord, String> HELP_TEXT = createField(DSL.name("help_text"), SQLDataType.CLOB, this, "");
 
     private VariableEntry(Name alias, Table<VariableEntryRecord> aliased) {
         this(alias, aliased, null);
@@ -140,11 +145,11 @@ public class VariableEntry extends TableImpl<VariableEntryRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row4 type methods
+    // Row5 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<Integer, Integer, String, Integer> fieldsRow() {
-        return (Row4) super.fieldsRow();
+    public Row5<Integer, Integer, String, Integer, String> fieldsRow() {
+        return (Row5) super.fieldsRow();
     }
 }
