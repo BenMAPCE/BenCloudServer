@@ -25,7 +25,7 @@ public class IncidenceUtil {
      * @param valueIdx
      * @return a string representing the missing columns
      */
-    public static String validateModelColumnHeadings(int columnIdx, int rowIdx, int endpointIdx, int endpointGroupIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int typeIdx, int valueIdx) {
+    public static String validateModelColumnHeadings(int columnIdx, int rowIdx, int endpointIdx, int endpointGroupIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int typeIdx, int timeframeIdx, int unitsIdx, int valueIdx, int distributionIdx, int standardErrorIdx) {
 		StringBuilder b = new StringBuilder();
 		if(endpointGroupIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Endpoint Group");
@@ -57,21 +57,21 @@ public class IncidenceUtil {
         if(typeIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Type");
 		}
-        // if(valuesIdx == -999) {
-		// 	b.append((b.length()==0 ? "" : ", ") + "Timeframe");
-		// }
-        // if(valuesIdx == -999) {
-		// 	b.append((b.length()==0 ? "" : ", ") + "Units");
-		// }
+        if(timeframeIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Timeframe");
+		}
+        if(unitsIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Units");
+		}
         if(valueIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Value");
 		}
-        // if(valuesIdx == -999) {
-		// 	b.append((b.length()==0 ? "" : ", ") + "Distribution");
-		// }
-        // if(valuesIdx == -999) {
-		// 	b.append((b.length()==0 ? "" : ", ") + "Standard Error");
-		// }
+        if(distributionIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Distribution");
+		}
+        if(standardErrorIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Standard Error");
+		}
 
 		return b.toString();
 	}
@@ -80,7 +80,6 @@ public class IncidenceUtil {
      * 
      * @return a mapping of race names to Ids
      */
-    //TODO: change null key to a string "null" key 
     public static Map<String, Integer> getRaceIdLookup() {
         Map<String, Integer> raceMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
             .select(DSL.lower(RACE.NAME), RACE.ID)

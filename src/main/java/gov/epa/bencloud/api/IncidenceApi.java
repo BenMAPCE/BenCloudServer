@@ -41,6 +41,7 @@ import org.jooq.Record1;
 import org.jooq.Record10;
 import org.jooq.Record11;
 import org.jooq.Record13;
+import org.jooq.Record15;
 import org.jooq.Record16;
 import org.jooq.impl.DSL;
 import org.jooq.tools.csv.CSVReader;
@@ -66,8 +67,6 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceEntry;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceEntryRecord;
@@ -312,119 +311,6 @@ public class IncidenceApi {
     return names;
 	}
 
-	//code from air quality example of how to get dataset info to be viewed as table
-// 		/**
-// 	 * @param request - expected to contain id param
-// 	 * @param response
-// 	 * @param optional
-// 	 * @return Single air quality layer definition as json string 
-// 	 */
-// 	public static Object getIncidenceDataset(Request request, Response response, Optional<UserProfile> userProfile) {
-		
-// 		Integer id;
-// 		try {
-// 			id = Integer.valueOf(request.params("id"));
-// 		} catch (NumberFormatException e) {
-// 			e.printStackTrace();
-// 			return CoreApi.getErrorResponseInvalidId(request, response);
-// 		}
-		
-// 		Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> aqRecord = getAirQualityLayerDefinition(id, userProfile);
-// 		response.type("application/json");
-// 		if(aqRecord == null) {
-// 			return CoreApi.getErrorResponseNotFound(request, response);
-// 		} else {
-// 			return aqRecord.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-// 		}
-// 	}
-// /**
-// 	 * 
-// 	 * @param id
-// 	 * @param userProfile
-// 	 * @return a representation of an air quality layer definition.
-// 	 */
-// 	@SuppressWarnings("unchecked")
-// 	public static @Nullable Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, LocalDateTime, String, String, String, JSON> getAirQualityLayerDefinition(Integer id, Optional<UserProfile> userProfile) {
-// 		String userId = userProfile.get().getId();
-// 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		
-// 		Table<Record13<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double>> metricStatistics = create.select(
-// 				AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID,
-// 				AIR_QUALITY_LAYER_METRICS.METRIC_ID,
-// 				POLLUTANT_METRIC.NAME.as("metric_name"),
-// 				AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID,
-// 				SEASONAL_METRIC.NAME.as("seasonal_metric_name"),
-// 				AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID,
-// 				STATISTIC_TYPE.NAME.as("annual_statistic_name"),
-// 				AIR_QUALITY_LAYER_METRICS.CELL_COUNT,
-// 				AIR_QUALITY_LAYER_METRICS.MIN_VALUE,
-// 				AIR_QUALITY_LAYER_METRICS.MAX_VALUE,
-// 				AIR_QUALITY_LAYER_METRICS.MEAN_VALUE,
-// 				AIR_QUALITY_LAYER_METRICS.PCT_2_5,
-// 				AIR_QUALITY_LAYER_METRICS.PCT_97_5)
-// 				.from(AIR_QUALITY_LAYER_METRICS)
-// 				.join(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.METRIC_ID))
-// 				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
-// 				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID))
-// 				.asTable("metric_statistics");
-		
-
-// 		return create.select(
-// 				AIR_QUALITY_LAYER.ID, 
-// 				AIR_QUALITY_LAYER.NAME,
-// 				AIR_QUALITY_LAYER.USER_ID,
-// 				AIR_QUALITY_LAYER.SHARE_SCOPE,
-// 				AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
-// 				AIR_QUALITY_LAYER.POLLUTANT_ID,
-// 				AIR_QUALITY_LAYER.AQ_YEAR,
-// 				AIR_QUALITY_LAYER.DESCRIPTION,
-// 				AIR_QUALITY_LAYER.SOURCE,
-// 				AIR_QUALITY_LAYER.DATA_TYPE,
-// 				AIR_QUALITY_LAYER.FILENAME,
-// 				AIR_QUALITY_LAYER.UPLOAD_DATE,
-// 				POLLUTANT.NAME.as("pollutant_name"), 
-// 				POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name"),
-// 				GRID_DEFINITION.NAME.as("grid_definition_name"),
-// 				DSL.jsonArrayAgg(DSL.jsonbObject(
-// 						metricStatistics.field("metric_id"),
-// 						metricStatistics.field("metric_name"),
-// 						metricStatistics.field("seasonal_metric_id"),
-// 						metricStatistics.field("seasonal_metric_name"),
-// 						metricStatistics.field("annual_statistic_id"),
-// 						metricStatistics.field("annual_statistic_name"),
-// 						metricStatistics.field("cell_count"),
-// 						metricStatistics.field("min_value"),
-// 						metricStatistics.field("max_value"),
-// 						metricStatistics.field("mean_value"),
-// 						metricStatistics.field("pct_2_5"),
-// 						metricStatistics.field("pct_97_5")
-// 						)).as("metric_statistics")
-// 				)
-// 		.from(AIR_QUALITY_LAYER)
-// 		.join(metricStatistics).on(((Field<Integer>)metricStatistics.field("air_quality_layer_id")).eq(AIR_QUALITY_LAYER.ID))
-// 		.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
-// 		.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
-// 		.where(AIR_QUALITY_LAYER.ID.eq(id))
-// 		.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()))
-// 		.groupBy(AIR_QUALITY_LAYER.ID
-// 				, AIR_QUALITY_LAYER.NAME
-// 				, AIR_QUALITY_LAYER.USER_ID
-// 				, AIR_QUALITY_LAYER.SHARE_SCOPE
-// 				, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
-// 				, AIR_QUALITY_LAYER.POLLUTANT_ID
-// 				, AIR_QUALITY_LAYER.AQ_YEAR
-// 				, AIR_QUALITY_LAYER.DESCRIPTION
-// 				, AIR_QUALITY_LAYER.SOURCE
-// 				, AIR_QUALITY_LAYER.DATA_TYPE
-// 				, AIR_QUALITY_LAYER.FILENAME
-// 				, AIR_QUALITY_LAYER.UPLOAD_DATE				
-// 				, POLLUTANT.NAME
-// 				, POLLUTANT.FRIENDLY_NAME
-// 				, GRID_DEFINITION.NAME
-				
-// 				)
-// 		.fetchOne();
-// 	}
 /**
 	 * 
 	 * @param request
@@ -471,7 +357,7 @@ public class IncidenceApi {
 		if (!"".equals(filter)) {
 			filterCondition = filterCondition.and(buildIncidenceCellsFilterCondition(filter));
 		}
-		// filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()));
+		filterCondition = filterCondition.and(INCIDENCE_DATASET.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(INCIDENCE_DATASET.USER_ID.eq(userId)).or(CoreApi.isAdmin(userProfile) ? DSL.trueCondition() : DSL.falseCondition()));
 	
 		List<OrderField<?>> orderFields = new ArrayList<>();
 		
@@ -495,14 +381,8 @@ public class IncidenceApi {
 
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 
-		Result<Record11<Integer, Integer, String, String, String, String, String, Short, Short, Boolean, Double>> incRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record15<Integer, Integer, String, String, String, String, String, Short, Short, Boolean, String, String, Double, String, Double>> incRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
-						// AIR_QUALITY_CELL.GRID_COL,
-						// AIR_QUALITY_CELL.GRID_ROW,
-						// POLLUTANT_METRIC.NAME.as("metric"),
-						// SEASONAL_METRIC.NAME.as("seasonal_metric"),
-						// STATISTIC_TYPE.NAME.as("annual_statistic"),
-						// AIR_QUALITY_CELL.VALUE
 						INCIDENCE_VALUE.GRID_COL,
 						INCIDENCE_VALUE.GRID_ROW,
 						ENDPOINT.NAME.as("endpoint"),
@@ -513,7 +393,11 @@ public class IncidenceApi {
 						INCIDENCE_ENTRY.START_AGE,
 						INCIDENCE_ENTRY.END_AGE,
 						INCIDENCE_ENTRY.PREVALENCE.as("type"),
-						INCIDENCE_VALUE.VALUE
+						INCIDENCE_ENTRY.TIMEFRAME.as("timeframe"),
+						INCIDENCE_ENTRY.UNITS.as("units"),
+						INCIDENCE_VALUE.VALUE,
+						INCIDENCE_ENTRY.DISTRIBUTION.as("distribution"),
+						INCIDENCE_ENTRY.STANDARD_ERROR
 						)
 				.from(INCIDENCE_VALUE)
 				.join(INCIDENCE_ENTRY).on(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.eq(INCIDENCE_ENTRY.ID))
@@ -544,8 +428,6 @@ public class IncidenceApi {
 			return incRecords.formatCSV();
 		} else {
 
-			//System.out.println("aqRecords: " + aqRecords.size());
-
 			ObjectMapper mapper = new ObjectMapper();
 			ObjectNode data = mapper.createObjectNode();
 			
@@ -574,18 +456,12 @@ public class IncidenceApi {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String incidenceName;
 		Integer gridId;
-		String aqYear;
-		String description;
-		String source;
 		String filename;
 		LocalDateTime uploadDate;
 		
 		try{
 			incidenceName= ApiUtil.getMultipartFormParameterAsString(request, "name");
 			gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
-			aqYear = ApiUtil.getMultipartFormParameterAsString(request, "aqYear");
-			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
-			source = ApiUtil.getMultipartFormParameterAsString(request, "source");
 			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
 			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		} catch (NumberFormatException e) {
@@ -632,7 +508,11 @@ public class IncidenceApi {
 		int startAgeIdx=-999;
 		int endAgeIdx=-999;
 		int typeIdx=-999;
+		int timeFrameIdx=-999;
+		int unitsIdx=-999;
 		int valueIdx=-999;
+		int distributionIdx=-999;
+		int standardErrorIdx=-999;
 		
 		Map<String, Integer> raceIdLookup = new HashMap<>();		
 		Map<String, Integer> ethnicityIdLookup = new HashMap<>();		
@@ -705,14 +585,26 @@ public class IncidenceApi {
 				case "type":
 					typeIdx=i;
 					break;
+				case "timeframe":
+					timeFrameIdx=i;
+					break;	
+				case "units":
+					unitsIdx=i;
+					break;			
 				case "value":
 					valueIdx=i;
 					break;	
+				case "distribution":
+					distributionIdx=i;
+					break;
+				case "standarderror":
+					standardErrorIdx=i;
+					break;		
 				default:
 					System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
-			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointGroupIdx, endpointIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, typeIdx, valueIdx);
+			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointGroupIdx, endpointIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, typeIdx, timeFrameIdx, unitsIdx, valueIdx, distributionIdx, standardErrorIdx);
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
 
@@ -730,12 +622,6 @@ public class IncidenceApi {
 			raceIdLookup = IncidenceUtil.getRaceIdLookup();
 			genderIdLookup = IncidenceUtil.getGenderIdLookup();
 			endpointGroupIdLookup = IncidenceUtil.getEndpointGroupIdLookup();
-			// HashMap<String,HashMap<String,Integer>> endpointIdLookup = new HashMap<String,HashMap<String,Integer>>();
-		
-
-			// System.out.println(record[endpointGroupIdx]);
-			// System.out.println(endpointGroupIdLookup.get(record[endpointGroupIdx]));
-			// endpointIdLookup = IncidenceUtil.getEndpointIdLookup(endpointGroupIdLookup.get(record[endpointGroupIdx]));
 			
 
 			
@@ -745,14 +631,24 @@ public class IncidenceApi {
 			int rowCount = 0;
 			int countColTypeError = 0;
 			int countRowTypeError = 0;
+
 			int countMissingRace = 0;
 			int countMissingEthnicity = 0;
 			int countMissingGender = 0;
 			int countMissingEndpoint = 0;
-			int countMissingEndpointGroup= 0;
+			int countMissingEndpointGroup = 0;
+		
+			//Distribution and SE might be optional?
+			int countMissingTimeframe = 0;
+			int countMissingUnits = 0;
+			int countMissingDistribution = 0;
+			int countMissingSE = 0;
 
 			int countValueTypeError = 0;
 			int countValueError = 0;
+			int countSETypeError = 0;
+			int countSEError = 0;
+
 			List<String> lstUndefinedEthnicities = new ArrayList<String>();
 			List<String> lstUndefinedRaces = new ArrayList<String>();
 			List<String> lstUndefinedGenders = new ArrayList<String>();
@@ -775,7 +671,7 @@ public class IncidenceApi {
 					endpointIdLookup.put(endpointGroupName, IncidenceUtil.getEndpointIdLookup(shortEndpointGroupId));
 				}
 
-
+				//TODO: Update this validation code when we add lookup tables for timeframe, units, and/or distribution
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
 				String str = "";
 
@@ -829,7 +725,18 @@ public class IncidenceApi {
 						lstUndefinedEndpointGroups.add(String.valueOf(str.toLowerCase()));
 					}
 				}
-						
+
+				str = record[timeFrameIdx];
+				if(str == "") {
+					countMissingTimeframe ++;
+				}
+
+				str = record[timeFrameIdx];
+				if(str == "") {
+					countMissingDistribution++;
+				}
+
+			
 				
 		// 		//step 3: Verify data types for each field
 				//column is required and should be an integer
@@ -854,12 +761,29 @@ public class IncidenceApi {
 						countValueTypeError ++;
 					}
 				}
+				
 				catch(NumberFormatException e){
 					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid double."+ "\r\n";
 					countValueError ++;
 				}
+
+				//standard error should be a double and >= 0
+				str = record[valueIdx];
+				try {
+					double dbl = Double.parseDouble(str);
+					if (dbl<0) {
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Standard Error " + str + " is not a valid as it is less than 0."+ "\r\n";
+						countSETypeError ++;
+					}
+				}
+				catch(NumberFormatException e){
+					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Standard Error " + str + " is not a valid double."+ "\r\n";
+					countSEError ++;
+				}
+
 		
 		//check that we don't have duplicate records for a given categorization and row/col
+		//update to include timeframe, units, distribution, and SE?
 				str = record[columnIdx].toString() 
 						+ "~" + record[rowIdx].toLowerCase() 
 						+ "~" + record[endpointGroupIdx].toLowerCase() 
@@ -881,7 +805,8 @@ public class IncidenceApi {
 				}
 			}	
 
-			// //summarize validation message
+			//summarize validation message
+			//can probably remove all of the error checks for missing gender, ethnicity, race values because those can be null and would only be "" if cell doesn't exist?
 			if(countColTypeError>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -935,6 +860,34 @@ public class IncidenceApi {
 					strRecord = String.valueOf(countValueError) + " records have";
 				}
 				msg.message = strRecord + " incidence values below zero.";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countSETypeError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countValueTypeError == 1) {
+					strRecord = String.valueOf(countSETypeError) + " record has a standard error value that is not a valid number.";
+				}
+				else {
+					strRecord = String.valueOf(countSETypeError) + " records have standard error values that are not valid numbers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+			if(countSEError > 0) {
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countValueError == 1) {
+					strRecord = String.valueOf(countSEError) + " record has";
+				}
+				else {
+					strRecord = String.valueOf(countSEError) + " records have";
+				}
+				msg.message = strRecord + " standard error values below zero.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1053,6 +1006,36 @@ public class IncidenceApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
+
+			if(countMissingTimeframe>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMissingTimeframe == 1) {
+					strRecord = String.valueOf(countMissingTimeframe) + " record is missing a Timeframe value.";
+				}
+				else {
+					strRecord = String.valueOf(countMissingTimeframe) + " records are missing Timeframe values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countMissingUnits>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMissingTimeframe == 1) {
+					strRecord = String.valueOf(countMissingUnits) + " record is missing a Units value.";
+				}
+				else {
+					strRecord = String.valueOf(countMissingUnits) + " records are missing Units values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 			
 			if(lstDupMetricCombo.size()>0) {
 				validationMsg.success = false;
@@ -1083,14 +1066,18 @@ public class IncidenceApi {
 			String[] record;
 			record = csvReader.readNext();
 			
-			//TODO: need to add user_id, sharing_status, file_name, and upload_date columns
 
 			//Create the incidence record
 			incRecord = DSL.using(JooqUtil.getJooqConfiguration())
 			.insertInto(INCIDENCE_DATASET
 					, INCIDENCE_DATASET.NAME
-					, INCIDENCE_DATASET.GRID_DEFINITION_ID)
-			.values(incidenceName,  gridId)
+					, INCIDENCE_DATASET.GRID_DEFINITION_ID
+					, INCIDENCE_DATASET.USER_ID
+					, INCIDENCE_DATASET.SHARE_SCOPE
+					, INCIDENCE_DATASET.FILENAME
+					, INCIDENCE_DATASET.UPLOAD_DATE
+					)
+			.values(incidenceName,  gridId, userProfile.get().getId(), Constants.SHARING_NONE, filename, uploadDate)
 			.returning(INCIDENCE_DATASET.ID, INCIDENCE_DATASET.NAME,INCIDENCE_DATASET.GRID_DEFINITION_ID)
 			.fetchOne();
 
@@ -1120,19 +1107,19 @@ public class IncidenceApi {
 
 				String raceName = record[raceIdx].toLowerCase();
 				if (raceName.equals("")){
-					raceName = null;
+					raceName = "all";
 				}
 				int raceId = raceIdLookup.get(raceName);
 
 				String genderName = record[genderIdx].toLowerCase();
 				if (genderName.equals("")){
-					genderName = null;
+					genderName = "all";
 				}
 				int genderId = genderIdLookup.get(genderName);
 
 				String ethnicityName = record[ethnicityIdx].toLowerCase();
 				if (ethnicityName.equals("")){
-					ethnicityName = null;
+					ethnicityName = "all";
 				}
 				int ethnicityId = ethnicityIdLookup.get(ethnicityName);
 				short startAge = Short.valueOf(record[startAgeIdx]);
@@ -1167,7 +1154,11 @@ public class IncidenceApi {
 							INCIDENCE_ENTRY.START_AGE,
 							INCIDENCE_ENTRY.END_AGE,
 							INCIDENCE_ENTRY.PREVALENCE,
-							INCIDENCE_ENTRY.ETHNICITY_ID
+							INCIDENCE_ENTRY.ETHNICITY_ID,
+							INCIDENCE_ENTRY.TIMEFRAME,
+							INCIDENCE_ENTRY.UNITS,
+							INCIDENCE_ENTRY.DISTRIBUTION,
+							INCIDENCE_ENTRY.STANDARD_ERROR
 					)
 					.values(				
 						incidenceDatasetId, 
@@ -1178,21 +1169,17 @@ public class IncidenceApi {
 						Short.valueOf(record[startAgeIdx]),
 						Short.valueOf(record[endAgeIdx]),
 						"prevalence".equalsIgnoreCase(record[typeIdx]),
-						ethnicityId
+						ethnicityId,
+						record[timeFrameIdx].toLowerCase(),
+						record[unitsIdx].toLowerCase(),
+						record[distributionIdx].toLowerCase(),
+						Double.valueOf(record[standardErrorIdx])
+
 					)
-					.returning(INCIDENCE_ENTRY.ID,INCIDENCE_ENTRY.INCIDENCE_DATASET_ID,
-							INCIDENCE_ENTRY.ENDPOINT_GROUP_ID,
-							INCIDENCE_ENTRY.ENDPOINT_ID,
-							INCIDENCE_ENTRY.RACE_ID,
-							INCIDENCE_ENTRY.GENDER_ID,
-							INCIDENCE_ENTRY.START_AGE,
-							INCIDENCE_ENTRY.END_AGE,
-							INCIDENCE_ENTRY.PREVALENCE,
-							INCIDENCE_ENTRY.ETHNICITY_ID)
+					.returning(INCIDENCE_ENTRY.ID,INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 					.fetchOne();
 
 					incidenceEntryId = entryRecord.value1();
-					System.out.println(incidenceEntryId);
 					incidenceEntryIds.put(entryQuery, incidenceEntryId);
 				}
 				else{
@@ -1219,6 +1206,10 @@ public class IncidenceApi {
 		} catch (Exception e) {
 			log.error("Error importing incidence file", e);
 			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of incidence file."));
+			deleteIncidenceDataset(incidenceDatasetId, userProfile);
+			return transformValMsgToJSON(validationMsg);
 		}
 		
 		response.type("application/json");
@@ -1226,38 +1217,49 @@ public class IncidenceApi {
 		return transformValMsgToJSON(validationMsg); 
 	}
 
-	// // This version of this method is used when an error occurs during AQ surface upload to clean up
-	// private static void deleteIncidenceDataset(Integer id, Optional<UserProfile> userProfile) {
-	// 	DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-	// 	try {
-	// 		//first delete the dataset from the incidence datasets table
-	// 		create.deleteFrom(INCIDENCE_DATASET).where(INCIDENCE_DATASET.ID.eq(id)).execute();
 
-	// 		//then delete the entries and store the entry ids for deletion of incidence values since values table doesn't have dataset ID foreign key
-	// 		List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
+	// This version of this method is used when an error occurs during incidence upload to clean up
+	private static void deleteIncidenceDataset(Integer id, Optional<UserProfile> userProfile) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		try {
+			//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
+			List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
+    		DSLContext context = DSL.using(configuration);
 
-	// 		Result<IncidenceEntryRecord> result = create.deleteFrom(INCIDENCE_ENTRY)
-	// 			.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
-	// 			.returning(INCIDENCE_ENTRY.ID)
-	// 			.fetch();
-			
-	// 		return result.getValues(INCIDENCE_ENTRY.ID);
+			Result<IncidenceValueRecord> result = context
+					.deleteFrom(INCIDENCE_VALUE)
+					.where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
+						context.select(INCIDENCE_ENTRY.ID)
+							.from(INCIDENCE_ENTRY)
+							.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+					))
+					.returning(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID)
+					.fetch();
+				return result.getValues(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID);
+			});
 
-	// 		});
+			// Next, delete the entries using the collected incidence entry IDs
+			try {
+				create.deleteFrom(INCIDENCE_ENTRY)
+					.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+					.execute();
+			} catch (DataAccessException e) {
+			}
 
-	// 		//then delete from incidence table if it is in the list of incidence entry ids to delete
-	// 		create.deleteFrom(INCIDENCE_VALUE)
-	// 			.where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(deletedIncidenceEntryIds))
-	// 			.execute();
-	// 	} catch (Exception e) {
-	// 		// TODO Auto-generated catch block
-	// 		e.printStackTrace();
-	// 		// We want to silently fail in this case. At least we tried to clean up.
-	// 	}
-	// }
+			// Finally, delete the dataset from the incidence datasets table
+			create.deleteFrom(INCIDENCE_DATASET)
+										.where(INCIDENCE_DATASET.ID.eq(id))
+										.execute();
+					
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			// We want to silently fail in this case. At least we tried to clean up.
+		}
+	}
 
 	/**
-	 * Deletes an air quality layer definition from the database (aq layer id is a request parameter).
+	 * Deletes an incidence dataset from the database (incidence id is a request parameter).
 	 * @param request
 	 * @param response
 	 * @param userProfile
@@ -1279,6 +1281,7 @@ public class IncidenceApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 		
+		//TODO: include this when new fields share scope and userId are added to incidence dataset record
 		//Nobody can delete shared layers
 		//All users can delete their own layers
 		//Admins can delete any non-shared layers
@@ -1332,7 +1335,7 @@ public class IncidenceApi {
 	/**
 	 * 
 	 * @param filterValue
-	 * @return a condition object representing an air quality layer filter condition.
+	 * @return a condition object representing an incidence dataset filter condition.
 	 */
 	private static Condition buildIncidenceDatasetFilterCondition(String filterValue) {
 
@@ -1361,7 +1364,7 @@ public class IncidenceApi {
 	/**
 	 * 
 	 * @param filterValue
-	 * @return a condition object representing an air quality cell filter condition.
+	 * @return a condition object representing an incidence cell filter condition.
 	 */
 	private static Condition buildIncidenceCellsFilterCondition(String filterValue) {
 
@@ -1419,7 +1422,7 @@ public class IncidenceApi {
 	}
 
 	/**
-	 * Sets the sort order of the air quality layers.
+	 * Sets the sort order of the incidence datasets.
 	 * @param sortBy
 	 * @param descending
 	 * @param orderFields
@@ -1456,7 +1459,7 @@ public class IncidenceApi {
 	}
 
 	/**
-	 * Sets the sort order of the air quality cells.
+	 * Sets the sort order of the incidence cells.
 	 * @param sortBy
 	 * @param descending
 	 * @param orderFields
@@ -1515,33 +1518,6 @@ public class IncidenceApi {
 		}
 	}
 
-	/**
-	 * Transforms records into a JsonNode.
-	 * @param records
-	 * @return the trasformed records as a JsonNode.
-	 */
-	private static JsonNode transformRecordsToJSON(Record records) {
-		
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode data = mapper.createObjectNode();
-
-        JsonNode recordsJSON = null;
-		try {
-			JsonFactory factory = mapper.getFactory();
-			JsonParser jp = factory.createParser(
-					records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
-			recordsJSON = mapper.readTree(jp);
-		} catch (JsonParseException e) {
-			log.error("Error parsing JSON",e);
-		} catch (JsonProcessingException e) {
-			log.error("Error processing JSON",e);
-		} catch (IOException e) {
-			log.error("IO Exception", e);
-		}
-		
-		return recordsJSON;
-		
-	}
 	
 		/**
 	 * Transforms a validation message into a JsonNode
