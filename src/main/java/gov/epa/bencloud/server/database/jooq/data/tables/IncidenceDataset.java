@@ -8,6 +8,7 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,7 +17,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -62,6 +63,26 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
      * The column <code>data.incidence_dataset.grid_definition_id</code>.
      */
     public final TableField<IncidenceDatasetRecord, Integer> GRID_DEFINITION_ID = createField(DSL.name("grid_definition_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.incidence_dataset.user_id</code>.
+     */
+    public final TableField<IncidenceDatasetRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.incidence_dataset.share_scope</code>.
+     */
+    public final TableField<IncidenceDatasetRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.incidence_dataset.filename</code>.
+     */
+    public final TableField<IncidenceDatasetRecord, String> FILENAME = createField(DSL.name("filename"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.incidence_dataset.upload_date</code>.
+     */
+    public final TableField<IncidenceDatasetRecord, LocalDateTime> UPLOAD_DATE = createField(DSL.name("upload_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
     private IncidenceDataset(Name alias, Table<IncidenceDatasetRecord> aliased) {
         this(alias, aliased, null);
@@ -152,11 +173,11 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Integer, String, Integer> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row7<Integer, String, Integer, String, Short, String, LocalDateTime> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 }
