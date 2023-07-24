@@ -316,7 +316,7 @@ public class HIFTaskRunnable implements Runnable {
 					double hifBaselineEstimate = 0.0;
 					double incidence = 0.0;
 					double prevalence = 0.0;
-					Double[] resultPercentiles = new Double[100];
+					Double[] resultPercentiles = new Double[20];
 					Arrays.fill(resultPercentiles, 0.0);
 					
 					for (GetPopulationRecord popCategory : populationCell) {
@@ -394,8 +394,8 @@ public class HIFTaskRunnable implements Runnable {
 						rec.setScenarioAq(scenarioValue);
 						rec.setIncidence(incidence);
 						rec.setResult(hifFunctionEstimate);
-						rec.setPct_2_5(resultPercentiles[2]);
-						rec.setPct_97_5(resultPercentiles[97]);
+						rec.setPct_2_5(resultPercentiles[0]);
+						rec.setPct_97_5(resultPercentiles[19]);
 
 						rec.setPercentiles(resultPercentiles);
 
@@ -605,10 +605,10 @@ public class HIFTaskRunnable implements Runnable {
 	}
 	
 	/* 
-	 * Gets the 0.5, 1.5... 99.5 percentiles from the specified distribution.
+	 * Gets the 2.5, 7.5, ... percentiles from a distribution defined by a record h
 	 */
 	private double[] getPercentilesFromDistribution(Record h) {
-		double[] percentiles = new double[100];
+		double[] percentiles = new double[20];
 		
 		String distribution_name = h.get("dist_beta", String.class);
 		RealDistribution distribution;
