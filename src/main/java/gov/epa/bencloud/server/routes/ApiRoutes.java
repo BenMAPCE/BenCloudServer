@@ -216,10 +216,11 @@ public class ApiRoutes extends RoutesBase {
 		}, objectMapper::writeValueAsString);
 		
 		/*
-		 * GET a list of incidence datasets
+		 * GET a list of incidence datasets including prevalence
+		 * ..Should incidence include prevalence?
 		 */
 		service.get(apiPrefix + "/incidence", (request, response) -> {
-			return IncidenceApi.getAllIncidenceDatasets(response, getUserProfile(request, response));
+			return IncidenceApi.getAllIncidencePrevalenceDatasets(response, getUserProfile(request, response));
 		});
 
 		/*
@@ -230,7 +231,7 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 			/*
-		 * DELETE a single air quality surface definition
+		 * DELETE a single incidence dataset definition
 		 * PARAMETERS:
 		 *  :id
 		 */

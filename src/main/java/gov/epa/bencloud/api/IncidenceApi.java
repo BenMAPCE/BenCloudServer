@@ -29,7 +29,9 @@ import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record3;
 import org.jooq.Record4;
+import org.jooq.Record5;
 import org.jooq.Record6;
+import org.jooq.Record8;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.Table;
@@ -229,6 +231,16 @@ public class IncidenceApi {
 		incidenceOrPrevalenceLists.add(incidenceOrPrevalenceMap);
 		return true;
 	}
+
+	/**
+	 * 
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all incidence datasets.
+	 */
+	public static Object getAllIncidencePrevalenceDatasets(Response response, Optional<UserProfile> userProfile) {
+		return getAllIncidencePrevalenceDatasets(response);
+	}
 	
 	/**
 	 * 
@@ -260,24 +272,67 @@ public class IncidenceApi {
 	 * @return a JSON representation of all incidence or prevalance datasets.
 	 */
 	public static Object getAllIncidencePrevalenceDatasets(Response response, boolean prevalence) {
-		Result<Record4<String, Integer, Integer, Integer[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record8<String, Integer, Integer, Integer[], String, Short, String, LocalDateTime >> records = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(INCIDENCE_DATASET.NAME,
 						INCIDENCE_DATASET.ID,
 						INCIDENCE_DATASET.GRID_DEFINITION_ID,
-						DSL.arrayAggDistinct(INCIDENCE_ENTRY.YEAR).orderBy(INCIDENCE_ENTRY.YEAR).as("years")
+						DSL.arrayAggDistinct(INCIDENCE_ENTRY.YEAR).orderBy(INCIDENCE_ENTRY.YEAR).as("years"),
+						INCIDENCE_DATASET.USER_ID,
+						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.FILENAME,
+						INCIDENCE_DATASET.UPLOAD_DATE
 						)
 				.from(INCIDENCE_DATASET)
 				.join(INCIDENCE_ENTRY).on(INCIDENCE_DATASET.ID.eq(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID))
 				.where(INCIDENCE_ENTRY.PREVALENCE.eq(prevalence))
 				.groupBy(INCIDENCE_DATASET.NAME,
 						INCIDENCE_DATASET.ID,
-						INCIDENCE_DATASET.GRID_DEFINITION_ID)
+						INCIDENCE_DATASET.GRID_DEFINITION_ID,
+						INCIDENCE_DATASET.USER_ID,
+						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.FILENAME,
+						INCIDENCE_DATASET.UPLOAD_DATE
+						)
 				.orderBy(INCIDENCE_DATASET.NAME)
 				.fetch();
 		
 		response.type("application/json");
 		return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
+	/**
+	 * 
+	 * @param response
+	 * 
+	 * @return a JSON representation of all incidence AND prevalance datasets.
+	 */
+	public static Object getAllIncidencePrevalenceDatasets(Response response) {
+		Result<Record8<String, Integer, Integer, Integer[], String, Short, String, LocalDateTime >> records = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(INCIDENCE_DATASET.NAME,
+						INCIDENCE_DATASET.ID,
+						INCIDENCE_DATASET.GRID_DEFINITION_ID,
+						DSL.arrayAggDistinct(INCIDENCE_ENTRY.YEAR).orderBy(INCIDENCE_ENTRY.YEAR).as("years"),
+						INCIDENCE_DATASET.USER_ID,
+						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.FILENAME,
+						INCIDENCE_DATASET.UPLOAD_DATE
+						)
+				.from(INCIDENCE_DATASET)
+				.join(INCIDENCE_ENTRY).on(INCIDENCE_DATASET.ID.eq(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID))
+				.groupBy(INCIDENCE_DATASET.NAME,
+						INCIDENCE_DATASET.ID,
+						INCIDENCE_DATASET.GRID_DEFINITION_ID,
+						INCIDENCE_DATASET.USER_ID,
+						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.FILENAME,
+						INCIDENCE_DATASET.UPLOAD_DATE
+						)
+				.orderBy(INCIDENCE_DATASET.NAME)
+				.fetch();
+		
+		response.type("application/json");
+		return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+	}
+
 
 
 	/**
