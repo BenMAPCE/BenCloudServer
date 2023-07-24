@@ -45,6 +45,7 @@ public class BatchTaskConfig {
 	public Boolean preserveLegacyBehavior = true;
 	public List<Scenario> aqScenarios = new ArrayList<Scenario>();
 	public List<BatchHIFGroup> batchHifGroups = new ArrayList<BatchHIFGroup>();
+	public List<BatchExposureGroup> batchExposureGroups = new ArrayList<BatchExposureGroup>();
 	
 	/*
 	 * Default constructor
@@ -79,10 +80,10 @@ public class BatchTaskConfig {
 				this.aqScenarios.add(new Scenario(scenario));
 			}
 
-			JsonNode functionGroups = params.get("hif_function_groups");
+			JsonNode functionGroups = params.get("exposure_function_groups");
 
 			for (JsonNode functionGroup : functionGroups) {
-				this.batchHifGroups.add(new BatchHIFGroup(functionGroup));
+				this.batchExposureGroups.add(new BatchExposureGroup(functionGroup));
 			}
 
 		} catch (JsonMappingException e) {

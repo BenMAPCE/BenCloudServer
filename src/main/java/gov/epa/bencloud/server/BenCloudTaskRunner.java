@@ -19,6 +19,7 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
+import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -108,6 +109,9 @@ public class BenCloudTaskRunner {
 			} else if(task.getType().equalsIgnoreCase("Valuation")) {				
 				ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
 				vt.run();
+			} else if(task.getType().equalsIgnoreCase("Exposure")) {				
+				ExposureTaskRunnable et = new ExposureTaskRunnable(taskUuid, taskRunnerUuid);
+				et.run();
 			} else {
 				log.error("Unknown task type: " + task.getType());
 				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskRunnerUuid, false, "Task Failed");

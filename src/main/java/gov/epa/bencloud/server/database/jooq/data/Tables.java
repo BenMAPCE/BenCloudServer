@@ -21,6 +21,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResult;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.Gender;
+import gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation;
@@ -68,6 +69,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunction
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableValue;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
@@ -169,6 +171,57 @@ public class Tables {
      * The table <code>data.gender</code>.
      */
     public static final Gender GENDER = Gender.GENDER;
+
+    /**
+     * The table <code>data.get_exposure_results</code>.
+     */
+    public static final GetExposureResults GET_EXPOSURE_RESULTS = GetExposureResults.GET_EXPOSURE_RESULTS;
+
+    /**
+     * Call <code>data.get_exposure_results</code>.
+     */
+    public static Result<GetExposureResultsRecord> GET_EXPOSURE_RESULTS(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer[] _EfId
+        , Integer _OutputGridDefinitionId
+    ) {
+        return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults.GET_EXPOSURE_RESULTS.call(
+              _DatasetId
+            , _EfId
+            , _OutputGridDefinitionId
+        )).fetch();
+    }
+
+    /**
+     * Get <code>data.get_exposure_results</code> as a table.
+     */
+    public static GetExposureResults GET_EXPOSURE_RESULTS(
+          Integer _DatasetId
+        , Integer[] _EfId
+        , Integer _OutputGridDefinitionId
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults.GET_EXPOSURE_RESULTS.call(
+            _DatasetId,
+            _EfId,
+            _OutputGridDefinitionId
+        );
+    }
+
+    /**
+     * Get <code>data.get_exposure_results</code> as a table.
+     */
+    public static GetExposureResults GET_EXPOSURE_RESULTS(
+          Field<Integer> _DatasetId
+        , Field<Integer[]> _EfId
+        , Field<Integer> _OutputGridDefinitionId
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults.GET_EXPOSURE_RESULTS.call(
+            _DatasetId,
+            _EfId,
+            _OutputGridDefinitionId
+        );
+    }
 
     /**
      * The table <code>data.get_hif_results</code>.

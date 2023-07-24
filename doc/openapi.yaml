@@ -930,9 +930,9 @@ paths:
                       items:
                         type: integer
                         example: 861, 881, 890
-  /batch-task-config-example:
+  /batch-task-config-example-hif:
     get:
-      summary: Return new batch task config example.
+      summary: Return new batch task config HIF example.
       parameters:
         - in: query
           name: pollutantId
@@ -944,6 +944,24 @@ paths:
       responses:
         '200':
           description: Successfully returned a single health impact function group.
+          content:
+            application/json:
+              schema:
+                type: object
+  /batch-task-config-example-exposure:
+    get:
+      summary: Return new batch task config exposure example.
+      parameters:
+        - in: query
+          name: pollutantId
+          required: true
+          description: Filter by pollutant
+          schema:
+            type: integer
+            default: 6
+      responses:
+        '200':
+          description: Successfully returned an exposure function group.
           content:
             application/json:
               schema:

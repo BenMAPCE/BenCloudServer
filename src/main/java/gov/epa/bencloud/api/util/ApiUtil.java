@@ -308,6 +308,24 @@ public class ApiUtil {
 				.fetch(VARIABLE_ENTRY.NAME);
 		return allVariableNames;
 	}
+	
+	/**
+	 * 
+	 * @param variableDatasetId
+	 * @return a list of all variable names for a given variable dataset.
+	 */
+	public static String getVariableName(Integer variableId) {
+		if(variableId == null) {
+			return null;
+		}
+
+		Record1<String> variableName = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(VARIABLE_ENTRY.NAME)
+				.from(VARIABLE_ENTRY)
+				.where(VARIABLE_ENTRY.ID.eq(variableId))
+				.fetchOne();
+		return variableName.value1();
+	}
 
 	/**
 	 * 

@@ -209,8 +209,14 @@ public class ApiRoutes extends RoutesBase {
 			return b;
 		}, objectMapper::writeValueAsString);
 
-		service.get(apiPrefix + "/batch-task-config-example", (request, response) -> {
-			Object b = TaskApi.getBatchTaskConfigExample(request, response, getUserProfile(request, response));
+		service.get(apiPrefix + "/batch-task-config-example-hif", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfigExampleHIF(request, response, getUserProfile(request, response));
+			response.type("application/json");
+			return b;
+		}, objectMapper::writeValueAsString);
+
+		service.get(apiPrefix + "/batch-task-config-example-exposure", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfigExampleExposure(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return b;
 		}, objectMapper::writeValueAsString);
