@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row4;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -59,6 +59,11 @@ public class ExposureFunctionGroup extends TableImpl<ExposureFunctionGroupRecord
      * The column <code>data.exposure_function_group.help_text</code>.
      */
     public final TableField<ExposureFunctionGroupRecord, String> HELP_TEXT = createField(DSL.name("help_text"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.exposure_function_group.pollutant_id</code>.
+     */
+    public final TableField<ExposureFunctionGroupRecord, Integer> POLLUTANT_ID = createField(DSL.name("pollutant_id"), SQLDataType.INTEGER, this, "");
 
     private ExposureFunctionGroup(Name alias, Table<ExposureFunctionGroupRecord> aliased) {
         this(alias, aliased, null);
@@ -137,11 +142,11 @@ public class ExposureFunctionGroup extends TableImpl<ExposureFunctionGroupRecord
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row4 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Integer, String, String> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row4<Integer, String, String, Integer> fieldsRow() {
+        return (Row4) super.fieldsRow();
     }
 }

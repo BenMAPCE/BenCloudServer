@@ -38,10 +38,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.api.model.BatchTaskConfig;
+import gov.epa.bencloud.api.model.ExposureConfig;
+import gov.epa.bencloud.api.model.ExposureTaskConfig;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.api.util.ExposureUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -58,6 +61,7 @@ import gov.epa.bencloud.api.model.ScenarioPopConfig;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.api.model.BatchExposureGroup;
 import gov.epa.bencloud.api.model.BatchHIFGroup;
 
 
@@ -481,103 +485,146 @@ public class TaskApi {
 		.fetchOne();
 		Integer batchTaskId = rec.getId();
 		
-		//Create a HIFTaskConfig and ValuationTaskConfig templates for the task parameters
-		HIFTaskConfig hifTaskConfig = new HIFTaskConfig();
-		hifTaskConfig.aqBaselineId = batchTaskConfig.aqBaselineId;
-		hifTaskConfig.popId = batchTaskConfig.popId;
-		
-		ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig();
-		valuationTaskConfig.gridDefinitionId = batchTaskConfig.gridDefinitionId;
-		valuationTaskConfig.useGrowthFactors = true;
-		valuationTaskConfig.useInflationFactors = true;
-		valuationTaskConfig.variableDatasetId = 1;
-		
-		//Combine all the selected HIFs into a big, flat list for processing
-		for (BatchHIFGroup hifGroup : batchTaskConfig.batchHifGroups) {
-			for (HIFConfig hifConfig : hifGroup.hifs) {
-				hifTaskConfig.hifs.add(hifConfig);
-				for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
-					valuationTaskConfig.valuationFunctions.add(valuationConfig);					
+		if(batchTaskConfig.batchHifGroups.size() > 0) {
+			//Create hif and valuation tasks
+			//Create a HIFTaskConfig and ValuationTaskConfig templates for the task parameters
+			HIFTaskConfig hifTaskConfig = new HIFTaskConfig();
+			hifTaskConfig.aqBaselineId = batchTaskConfig.aqBaselineId;
+			hifTaskConfig.popId = batchTaskConfig.popId;
+			
+			ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig();
+			valuationTaskConfig.gridDefinitionId = batchTaskConfig.gridDefinitionId;
+			valuationTaskConfig.useGrowthFactors = true;
+			valuationTaskConfig.useInflationFactors = true;
+			valuationTaskConfig.variableDatasetId = 1;
+			
+			//Combine all the selected HIFs into a big, flat list for processing
+			for (BatchHIFGroup hifGroup : batchTaskConfig.batchHifGroups) {
+				for (HIFConfig hifConfig : hifGroup.hifs) {
+					hifTaskConfig.hifs.add(hifConfig);
+					for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
+						valuationTaskConfig.valuationFunctions.add(valuationConfig);					
+					}
 				}
 			}
-		}
-		
-		boolean hasValuation = valuationTaskConfig.valuationFunctions.size() > 0;
-		
-		// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
-		for (Scenario scenario : batchTaskConfig.aqScenarios) {
-			hifTaskConfig.aqScenarioId = scenario.id;
-			for (ScenarioPopConfig popScenario : scenario.popConfigs) {
-				hifTaskConfig.popYear = popScenario.popYear;
-				hifTaskConfig.name = batchTaskConfig.name + "-" + scenario.name + "-" + popScenario.popYear; // TODO:Figure out nicer name
-				for (ScenarioHIFConfig hifScenario : popScenario.scenarioHifConfigs) {
-					// TODO: Find a more efficient way of doing this?
-					for (HIFConfig hifConfig : hifTaskConfig.hifs) {
-						if (hifConfig.hifInstanceId.equals(hifScenario.hifInstanceId)) {
-							hifConfig.incidenceYear = hifScenario.incidenceYear;
-							hifConfig.prevalenceYear = hifScenario.prevalenceYear;
-							
-							//TODO: Only override here if needed
-						    if(hifConfig.startAge == null) {
-						    	hifConfig.startAge = (Integer) hifConfig.hifRecord.get("start_age"); 
-						    }
-						    if(hifConfig.endAge == null) {
-						    	hifConfig.endAge = (Integer) hifConfig.hifRecord.get("end_age");  
-						    }
-						    if(hifConfig.race == null) {
-						    	hifConfig.race = (Integer) hifConfig.hifRecord.get("race_id"); 
-						    	hifConfig.incidenceRace = hifConfig.race;
-						    	hifConfig.prevalenceRace = hifConfig.race;
-						    }
-						    if(hifConfig.ethnicity == null) {
-						    	hifConfig.ethnicity = (Integer) hifConfig.hifRecord.get("ethnicity_id");
-						    	hifConfig.incidenceEthnicity = hifConfig.ethnicity;
-						    	hifConfig.prevalenceEthnicity = hifConfig.ethnicity;
-						    }
-						    if(hifConfig.gender == null) {
-						    	hifConfig.gender = (Integer) hifConfig.hifRecord.get("gender_id");
-						    	hifConfig.incidenceGender = hifConfig.gender;
-						    	hifConfig.prevalenceGender = hifConfig.gender;
-						    }
-							
-							break;
+			
+			boolean hasValuation = valuationTaskConfig.valuationFunctions.size() > 0;
+			
+			// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
+			for (Scenario scenario : batchTaskConfig.aqScenarios) {
+				hifTaskConfig.aqScenarioId = scenario.id;
+				for (ScenarioPopConfig popScenario : scenario.popConfigs) {
+					hifTaskConfig.popYear = popScenario.popYear;
+					hifTaskConfig.name = batchTaskConfig.name + "-" + scenario.name + "-" + popScenario.popYear; // TODO:Figure out nicer name
+					for (ScenarioHIFConfig hifScenario : popScenario.scenarioHifConfigs) {
+						// TODO: Find a more efficient way of doing this?
+						for (HIFConfig hifConfig : hifTaskConfig.hifs) {
+							if (hifConfig.hifInstanceId.equals(hifScenario.hifInstanceId)) {
+								hifConfig.incidenceYear = hifScenario.incidenceYear;
+								hifConfig.prevalenceYear = hifScenario.prevalenceYear;
+								
+								//TODO: Only override here if needed
+							    if(hifConfig.startAge == null) {
+							    	hifConfig.startAge = (Integer) hifConfig.hifRecord.get("start_age"); 
+							    }
+							    if(hifConfig.endAge == null) {
+							    	hifConfig.endAge = (Integer) hifConfig.hifRecord.get("end_age");  
+							    }
+							    if(hifConfig.race == null) {
+							    	hifConfig.race = (Integer) hifConfig.hifRecord.get("race_id"); 
+							    	hifConfig.incidenceRace = hifConfig.race;
+							    	hifConfig.prevalenceRace = hifConfig.race;
+							    }
+							    if(hifConfig.ethnicity == null) {
+							    	hifConfig.ethnicity = (Integer) hifConfig.hifRecord.get("ethnicity_id");
+							    	hifConfig.incidenceEthnicity = hifConfig.ethnicity;
+							    	hifConfig.prevalenceEthnicity = hifConfig.ethnicity;
+							    }
+							    if(hifConfig.gender == null) {
+							    	hifConfig.gender = (Integer) hifConfig.hifRecord.get("gender_id");
+							    	hifConfig.incidenceGender = hifConfig.gender;
+							    	hifConfig.prevalenceGender = hifConfig.gender;
+							    }
+								
+								break;
+							}
 						}
 					}
-				}
 
-				try {
-					Task hifTask = new Task();
-					hifTask.setUserIdentifier(userProfile.get().getId());
-					hifTask.setType("HIF");
-					hifTask.setBatchId(batchTaskId);
-					hifTask.setName(hifTaskConfig.name);
-					hifTask.setParameters(objectMapper.writeValueAsString(hifTaskConfig));
-					String hifTaskUUID = UUID.randomUUID().toString(); 
-					hifTask.setUuid(hifTaskUUID);
-					TaskQueue.writeTaskToQueue(hifTask);
-					
-					//Only add the valuation task if there are valuation functions to run
-					if(hasValuation) {
-						valuationTaskConfig.hifTaskUuid = hifTaskUUID;
-	
-						Task valuationTask = new Task();
-						valuationTask.setUserIdentifier(userProfile.get().getId());
-						valuationTask.setType("Valuation");
-						valuationTask.setBatchId(batchTaskId);
-						valuationTask.setName(hifTaskConfig.name + "-Valuation");
-						valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
-						valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
-						String valuationTaskUUID = UUID.randomUUID().toString(); 
-						valuationTask.setUuid(valuationTaskUUID);
-						TaskQueue.writeTaskToQueue(valuationTask);	
+					try {
+						Task hifTask = new Task();
+						hifTask.setUserIdentifier(userProfile.get().getId());
+						hifTask.setType("HIF");
+						hifTask.setBatchId(batchTaskId);
+						hifTask.setName(hifTaskConfig.name);
+						hifTask.setParameters(objectMapper.writeValueAsString(hifTaskConfig));
+						String hifTaskUUID = UUID.randomUUID().toString(); 
+						hifTask.setUuid(hifTaskUUID);
+						TaskQueue.writeTaskToQueue(hifTask);
+						
+						//Only add the valuation task if there are valuation functions to run
+						if(hasValuation) {
+							valuationTaskConfig.hifTaskUuid = hifTaskUUID;
+		
+							Task valuationTask = new Task();
+							valuationTask.setUserIdentifier(userProfile.get().getId());
+							valuationTask.setType("Valuation");
+							valuationTask.setBatchId(batchTaskId);
+							valuationTask.setName(hifTaskConfig.name + "-Valuation");
+							valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
+							valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
+							String valuationTaskUUID = UUID.randomUUID().toString(); 
+							valuationTask.setUuid(valuationTaskUUID);
+							TaskQueue.writeTaskToQueue(valuationTask);	
+						}
+						
+					} catch (JsonProcessingException e) {
+						e.printStackTrace();
+						return CoreApi.getErrorResponse(request, response, 400, "Unable to serialize task scenario");
 					}
-					
-				} catch (JsonProcessingException e) {
-					e.printStackTrace();
-					return CoreApi.getErrorResponse(request, response, 400, "Unable to serialize task scenario");
+				}
+			}			
+		} else if(batchTaskConfig.batchExposureGroups.size() > 0) {
+			//Create exposure tasks
+			//Create a HIFTaskConfig and ValuationTaskConfig templates for the task parameters
+			ExposureTaskConfig exposureTaskConfig = new ExposureTaskConfig();
+			exposureTaskConfig.aqBaselineId = batchTaskConfig.aqBaselineId;
+			exposureTaskConfig.popId = batchTaskConfig.popId;
+			
+			
+			//Combine all the selected HIFs into a big, flat list for processing
+			for (BatchExposureGroup exposureGroup : batchTaskConfig.batchExposureGroups) {
+				for (ExposureConfig exposureConfig : exposureGroup.exposureConfigs) {
+					exposureTaskConfig.exposureFunctions.add(exposureConfig);
+				}
+			}
+			
+			// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
+			for (Scenario scenario : batchTaskConfig.aqScenarios) {
+				exposureTaskConfig.aqScenarioId = scenario.id;
+				for (ScenarioPopConfig popScenario : scenario.popConfigs) {
+					exposureTaskConfig.popYear = popScenario.popYear;
+					exposureTaskConfig.name = batchTaskConfig.name + "-" + scenario.name + "-" + popScenario.popYear; // TODO:Figure out nicer name
+
+					try {
+						Task exposureTask = new Task();
+						exposureTask.setUserIdentifier(userProfile.get().getId());
+						exposureTask.setType("Exposure");
+						exposureTask.setBatchId(batchTaskId);
+						exposureTask.setName(exposureTaskConfig.name);
+						exposureTask.setParameters(objectMapper.writeValueAsString(exposureTaskConfig));
+						String hifTaskUUID = UUID.randomUUID().toString(); 
+						exposureTask.setUuid(hifTaskUUID);
+						TaskQueue.writeTaskToQueue(exposureTask);
+						
+					} catch (JsonProcessingException e) {
+						e.printStackTrace();
+						return CoreApi.getErrorResponse(request, response, 400, "Unable to serialize task scenario");
+					}
 				}
 			}
 		}
+
 	
 		return CoreApi.getSuccessResponse(request, response, 200, "Task was submitted");
 	}
@@ -592,7 +639,7 @@ public class TaskApi {
 	 * @return a fully populated batch task config that can be POSTed to /batch-tasks.
 	 * 
 	 */
-	public static Object getBatchTaskConfigExample(Request request, Response response, Optional<UserProfile> userProfile) {		
+	public static Object getBatchTaskConfigExampleHIF(Request request, Response response, Optional<UserProfile> userProfile) {		
 		BatchTaskConfig b = new BatchTaskConfig();
 		b.name = "Hello World";
 		
@@ -756,6 +803,85 @@ public class TaskApi {
 		hifScenario.incidenceYear = popConfig.popYear;
 		popConfig.scenarioHifConfigs.add(hifScenario);
 		
+		aqScenario.popConfigs.add(popConfig);
+		b.aqScenarios.add(aqScenario);
+		
+		return b;
+	
+	}
+	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a fully populated batch task config that can be POSTed to /batch-tasks.
+	 * 
+	 */
+	public static Object getBatchTaskConfigExampleExposure(Request request, Response response, Optional<UserProfile> userProfile) {		
+		BatchTaskConfig b = new BatchTaskConfig();
+		b.name = "Hello World";
+		
+		b.gridDefinitionId = 18; //County
+		b.aqBaselineId = 15; //PM2.5_Annual_Baseline_12.35_Partial_Attain_PM NAAQS Proposal_2032
+		b.popId = 40;
+		b.pollutantName = "PM2.5";
+		b.pollutantId = 6;
+		
+		b.aqScenarios = new ArrayList<Scenario>();
+		b.batchExposureGroups = new ArrayList<BatchExposureGroup>();
+		
+		BatchExposureGroup batchExposureGroup = new BatchExposureGroup();
+		batchExposureGroup.id = 5;
+		batchExposureGroup.name = "PM NAAQS RIA 2022";
+		//TODO: Add helpText to BatchHIFGroup
+		
+		// Exposure function #1
+		ExposureConfig exposureConfig = new ExposureConfig();
+		exposureConfig.efId = 1;
+		exposureConfig.efInstanceId = 1;
+		exposureConfig.efRecord = ExposureUtil.getFunctionDefinition(exposureConfig.efId).intoMap();
+		
+		batchExposureGroup.exposureConfigs.add(exposureConfig);
+		
+		// Exposure function #2
+		exposureConfig = new ExposureConfig();
+		exposureConfig.efId = 2;
+		exposureConfig.efInstanceId = 2;
+		exposureConfig.efRecord = ExposureUtil.getFunctionDefinition(exposureConfig.efId).intoMap();
+
+		batchExposureGroup.exposureConfigs.add(exposureConfig);
+		
+		b.batchExposureGroups.add(batchExposureGroup);
+		
+		//CREATE THE SCENARIOS
+		
+		// *** AQ SCENARIO #1
+		Scenario aqScenario = new Scenario();
+		aqScenario.id = 24;
+		aqScenario.name = "PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032";
+
+		ScenarioPopConfig popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2030;		
+		aqScenario.popConfigs.add(popConfig);
+
+		popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2035;		
+		aqScenario.popConfigs.add(popConfig);
+		b.aqScenarios.add(aqScenario);
+		
+		// *** AQ SCENARIO #2
+		aqScenario = new Scenario();
+		aqScenario.id = 22;
+		aqScenario.name = "PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032";
+
+		popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2030;		
+		aqScenario.popConfigs.add(popConfig);
+
+		popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2035;
+				
 		aqScenario.popConfigs.add(popConfig);
 		b.aqScenarios.add(aqScenario);
 		

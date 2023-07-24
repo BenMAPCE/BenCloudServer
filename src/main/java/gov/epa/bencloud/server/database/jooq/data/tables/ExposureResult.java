@@ -11,7 +11,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row11;
+import org.jooq.Row12;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -98,6 +98,11 @@ public class ExposureResult extends TableImpl<ExposureResultRecord> {
      */
     public final TableField<ExposureResultRecord, Integer> EXPOSURE_FUNCTION_INSTANCE_ID = createField(DSL.name("exposure_function_instance_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>data.exposure_result.result</code>.
+     */
+    public final TableField<ExposureResultRecord, Double> RESULT = createField(DSL.name("result"), SQLDataType.DOUBLE, this, "");
+
     private ExposureResult(Name alias, Table<ExposureResultRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -163,11 +168,11 @@ public class ExposureResult extends TableImpl<ExposureResultRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row11 type methods
+    // Row12 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row11<Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Integer> fieldsRow() {
-        return (Row11) super.fieldsRow();
+    public Row12<Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Integer, Double> fieldsRow() {
+        return (Row12) super.fieldsRow();
     }
 }

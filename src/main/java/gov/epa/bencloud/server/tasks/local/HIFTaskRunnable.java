@@ -282,23 +282,23 @@ public class HIFTaskRunnable implements Runnable {
 					if(hifFunction.nativeFunction == null) {
 						hifFunctionExpression = hifFunction.interpretedFunction;
 						hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
-						hifFunctionExpression.setArgumentValue("Q0", baselineValue);
-						hifFunctionExpression.setArgumentValue("Q1", scenarioValue);
+						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
+						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
 					} else {
 						hifFunction.hifArguments.deltaQ = deltaQ;
-						hifFunction.hifArguments.q0 = baselineValue;
-						hifFunction.hifArguments.q1 = scenarioValue;
+						hifFunction.hifArguments.q0 = scenarioValue;
+						hifFunction.hifArguments.q1 = baselineValue;
 					}
 
 					if(hifBaselineFunction.nativeFunction == null) {
 						hifBaselineExpression = hifBaselineFunction.interpretedFunction;
 						hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-						hifBaselineExpression.setArgumentValue("Q0", baselineValue);
-						hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
+						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
+						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
 					} else {
 						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
-						hifBaselineFunction.hifArguments.q0 = baselineValue;
-						hifBaselineFunction.hifArguments.q1 = scenarioValue;
+						hifBaselineFunction.hifArguments.q0 = scenarioValue;
+						hifBaselineFunction.hifArguments.q1 = baselineValue;
 					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);

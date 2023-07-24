@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
+import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.TaskWorkerRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
@@ -135,6 +136,15 @@ public class TaskWorker {
 				}
 				break;
 
+			case "Exposure":
+				if(ApplicationUtil.usingLocalProperties()) {
+					t = new Thread(new ExposureTaskRunnable(task.getUuid(), taskWorkerUuid));
+					t.start();	
+				} else {
+					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
+				}
+				break;
+				
 			default:
 				 t = new Thread(new TaskWorkerRunnable(task.getUuid(), taskWorkerUuid));
 				 t.start();
