@@ -6,10 +6,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -136,7 +138,8 @@ public class ValuationTaskRunnable implements Runnable {
 			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, valuationTaskConfig.incomeGrowthYear, valuationTaskConfig.useGrowthFactors);
 			
 			//<variableName, <gridCellId, value>>
-			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList, valuationTaskConfig.gridDefinitionId);
+			List<String> requiredVariableNames = valuationTaskConfig.getRequiredVariableNames();
+			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(requiredVariableNames, valuationTaskConfig.variableDatasetId, valuationTaskConfig.gridDefinitionId);
 			
 			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
 
@@ -202,6 +205,7 @@ public class ValuationTaskRunnable implements Runnable {
 
 							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
 							//TODO: Need to improve handling of variables
+							//Currently, median_income is handled in a special way because native functions may require that variable
 							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
 								if(variable.getKey().equalsIgnoreCase("median_income")) {
 									valuationFunction.vfArguments.medianIncome =  variable.getValue().getOrDefault(hifResult.get(0), 0.0);	
@@ -219,7 +223,6 @@ public class ValuationTaskRunnable implements Runnable {
 								valuationFunctionExpression.setArgumentValue("AllGoodsIndex", valuationFunction.vfArguments.allGoodsIndex);
 								valuationFunctionExpression.setArgumentValue("MedicalCostIndex", valuationFunction.vfArguments.medicalCostIndex);
 								valuationFunctionExpression.setArgumentValue("WageIndex", valuationFunction.vfArguments.wageIndex);
-								valuationFunctionExpression.setArgumentValue("median_income", valuationFunction.vfArguments.medianIncome);
 
 								valuationFunctionEstimate = valuationFunctionExpression.calculate();
 							} else {
@@ -231,7 +234,6 @@ public class ValuationTaskRunnable implements Runnable {
 							DescriptiveStatistics distStats;
 							Double[] hifPercentiles = (Double[]) hifResult.get("percentiles");
 							
-							// If possible, use latin hyper-cube sampling 
 							distStats = combineUncertainty(hifPercentiles, betaDist, vfDefinition, valuationFunctionEstimate, hifEstimate);
 							
 							ValuationResultRecord rec = createResultsRecord(hifResult, vfConfig, valuationFunctionEstimate, distStats);

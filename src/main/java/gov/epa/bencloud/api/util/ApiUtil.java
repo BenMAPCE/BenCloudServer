@@ -3,6 +3,7 @@ package gov.epa.bencloud.api.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidParameterException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -256,6 +257,46 @@ public class ApiUtil {
 	 * @param gridId 
 	 * @return
 	 */
+	public static Map<String, Map<Long, Double>> getVariableValues(List<String> requiredVariableNames, Integer variableDatasetId, Integer gridId) 
+		throws InvalidParameterException	
+	{
+		Map<String, Map<Long, Double>> variableMap = new HashMap<String, Map<Long, Double>>();
+
+		if (requiredVariableNames == null || requiredVariableNames.size() == 0) {
+			return variableMap;
+		}
+
+		List<String> allVariableNames = ApiUtil.getAllVariableNames(variableDatasetId);
+
+
+		// FOR EACH VARIABLE
+		for (String variableName : requiredVariableNames) {
+			if (!allVariableNames.contains(variableName)) {
+				throw new InvalidParameterException("Variable name + " + variableName + " not found in dataset");
+			}
+
+			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
+					variableDatasetId, 
+					variableName, 
+					gridId);
+
+
+			// Map from grid cell id to variable value
+			Map<Long, Double> values = new HashMap<Long, Double>();
+
+			// FOR EACH GRID CELL
+			for (GetVariableRecord variableRecord : variableRecords) {
+				values.put(variableRecord.getGridCellId(), variableRecord.getValue());
+			}
+
+			variableMap.put(variableName, values);
+		}
+
+		return variableMap;
+	}
+
+
+	/* 
 	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList, Integer gridId) {
 		
 		// Get all the possible variable names
@@ -289,6 +330,7 @@ public class ApiUtil {
 		
 		return variableMap;
 	}
+	*/
 
 	/**
 	 * 
