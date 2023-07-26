@@ -293,8 +293,8 @@ public class HIFTaskRunnable implements Runnable {
 					if(hifBaselineFunction.nativeFunction == null) {
 						hifBaselineExpression = hifBaselineFunction.interpretedFunction;
 						hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
-						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
+						hifBaselineExpression.setArgumentValue("Q0", scenarioValue);
+						hifBaselineExpression.setArgumentValue("Q1", baselineValue);
 					} else {
 						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
 						hifBaselineFunction.hifArguments.q0 = scenarioValue;
