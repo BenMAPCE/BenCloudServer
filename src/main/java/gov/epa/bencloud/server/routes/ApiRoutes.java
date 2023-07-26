@@ -186,6 +186,17 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
 
+		
+		/*
+		 * GET array of health impact function groups
+		 * PARAMETERS:
+		 *  
+		 *  Response will include array of function ids within each group
+		 */	
+		service.get(apiPrefix + "/exposure-function-groups", (request, response) -> {
+			return ExposureApi.getAllExposureGroups(request, response, getUserProfile(request, response));
+		});
+		
 		/*
 		 * GET a partially populated batch task config
 
