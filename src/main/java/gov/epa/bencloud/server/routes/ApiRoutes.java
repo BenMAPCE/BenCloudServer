@@ -222,10 +222,32 @@ public class ApiRoutes extends RoutesBase {
 		}, objectMapper::writeValueAsString);
 		
 		/*
-		 * GET a list of incidence datasets
+		 * GET a list of incidence datasets including prevalence
+		 * ..Should incidence include prevalence?
 		 */
 		service.get(apiPrefix + "/incidence", (request, response) -> {
-			return IncidenceApi.getAllIncidenceDatasets(response, getUserProfile(request, response));
+			return IncidenceApi.getAllIncidencePrevalenceDatasets(response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST an incidence dataset
+		 */
+		service.post(apiPrefix + "/incidence-data", (request, response) -> {
+			return IncidenceApi.postIncidenceData(request, response, getUserProfile(request, response));
+		});
+
+			/*
+		 * DELETE a single incidence dataset definition
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/incidence/:id", (request, response) -> {
+
+			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
+
+		});
+		service.get(apiPrefix + "/incidence/:id/contents", (request, response) -> {
+			return IncidenceApi.getIncidenceDatasetDetails(request, response, getUserProfile(request, response));
 		});
 		
 		/*
