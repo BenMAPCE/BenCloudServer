@@ -18,33 +18,21 @@ import javax.servlet.MultipartConfigElement;
 
 import java.util.Map.Entry;
 
-import org.apache.commons.compress.archivers.dump.DumpArchiveEntry.TYPE;
-import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.InsertValuesStep5;
-import org.jooq.InsertValuesStep9;
-import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record3;
-import org.jooq.Record4;
-import org.jooq.Record5;
-import org.jooq.Record6;
 import org.jooq.Record8;
 import org.jooq.Result;
 import org.jooq.SortOrder;
-import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record10;
-import org.jooq.Record11;
-import org.jooq.Record13;
 import org.jooq.Record15;
-import org.jooq.Record16;
 import org.jooq.impl.DSL;
 import org.jooq.tools.csv.CSVReader;
 import org.pac4j.core.profile.UserProfile;
@@ -1336,13 +1324,12 @@ public class IncidenceApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 		
-		//TODO: include this when new fields share scope and userId are added to incidence dataset record
 		//Nobody can delete shared layers
 		//All users can delete their own layers
 		//Admins can delete any non-shared layers
-		// if(datasetResult.getShareScope() == Constants.SHARING_ALL || !(datasetResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
-		// 	return CoreApi.getErrorResponseForbidden(request, response);
-		// }
+		if(datasetResult.getShareScope() == Constants.SHARING_ALL || !(datasetResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
 		
 
 
@@ -1386,36 +1373,6 @@ public class IncidenceApi {
 	} 
 	
 
-
-	/**
-	 * 
-	 * @param filterValue
-	 * @return a condition object representing an incidence dataset filter condition.
-	 */
-	private static Condition buildIncidenceDatasetFilterCondition(String filterValue) {
-
-		Condition filterCondition = DSL.trueCondition();
-		Condition searchCondition = DSL.falseCondition();
-
-		Integer filterValueAsInteger = DataConversionUtil.getFilterValueAsInteger(filterValue);
-		Long filterValueAsLong = DataConversionUtil.getFilterValueAsLong(filterValue);
-		Double filterValueAsDouble = DataConversionUtil.getFilterValueAsDouble(filterValue);
-		Date filterValueAsDate = DataConversionUtil.getFilterValueAsDate(filterValue, "MM/dd/yyyy");
-		
-		searchCondition = 
-				searchCondition.or(INCIDENCE_DATASET.NAME
-						.containsIgnoreCase(filterValue));
-
-		searchCondition = 
-				searchCondition.or(GRID_DEFINITION.NAME
-						.containsIgnoreCase(filterValue));
-
-
-		filterCondition = filterCondition.and(searchCondition);
-
-		return filterCondition;
-	}
-
 	/**
 	 * 
 	 * @param filterValue
@@ -1426,6 +1383,7 @@ public class IncidenceApi {
 		Condition filterCondition = DSL.trueCondition();
 		Condition searchCondition = DSL.falseCondition();
 
+		Short filterValueAsShort = DataConversionUtil.getFilterValueAsShort(filterValue);
 		Integer filterValueAsInteger = DataConversionUtil.getFilterValueAsInteger(filterValue);
 		Long filterValueAsLong = DataConversionUtil.getFilterValueAsLong(filterValue);
 		Double filterValueAsDouble = DataConversionUtil.getFilterValueAsDouble(filterValue);
@@ -1451,7 +1409,20 @@ public class IncidenceApi {
 						
 		searchCondition = 
 				searchCondition.or(GENDER.NAME
-						.containsIgnoreCase(filterValue));				
+						.containsIgnoreCase(filterValue));			
+		
+		searchCondition = 
+				searchCondition.or(INCIDENCE_ENTRY.UNITS
+						.containsIgnoreCase(filterValue));		
+		searchCondition = 
+				searchCondition.or(INCIDENCE_ENTRY.TIMEFRAME
+						.containsIgnoreCase(filterValue));		
+		
+		searchCondition = 
+				searchCondition.or(INCIDENCE_ENTRY.DISTRIBUTION
+						.containsIgnoreCase(filterValue));		
+
+
 
 
 		if (null != filterValueAsInteger) {
@@ -1465,9 +1436,23 @@ public class IncidenceApi {
 							.eq(filterValueAsInteger));
 		}
 
+		if (null != filterValueAsShort) {
+			searchCondition = 
+					searchCondition.or(INCIDENCE_ENTRY.START_AGE
+							.eq(filterValueAsShort));
+
+			searchCondition = 
+					searchCondition.or(INCIDENCE_ENTRY.START_AGE
+							.eq(filterValueAsShort));
+		}
+
 		if (null != filterValueAsDouble) {
 			searchCondition = 
 					searchCondition.or(INCIDENCE_VALUE.VALUE
+							.eq(filterValueAsDouble));		
+
+		searchCondition = 
+					searchCondition.or(INCIDENCE_ENTRY.STANDARD_ERROR
 							.eq(filterValueAsDouble));		
 		}
 		
@@ -1476,42 +1461,6 @@ public class IncidenceApi {
 		return filterCondition;
 	}
 
-	/**
-	 * Sets the sort order of the incidence datasets.
-	 * @param sortBy
-	 * @param descending
-	 * @param orderFields
-	 */
-	private static void setIncidenceDatasetsSortOrder(
-			String sortBy, Boolean descending, List<OrderField<?>> orderFields) {
-		
-		if (!"".equals(sortBy)) {
-			
-			SortOrder sortDirection = SortOrder.ASC;
-			Field<?> sortField = null;
-			
-			sortDirection = descending ? SortOrder.DESC : SortOrder.ASC;
-			
-			switch (sortBy) {
-			case "name":
-				sortField = DSL.field(sortBy, String.class.getName());
-				break;
-
-			case "grid_definition_name":
-				sortField = DSL.field(sortBy, Integer.class.getName());
-				break;
-
-			default:
-				sortField = DSL.field(sortBy, String.class.getName());
-				break;
-			}
-			
-			orderFields.add(sortField.sort(sortDirection));
-			
-		} else {
-			orderFields.add(DSL.field("name", String.class.getName()).sort(SortOrder.ASC));	
-		}
-	}
 
 	/**
 	 * Sets the sort order of the incidence cells.
