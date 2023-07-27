@@ -13,6 +13,27 @@ import org.slf4j.LoggerFactory;
  */
 public class DataConversionUtil {
 	private static final Logger log = LoggerFactory.getLogger(DataConversionUtil.class);
+
+
+
+	/**
+	 * 
+	 * @param filterValue
+	 * @return the given filter value in short format.
+	 */
+	public static Short getFilterValueAsShort(String filterValue) {
+
+		Short filterValueAsShort = null;
+
+		try {
+			filterValueAsShort = Short.parseShort(filterValue);
+
+		} catch (NumberFormatException e) {
+			// ignore
+		}
+
+		return filterValueAsShort;
+	}
 	
 	/**
 	 * 
