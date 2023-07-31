@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -47,6 +48,7 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.PopulationCategoryKey;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.PooledDataSource;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
@@ -208,6 +210,11 @@ public class HIFTaskRunnable implements Runnable {
 			messages.get(messages.size()-1).setStatus("complete");
 			hifTaskLog.addMessage("Loaded population data");
 			messages.add(new TaskMessage("active", "Running health impact functions"));
+
+			List<String> requiredVariableNames = hifTaskConfig.getVariableNames();
+			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(requiredVariableNames, hifTaskConfig.variableDatasetId, hifTaskConfig.gridDefinitionId);
+
+
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
@@ -284,6 +291,14 @@ public class HIFTaskRunnable implements Runnable {
 						hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
 						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
 						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
+
+						for (Entry<String, Map<Long, Double>> variable : variables.entrySet()) {
+							if (hifFunctionExpression.getArgument(variable.getKey()) != null) {
+								// should user variables be defined on the population grid?
+								hifFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0), 0.0));
+							}
+						}
+
 					} else {
 						hifFunction.hifArguments.deltaQ = deltaQ;
 						hifFunction.hifArguments.q0 = scenarioValue;
@@ -295,6 +310,14 @@ public class HIFTaskRunnable implements Runnable {
 						hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
 						hifBaselineExpression.setArgumentValue("Q0", scenarioValue);
 						hifBaselineExpression.setArgumentValue("Q1", baselineValue);
+
+						for (Entry<String, Map<Long, Double>> variable : variables.entrySet()) {
+								if (hifBaselineExpression.getArgument(variable.getKey()) != null) {
+									// should user variables be defined on the population grid?
+									hifBaselineExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0), 0.0));
+							}
+						}
+
 					} else {
 						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
 						hifBaselineFunction.hifArguments.q0 = scenarioValue;

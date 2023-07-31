@@ -100,6 +100,7 @@ public class HIFUtil {
 			Argument population = new Argument("POPULATION", 0.0);
 
 			functions[0].interpretedFunction = new Expression(record.getFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
+			functions[0].interpretedFunction.disableImpliedMultiplicationMode();
 		}
 
 		//If we don't have a native baseline function, we'll use the interpreted one instead
@@ -120,6 +121,7 @@ public class HIFUtil {
 			Argument population = new Argument("POPULATION", 0.0);
 
 			functions[1].interpretedFunction = new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
+			functions[1].interpretedFunction.disableImpliedMultiplicationMode();
 		}
 
 		return functions;

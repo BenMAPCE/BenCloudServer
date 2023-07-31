@@ -21,6 +21,7 @@ import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Result;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 
@@ -29,6 +30,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
@@ -247,34 +249,24 @@ public class ApiUtil {
 		
 	}
 
-	// Note that this implementation is currently incomplete. 
-	// It will currently ONLY return data for the median_income variable. 
-	// It needs to be extended so it will look up each variable that is required.
 	/**
-	 * 
-	 * @param valuationTaskConfig
-	 * @param vfDefinitionList
-	 * @param gridId 
-	 * @return
+	 * @param requiredVariableNames
+	 * @param variableDatasetId
+	 * @param gridId
+	 * @return a map from variable names and grid cell ids to variable values
+	 * @throws InvalidParameterException
 	 */
 	public static Map<String, Map<Long, Double>> getVariableValues(List<String> requiredVariableNames, Integer variableDatasetId, Integer gridId) 
-		throws InvalidParameterException	
+		throws DataAccessException	
 	{
 		Map<String, Map<Long, Double>> variableMap = new HashMap<String, Map<Long, Double>>();
 
-		if (requiredVariableNames == null || requiredVariableNames.size() == 0) {
+		if (requiredVariableNames == null || requiredVariableNames.size() == 0 || variableDatasetId == null || gridId == null) {
 			return variableMap;
 		}
 
-		List<String> allVariableNames = ApiUtil.getAllVariableNames(variableDatasetId);
-
-
 		// FOR EACH VARIABLE
 		for (String variableName : requiredVariableNames) {
-			if (!allVariableNames.contains(variableName)) {
-				throw new InvalidParameterException("Variable name + " + variableName + " not found in dataset");
-			}
-
 			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 					variableDatasetId, 
 					variableName, 
@@ -294,62 +286,7 @@ public class ApiUtil {
 
 		return variableMap;
 	}
-
-
-	/* 
-	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList, Integer gridId) {
-		
-		// Get all the possible variable names
-		List<String> allVariableNames = ApiUtil.getAllVariableNames(valuationTaskConfig.variableDatasetId);
-		
-		//TODO: Temp override until we can improve variable selection
-		allVariableNames.removeIf(n -> (!n.equals("median_income")));
-		
-		HashMap<String, Map<Long, Double>> variableMap = new HashMap<String, Map<Long, Double>>();
-		
-		Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
-				1, 
-				allVariableNames.get(0), 
-				gridId);
-		//Look at all valuation functions to determine which variables are needed
-		for(String variableName: allVariableNames) {
-			for(Record function : vfDefinitionList) {
-				if(function.get("function_text", String.class).toLowerCase().contains(variableName)) {
-					if(!variableMap.containsKey(variableName)) {
-						variableMap.put(variableName, new HashMap<Long, Double>());
-					}
-				}
-			}
-		}
-		// Finally load the cell values for each needed variable
-		for (GetVariableRecord variableRecord : variableRecords) {
-			if(variableMap.containsKey(variableRecord.getVariableName())) {
-				variableMap.get(variableRecord.getVariableName()).put(variableRecord.getGridCellId(), variableRecord.getValue().doubleValue());
-			}
-		}
-		
-		return variableMap;
-	}
-	*/
-
-	/**
-	 * 
-	 * @param variableDatasetId
-	 * @return a list of all variable names for a given variable dataset.
-	 */
-	private static List<String> getAllVariableNames(Integer variableDatasetId) {
-		if(variableDatasetId == null) {
-			return null;
-		}
-
-		List<String> allVariableNames = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(VARIABLE_ENTRY.NAME)
-				.from(VARIABLE_ENTRY)
-				.where(VARIABLE_ENTRY.VARIABLE_DATASET_ID.eq(variableDatasetId))
-				.orderBy(VARIABLE_ENTRY.NAME)
-				.fetch(VARIABLE_ENTRY.NAME);
-		return allVariableNames;
-	}
+	
 	
 	/**
 	 * 

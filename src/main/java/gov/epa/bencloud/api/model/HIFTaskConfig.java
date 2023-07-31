@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.jooq.JSON;
 import org.jooq.Record10;
@@ -26,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.GridDefinitionApi;
 import gov.epa.bencloud.api.PopulationApi;
+import gov.epa.bencloud.api.function.HIFunction;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -46,6 +49,8 @@ public class HIFTaskConfig {
 	public Boolean preserveLegacyBehavior = false;
 	public List<HIFConfig> hifs = new ArrayList<HIFConfig>();
 	public Integer gridDefinitionId = 0;
+	public Integer variableDatasetId = null;
+
 	/*
 	 * Default constructor
 	 */
@@ -85,6 +90,8 @@ public class HIFTaskConfig {
 			System.out.println(functions);
 			
 			this.popYear = popConfig.get("year").asInt();
+
+			this.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").toString().isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
 
 			// **********************************************************************************
 			// TODO: This is temporarily overridden so we will always run with legacy behavior.
@@ -253,7 +260,20 @@ public class HIFTaskConfig {
 		return b.toString();
 	}
 	
-	
+	public List<String> getVariableNames() {
+		Set<String> variables = new HashSet<String>();
+
+		for (HIFConfig hifConfig : this.hifs) {
+			HIFunction[] funcs = HIFUtil.getFunctionsForHIF(hifConfig.hifId);
+			for (HIFunction func : funcs) {
+				variables.addAll(func.getRequiredVariables());
+			}
+		}
+
+		List<String> ret = new ArrayList<String>();
+		ret.addAll(variables);
+		return ret;
+	}	
 
 	
 }
