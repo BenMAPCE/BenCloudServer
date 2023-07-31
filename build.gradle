@@ -6,6 +6,9 @@ sourceCompatibility = 17
 targetCompatibility = 17
 
 repositories {
+    maven {
+    	url "https://repo.osgeo.org/repository/release/"
+    }
     mavenCentral()
 }
 
@@ -48,6 +51,8 @@ dependencies {
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
     implementation 'io.kubernetes:client-java-extended:14.0.0'
+
+	implementation 'org.geotools:gt-main:29.0'
 
 	testImplementation(platform('org.junit:junit-bom:5.9.3'))
 	testImplementation('org.junit.jupiter:junit-jupiter')
