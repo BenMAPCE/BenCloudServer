@@ -3,6 +3,7 @@ package gov.epa.bencloud.api.util;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.jooq.DSLContext;
@@ -75,6 +76,10 @@ public class ValuationUtil {
 			
 			Expression e = new Expression(record.getFunctionText(), a, b, c, d, allGoodsIndex, medicalCostIndex, wageIndex);
 			e.disableImpliedMultiplicationMode(); // This is necessary to avoid situations like "median_income" being interpreted as "m*e*dian_incom*e".
+			// We need to get list of the required arguments before we define them in the expression, 
+			// since otherwise we can't differentiate between the predefined args like AllGoodsIndex, and other args like median_income.
+			function.requiredExpressionArguments = Arrays.asList(e.getMissingUserDefinedArguments()); 
+			e.defineArguments(e.getMissingUserDefinedArguments()); 
 			function.interpretedFunction = e;
 		}
 

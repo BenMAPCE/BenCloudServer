@@ -13,17 +13,16 @@ public class VFunction {
     public VFNative nativeFunction = null;
     public VFArguments vfArguments = null;    
 
+    public List<String> requiredExpressionArguments;
+
     public List<String> getRequiredVariables() {
-        List<String> vars = new ArrayList<String>();
 
         if (interpretedFunction != null) {
-            for (String arg : interpretedFunction.getMissingUserDefinedArguments()) {
-                vars.add(arg);
-            }
+            return requiredExpressionArguments;
         } else if (nativeFunction != null) {
-            vars = nativeFunction.getRequiredVariables();
+            return nativeFunction.getRequiredVariables();
         }
 
-        return vars;
+        return null;
     }
 }

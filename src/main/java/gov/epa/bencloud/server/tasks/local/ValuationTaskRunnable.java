@@ -216,9 +216,7 @@ public class ValuationTaskRunnable implements Runnable {
 							if(valuationFunction.nativeFunction == null) {
 								Expression valuationFunctionExpression = valuationFunction.interpretedFunction;
 								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
-									if(valuationFunctionExpression.getArgument(variable.getKey()) != null) {
-										valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));		
-									}
+									valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));		
 								}
 								valuationFunctionExpression.setArgumentValue("AllGoodsIndex", valuationFunction.vfArguments.allGoodsIndex);
 								valuationFunctionExpression.setArgumentValue("MedicalCostIndex", valuationFunction.vfArguments.medicalCostIndex);
