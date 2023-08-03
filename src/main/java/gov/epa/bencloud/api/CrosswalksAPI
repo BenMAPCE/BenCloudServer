@@ -1,0 +1,51 @@
+package gov.epa.bencloud.api;
+
+import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
+import static gov.epa.bencloud.server.database.jooq.grids.Tables.*;
+import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.CrosswalkDatasetRecord;
+
+
+public class CrosswalksAPI{
+    
+    public static calculateCrosswalks(int grid_id1, int grid_id2){ 
+        
+        crosswalkRecord = DSL.using(JooqUtil.getJooqConfiguration())
+			.insertInto(CROSSWALK_DATASET
+					, CROSSWALK_DATASET.SOURCE_GRID_ID
+					, CROSSWALK_DATASET.TARGET_GRID_ID
+			.values(grid_id1,  grid_id2)
+			.returning(CROSSWALK_DATASET.ID)
+			.fetchOne();
+
+        -- CREATE TABLE grids.crosswalk_results (
+        --     int crosswalk_id, 
+        --     int source_col, 
+        --     int source_row, 
+        --     int source_grid_cell_id, 
+        --     int target_col, 
+        --     int target_grid_cell_id, 
+        --     float percentage
+    );
+
+    -- Insert crosswalk results into the crosswalk_results table
+    INSERT INTO CROSSWALKS_ENT (int crosswalk_id, int source_col, int source_row, int source_grid_cell_id, int target_col, int target_grid_cell_id, float percentage)
+    SELECT
+        s.state_name,
+        s.col as source_col,
+        s."row" as source_row,
+        c."name" as county_name,
+        c.col as target_col,
+        c."row" as target_row,
+        st_area(st_intersection(s.geom, c.geom)) / st_area(s.geom) as pct_overlap
+    FROM
+        grids.us_state s
+    JOIN
+        grids.us_county c ON st_intersects(s.geom, c.geom)
+    WHERE
+        st_area(st_intersection(s.geom, c.geom)) / st_area(s.geom) > 0.00000001;
+
+    -- Optional: Create an index for better performance on the crosswalk results table
+    CREATE INDEX idx_crosswalk_results ON grids.crosswalk_results (state_name, source_col, source_row, county_name, target_col, target_row);
+        }
+}
