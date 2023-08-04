@@ -101,6 +101,8 @@ public class HIFUtil {
 
 			functions[0].interpretedFunction = new Expression(record.getFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
 			functions[0].interpretedFunction.disableImpliedMultiplicationMode();
+			functions[0].requiredExpressionVariables = Arrays.asList(functions[0].interpretedFunction.getMissingUserDefinedArguments());
+			functions[0].interpretedFunction.defineArguments(functions[0].interpretedFunction.getMissingUserDefinedArguments());
 		}
 
 		//If we don't have a native baseline function, we'll use the interpreted one instead
@@ -122,6 +124,8 @@ public class HIFUtil {
 
 			functions[1].interpretedFunction = new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
 			functions[1].interpretedFunction.disableImpliedMultiplicationMode();
+			functions[1].requiredExpressionVariables = Arrays.asList(functions[1].interpretedFunction.getMissingUserDefinedArguments());
+			functions[1].interpretedFunction.defineArguments(functions[1].interpretedFunction.getMissingUserDefinedArguments());
 		}
 
 		return functions;

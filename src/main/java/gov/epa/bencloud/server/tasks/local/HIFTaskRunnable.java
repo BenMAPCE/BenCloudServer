@@ -212,7 +212,17 @@ public class HIFTaskRunnable implements Runnable {
 			messages.add(new TaskMessage("active", "Running health impact functions"));
 
 			List<String> requiredVariableNames = hifTaskConfig.getVariableNames();
-			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(requiredVariableNames, hifTaskConfig.variableDatasetId, hifTaskConfig.gridDefinitionId);
+
+			// Variable dataset id, variable name, grid cell id
+			Map<Integer, Map<String, Map<Long, Double>>> variables = new HashMap<Integer, Map<String, Map<Long, Double>>>();
+			
+			for (HIFConfig hifConfig : hifTaskConfig.hifs) {
+				if (!variables.containsKey(hifConfig.variable)) {
+					variables.put(hifConfig.variable, ApiUtil.getVariableValues(requiredVariableNames, hifConfig.variable, hifTaskConfig.gridDefinitionId));
+				}
+			}
+
+			log.debug("VARIABLES ARRAY SIZE: ");
 
 
 			/*
@@ -292,11 +302,8 @@ public class HIFTaskRunnable implements Runnable {
 						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
 						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
 
-						for (Entry<String, Map<Long, Double>> variable : variables.entrySet()) {
-							if (hifFunctionExpression.getArgument(variable.getKey()) != null) {
-								// should user variables be defined on the population grid?
-								hifFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0), 0.0));
-							}
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) {
+							hifFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));
 						}
 
 					} else {
@@ -311,13 +318,9 @@ public class HIFTaskRunnable implements Runnable {
 						hifBaselineExpression.setArgumentValue("Q0", scenarioValue);
 						hifBaselineExpression.setArgumentValue("Q1", baselineValue);
 
-						for (Entry<String, Map<Long, Double>> variable : variables.entrySet()) {
-								if (hifBaselineExpression.getArgument(variable.getKey()) != null) {
-									// should user variables be defined on the population grid?
-									hifBaselineExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0), 0.0));
-							}
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) {
+							hifBaselineExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));
 						}
-
 					} else {
 						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
 						hifBaselineFunction.hifArguments.q0 = scenarioValue;
@@ -368,7 +371,7 @@ public class HIFTaskRunnable implements Runnable {
 								hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
 								hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
 								hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
-								
+
 								hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
 								for(int i=0; i < resultPercentiles.length; i++) {
 									hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								

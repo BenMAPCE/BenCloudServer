@@ -13,18 +13,16 @@ public class HIFunction {
     public HIFNative nativeFunction = null;
     public HIFArguments hifArguments = null;
 
+    public List<String> requiredExpressionVariables;
+
     public List<String> getRequiredVariables() {
-        List<String> vars = new ArrayList<String>();
 
         if (interpretedFunction != null) {
-            for (String arg : interpretedFunction.getMissingUserDefinedArguments()) {
-                vars.add(arg);
-            }
+            return requiredExpressionVariables;
         } else {
             // if there are native functions that require variable lookups, we need to handle
-            // it here. As of writing this code, there are none.
-        }
-        
-        return vars;
+            // it here. As of writing this code, there are none, so we return an empty array
+            return new ArrayList<String>();
+        }    
     }
 }

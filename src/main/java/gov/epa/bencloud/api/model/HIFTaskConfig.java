@@ -49,7 +49,6 @@ public class HIFTaskConfig {
 	public Boolean preserveLegacyBehavior = false;
 	public List<HIFConfig> hifs = new ArrayList<HIFConfig>();
 	public Integer gridDefinitionId = 0;
-	public Integer variableDatasetId = null;
 
 	/*
 	 * Default constructor
@@ -90,8 +89,6 @@ public class HIFTaskConfig {
 			System.out.println(functions);
 			
 			this.popYear = popConfig.get("year").asInt();
-
-			this.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").toString().isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
 
 			// **********************************************************************************
 			// TODO: This is temporarily overridden so we will always run with legacy behavior.
