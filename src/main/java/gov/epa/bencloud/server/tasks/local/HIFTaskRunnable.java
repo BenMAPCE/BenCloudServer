@@ -310,6 +310,9 @@ public class HIFTaskRunnable implements Runnable {
 						hifFunction.hifArguments.deltaQ = deltaQ;
 						hifFunction.hifArguments.q0 = scenarioValue;
 						hifFunction.hifArguments.q1 = baselineValue;
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) { 
+							hifFunction.hifArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));	
+						}
 					}
 
 					if(hifBaselineFunction.nativeFunction == null) {
@@ -325,6 +328,9 @@ public class HIFTaskRunnable implements Runnable {
 						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
 						hifBaselineFunction.hifArguments.q0 = scenarioValue;
 						hifBaselineFunction.hifArguments.q1 = baselineValue;
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) { 
+							hifBaselineFunction.hifArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));	
+						}
 					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
