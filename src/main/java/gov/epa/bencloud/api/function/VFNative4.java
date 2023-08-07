@@ -15,7 +15,7 @@ public class VFNative4 implements VFNative{
      */
     @Override
     public double calculate(VFArguments args) {
-        return args.a * args.medicalCostIndex + args.b * (args.medianIncome / (52.0 * 5.0))  * args.wageIndex;
+        return args.a * args.medicalCostIndex + args.b * (args.otherArguments.get("median_income")) / (52.0 * 5.0)  * args.wageIndex;
     }
 
     @Override

@@ -203,15 +203,7 @@ public class ValuationTaskRunnable implements Runnable {
 							valuationFunction.vfArguments.medicalCostIndex = inflationIndices.get("MedicalCostIndex");
 							valuationFunction.vfArguments.wageIndex = inflationIndices.get("WageIndex");
 
-							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
-							//TODO: Need to improve handling of variables
-							//Currently, median_income is handled in a special way because native functions may require that variable
-							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
-								if(variable.getKey().equalsIgnoreCase("median_income")) {
-									valuationFunction.vfArguments.medianIncome =  variable.getValue().getOrDefault(hifResult.get(0), 0.0);	
-									break;	
-								}
-							}
+
 							double valuationFunctionEstimate = 0.0;
 							if(valuationFunction.nativeFunction == null) {
 								Expression valuationFunctionExpression = valuationFunction.interpretedFunction;
@@ -224,6 +216,11 @@ public class ValuationTaskRunnable implements Runnable {
 
 								valuationFunctionEstimate = valuationFunctionExpression.calculate();
 							} else {
+
+								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
+									valuationFunction.vfArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));
+								}
+
 								valuationFunctionEstimate = valuationFunction.nativeFunction.calculate(valuationFunction.vfArguments);
 							}
 

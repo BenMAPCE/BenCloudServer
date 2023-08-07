@@ -45,10 +45,7 @@ public class VFunctionTest {
     @MethodSource("provideVFInterpreteds")
     void getRequiredVariableNamesInterpretedFunction(Expression expr, List<String> expectedVariables) {
         VFunction vf = new VFunction();
-        expr.disableImpliedMultiplicationMode(); // This needs to happen in the code as well. I don't know of a good way to ensure that it will happen.
-        vf.interpretedFunction = expr;
-        vf.nativeFunction = null;
-        vf.vfArguments = null;
+        vf.createInterpretedFunctionFromExpression(expr);
 
         for (String expectedVariable : expectedVariables) {
             assertTrue(vf.getRequiredVariables().contains(expectedVariable));
