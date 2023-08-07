@@ -1,5 +1,9 @@
 package gov.epa.bencloud.api.function;
 
+import java.util.ArrayList;
+import java.util.List;
+
+
 /*
  * Provides resources related to a given valuation function functional form.
  */
@@ -12,5 +16,10 @@ public class VFNative5 implements VFNative{
     @Override
     public double calculate(VFArguments args) {
         return args.a * args.b * args.allGoodsIndex;
+    }
+
+    @Override
+    public List<String> getRequiredVariables() {
+        return new ArrayList<String>();
     }
 }

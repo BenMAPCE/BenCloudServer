@@ -41,7 +41,7 @@ public class VFNativeFactoryTest {
         sampleVfArgs.allGoodsIndex = allGoodsIndex;
         sampleVfArgs.medicalCostIndex = medicalCostIndex;
         sampleVfArgs.wageIndex = wageIndex;
-        sampleVfArgs.medianIncome = medianIncome;
+        sampleVfArgs.otherArguments.put("median_income", medianIncome);
 
         return Stream.of(
             Arguments.of("A*MedicalCostIndex+B*WageIndex", sampleVfArgs, a*medicalCostIndex+b*wageIndex),

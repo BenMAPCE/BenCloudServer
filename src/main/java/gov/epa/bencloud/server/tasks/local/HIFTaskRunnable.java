@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -47,6 +48,7 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.PopulationCategoryKey;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.PooledDataSource;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
@@ -208,6 +210,21 @@ public class HIFTaskRunnable implements Runnable {
 			messages.get(messages.size()-1).setStatus("complete");
 			hifTaskLog.addMessage("Loaded population data");
 			messages.add(new TaskMessage("active", "Running health impact functions"));
+
+			List<String> requiredVariableNames = hifTaskConfig.getVariableNames();
+
+			// Variable dataset id, variable name, grid cell id
+			Map<Integer, Map<String, Map<Long, Double>>> variables = new HashMap<Integer, Map<String, Map<Long, Double>>>();
+			
+			for (HIFConfig hifConfig : hifTaskConfig.hifs) {
+				if (!variables.containsKey(hifConfig.variable)) {
+					variables.put(hifConfig.variable, ApiUtil.getVariableValues(requiredVariableNames, hifConfig.variable, hifTaskConfig.gridDefinitionId));
+				}
+			}
+
+			log.debug("VARIABLES ARRAY SIZE: ");
+
+
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
@@ -284,21 +301,36 @@ public class HIFTaskRunnable implements Runnable {
 						hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
 						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
 						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
+
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) {
+							hifFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));
+						}
+
 					} else {
 						hifFunction.hifArguments.deltaQ = deltaQ;
 						hifFunction.hifArguments.q0 = scenarioValue;
 						hifFunction.hifArguments.q1 = baselineValue;
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) { 
+							hifFunction.hifArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));	
+						}
 					}
 
 					if(hifBaselineFunction.nativeFunction == null) {
 						hifBaselineExpression = hifBaselineFunction.interpretedFunction;
 						hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
-						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
+						hifBaselineExpression.setArgumentValue("Q0", scenarioValue);
+						hifBaselineExpression.setArgumentValue("Q1", baselineValue);
+
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) {
+							hifBaselineExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));
+						}
 					} else {
 						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
 						hifBaselineFunction.hifArguments.q0 = scenarioValue;
 						hifBaselineFunction.hifArguments.q1 = baselineValue;
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) { 
+							hifBaselineFunction.hifArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));	
+						}
 					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
@@ -345,7 +377,7 @@ public class HIFTaskRunnable implements Runnable {
 								hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
 								hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
 								hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
-								
+
 								hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
 								for(int i=0; i < resultPercentiles.length; i++) {
 									hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
