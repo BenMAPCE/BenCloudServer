@@ -477,6 +477,7 @@ public class TaskQueue {
 								task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
 								task.put("task_status_message", "Completed at " + record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter) );
 								task.put("task_progress_message", "Complete");
+								task.put("task_percentage", 100);
 								task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
 
 								wrappedObject = mapper.createObjectNode();
@@ -496,7 +497,7 @@ public class TaskQueue {
 			
 					}
 
-					data.set("data", tasks);
+					data.set("data", batchTasks);
 					data.put("success", true);
 					data.put("recordsFiltered", records);
 					data.put("recordsTotal", records);
