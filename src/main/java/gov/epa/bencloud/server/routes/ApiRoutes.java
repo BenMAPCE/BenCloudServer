@@ -421,7 +421,11 @@ public class ApiRoutes extends RoutesBase {
 			return data;
 		});
 		
-		//TODO: Add GET /batch-tasks/:id/scenarios to drive the view results UI
+		service.get(apiPrefix + "/batch-tasks/:id/scenarios", (request, response) -> {
+            ObjectNode data = TaskApi.getBatchTaskScenarios(request, response, getUserProfile(request, response));
+            response.type("application/json");
+            return data;
+        });
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
 			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
