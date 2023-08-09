@@ -73,7 +73,7 @@ public class CrosswalksApi{
             //create a table with the required fields and crosswalks for insertion into crosswalk entry table
             SelectConditionStep<Record8<Integer, Integer, Integer, Long, Integer, Integer, Long, Double>> fwQuery = dslContext
             .select(
-                    DSL.value(backwardCrosswalkID).as("crosswalk_id"),
+                    DSL.value(forwardCrosswalkID).as("crosswalk_id"),
                     DSL.field(g1Name + ".col", Integer.class).as("source_col"),
                     DSL.field(g1Name + ".row", Integer.class).as("source_row"),
                     DSL.field("((" + DSL.field(g1Name + ".col") + "+" + DSL.field(g1Name + ".row") + ")*(" + DSL.field(g1Name + ".col") + "+" + DSL.field(g1Name + ".row") + "+1)*0.5)+" + DSL.field(g1Name + ".row"), Long.class).as("source_grid_cell_id"), //same algorithm as ApiUtil.getCellId
