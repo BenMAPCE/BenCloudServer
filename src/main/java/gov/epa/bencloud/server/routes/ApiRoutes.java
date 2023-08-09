@@ -410,16 +410,22 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		service.get(apiPrefix + "/batch-tasks/pending", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
+			ObjectNode data = TaskQueue.getPendingBatchTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
+            return data;
+        });
+        
+        service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
+            ObjectNode data = TaskComplete.getCompletedBatchTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
+			return data;
 		});
 		
-		service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
-		});
-		
-		//TODO: Add GET /batch-tasks/:id/scenarios to drive the view results UI
+		service.get(apiPrefix + "/batch-tasks/:id/scenarios", (request, response) -> {
+            ObjectNode data = TaskApi.getBatchTaskScenarios(request, response, getUserProfile(request, response));
+            response.type("application/json");
+            return data;
+        });
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
 			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));

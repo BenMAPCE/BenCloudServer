@@ -53,7 +53,7 @@ public class ValuationConfig {
 			b.append("Reference: ").append(vfRecord.get("reference")).append("\n");
 		}	
 		
-		if(vfRecord.get("name_a") != null  || vfRecord.get("name_c") != null || vfRecord.get("name_c") != null || vfRecord.get("name_d") != null) {
+		if(vfRecord.get("name_a") != null  || vfRecord.get("name_b") != null || vfRecord.get("name_c") != null || vfRecord.get("name_d") != null) {
 			b.append("Variables\n");
 			if(vfRecord.get("name_a") != null) {
 				b.append("Name A: ").append(vfRecord.get("name_a")).append("\n")
