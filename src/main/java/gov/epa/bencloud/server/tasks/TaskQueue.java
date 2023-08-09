@@ -1,6 +1,8 @@
 package gov.epa.bencloud.server.tasks;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_QUEUE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_COMPLETE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_BATCH;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -331,6 +333,171 @@ public class TaskQueue {
 					}
 
 					data.set("data", tasks);
+					data.put("success", true);
+					data.put("recordsFiltered", records);
+					data.put("recordsTotal", records);
+
+				} catch (DataAccessException e) {
+					data.put("success", false);
+					data.put("error_message", e.getMessage());
+					log.error("Error getting pending tasks", e);
+				} catch (IllegalArgumentException e) {
+					data.put("success", false);
+					data.put("error_message", e.getMessage());
+					log.error("Error getting pending tasks", e);
+				}
+			} catch (Exception e) {
+				log.error("Error getting pending tasks", e);
+			}
+
+		return data;
+	} 
+
+	public static ObjectNode getPendingBatchTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
+
+		//log.info("getPendingTasks");
+//		log.info("userIdentifier: " + userIdentifier);
+		String userId = userProfile.get().getId();
+		boolean showAll;
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode data = mapper.createObjectNode();
+
+		ArrayNode batchTasks = mapper.createArrayNode();
+		ObjectNode batchTask = mapper.createObjectNode();
+		ArrayNode tasks = mapper.createArrayNode();
+		ObjectNode task = mapper.createObjectNode();
+		ObjectNode wrappedObject = mapper.createObjectNode();
+
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+		
+		int records = 0;
+
+//		if (null != userIdentifier) {
+
+			try {
+				LocalDateTime now = LocalDateTime.now();
+				try {
+					Condition batchFilterCondition = DSL.trueCondition();
+					
+					// Skip the following for an admin user that wants to see all data
+					if(!showAll || !CoreApi.isAdmin(userProfile)) {
+						batchFilterCondition = batchFilterCondition.and(TASK_BATCH.USER_ID.eq(userId));
+					}
+
+					Result<Record> batchResult = DSL.using(JooqUtil.getJooqConfiguration()).select()
+						.from(TASK_BATCH)
+						.where(batchFilterCondition) 
+						.orderBy(TASK_BATCH.ID.asc())
+						.fetch();
+
+					for(Record batchRecord : batchResult) {
+						batchTask = mapper.createObjectNode();
+						tasks = mapper.createArrayNode();
+						batchTask.put("batch_task_name", batchRecord.getValue(TASK_BATCH.NAME));
+						batchTask.put("batch_task_id", batchRecord.getValue(TASK_BATCH.ID));
+						batchTask.put("batch_task_user_id", batchRecord.getValue(TASK_BATCH.USER_ID));
+
+						int id = batchRecord.getValue(TASK_BATCH.ID);
+
+						Condition filterCondition = DSL.trueCondition();
+						filterCondition = filterCondition.and(TASK_QUEUE.TASK_BATCH_ID.equal(id));
+						Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select()
+							.from(TASK_QUEUE)
+							.where(filterCondition) 
+							.orderBy(TASK_QUEUE.TASK_STARTED_DATE.asc())
+							.fetch();
+
+						for (Record record : result) {
+
+							task = mapper.createObjectNode();
+
+							task.put("task_name", record.getValue(TASK_QUEUE.TASK_NAME));
+							//task.put("task_description", record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
+							task.put("task_uuid", record.getValue(TASK_QUEUE.TASK_UUID));
+							task.put("task_submitted_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
+							task.put("task_type", record.getValue(TASK_QUEUE.TASK_TYPE));
+							task.put("task_user_id", record.getValue(TASK_QUEUE.USER_ID));
+
+							wrappedObject = mapper.createObjectNode();
+
+							if (record.getValue(TASK_QUEUE.TASK_IN_PROCESS)) {
+
+								task.put("task_status_message", "Started at " + record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter) );
+								task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
+
+								
+								//task.put("task_wait_time", DataUtil.getHumanReadableTime(
+								//		record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
+								//		record.getValue(TASK_QUEUE.TASK_STARTED_DATE)));
+
+								//task.put("task_active_time", DataUtil.getHumanReadableTime(
+								//		record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
+								//		now));
+
+								//task.put("task_started_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
+							} else {
+								
+								task.put("task_status_message", "Pending");
+								task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
+								//							task.put("task_wait_time", DataUtil.getHumanReadableTime(
+	//									record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
+	//									now));
+	//							
+	//							task.put("task_active_time", "");
+	//							task.put("task_started_date", "");
+							}
+							task.put("task_percentage", record.getValue(TASK_QUEUE.TASK_PERCENTAGE));
+							task.put("task_status", record.getValue(TASK_QUEUE.TASK_IN_PROCESS));
+
+							tasks.add(task);
+							records++;
+
+						}
+
+						Result<Record> completeResult = null;
+						//If any tasks in the batch are still pending/in progress, the entire batch stays in the pending table
+						//Grad any tasks that are already complete
+						if(result.isNotEmpty()) {
+							completeResult = DSL.using(JooqUtil.getJooqConfiguration()).select()
+								.from(TASK_COMPLETE)
+								.where(TASK_COMPLETE.TASK_BATCH_ID.equal(id)) 
+								.orderBy(TASK_COMPLETE.TASK_STARTED_DATE.asc())
+								.fetch();
+
+							for (Record record : completeResult) {
+
+								task = mapper.createObjectNode();
+
+								task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
+								//task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
+								task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
+								task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
+								task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
+								task.put("task_status_message", "Completed at " + record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter) );
+								task.put("task_progress_message", "Complete");
+								task.put("task_percentage", 100);
+								task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
+
+								wrappedObject = mapper.createObjectNode();
+
+								tasks.add(task);
+								records++;
+
+							}
+							
+						}
+						if(result.isNotEmpty()) {
+							int totalTasks = result.size() + completeResult.size();
+							batchTask.put("batch_task_progress", "Completed " + completeResult.size() + " of " + totalTasks + " tasks.");
+							batchTask.set("tasks", tasks);
+							batchTasks.add(batchTask);
+						}
+			
+					}
+
+					data.set("data", batchTasks);
 					data.put("success", true);
 					data.put("recordsFiltered", records);
 					data.put("recordsTotal", records);

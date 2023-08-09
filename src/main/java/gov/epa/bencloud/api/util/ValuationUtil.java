@@ -3,6 +3,8 @@ package gov.epa.bencloud.api.util;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.jooq.DSLContext;
 import org.jooq.JSON;
@@ -61,7 +63,6 @@ public class ValuationUtil {
 		function.vfArguments.allGoodsIndex = 0.0;
 		function.vfArguments.medicalCostIndex = 0.0;
 		function.vfArguments.wageIndex = 0.0;
-		function.vfArguments.medianIncome = 0.0;
 		
 		if(function.nativeFunction == null) {
 			Constant a = new Constant("A", function.vfArguments.a);
@@ -72,10 +73,8 @@ public class ValuationUtil {
 			Argument medicalCostIndex = new Argument("MedicalCostIndex", function.vfArguments.medicalCostIndex);
 			Argument wageIndex = new Argument("WageIndex", function.vfArguments.wageIndex);
 			
-			//TODO: Inspect function for variables and create arguments to match
-			//Hardcoding median_income for now
-			Argument medianIncome = new Argument("median_income", function.vfArguments.medianIncome);
-			function.interpretedFunction = new Expression(record.getFunctionText(), a, b, c, d, allGoodsIndex, medicalCostIndex, wageIndex, medianIncome);
+			Expression e = new Expression(record.getFunctionText(), a, b, c, d, allGoodsIndex, medicalCostIndex, wageIndex);
+			function.createInterpretedFunctionFromExpression(e);
 		}
 
 		return function;
@@ -102,8 +101,7 @@ public class ValuationUtil {
 				.fetchOne();
 				
 		return record;
-	}
-	
+	}	
 
 	/**
 	 * 

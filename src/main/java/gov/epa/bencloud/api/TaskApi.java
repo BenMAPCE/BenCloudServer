@@ -10,6 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 import javax.servlet.MultipartConfigElement;
@@ -18,24 +21,30 @@ import spark.Request;
 import spark.Response;
 
 import org.jetbrains.annotations.Nullable;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Result;
+import org.jooq.exception.DataAccessException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.util.RawValue;
 
 import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.ExposureConfig;
@@ -630,6 +639,122 @@ public class TaskApi {
 	}
 
 
+	public static ObjectNode getBatchTaskScenarios(Request request, Response response, Optional<UserProfile> userProfile) {	
+		String userId = userProfile.get().getId();
+		boolean showAll;
+		int batchTaskId;
+
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode data = mapper.createObjectNode();
+
+		ArrayNode tasks = mapper.createArrayNode();
+		ObjectNode task = mapper.createObjectNode();
+
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+		batchTaskId = Integer.valueOf(request.params("id"));
+
+			try {
+				LocalDateTime now = LocalDateTime.now();
+				try {
+					Condition batchFilterCondition = DSL.trueCondition();
+					
+					batchFilterCondition = batchFilterCondition.and(TASK_BATCH.ID.eq(batchTaskId));
+
+					// Skip the following for an admin user that wants to see all data
+					if(!showAll || !CoreApi.isAdmin(userProfile)) {
+						batchFilterCondition = batchFilterCondition.and(TASK_BATCH.USER_ID.eq(userId));
+					}
+
+					Result<Record> batchResult = DSL.using(JooqUtil.getJooqConfiguration()).select()
+						.from(TASK_BATCH)
+						.where(batchFilterCondition) 
+						.orderBy(TASK_BATCH.ID.asc())
+						.fetch();
+
+					for(Record batchRecord : batchResult) {
+						tasks = mapper.createArrayNode();
+						data.put("batch_task_name", batchRecord.getValue(TASK_BATCH.NAME));
+						data.put("batch_task_id", batchRecord.getValue(TASK_BATCH.ID));
+						data.put("batch_task_user_id", batchRecord.getValue(TASK_BATCH.USER_ID));
+						JSON batchParams = batchRecord.getValue(TASK_BATCH.PARAMETERS, JSON.class);
+						ObjectMapper batchMapper = new ObjectMapper();
+						JsonNode batchParamsNode = batchMapper.readTree(batchParams.data());
+						data.put("aq_baseline_id", batchParamsNode.get("aqBaselineId").asText());
+
+
+						Condition filterCondition = DSL.trueCondition();
+						filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(batchTaskId));
+						Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select()
+							.from(TASK_COMPLETE)
+							.where(filterCondition) 
+							.orderBy(TASK_COMPLETE.TASK_STARTED_DATE.asc())
+							.fetch();
+
+						for (Record record : result) {
+
+							task = mapper.createObjectNode();
+
+							task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
+							task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
+							task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
+							task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
+							
+
+							JsonNode json = null;
+		
+							try {
+								json = objectMapper.readTree(record.getValue(TASK_COMPLETE.TASK_PARAMETERS));
+							} catch (JsonMappingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+								response.status(400);
+								return null;
+							} catch (JsonProcessingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+								response.status(400);
+								return null;
+							} 
+							
+							if(record.getValue(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+								String aqScenarioId;
+								String popYear;
+								try {
+									aqScenarioId = json.get("aqScenarioId").asText();
+									task.put("aq_scenario_id", aqScenarioId);
+									popYear = json.get("popYear").asText();
+									task.put("pop_year", popYear);
+								} catch (NullPointerException e) {
+									e.printStackTrace();
+									response.status(400);
+									return null;
+								}
+							} else if (record.getValue(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+								task.put("task_parent_uuid", record.getValue(TASK_COMPLETE.TASK_PARENT_UUID));
+							}
+							
+							tasks.add(task);
+						}
+					}
+
+					data.set("data", tasks);
+					data.put("success", true);
+
+				} catch (DataAccessException e) {
+					data.put("success", false);
+					data.put("error_message", e.getMessage());
+					log.error("Error getting pending tasks", e);
+				} catch (IllegalArgumentException e) {
+					data.put("success", false);
+					data.put("error_message", e.getMessage());
+					log.error("Error getting pending tasks", e);
+				}
+			} catch (Exception e) {
+				log.error("Error getting pending tasks", e);
+			}
+
+		return data;
+	}
 
 	/**
 	 * 

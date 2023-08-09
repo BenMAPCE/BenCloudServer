@@ -233,10 +233,32 @@ public class ApiRoutes extends RoutesBase {
 		}, objectMapper::writeValueAsString);
 		
 		/*
-		 * GET a list of incidence datasets
+		 * GET a list of incidence datasets including prevalence
+		 * ..Should incidence include prevalence?
 		 */
 		service.get(apiPrefix + "/incidence", (request, response) -> {
-			return IncidenceApi.getAllIncidenceDatasets(response, getUserProfile(request, response));
+			return IncidenceApi.getAllIncidencePrevalenceDatasets(response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST an incidence dataset
+		 */
+		service.post(apiPrefix + "/incidence-data", (request, response) -> {
+			return IncidenceApi.postIncidenceData(request, response, getUserProfile(request, response));
+		});
+
+			/*
+		 * DELETE a single incidence dataset definition
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/incidence/:id", (request, response) -> {
+
+			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
+
+		});
+		service.get(apiPrefix + "/incidence/:id/contents", (request, response) -> {
+			return IncidenceApi.getIncidenceDatasetDetails(request, response, getUserProfile(request, response));
 		});
 		
 		/*
@@ -399,16 +421,22 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		service.get(apiPrefix + "/batch-tasks/pending", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
+			ObjectNode data = TaskQueue.getPendingBatchTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
+            return data;
+        });
+        
+        service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
+            ObjectNode data = TaskComplete.getCompletedBatchTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
+			return data;
 		});
 		
-		service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
-		});
-		
-		//TODO: Add GET /batch-tasks/:id/scenarios to drive the view results UI
+		service.get(apiPrefix + "/batch-tasks/:id/scenarios", (request, response) -> {
+            ObjectNode data = TaskApi.getBatchTaskScenarios(request, response, getUserProfile(request, response));
+            response.type("application/json");
+            return data;
+        });
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
 			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));

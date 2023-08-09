@@ -1,5 +1,8 @@
 package gov.epa.bencloud.api.function;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /*
  * Provides resources related to a given hif functional form.
  */
@@ -13,5 +16,10 @@ public class HIFNative6 implements HIFNative{
     @Override
     public double calculate(HIFArguments args) {
         return (1.0 - (1.0 / ((1.0 - args.incidence) * Math.exp(args.beta * args.deltaQ) + args.incidence))) * args.incidence * args.population * (1 - args.a);
+    }
+     
+    @Override
+    public List<String> getRequiredVariables() {
+        return new ArrayList<String>();
     }
 }

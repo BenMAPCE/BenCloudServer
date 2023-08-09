@@ -99,7 +99,7 @@ public class HIFUtil {
 			Argument prevalence = new Argument("PREVALENCE", 0.0);
 			Argument population = new Argument("POPULATION", 0.0);
 
-			functions[0].interpretedFunction = new Expression(record.getFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
+			functions[0].createInterpretedFunctionFromExpression(new Expression(record.getFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
 		}
 
 		//If we don't have a native baseline function, we'll use the interpreted one instead
@@ -119,7 +119,7 @@ public class HIFUtil {
 			Argument prevalence = new Argument("PREVALENCE", 0.0);
 			Argument population = new Argument("POPULATION", 0.0);
 
-			functions[1].interpretedFunction = new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population);
+			functions[1].createInterpretedFunctionFromExpression(new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
 		}
 
 		return functions;

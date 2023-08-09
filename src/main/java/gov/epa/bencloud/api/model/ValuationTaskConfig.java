@@ -2,8 +2,10 @@ package gov.epa.bencloud.api.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import org.slf4j.Logger;
@@ -14,7 +16,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.epa.bencloud.api.function.VFunction;
 import gov.epa.bencloud.api.util.HIFUtil;
+import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 
 
@@ -143,5 +147,19 @@ public class ValuationTaskConfig {
 		
 		return b.toString();
 	}
+
+    public List<String> getRequiredVariableNames() {
+		Set<String> variables = new HashSet<String>();
+
+		for (ValuationConfig vConfig : this.valuationFunctions) {
+			VFunction func = ValuationUtil.getFunctionForVF(vConfig.vfId);
+			variables.addAll(func.getRequiredVariables());
+		}
+
+		List<String> ret = new ArrayList<String>();
+		ret.addAll(variables);
+
+		return ret;
+    }
 
 }
