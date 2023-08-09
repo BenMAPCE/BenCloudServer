@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 import org.jooq.impl.DSL;
+import org.mariuszgromada.math.mxparser.License;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,8 @@ public class BenCloudTaskRunner {
 		} catch (IOException e1) {
 			log.error("Unable to set application path", e1);
 		}
+		
+		License.iConfirmNonCommercialUse("US EPA");
 		
 		String taskUuid = System.getenv("TASK_UUID");
 		String taskRunnerUuid = System.getenv("TASK_RUNNER_UUID");
