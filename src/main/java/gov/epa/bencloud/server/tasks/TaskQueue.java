@@ -409,6 +409,8 @@ public class TaskQueue {
 							.orderBy(TASK_QUEUE.TASK_STARTED_DATE.asc())
 							.fetch();
 
+						LocalDateTime batchStartedDate = null;
+
 						for (Record record : result) {
 
 							task = mapper.createObjectNode();
@@ -424,9 +426,12 @@ public class TaskQueue {
 
 							if (record.getValue(TASK_QUEUE.TASK_IN_PROCESS)) {
 
-								task.put("task_status_message", "Started at " + record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter) );
+								task.put("task_status_message", "Started at " + record.getValue(TASK_QUEUE.TASK_STARTED_DATE).format(formatter) );
 								task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
 
+								if(batchStartedDate == null || (record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)).isBefore(batchStartedDate)) {
+									batchStartedDate = record.getValue(TASK_COMPLETE.TASK_STARTED_DATE);
+								}
 								
 								//task.put("task_wait_time", DataUtil.getHumanReadableTime(
 								//		record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
@@ -475,7 +480,7 @@ public class TaskQueue {
 								task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
 								task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
 								task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
-								task.put("task_status_message", "Completed at " + record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter) );
+								task.put("task_status_message", "Completed at " + record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter) );
 								task.put("task_progress_message", "Complete");
 								task.put("task_percentage", 100);
 								task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
@@ -491,6 +496,11 @@ public class TaskQueue {
 						if(result.isNotEmpty()) {
 							int totalTasks = result.size() + completeResult.size();
 							batchTask.put("batch_task_progress", "Completed " + completeResult.size() + " of " + totalTasks + " tasks.");
+							if(batchStartedDate == null) {
+								batchTask.put("batch_started_date", "Pending");
+							} else {
+								batchTask.put("batch_started_date", "Started at " + batchStartedDate.format(formatter));
+							}
 							batchTask.set("tasks", tasks);
 							batchTasks.add(batchTask);
 						}
