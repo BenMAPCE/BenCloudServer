@@ -117,7 +117,7 @@ public class BenCloudServer {
 			System.exit(-1);
 		}
 		
-		CrosswalksApi.calculateCrosswalks(18, 19);
+		CrosswalksApi.calculateCrosswalks(18, 28);
 
 		new ApiRoutes(benCloudService);
 		

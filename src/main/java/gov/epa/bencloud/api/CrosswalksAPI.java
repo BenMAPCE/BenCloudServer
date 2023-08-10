@@ -35,7 +35,7 @@ public class CrosswalksApi{
     */
     private static final Logger log = LoggerFactory.getLogger(PollutantApi.class);
 
-    public static void calculateCrosswalks(int grid_id1, int grid_id2){ 
+    public static void calculateAreaWeights(int grid_id1, int grid_id2){ 
         
         //add the crosswalk dataset entry into the crosswalk dataset table, then do the same but with the source and target swapped
         try{
@@ -149,12 +149,9 @@ public class CrosswalksApi{
     
 
    
+    public static void calculatePopWeights(int grid_id1, int grid_id2){ 
+    }
 
-    // private static long getGridCellId(Field<Integer> col, Field<Integer> row) {
-    //     int int_col = col.cast(Integer.class).getValue();
-    //     int int_row = row.cast(Integer.class).getValue();
-    //     return ApiUtil.getCellId(int_col, int_row);
-    // }
     // public static void main(String[] args) {
     //     // Call your calculateCrosswalks method here to test
     //     int grid_id1 = 18; // Replace with your desired grid IDs
