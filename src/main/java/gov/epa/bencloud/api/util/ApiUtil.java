@@ -17,9 +17,11 @@ import javax.servlet.http.Part;
 
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
+import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
+import org.jooq.Record3;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -282,6 +284,52 @@ public class ApiUtil {
 			}
 
 			variableMap.put(variableName, values);
+		}
+
+		return variableMap;
+	}
+
+	/**
+	 * Like getVariableValues, but instead returning a map from variable id and grid cell id to its value, rather than it's name + grid cell id
+	 * This is used for the exposure tasks
+	 * @param requiredVariableNames
+	 * @param variableDatasetId
+	 * @param gridId
+	 * @return A map from variable ids and grid cell ids to variable values
+	 */
+	public static Map<Integer, Map<Long, Double>> getVariableValuesFromIds(List<Integer> requiredVariableIds, Integer gridId) {
+		Map<Integer, Map<Long, Double>> variableMap = new HashMap<Integer, Map<Long, Double>>();
+
+		if (requiredVariableIds == null || requiredVariableIds.size() == 0 || gridId == null) {
+			return variableMap;
+		}
+
+		// Get the corresponding names and dataset IDs for each variable ID, so we can use Routines.getVariable
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		Result<Record3<Integer, Integer, String>> results = create
+			.select(VARIABLE_ENTRY.ID, VARIABLE_ENTRY.VARIABLE_DATASET_ID, VARIABLE_ENTRY.NAME)
+			.from(VARIABLE_ENTRY)
+			.where(VARIABLE_ENTRY.ID.in(requiredVariableIds))
+			.fetch();
+		
+
+		// FOR EACH VARIABLE
+		for (Record3<Integer, Integer, String> result : results ) {
+			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
+					result.value2(), 
+					result.value3(), 
+					gridId);
+
+
+			// Map from grid cell id to variable value
+			Map<Long, Double> values = new HashMap<Long, Double>();
+
+			// FOR EACH GRID CELL
+			for (GetVariableRecord variableRecord : variableRecords) {
+				values.put(variableRecord.getGridCellId(), variableRecord.getValue());
+			}
+
+			variableMap.put(result.value1(), values);
 		}
 
 		return variableMap;

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -51,6 +52,7 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.PopulationCategoryKey;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.ExposureUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.PooledDataSource;
@@ -185,6 +187,16 @@ public class ExposureTaskRunnable implements Runnable {
 			mXparser.setToOverrideBuiltinTokens();
 			mXparser.disableUlpRounding();
 
+			/*
+			 * Variables in exposure tasks are handled a bit differently. In the exposure function texts, there's a "VARIABLE" that 
+			 * acts as a placeholder. The variable id that will be used for each function is stored in the exposureConfig.variable field.
+			 * 
+			 * Note that the exposureConfig.efRecord field in the JSON definition is *not* used.
+			 */
+			List<Integer> requiredVariableIds = exposureTaskConfig.getRequiredVariableIds();
+			// Variable id, grid cell id
+			Map<Integer, Map<Long, Double>> variables = ApiUtil.getVariableValuesFromIds(requiredVariableIds, exposureTaskConfig.gridDefinitionId);
+			
 			messages.get(messages.size()-1).setStatus("complete");
 			exposureTaskLog.addMessage("Loaded population data");
 			messages.add(new TaskMessage("active", "Running exposure functions"));
@@ -253,10 +265,18 @@ public class ExposureTaskRunnable implements Runnable {
 						functionExpression.setArgumentValue("DELTA",deltaQ);
 						functionExpression.setArgumentValue("Q1", baselineValue);
 						functionExpression.setArgumentValue("Q0", scenarioValue);
+						// Currently, the replacement of VARIABLE with the corresponding id is hard-coded, since it's the only one.
+						if (variables.containsKey(exposureConfig.variable)) {
+							functionExpression.setArgumentValue("VARIABLE", variables.get(exposureConfig.variable).getOrDefault(baselineEntry.getKey(), 0.0));
+						}
 					} else {
 						exposureFunction.efArguments.deltaQ = deltaQ;
 						exposureFunction.efArguments.q1 = baselineValue;
 						exposureFunction.efArguments.q0 = scenarioValue;
+						if (variables.containsKey(exposureConfig.variable)) {
+							// Currently, the replacement of VARIABLE with the corresponding id is hard-coded, since it's the only one.
+							exposureFunction.efArguments.v1 = variables.get(exposureConfig.variable).getOrDefault(baselineEntry.getKey(), 0.0);
+						}
 					}
 
 					HashMap<Integer, Double> popAgeRangeExposureMap = exposurePopAgeRangeMapping.get(exposureConfig.arrayIdx);
