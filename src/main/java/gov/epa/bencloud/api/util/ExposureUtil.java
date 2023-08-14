@@ -2,12 +2,19 @@ package gov.epa.bencloud.api.util;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
+import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record2;
+import org.jooq.Result;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.*;
 
@@ -195,6 +202,33 @@ public class ExposureUtil {
 	}
 	
 	/**
+	 * Gets a mapping from variable ids to their corresponding names.
+	 * @param exposureFunctions
+	 * @return
+	 */
+    public static Map<Integer, String> getVarIdNameMapping(List<ExposureConfig> exposureFunctions) {
+		HashSet<Integer> requiredVars = new HashSet<Integer>();
+
+		for (ExposureConfig eConfig : exposureFunctions) {
+			requiredVars.add(eConfig.variable);			
+		}
+
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		Result<Record2<Integer, String>> results = create.select(VARIABLE_ENTRY.ID, VARIABLE_ENTRY.NAME)
+			.where(VARIABLE_ENTRY.ID.in(requiredVars))
+			.fetch();
+
+		Map<Integer, String> mapping = new HashMap<Integer, String>();
+		for (Record2<Integer, String> result : results) {
+			mapping.put(result.value1(), result.value2());
+		}	
+
+		return mapping;
+    }
+
+
+	/**
 	 * 
 	 * @param datasetId
 	 * @return and ExposureTaskLog object, based on the given exposure result dataset id.
@@ -224,6 +258,7 @@ public class ExposureUtil {
 		return null;
 		
 	}
+
 	
 	
 }
