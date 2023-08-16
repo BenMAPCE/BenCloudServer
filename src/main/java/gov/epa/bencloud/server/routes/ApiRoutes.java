@@ -393,6 +393,14 @@ public class ApiRoutes extends RoutesBase {
 		service.put(apiPrefix + "/tasks/:uuid", (request, response) -> {
 			return ApiUtil.cancelTaskAndResults(request, response, getUserProfile(request, response));
 		});
+		
+		/*
+		 * Cancel a pending batch task
+		 */
+		service.put(apiPrefix + "/batch-tasks/:id", (request, response) -> {
+			return ApiUtil.cancelBatchTaskAndResults(request, response, getUserProfile(request, response));
+		});
+
 
 		/*
 		 * Accepts a BatchTaskConfig object in json format
