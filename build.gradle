@@ -46,11 +46,11 @@ dependencies {
 	implementation 'org.apache.poi:poi:4.1.0'
 	implementation 'org.apache.poi:poi-ooxml:4.1.0'
 	implementation 'com.squareup.tape2:tape:2.0.0-beta1'
-	implementation 'org.quartz-scheduler:quartz:2.3.1'
+	implementation 'org.quartz-scheduler:quartz:2.3.2'
 
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
-    implementation 'io.kubernetes:client-java-extended:14.0.0'
+    implementation 'io.kubernetes:client-java-extended:18.0.1'
 
 	implementation 'org.geotools:gt-main:29.0'
 
