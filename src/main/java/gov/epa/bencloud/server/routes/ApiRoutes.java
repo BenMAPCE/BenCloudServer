@@ -52,6 +52,19 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		/*
+		 * GET grid definitions and their row and col counts
+		 */
+		service.get(apiPrefix + "/grid-definitions-info", (request, response) -> {
+			return GridDefinitionApi.getAllGridDefinitionsInfo(request, response, getUserProfile(request, response));
+		});
+		
+		/**
+		 * GET grid definition table info- row, col, and geometry
+		 */
+		service.get(apiPrefix + "/grid-definitions/:id/contents", (request, response) -> {
+			return GridDefinitionApi.getGridGeometries(request, response, getUserProfile(request, response));
+		});
+		/*
 		 * GET array of all pollutant definitions
 		 */
 		service.get(apiPrefix + "/pollutants", (request, response) -> {
@@ -246,6 +259,9 @@ public class ApiRoutes extends RoutesBase {
 			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
 
 		});
+		/*
+		 * GET all the contents of an incidence dataset
+		 */
 		service.get(apiPrefix + "/incidence/:id/contents", (request, response) -> {
 			return IncidenceApi.getIncidenceDatasetDetails(request, response, getUserProfile(request, response));
 		});
