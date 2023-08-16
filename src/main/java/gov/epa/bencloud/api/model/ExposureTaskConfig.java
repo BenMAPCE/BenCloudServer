@@ -6,8 +6,10 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.POPULATION_DATAS
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.jooq.JSON;
 import org.jooq.Record16;
@@ -24,7 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.GridDefinitionApi;
 import gov.epa.bencloud.api.PopulationApi;
+import gov.epa.bencloud.api.function.EFunction;
 import gov.epa.bencloud.api.util.AirQualityUtil;
+import gov.epa.bencloud.api.util.ExposureUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 
 /*
@@ -93,6 +97,20 @@ public class ExposureTaskConfig {
 		}
 	}
 
+	public List<Integer> getRequiredVariableIds() {
+
+		Set<Integer> requiredVariableIds = new HashSet<Integer>();
+
+		for (ExposureConfig eConfig : this.exposureFunctions) {
+			if (eConfig.variable != null) {
+				requiredVariableIds.add(eConfig.variable);
+			}
+		}
+
+		List<Integer> requiredVariableIdsList = new ArrayList<Integer>();
+		requiredVariableIdsList.addAll(requiredVariableIds);
+		return requiredVariableIdsList;
+	}
 
 	/**
 	 * 
@@ -229,7 +247,7 @@ public class ExposureTaskConfig {
 		
 		return b.toString();
 	}
-	
+
 	
 
 	

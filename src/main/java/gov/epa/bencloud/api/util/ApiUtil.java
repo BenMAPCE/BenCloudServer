@@ -17,9 +17,11 @@ import javax.servlet.http.Part;
 
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
+import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
+import org.jooq.Record3;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -28,6 +30,7 @@ import org.pac4j.core.profile.UserProfile;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import gov.epa.bencloud.api.CoreApi;
+import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Data;
@@ -39,6 +42,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskQueueRecord
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.TaskUtil;
+import gov.epa.bencloud.server.tasks.model.Task;
 import spark.Request;
 import spark.Response;
 
@@ -209,9 +213,9 @@ public class ApiUtil {
 		}
 
 		if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
-			TaskUtil.deleteHifResults(uuid);
+			TaskUtil.deleteHifResults(uuid, true);
 		} else if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
-			TaskUtil.deleteValuationResults(uuid);
+			TaskUtil.deleteValuationResults(uuid, true);
 		}
 		res.status(204);
 		return res;
@@ -223,6 +227,7 @@ public class ApiUtil {
 	 * @param res
 	 * @param userProfile
 	 */
+	
 	public static Object cancelTaskAndResults(Request req, Response res, Optional<UserProfile> userProfile) {
 		String uuid=req.params("uuid");
 		TaskQueueRecord queueTask = DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(TASK_QUEUE)
@@ -235,19 +240,94 @@ public class ApiUtil {
 		if(CoreApi.isAdmin(userProfile) == false && queueTask.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
 			return CoreApi.getErrorResponseForbidden(req, res);
 		}
-		//remove from worker and update in_process = false
+		
+		// If it's a parent task, cancel its children tasks as well
+		Result<Record> resultChild = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
+				.where(TASK_QUEUE.TASK_PARENT_UUID.eq(uuid))
+				.fetch();
+		for (Record record : resultChild) {			
+
+			String childUuid = record.getValue(TASK_QUEUE.TASK_UUID);
+			
+			//remove from worker and update in_process = false
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(childUuid, null, false, "Parent task canceled.");
+			
+			//remove hif and valuation results
+			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
+				TaskUtil.deleteHifResults(childUuid, false);
+			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Valuation")) {
+				TaskUtil.deleteValuationResults(childUuid, false);
+			}			
+		}						
+		
+		//remove (parent) task from worker and update in_process = false
 		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
 
 		//remove hif and valuation results
 		if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
-			TaskUtil.deleteHifResults(uuid);
+			TaskUtil.deleteHifResults(uuid, false);
 		} else if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
-			TaskUtil.deleteValuationResults(uuid);
+			TaskUtil.deleteValuationResults(uuid, false);
 		}
 		res.status(204);
 		return res;
 		
 	}
+	
+	/**
+	 * Cancel a running batch task and remove generated results. batch task id given in the req parameters.
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 */
+	public static Object cancelBatchTaskAndResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		int batchId = Integer.valueOf(req.params("id"));
+		
+		//check batch task existence and ownership
+		Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_BATCH)
+				.where(TASK_BATCH.ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		else if(result.size()==0) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		
+		if(CoreApi.isAdmin(userProfile) == false && result.get(0).getValue(TASK_BATCH.USER_ID).equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
+		}
+		
+		// cancel batch task
+		result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
+				.where(TASK_QUEUE.TASK_BATCH_ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		
+		for (Record record : result) {			
+
+			String uuid = record.getValue(TASK_QUEUE.TASK_UUID);
+			
+			//remove from worker and update in_process = false
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+			//remove hif and valuation results
+			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
+				TaskUtil.deleteHifResults(uuid, false);
+			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Valuation")) {
+				TaskUtil.deleteValuationResults(uuid, false);
+			}			
+		}		
+				
+		res.status(204);
+		return res;
+		
+	}
+	
+	
 
 	/**
 	 * @param requiredVariableNames
@@ -282,6 +362,52 @@ public class ApiUtil {
 			}
 
 			variableMap.put(variableName, values);
+		}
+
+		return variableMap;
+	}
+
+	/**
+	 * Like getVariableValues, but instead returning a map from variable id and grid cell id to its value, rather than it's name + grid cell id
+	 * This is used for the exposure tasks
+	 * @param requiredVariableNames
+	 * @param variableDatasetId
+	 * @param gridId
+	 * @return A map from variable ids and grid cell ids to variable values
+	 */
+	public static Map<Integer, Map<Long, Double>> getVariableValuesFromIds(List<Integer> requiredVariableIds, Integer gridId) {
+		Map<Integer, Map<Long, Double>> variableMap = new HashMap<Integer, Map<Long, Double>>();
+
+		if (requiredVariableIds == null || requiredVariableIds.size() == 0 || gridId == null) {
+			return variableMap;
+		}
+
+		// Get the corresponding names and dataset IDs for each variable ID, so we can use Routines.getVariable
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		Result<Record3<Integer, Integer, String>> results = create
+			.select(VARIABLE_ENTRY.ID, VARIABLE_ENTRY.VARIABLE_DATASET_ID, VARIABLE_ENTRY.NAME)
+			.from(VARIABLE_ENTRY)
+			.where(VARIABLE_ENTRY.ID.in(requiredVariableIds))
+			.fetch();
+		
+
+		// FOR EACH VARIABLE
+		for (Record3<Integer, Integer, String> result : results ) {
+			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
+					result.value2(), 
+					result.value3(), 
+					gridId);
+
+
+			// Map from grid cell id to variable value
+			Map<Long, Double> values = new HashMap<Long, Double>();
+
+			// FOR EACH GRID CELL
+			for (GetVariableRecord variableRecord : variableRecords) {
+				values.put(variableRecord.getGridCellId(), variableRecord.getValue());
+			}
+
+			variableMap.put(result.value1(), values);
 		}
 
 		return variableMap;
@@ -446,16 +572,23 @@ public class ApiUtil {
 		}		
 		
 		for (Record record : result) {			
-			//TODO: Do we need to remove children task results before removing parent tasks?
+			//TODO: Do we need to remove children task results before removing parent tasks? 
+			// Valuation results have hif tasks as their parents but both hif and valuation results have the same task_batch_id.
 			String uuid = record.getValue(TASK_COMPLETE.TASK_UUID);
 			if (record.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
-				TaskUtil.deleteHifResults(uuid);
+				TaskUtil.deleteHifResults(uuid, true);
 			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
-				TaskUtil.deleteValuationResults(uuid);
+				TaskUtil.deleteValuationResults(uuid, true);
 			}			
-		}		
+		}
+		
+		//delete from batch_task table	
+		DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(TASK_BATCH)
+		.where(TASK_BATCH.ID.eq(batchId))
+		.execute();
+		
 		res.status(204);
-		return null;
+		return res;
 	}
 
 }

@@ -363,9 +363,15 @@ public class TaskComplete {
 					}
 
 
-					if((record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)).isBefore(batchStartedDate)) {
-						batchStartedDate = record.getValue(TASK_COMPLETE.TASK_STARTED_DATE);
+					try {
+						if((record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)).isBefore(batchStartedDate)) {
+							batchStartedDate = record.getValue(TASK_COMPLETE.TASK_STARTED_DATE);
+						}						
 					}
+					catch (Exception e){
+						//batchStartedDate = LocalDateTime.now();
+					}
+					
 
 
 					try {
