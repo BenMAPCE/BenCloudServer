@@ -474,14 +474,25 @@ public class TaskQueue {
 							for (Record record : completeResult) {
 
 								task = mapper.createObjectNode();
+								String taskStatusMessage = "";
+								String taskProgressMessage = "";
+								if(record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL)){
+									taskStatusMessage = "Completed at " + record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter);
+									taskProgressMessage = "Complete";
+								}
+								else {
+									taskStatusMessage = record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE);
+									taskProgressMessage = record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE);
+									
+								}
 
 								task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
 								//task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
 								task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
 								task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
 								task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
-								task.put("task_status_message", "Completed at " + record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter) );
-								task.put("task_progress_message", "Complete");
+								task.put("task_status_message", taskStatusMessage);
+								task.put("task_progress_message", taskProgressMessage);
 								task.put("task_percentage", 100);
 								task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
 
