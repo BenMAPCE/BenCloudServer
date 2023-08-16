@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.mariuszgromada.math.mxparser.License;
 import org.pac4j.core.config.Config;
 import org.pac4j.core.context.HttpConstants;
 import org.pac4j.sparkjava.SecurityFilter;
@@ -57,7 +58,8 @@ public class BenCloudServer {
 			log.error("Unable to set application path", e1);
 		}
 		
-
+		License.iConfirmNonCommercialUse("US EPA");
+		
 		Service benCloudService = Service.ignite()
 				.port(Integer.parseInt(ApplicationUtil.getProperty("server.port")))
 				.threadPool(20);

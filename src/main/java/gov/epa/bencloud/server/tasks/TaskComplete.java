@@ -8,8 +8,10 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_WORKER;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Date;
 
 import org.jooq.Condition;
 import org.jooq.Record;
@@ -335,7 +337,9 @@ public class TaskComplete {
 					continue;
 				}
 
-				System.out.println(result);
+				boolean batchSuccessful = true;
+				LocalDateTime batchCompletedDate = LocalDateTime.MIN;
+				LocalDateTime batchStartedDate = LocalDateTime.now();
 
 				for (Record record : result) {
 
@@ -357,11 +361,28 @@ public class TaskComplete {
 						task.put("task_started_date", "");
 						e.printStackTrace();
 					}
+
+
+					try {
+						if((record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)).isBefore(batchStartedDate)) {
+							batchStartedDate = record.getValue(TASK_COMPLETE.TASK_STARTED_DATE);
+						}						
+					}
+					catch (Exception e){
+						//batchStartedDate = LocalDateTime.now();
+					}
+					
+
+
 					try {
 						task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
 					} catch (Exception e) {
 						task.put("task_completed_date", "");
 						e.printStackTrace();
+					}
+
+					if((record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)).isAfter(batchCompletedDate)) {
+						batchCompletedDate = record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE);
 					}
 					
 					task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
@@ -404,12 +425,21 @@ public class TaskComplete {
 					
 					task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
 					task.put("task_message", record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE));
+
+					if(!record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL)) {
+						batchSuccessful = false;
+					}
 										
 					tasks.add(task);
 					records++;
 				}
 				if(result.isNotEmpty()) {
 					batchTask.set("tasks", tasks);
+					batchTask.put("batch_task_successful", batchSuccessful);
+					batchTask.put("batch_completed_date", batchCompletedDate.format(formatter));
+					batchTask.put("batch_execution_time", DataUtil.getHumanReadableTime(
+								batchStartedDate, 
+								batchCompletedDate));
 					batchTasks.add(batchTask);
 				}
 				

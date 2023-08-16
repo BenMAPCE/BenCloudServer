@@ -199,6 +199,27 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
 
+		
+		/*
+		 * GET array of exposure function groups
+		 * PARAMETERS:
+		 *  
+		 *  Response will include array of function ids within each group
+		 */	
+		service.get(apiPrefix + "/exposure-function-groups", (request, response) -> {
+			return ExposureApi.getAllExposureGroups(request, response, getUserProfile(request, response));
+		});
+		
+		/*
+		 * GET selected exposure function groups
+		 * PARAMETERS:
+		 *  
+		 *  Response will include a list of function groups with details of each function
+		 */	
+		service.get(apiPrefix + "/exposure-function-groups/:ids", (request, response) -> {
+			return ExposureApi.getSelectedExposureGroups(request, response, getUserProfile(request, response));
+		});
+		
 		/*
 		 * GET a partially populated batch task config
 
@@ -409,6 +430,14 @@ public class ApiRoutes extends RoutesBase {
 		service.put(apiPrefix + "/tasks/:uuid", (request, response) -> {
 			return ApiUtil.cancelTaskAndResults(request, response, getUserProfile(request, response));
 		});
+		
+		/*
+		 * Cancel a pending batch task
+		 */
+		service.put(apiPrefix + "/batch-tasks/:id", (request, response) -> {
+			return ApiUtil.cancelBatchTaskAndResults(request, response, getUserProfile(request, response));
+		});
+
 
 		/*
 		 * Accepts a BatchTaskConfig object in json format

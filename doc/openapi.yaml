@@ -853,6 +853,67 @@ paths:
                       items:
                         type: integer
                         example: 861, 881, 890
+  /exposure-function-groups:
+    get:
+      summary: Returns the list of exposure function groups.
+      responses:
+        '200':
+          description: Successfully returned an array of exposure function groups.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "NAAQS PM RIA 2022"
+                    id:
+                      type: integer
+                      example: 1
+                    help_text:
+                      type: string
+                      example: "Exposure configurations used to generate the 2022 NAAQS PM RIA"
+                    functions:
+                      type: array
+                      items:
+                        type: integer
+                        example: 1, 2, 3
+  /exposure-function-groups/{id}:
+    get:
+      summary: Returns the contents of an exposure function group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by exposure function group id
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Successfully returned an exposure function group.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "NAAQS PM RIA 2022"
+                    id:
+                      type: integer
+                      example: 1
+                    help_text:
+                      type: string
+                      example: "Exposure configurations used to generate the 2022 NAAQS PM RIA"
+                    functions:
+                      type: array
+                      items:
+                        type: object
   /batch-task-config:
     get:
       summary: Return new batch task config.
