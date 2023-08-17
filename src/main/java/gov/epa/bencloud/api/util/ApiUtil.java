@@ -2,8 +2,12 @@ package gov.epa.bencloud.api.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -591,4 +595,42 @@ public class ApiUtil {
 		return res;
 	}
 
+	/*
+	 * Code from https://stackoverflow.com/questions/7548841/round-a-double-to-3-significant-figures
+	 */
+	public static String getValueSigFigs(double value, int significantDigits) {
+		BigDecimal bd = new BigDecimal(value, MathContext.DECIMAL64);
+		bd = bd.round(new MathContext(significantDigits));
+		final int precision = bd.precision();
+		if (precision < significantDigits) {
+			bd = bd.setScale(bd.scale() + (significantDigits-precision));
+		}
+ 
+		String format = "#,###.";
+		for (int i = 0; i < significantDigits; i++){
+			format+="#";
+		}
+		DecimalFormat df = new DecimalFormat(format);
+		return df.format(bd);
+	}
+
+	/**
+	 * Formats results for display
+	 * @param pointEstimate
+	 * @param p2_5
+	 * @param p97_5
+	 * @param sigFigs
+	 * @return string containing formatted point estimate and 95% confidence interval
+	 */
+	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs) {
+		StringBuilder s = new StringBuilder();
+		s.append(getValueSigFigs(pointEstimate, sigFigs));
+		s.append(" (");
+		s.append(getValueSigFigs(p2_5, sigFigs));
+		s.append(" to ");
+		s.append(getValueSigFigs(p97_5, sigFigs));
+		s.append(")");
+
+		return s.toString();
+	}
 }
