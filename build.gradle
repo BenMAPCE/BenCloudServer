@@ -14,8 +14,20 @@ repositories {
 
 dependencies {
 
-	implementation 'com.sparkjava:spark-core:2.9.4'
+	implementation ('com.sparkjava:spark-core:2.9.4') {
+		exclude group: 'org.eclipse.jetty', module: 'jetty-server'
+		exclude group: 'org.eclipse.jetty', module: 'jetty-webapp'
+		exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-server'
+		exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-servlet'
+    	exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-client'
+	}
     
+    implementation 'org.eclipse.jetty:jetty-server:9.4.51.v20230217'
+    implementation 'org.eclipse.jetty:jetty-webapp:9.4.51.v20230217'
+    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.51.v20230217'
+    implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.51.v20230217'
+    implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.51.v20230217'
+        
 	implementation 'org.pac4j:spark-pac4j:5.0.1'
 	implementation 'org.pac4j:pac4j-http:5.6.1'
 
