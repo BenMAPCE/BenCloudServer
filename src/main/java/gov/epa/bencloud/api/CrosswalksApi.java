@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
 
 
 public class CrosswalksApi{
+    private static final Logger log = LoggerFactory.getLogger(PollutantApi.class);
+
    /**
     * calculates the crosswalks between two different grid definitions in both directions
     * @param grid_id1
     * @param grid_id2
     */
-    private static final Logger log = LoggerFactory.getLogger(PollutantApi.class);
-
     public static void calculateAreaWeights(int grid_id1, int grid_id2){ 
         
         //add the crosswalk dataset entry into the crosswalk dataset table, then do the same but with the source and target swapped
@@ -147,10 +147,6 @@ public class CrosswalksApi{
                      
     }
     
-
-   
-    public static void calculatePopWeights(int grid_id1, int grid_id2){ 
-    }
 
     // public static void main(String[] args) {
     //     // Call your calculateCrosswalks method here to test
