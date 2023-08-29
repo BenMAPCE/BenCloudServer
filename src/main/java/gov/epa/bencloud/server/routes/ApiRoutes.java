@@ -419,6 +419,49 @@ public class ApiRoutes extends RoutesBase {
 			return null;
 		});
 		
+		/*
+		 * GET exposure function results from an analysis
+		 * PARAMETERS:
+		 *  :id (exposure function results dataset id or task UUID)
+		 *  gridId= (aggregate the results to another grid definition)
+		 *  efId= (filter results to those from one or more functions via comma delimited list)
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 *  
+		 *  application/json response
+		 */	
+		service.get(apiPrefix + "/exposure-result-datasets/:id/contents", (request, response) -> {
+			//TODO: Implement a new version of this that supports filtering, etc
+			ExposureApi.getExposureResultContents(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
+		/*
+		 * GET exposure function results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (exposure results dataset id or task UUID)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.get(apiPrefix + "/exposure-result-datasets/:id/export", (request, response) -> {
+			//TODO: Implement a new version of this that supports filtering, etc
+			ExposureApi.getExposureResultExport(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
 		service.delete(apiPrefix + "/tasks/:uuid", (request, response) -> {
 			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
 
