@@ -435,6 +435,26 @@ public class ApiRoutes extends RoutesBase {
             return data;
         });
 		
+		/*
+		 * GET results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (batch task id)
+		 *  includeHealthImpact (boolean, default to 0)
+		 *  includeValuation (boolean, default to 0)
+		 *  includeExposure (boolean, default to 0)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.get(apiPrefix + "/batch-tasks/:id/export", (request, response) -> {
+			TaskApi.getResultExport(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
 			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
 			response.type("application/json");

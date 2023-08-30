@@ -10,16 +10,21 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.servlet.MultipartConfigElement;
 
 import spark.Request;
 import spark.Response;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -27,7 +32,9 @@ import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record22;
 import org.jooq.Result;
+import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.impl.DSL;
@@ -51,6 +58,7 @@ import gov.epa.bencloud.api.model.ExposureConfig;
 import gov.epa.bencloud.api.model.ExposureTaskConfig;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.ExposureUtil;
@@ -58,6 +66,9 @@ import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopConfig;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
@@ -69,6 +80,7 @@ import gov.epa.bencloud.api.model.ScenarioHIFConfig;
 import gov.epa.bencloud.api.model.ScenarioPopConfig;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
+import gov.epa.bencloud.api.model.ValuationTaskLog;
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.BatchExposureGroup;
 import gov.epa.bencloud.api.model.BatchHIFGroup;
@@ -1013,4 +1025,370 @@ public class TaskApi {
 		return b;
 	
 	}
+
+
+//
+	public static void getResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
+//		 GET results as a zip file from an analysis
+//		 PARAMETERS:
+//		   :id (batch task id)
+//		   includeHealthImpact (boolean, default to false)
+//		   includeValuation (boolean, default to false)
+//		   includeExposure (boolean, default to false)
+//		   gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		
+		Integer batchId;
+		int[] gridIds;
+		Boolean includeHealthImpact = false;
+		Boolean includeValuation = false;
+		Boolean includeExposure = false;
+		try {
+			String idParam = String.valueOf(request.params("id"));
+			batchId = Integer.valueOf(idParam);
+			
+			includeHealthImpact = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeHealthImpact"), false);
+			includeValuation = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeValuation"), false);
+			includeExposure = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeExposure"), false);
+			
+			String gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
+			if(gridIdParam==null || gridIdParam.equals("")){
+				gridIds=null;
+			}else {
+				String[] gridIdParamArr = gridIdParam.split(",");
+				gridIds = new int[gridIdParamArr.length];
+				for (int i = 0; i < gridIdParamArr.length; i++) {
+					gridIds[i] = Integer.parseInt(gridIdParamArr[i]);
+		        }
+			}				
+
+
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		}
+		
+		BatchTaskConfig batchTaskConfig = getTaskBatchConfigFromDb(batchId);
+		if(batchTaskConfig==null) {
+			response.status(400);
+			return;
+		}
+		
+		// If a gridId wasn't provided, look up the baseline AQ grid grid for this resultset
+		try {
+			if(gridIds == null) {
+				gridIds = new int[] {batchTaskConfig.gridDefinitionId.intValue()};
+			}
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+			response.status(400);
+			return;
+		}
+					
+		//set zip file name
+		String taskBatchFileName = ApplicationUtil.replaceNonValidCharacters(batchTaskConfig.name);
+		StringBuilder batchTaskLog = new StringBuilder(); 
+		
+		response.header("Content-Disposition", "attachment; filename=" + taskBatchFileName + ".zip");
+		response.header("Access-Control-Expose-Headers", "Content-Disposition");
+		response.type("application/zip");
+		
+		// Get response output stream
+		OutputStream responseOutputStream;
+		ZipOutputStream zipStream;
+		
+		try {
+			responseOutputStream = response.raw().getOutputStream();
+			
+			// Stream .ZIP file to response
+			zipStream = new ZipOutputStream(responseOutputStream);
+		} catch (java.io.IOException e1) {
+			log.error("Error getting output stream", e1);
+			return;
+		}
+		
+//		For now we we export EITHER exposure OR HIF/Valuation results. We may want to change the logic in the future.
+		if(includeExposure) {
+			includeHealthImpact=false;
+			includeValuation=false;
+		}
+		
+		if(includeExposure) {
+			//TODO: export exposure results. coming soon
+			
+		}
+		if(includeHealthImpact) {
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			//get hif task ids
+			List<Integer> hifResultDatasetIds = create.select()
+					.from(HIF_RESULT_DATASET)
+					.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+					.fetch(HIF_RESULT_DATASET.ID);
+			
+			//Loop through each function and each grid definition
+			for(int hifResultDatasetId : hifResultDatasetIds) {
+				//csv file name
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).name);
+				for(int i=0; i < gridIds.length; i++) {
+					Result<?> hifRecordsClean = null;
+					//Move the following to HIFApi.java? 
+					//hifRecordsClean = HIFApi.getHifResultRecordsClean(gridIds[i], hifResultDatasetId) //use this instead?
+					try {
+						Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
+							GET_HIF_RESULTS(
+									hifResultDatasetId, 
+									null, 
+									gridIds[i]))
+							.asTable("hif_result_records");
+						Result<Record> hifRecords = create.select(
+								hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
+								hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
+								ENDPOINT.NAME.as("endpoint"),
+								HEALTH_IMPACT_FUNCTION.AUTHOR,
+								HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+								HEALTH_IMPACT_FUNCTION.LOCATION,
+								HEALTH_IMPACT_FUNCTION.QUALIFIER,
+								HIF_RESULT_FUNCTION_CONFIG.START_AGE,
+								HIF_RESULT_FUNCTION_CONFIG.END_AGE,
+								HEALTH_IMPACT_FUNCTION.BETA,
+								RACE.NAME.as("race"),
+								ETHNICITY.NAME.as("ethnicity"),
+								GENDER.NAME.as("gender"),
+								POLLUTANT_METRIC.NAME.as("metric"),
+								SEASONAL_METRIC.NAME.as("seasonal_metric"),
+								STATISTIC_TYPE.NAME.as("metric_statistic"),
+								hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
+								hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
+								hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
+								hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
+								hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
+								//hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
+								hifResultRecords.field(GET_HIF_RESULTS.MEAN),
+								hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
+								DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
+									.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE)).times(100.0)).as("percent_of_baseline"),
+								hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
+								hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
+								hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
+								hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
+								HIFApi.getBaselineGridForHifResults(hifResultDatasetId) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+								)
+								.from(hifResultRecords)
+								.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+								.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(hifResultDatasetId).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID))))
+								.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+								.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+								.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+								.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+								.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+								.fetch();
+						log.info("After fetch");
+						
+						//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
+						if(HIFApi.getBaselineGridForHifResults(hifResultDatasetId) != gridIds[i]) {
+							for(Record res : hifRecords) {
+								DescriptiveStatistics stats = new DescriptiveStatistics();
+								Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
+								for (int j = 0; j < pct.length; j++) {
+									stats.addValue(pct[j]);
+								}
+								
+								res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
+								
+								//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+								stats.addValue(res.getValue(GET_HIF_RESULTS.POINT_ESTIMATE));
+								res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
+								res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+								
+								res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
+							}
+						}
+						//Remove percentiles by keeping all other fields
+						hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
+					} catch(DataAccessException e) {
+						e.printStackTrace();
+						response.status(400);
+						return;
+					}	
+					try {						
+						zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+						hifRecordsClean.formatCSV(zipStream);
+						zipStream.closeEntry();
+						log.info(taskFileName + " added.");
+						} 
+					catch (Exception e) {
+							log.error("Error creating export file", e);
+						} 
+					finally {
+		
+						}
+					HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(hifResultDatasetId);
+					batchTaskLog.append(System.getProperty("line.separator"));
+					batchTaskLog.append(hifTaskLog.toString(userProfile));
+				}				
+			}					
+		}
+		if(includeValuation) {
+			//Valuation results
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			//get valuation task ids
+			List<Integer> valuationResultDatasetIds = create.select()
+					.from(VALUATION_RESULT_DATASET)
+					.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+					.fetch(VALUATION_RESULT_DATASET.ID);
+			
+			//Loop through each function and each grid definition
+			for(int valuationResultDatasetId : valuationResultDatasetIds) {
+				//csv file name
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).name);
+				for(int i=0; i < gridIds.length; i++) {
+					Result<?> vfRecordsClean = null;
+					//Move the following to ValuationApi.java? 
+					//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
+					try {
+						Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
+								GET_VALUATION_RESULTS(
+									valuationResultDatasetId, 
+									null, 
+									null,
+									gridIds[i]))
+							.asTable("valuation_result_records");
+						Result<Record22<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]>> vfRecords;
+						vfRecords = create.select(
+								vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
+								vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
+								ENDPOINT.NAME.as("endpoint"),
+								VALUATION_FUNCTION.QUALIFIER.as("name"),
+								HEALTH_IMPACT_FUNCTION.AUTHOR,
+								HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+								HEALTH_IMPACT_FUNCTION.QUALIFIER,
+								RACE.NAME.as("race"),
+								ETHNICITY.NAME.as("ethnicity"),
+								GENDER.NAME.as("gender"),
+								POLLUTANT_METRIC.NAME.as("metric"),
+								SEASONAL_METRIC.NAME.as("seasonal_metric"),
+								STATISTIC_TYPE.NAME.as("metric_statistic"),
+								HEALTH_IMPACT_FUNCTION.START_AGE,
+								HEALTH_IMPACT_FUNCTION.END_AGE,
+								vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
+								vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
+								vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
+								vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
+								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
+								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
+								ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+								)
+								.from(vfResultRecords)
+								.join(VALUATION_RESULT_FUNCTION_CONFIG)
+								.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDatasetId)
+										.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID)))
+										.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
+								.join(VALUATION_RESULT_DATASET)
+								.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
+								.join(HIF_RESULT_FUNCTION_CONFIG)
+								.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
+										.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
+								.join(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)))
+								.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+								.join(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
+								.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+								.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+								.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+								.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+								.fetch();
+						log.info("After fetch");
+						
+						//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
+						if(ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) != gridIds[i]) {
+							for(Record res : vfRecords) {
+								DescriptiveStatistics stats = new DescriptiveStatistics();
+								Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
+								for (int j = 0; j < pct.length; j++) {
+									stats.addValue(pct[j]);
+								}
+								
+								res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
+								
+								//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+								stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
+								res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
+								res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+							}
+						}
+						//Remove percentiles by keeping all other fields
+						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
+					} catch(DataAccessException e) {
+						e.printStackTrace();
+						response.status(400);
+						return;
+					}	
+					try {						
+						zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+						vfRecordsClean.formatCSV(zipStream);
+						zipStream.closeEntry();
+						log.info(taskFileName + " added.");
+						} 
+					catch (Exception e) {
+							log.error("Error creating export file", e);
+						} 
+					finally {
+		
+						}
+					ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(valuationResultDatasetId);
+					batchTaskLog.append(System.getProperty("line.separator"));
+					batchTaskLog.append(vfTaskLog.toString());
+				}				
+			}					
+		
+		}
+		
+		
+		// Add log file
+		try {
+			zipStream.putNextEntry(new ZipEntry(taskBatchFileName + "_TaskLog.txt"));
+			
+			zipStream.write(batchTaskLog.toString().getBytes());
+			zipStream.closeEntry();			
+			zipStream.close();
+			responseOutputStream.flush();
+		} catch (Exception e) {
+			log.error("Error writing task log, closing and flushing export", e);
+		}
+		
+		
+	}
+	
+	/**
+	 * @param task batch id
+	 * @return a batch task configuration from a given task batch id.
+	 */
+	public static BatchTaskConfig getTaskBatchConfigFromDb(Integer batchId) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		BatchTaskConfig batchTaskConfig = new BatchTaskConfig();		
+
+		TaskBatchRecord batchTaskRecord = create
+				.selectFrom(TASK_BATCH)
+				.where(TASK_BATCH.ID.eq(batchId))
+				.fetchOne();		
+			
+		try {
+			batchTaskConfig = objectMapper.readValue(batchTaskRecord.getParameters(), BatchTaskConfig.class);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return batchTaskConfig;
+	}
+	
 }
