@@ -32,6 +32,7 @@ import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record17;
 import org.jooq.Record22;
 import org.jooq.Result;
 import org.jooq.Table;
@@ -56,6 +57,7 @@ import com.fasterxml.jackson.databind.util.RawValue;
 import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.ExposureConfig;
 import gov.epa.bencloud.api.model.ExposureTaskConfig;
+import gov.epa.bencloud.api.model.ExposureTaskLog;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
@@ -66,6 +68,7 @@ import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopConfig;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
@@ -1144,8 +1147,86 @@ public class TaskApi {
 		}
 		
 		if(includeExposure) {
-			//TODO: export exposure results. coming soon
+			//Exposure results
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			//get valuation task ids
+			List<Integer> exposureResultDatasetIds = create.select()
+					.from(EXPOSURE_RESULT_DATASET)
+					.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+					.fetch(EXPOSURE_RESULT_DATASET.ID);
 			
+			//Loop through each function and each grid definition
+			for(int exposureResultDatasetId : exposureResultDatasetIds) {
+				//csv file name
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(ExposureApi.getExposureTaskConfigFromDb(exposureResultDatasetId).name);
+				for(int i=0; i < gridIds.length; i++) {
+					Result<?> efRecordsClean = null;
+					//Move the following to ValuationApi.java? 
+					//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
+					try {
+						Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
+								GET_EXPOSURE_RESULTS(
+									exposureResultDatasetId, 
+									null,
+									gridIds[i]))
+							.asTable("ef_result_records");
+						Result<Record17<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
+								EXPOSURE_FUNCTION.POPULATION_GROUP,
+								EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
+								EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+								RACE.NAME.as("race"),
+								ETHNICITY.NAME.as("ethnicity"),
+								GENDER.NAME.as("gender"),
+								VARIABLE_ENTRY.NAME.as("variable"),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
+								DSL.val(null, String.class).as("formatted_results_2sf"),
+								DSL.val(null, String.class).as("formatted_results_3sf")
+								)
+								.from(efResultRecords)
+								.join(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
+								.join(EXPOSURE_RESULT_FUNCTION_CONFIG).on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDatasetId).and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID))))
+								.join(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+								.join(ETHNICITY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+								.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+								.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
+
+								.fetch();
+						log.info("After fetch");
+						
+						//Exposure results are not getting aggregated??
+						
+						//Remove percentiles by keeping all other fields
+						efRecordsClean = efRecords;
+					} catch(DataAccessException e) {
+						e.printStackTrace();
+						response.status(400);
+						return;
+					}	
+					try {						
+						zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+						efRecordsClean.formatCSV(zipStream);
+						zipStream.closeEntry();
+						log.info(taskFileName + " added.");
+						} 
+					catch (Exception e) {
+							log.error("Error creating export file", e);
+						} 
+					finally {
+		
+						}
+					ExposureTaskLog efTaskLog = ExposureUtil.getTaskLog(exposureResultDatasetId);
+					batchTaskLog.append(System.getProperty("line.separator"));
+					batchTaskLog.append(efTaskLog.toString());
+				}				
+			}					
 		}
 		if(includeHealthImpact) {
 			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
