@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -131,7 +132,7 @@ public class ValuationApi {
 				.asTable("vf_result_records");
 		
 		Result<?> vfRecordsClean = null;
-		Result<Record22<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]>> vfRecords;
+		Result<Record> vfRecords;
 		try {
 			vfRecords = create.select(
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
@@ -155,7 +156,9 @@ public class ValuationApi {
 				vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
 				vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
-				vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES)
+				vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES),
+				DSL.val(null, String.class).as("formatted_results_2sf"),
+				DSL.val(null, String.class).as("formatted_results_3sf")
 				)
 				.from(vfResultRecords)
 				.join(VALUATION_RESULT_FUNCTION_CONFIG)
@@ -197,8 +200,15 @@ public class ValuationApi {
 						res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
 					}
 				}
+
+				for (Record res : vfRecords) {
+					res.setValue(DSL.field("formatted_results_2sf", String.class), 
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
+					res.setValue(DSL.field("formatted_results_3sf", String.class), 
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
+				}
 				//Remove percentiles by keeping all other fields
-				vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
+				vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,23));
 			
 		} catch (DataAccessException e) {
 			e.printStackTrace();
@@ -284,7 +294,7 @@ public class ValuationApi {
 		
 		for(int i=0; i < gridIds.length; i++) {
 			Result<?> vfRecordsClean = null;
-			Result<Record22<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]>> vfRecords;
+			Result<Record> vfRecords;
 			try {
 				Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 						GET_VALUATION_RESULTS(
@@ -316,8 +326,11 @@ public class ValuationApi {
 						vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
 						vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
-						ValuationApi.getBaselineGridForValuationResults(id) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+						ValuationApi.getBaselineGridForValuationResults(id) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES), //Only include percentiles if we're aggregating
+						DSL.val(null, String.class).as("formatted_results_2sf"),
+						DSL.val(null, String.class).as("formatted_results_3sf")
 						)
+
 						.from(vfResultRecords)
 						.join(VALUATION_RESULT_FUNCTION_CONFIG)
 						.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(id)
@@ -357,8 +370,16 @@ public class ValuationApi {
 								res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
 							}
 						}
+
+						for (Record res : vfRecords) {
+							res.setValue(DSL.field("formatted_results_2sf", String.class), 
+										 ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
+							res.setValue(DSL.field("formatted_results_3sf", String.class), 
+										 ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
+						}
+
 						//Remove percentiles by keeping all other fields
-						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
+						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,23));
 			} catch (DataAccessException e) {
 				e.printStackTrace();
 				response.status(400);

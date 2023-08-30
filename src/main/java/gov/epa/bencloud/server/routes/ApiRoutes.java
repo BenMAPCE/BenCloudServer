@@ -52,6 +52,19 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		/*
+		 * GET grid definitions and their row and col counts
+		 */
+		service.get(apiPrefix + "/grid-definitions-info", (request, response) -> {
+			return GridDefinitionApi.getAllGridDefinitionsInfo(request, response, getUserProfile(request, response));
+		});
+		
+		/**
+		 * GET grid definition table info- row, col, and geometry
+		 */
+		service.get(apiPrefix + "/grid-definitions/:id/contents", (request, response) -> {
+			return GridDefinitionApi.getGridGeometries(request, response, getUserProfile(request, response));
+		});
+		/*
 		 * GET array of all pollutant definitions
 		 */
 		service.get(apiPrefix + "/pollutants", (request, response) -> {
@@ -186,6 +199,27 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
 
+		
+		/*
+		 * GET array of exposure function groups
+		 * PARAMETERS:
+		 *  
+		 *  Response will include array of function ids within each group
+		 */	
+		service.get(apiPrefix + "/exposure-function-groups", (request, response) -> {
+			return ExposureApi.getAllExposureGroups(request, response, getUserProfile(request, response));
+		});
+		
+		/*
+		 * GET selected exposure function groups
+		 * PARAMETERS:
+		 *  
+		 *  Response will include a list of function groups with details of each function
+		 */	
+		service.get(apiPrefix + "/exposure-function-groups/:ids", (request, response) -> {
+			return ExposureApi.getSelectedExposureGroups(request, response, getUserProfile(request, response));
+		});
+		
 		/*
 		 * GET a partially populated batch task config
 
@@ -246,6 +280,9 @@ public class ApiRoutes extends RoutesBase {
 			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
 
 		});
+		/*
+		 * GET all the contents of an incidence dataset
+		 */
 		service.get(apiPrefix + "/incidence/:id/contents", (request, response) -> {
 			return IncidenceApi.getIncidenceDatasetDetails(request, response, getUserProfile(request, response));
 		});
@@ -374,6 +411,49 @@ public class ApiRoutes extends RoutesBase {
 		 */	
 		service.get(apiPrefix + "/valuation-result-datasets/:id/export", (request, response) -> {
 			ValuationApi.getValuationResultExport(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
+		/*
+		 * GET exposure function results from an analysis
+		 * PARAMETERS:
+		 *  :id (exposure function results dataset id or task UUID)
+		 *  gridId= (aggregate the results to another grid definition)
+		 *  efId= (filter results to those from one or more functions via comma delimited list)
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 *  
+		 *  application/json response
+		 */	
+		service.get(apiPrefix + "/exposure-result-datasets/:id/contents", (request, response) -> {
+			//TODO: Implement a new version of this that supports filtering, etc
+			ExposureApi.getExposureResultContents(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
+		/*
+		 * GET exposure function results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (exposure results dataset id or task UUID)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.get(apiPrefix + "/exposure-result-datasets/:id/export", (request, response) -> {
+			//TODO: Implement a new version of this that supports filtering, etc
+			ExposureApi.getExposureResultExport(request, response, getUserProfile(request, response));
 			
 			if(response.status() == 400) {
 				return CoreApi.getErrorResponseInvalidId(request, response);

@@ -853,6 +853,67 @@ paths:
                       items:
                         type: integer
                         example: 861, 881, 890
+  /exposure-function-groups:
+    get:
+      summary: Returns the list of exposure function groups.
+      responses:
+        '200':
+          description: Successfully returned an array of exposure function groups.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "NAAQS PM RIA 2022"
+                    id:
+                      type: integer
+                      example: 1
+                    help_text:
+                      type: string
+                      example: "Exposure configurations used to generate the 2022 NAAQS PM RIA"
+                    functions:
+                      type: array
+                      items:
+                        type: integer
+                        example: 1, 2, 3
+  /exposure-function-groups/{id}:
+    get:
+      summary: Returns the contents of an exposure function group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by exposure function group id
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Successfully returned an exposure function group.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "NAAQS PM RIA 2022"
+                    id:
+                      type: integer
+                      example: 1
+                    help_text:
+                      type: string
+                      example: "Exposure configurations used to generate the 2022 NAAQS PM RIA"
+                    functions:
+                      type: array
+                      items:
+                        type: object
   /batch-task-config:
     get:
       summary: Return new batch task config.
@@ -1588,6 +1649,54 @@ paths:
       responses:
         '404':
           description: UUID not found or task successfully removed.
+  /exposure-result-datasets/{id}/contents:
+    get:
+      summary: Returns exposure function results from an analysis.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Exposure function result dataset id or task UUID.
+          schema:
+            type: string
+            default: 17
+      responses:
+        '200':
+          description: Exposure function results from an analysis.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  filteredRecordsCount:
+                    type: integer
+                    example: 1
+                  records:
+                    type: object
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 444
+        '500':
+          description: System or Server Error.
+  /exposure-result-datasets/{id}/export:
+    get:
+      summary: Returns exposure function results from an analysis as a zip file.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Exposure function result dataset id or task UUID.
+          schema:
+            type: string
+            default: 17
+      responses:
+        '200':
+          description: Zip file containing exposure function results from an analysis.
+        '500':
+          description: System or Server Error.
   /tasks/pending:
     get:
       summary: Returns a list of pending tasks.
@@ -1603,39 +1712,6 @@ paths:
                     type: array
                     items:
                       type: object
-                      properties:
-                        task_name:
-                          type: string
-                          example: "Ozone - Valuation"
-                        task_uuid:
-                          type: string
-                          example: "482e078-..."
-                        task_submitted_date:
-                          type: string
-                          example: "2022-01-01 00:00:00"
-                        task_type:
-                          type: string
-                          example: "Valuation"
-                        task_status_message:
-                          type: string
-                          example: "Started at 2022-01-01 00:00:00"
-                        task_progress_message:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              status:
-                                type: string
-                                example: "active"
-                              message:
-                                type: string
-                                example: "Running valuation functions"
-                        task_percentage:
-                          type: integer
-                          example: 50
-                        task_status:
-                          type: boolean
-                          example: true
                   success:
                     type: boolean
                     example: true
@@ -1660,55 +1736,6 @@ paths:
                     type: array
                     items:
                       type: object
-                      properties:
-                        task_name:
-                          type: string
-                          example: "Ozone Analysis"
-                        task_type:
-                          type: string
-                          example: "HIF"
-                        task_description:
-                          type: string
-                          example: null
-                        task_uuid:
-                          type: string
-                          example: "482e078-..."
-                        task_submited_date:
-                          type: string
-                          example: "2022-01-01 00:00:00"
-                        task_started_date:
-                          type: string
-                          example: "2022-01-01 00:00:00"
-                        task_completed_date:
-                          type: string
-                          example: "2022-01-01 00:10:15"
-                        task_wait_time:
-                          type: object
-                          properties:
-                            task_wait_time_display:
-                              type: string
-                              example: "4 seconds "
-                            task_wait_time_seconds:
-                              type: integer
-                              example: 4
-                        task_execution_time:
-                          type: object
-                          properties:
-                            task_execution_time_display:
-                              type: string
-                              example: "10 minutes 15 seconds "
-                            task_execution_time_seconds:
-                              type: integer
-                              example: 615
-                        task_elapsed_time:
-                          type: string
-                          example: "10 minutes 15 seconds "
-                        task_successful:
-                          type: boolean
-                          example: true
-                        task_message:
-                          type: string
-                          example: "Saved 191,049 results"
                   success:
                     type: boolean
                     example: true
@@ -1772,6 +1799,54 @@ paths:
             application/json:
               schema:
                 type: object
+    /batch-tasks/pending:
+    get:
+      summary: Returns a list of pending batch tasks.
+      responses:
+        '200':
+          description: An array of pending batch tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  success:
+                    type: boolean
+                    example: true
+                  recordsFiltered:
+                    type: integer
+                    example: 1
+                  recordsTotal:
+                    type: integer
+                    example: 1
+  /batch-tasks/completed:
+    get:
+      summary: Returns a list of completed batch tasks.
+      responses:
+        '200':
+          description: Successfully returned an array of completed batch tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  success:
+                    type: boolean
+                    example: true
+                  recordsFiltered:
+                    type: integer
+                    example: 123
+                  recordsTotal:
+                    type: integer
+                    example: 123   
   /task-configs:
     get:
       summary: Returns a list of task configurations.

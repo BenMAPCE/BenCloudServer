@@ -662,6 +662,11 @@ public class TaskApi {
 		ArrayNode tasks = mapper.createArrayNode();
 		ObjectNode task = mapper.createObjectNode();
 
+		ArrayNode scenarios = mapper.createArrayNode();
+		ObjectNode scenario = mapper.createObjectNode();
+		List<Integer> scenarioIdList = new ArrayList<Integer>();
+
+
 		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
 		batchTaskId = Integer.valueOf(request.params("id"));
 
@@ -692,6 +697,9 @@ public class TaskApi {
 						ObjectMapper batchMapper = new ObjectMapper();
 						JsonNode batchParamsNode = batchMapper.readTree(batchParams.data());
 						data.put("aq_baseline_id", batchParamsNode.get("aqBaselineId").asText());
+						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
+						data.put("aq_baseline_name", aqBaselineName);
+						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
 
 
 						Condition filterCondition = DSL.trueCondition();
@@ -731,11 +739,14 @@ public class TaskApi {
 							if(record.getValue(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
 								String aqScenarioId;
 								String popYear;
+								String aqScenarioName;
 								try {
 									aqScenarioId = json.get("aqScenarioId").asText();
-									task.put("aq_scenario_id", aqScenarioId);
+									aqScenarioName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(aqScenarioId));
+									task.put("aq_scenario_name", aqScenarioName);
 									popYear = json.get("popYear").asText();
 									task.put("pop_year", popYear);
+									scenarioIdList.add(json.get("aqScenarioId").asInt());
 								} catch (NullPointerException e) {
 									e.printStackTrace();
 									response.status(400);
@@ -749,7 +760,22 @@ public class TaskApi {
 						}
 					}
 
-					data.set("data", tasks);
+					Result<Record> scenarioRecords = DSL.using(JooqUtil.getJooqConfiguration()).select()
+						.from(AIR_QUALITY_LAYER)
+						.where(AIR_QUALITY_LAYER.ID.in(scenarioIdList)) 
+						.orderBy(AIR_QUALITY_LAYER.ID.asc())
+						.fetch();
+
+					scenarios = mapper.createArrayNode();
+					for(Record scenarioRecord : scenarioRecords) {
+						scenario = mapper.createObjectNode();
+						scenario.put("scenario_id", scenarioRecord.getValue(AIR_QUALITY_LAYER.ID));
+						scenario.put("scenario_name", scenarioRecord.getValue(AIR_QUALITY_LAYER.NAME));
+						scenarios.add(scenario);
+					}
+
+					data.set("tasks", tasks);
+					data.set("scenarios", scenarios);
 					data.put("success", true);
 
 				} catch (DataAccessException e) {

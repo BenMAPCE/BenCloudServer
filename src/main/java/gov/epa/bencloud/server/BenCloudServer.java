@@ -11,6 +11,7 @@ import org.pac4j.sparkjava.SecurityFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.epa.bencloud.api.CrosswalksApi;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.jobs.JobsUtil;
 import gov.epa.bencloud.server.routes.ApiRoutes;
@@ -118,6 +119,8 @@ public class BenCloudServer {
 			System.exit(-1);
 		}
 		
+		// CrosswalksApi.calculateAreaWeights(18, 28);
+
 		new ApiRoutes(benCloudService);
 		
 		JobsUtil.startJobScheduler();
