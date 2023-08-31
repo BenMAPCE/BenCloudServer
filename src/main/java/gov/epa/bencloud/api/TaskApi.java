@@ -1074,10 +1074,9 @@ public class TaskApi {
 		try {
 			String idParam = String.valueOf(request.params("id"));
 			batchId = Integer.valueOf(idParam);
-			
-			includeHealthImpact = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeHealthImpact"), false);
-			includeValuation = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeValuation"), false);
-			includeExposure = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeExposure"), false);
+			includeHealthImpact = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeHealthImpact").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
+			includeValuation = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeValuation").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
+			includeExposure = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeExposure").equals("1")?"true":request.raw().getParameter("includeExposure"), false);
 			
 			String gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
 			if(gridIdParam==null || gridIdParam.equals("")){

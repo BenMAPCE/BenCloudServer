@@ -519,9 +519,9 @@ public class ApiRoutes extends RoutesBase {
 		 * GET results as a zip file from an analysis
 		 * PARAMETERS:
 		 *  :id (batch task id)
-		 *  includeHealthImpact (boolean, default to 0)
-		 *  includeValuation (boolean, default to 0)
-		 *  includeExposure (boolean, default to 0)
+		 *  includeHealthImpact (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeValuation (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeExposure (boolean accepts values true/false and 1/0, default to 0)
 		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
 		 *  
 		 */	
