@@ -306,15 +306,25 @@ public class TaskApi {
 		String scenariosParam;
 		List<Scenario> scenarios = new ArrayList<Scenario>();
 		String hifGroupParam;
-		List<Integer> hifGroupList;
+		List<Integer> hifGroupList = new ArrayList<Integer>();
+		String efGroupParam;
+		List<Integer> efGroupList = new ArrayList<Integer>();
 
 		//boolean userPrefered; //If true, BenMAP will use the incidence/prevalence selected by the user even when there is another dataset which matches the demo groups better.
 		Boolean preserveLegacyBehavior = true;
 
 		try{
 			// HIF group ids passed as a comma-separated list of integers
-			hifGroupParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("groupIds"), "").replace(" ", "");
-			hifGroupList = Stream.of(hifGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			hifGroupParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifGroupIds"), "").replace(" ", "");
+			if(!hifGroupParam.equals("")) {
+				hifGroupList = Stream.of(hifGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			}
+
+			// EF group ids passed as a comma-separated list of integers
+			efGroupParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("efGroupIds"), "").replace(" ", "");
+			if(!efGroupParam.equals("")) {
+				efGroupList = Stream.of(efGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			}
 
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
@@ -355,7 +365,11 @@ public class TaskApi {
 			for(int i = 0; i < hifGroupList.size(); i++) {
 				BatchHIFGroup tempHifGroup = new BatchHIFGroup();
 				tempHifGroup.id = hifGroupList.get(i);
-				
+			}
+
+			for(int i = 0; i < efGroupList.size(); i++) {
+				BatchExposureGroup tempExposureGroup = new BatchExposureGroup();
+				tempExposureGroup.id = efGroupList.get(i);
 			}
 
 
@@ -440,6 +454,63 @@ public class TaskApi {
 			e.printStackTrace();
 			return CoreApi.getErrorResponse(request, response, 400, "Unable to build response"); 
 		}
+
+		Result<Record> exposureGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(EXPOSURE_FUNCTION_GROUP.NAME
+						, EXPOSURE_FUNCTION_GROUP.ID.as("groupId")
+						, EXPOSURE_FUNCTION_GROUP.HELP_TEXT
+						, EXPOSURE_FUNCTION.asterisk()
+						, RACE.NAME.as("race_name")
+						, GENDER.NAME.as("gender_name")
+						, ETHNICITY.NAME.as("ethnicity_name")
+						)
+				.from(EXPOSURE_FUNCTION_GROUP)
+				.join(EXPOSURE_FUNCTION_GROUP_MEMBER).on(EXPOSURE_FUNCTION_GROUP.ID.eq(EXPOSURE_FUNCTION_GROUP_MEMBER.EXPOSURE_FUNCTION_GROUP_ID))
+				.join(EXPOSURE_FUNCTION).on(EXPOSURE_FUNCTION_GROUP_MEMBER.EXPOSURE_FUNCTION_ID.eq(EXPOSURE_FUNCTION.ID))
+				.join(RACE).on(EXPOSURE_FUNCTION.RACE_ID.eq(RACE.ID))
+				.join(GENDER).on(EXPOSURE_FUNCTION.GENDER_ID.eq(GENDER.ID))
+				.join(ETHNICITY).on(EXPOSURE_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
+				.where(EXPOSURE_FUNCTION_GROUP.ID.in(efGroupList))
+				.orderBy(EXPOSURE_FUNCTION_GROUP.NAME)
+				.fetch();
+
+		Integer efInstanceId = 1;
+		
+		BatchExposureGroup batchExposureGroup = null;
+		currentGroupId = -1;
+
+		try {
+			for(Record r : exposureGroupRecords) {
+				if(currentGroupId != r.getValue(EXPOSURE_FUNCTION_GROUP.ID.as("groupId"))) {
+					currentGroupId = r.getValue(EXPOSURE_FUNCTION_GROUP.ID.as("groupId"));
+					
+					batchExposureGroup = new BatchExposureGroup();
+					batchExposureGroup.id = currentGroupId;
+					batchExposureGroup.name = r.getValue(EXPOSURE_FUNCTION_GROUP.NAME);
+					//batchExposureGroup.helpText = r.getValue(EXPOSURE_FUNCTION_GROUP.HELP_TEXT);
+					b.batchExposureGroups.add(batchExposureGroup);
+				}
+				
+				ExposureConfig efConfig = new ExposureConfig();
+				efConfig.efInstanceId = efInstanceId++;
+				efConfig.efId = r.getValue(EXPOSURE_FUNCTION.ID);		
+				efConfig.efRecord = r.intoMap();
+				
+				//for each scenario and popyear, add this function instance with the appropriate incidence data
+				for(Scenario scenario : scenarios) {
+					for(ScenarioPopConfig popConfig : scenario.popConfigs) {
+						ScenarioHIFConfig scenarioHIFConfig = new ScenarioHIFConfig();
+						scenarioHIFConfig.hifInstanceId = efConfig.efInstanceId;
+						popConfig.scenarioHifConfigs.add(scenarioHIFConfig);
+					}
+				}
+				batchExposureGroup.exposureConfigs.add(efConfig);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponse(request, response, 400, "Unable to build response"); 
+		}
+
 		b.gridDefinitionId = gridDefinitionId;
 		b.pollutantId = pollutantId;
 		b.pollutantName = PollutantApi.getPollutantName(pollutantId);
