@@ -810,7 +810,7 @@ public class TaskApi {
 								return null;
 							} 
 							
-							if(record.getValue(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+							if(record.getValue(TASK_COMPLETE.TASK_TYPE).equals("HIF") || record.getValue(TASK_COMPLETE.TASK_TYPE).equals("Exposure")) {
 								String aqScenarioId;
 								String popYear;
 								String aqScenarioName;

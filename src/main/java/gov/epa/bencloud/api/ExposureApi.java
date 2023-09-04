@@ -22,7 +22,7 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.exception.DataAccessException;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record17;
+import org.jooq.Record19;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
@@ -254,7 +254,7 @@ public class ExposureApi {
 				.asTable("ef_result_records");
 
 		try{
-			Result<Record17<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+			Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
 				efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 				EXPOSURE_FUNCTION.POPULATION_GROUP,
@@ -267,9 +267,13 @@ public class ExposureApi {
 				efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
+				DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
+					.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
+				DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
+					.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
 				DSL.val(null, String.class).as("formatted_results_2sf"),
 				DSL.val(null, String.class).as("formatted_results_3sf")
 				)
@@ -413,7 +417,7 @@ public class ExposureApi {
 					.asTable("ef_result_records");
 				
 				log.info("Before fetch");
-				Result<Record17<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+				Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
 						efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 						EXPOSURE_FUNCTION.POPULATION_GROUP,
@@ -426,9 +430,13 @@ public class ExposureApi {
 						efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
+						DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
+							.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
+						DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
+							.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
 						DSL.val(null, String.class).as("formatted_results_2sf"),
 						DSL.val(null, String.class).as("formatted_results_3sf")
 						)
