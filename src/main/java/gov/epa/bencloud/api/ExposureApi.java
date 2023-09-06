@@ -269,7 +269,7 @@ public class ExposureApi {
 				efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
 				DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
 					.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-				efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
+				efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT).as("result"),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
 				DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
@@ -312,12 +312,12 @@ public class ExposureApi {
 //				}
 //			}
 
-//			for (Record res : hifRecords) {
-//				res.setValue(DSL.field("formatted_results_2sf", String.class), 
-//								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
-//				res.setValue(DSL.field("formatted_results_3sf", String.class), 
-//								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
-//			}
+			for (Record res : efRecords) {
+				res.setValue(DSL.field("formatted_results_2sf", String.class), 
+								ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
+				res.setValue(DSL.field("formatted_results_3sf", String.class), 
+								ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
+			}
 		
 			response.type("application/json");
 			efRecords.formatJSON(response.raw().getWriter(),
@@ -432,7 +432,7 @@ public class ExposureApi {
 						efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
 						DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
 							.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-						efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
+						efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT).as("result"),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
 						DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
@@ -471,12 +471,12 @@ public class ExposureApi {
 //					}
 //				}
 //
-//				for (Record res : hifRecords) {
-//					res.setValue(DSL.field("formatted_results_2sf", String.class), 
-//									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
-//					res.setValue(DSL.field("formatted_results_3sf", String.class), 
-//									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
-//				}
+				for (Record res : efRecords) {
+					res.setValue(DSL.field("formatted_results_2sf", String.class), 
+									ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
+					res.setValue(DSL.field("formatted_results_3sf", String.class), 
+									ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
+				}
 
 				//Remove percentiles by keeping all other fields
 				efRecordsClean = efRecords; //.into(efRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,29,30));
