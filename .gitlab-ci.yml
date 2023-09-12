@@ -169,6 +169,9 @@ prisma_cloud_compute_scan:
 
 net_sparker:
   stage: application_scan
+  only: 
+    - develop
+    - main
   tags:
     - devsecops-instance
   when: manual
