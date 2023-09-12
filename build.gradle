@@ -22,11 +22,11 @@ dependencies {
     	exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-client'
 	}
     
-    implementation 'org.eclipse.jetty:jetty-server:9.4.51.v20230217'
-    implementation 'org.eclipse.jetty:jetty-webapp:9.4.51.v20230217'
-    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.51.v20230217'
-    implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.51.v20230217'
-    implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.51.v20230217'
+    implementation 'org.eclipse.jetty:jetty-server:9.4.52.v20230823'
+    implementation 'org.eclipse.jetty:jetty-webapp:9.4.52.v20230823'
+    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.52.v20230823'
+    implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.52.v20230823'
+    implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.52.v20230823'
         
 	implementation 'org.pac4j:spark-pac4j:5.0.1'
 	implementation 'org.pac4j:pac4j-http:5.6.1'
