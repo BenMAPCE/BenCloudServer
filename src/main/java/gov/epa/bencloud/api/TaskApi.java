@@ -1270,10 +1270,15 @@ public class TaskApi {
 
 								.fetch();
 						log.info("After fetch");
+						for (Record res : efRecords) {
+							res.setValue(DSL.field("formatted_results_2sf", String.class), 
+											ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
+							res.setValue(DSL.field("formatted_results_3sf", String.class), 
+											ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
+						}
 						
-						//Exposure results are not getting aggregated??
-						
-						//Remove percentiles by keeping all other fields
+						//No need to recalculate mean, variance, std deviation, and percent of baseline for exposure.
+						//No need to remove percentiles
 						efRecordsClean = efRecords;
 					} catch(DataAccessException e) {
 						e.printStackTrace();
@@ -1294,7 +1299,7 @@ public class TaskApi {
 						}
 					ExposureTaskLog efTaskLog = ExposureUtil.getTaskLog(exposureResultDatasetId);
 					batchTaskLog.append(System.getProperty("line.separator"));
-					batchTaskLog.append(efTaskLog.toString());
+					batchTaskLog.append(efTaskLog.toString(userProfile));
 				}				
 			}					
 		}
