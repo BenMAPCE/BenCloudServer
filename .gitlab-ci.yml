@@ -148,6 +148,9 @@ build_stage_runner_image:
 
 prisma_cloud_compute_scan:
   stage: image_scan
+  only: 
+    - develop
+    - main
   tags:
     - twistcli
   variables:
