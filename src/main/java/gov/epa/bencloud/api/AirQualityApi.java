@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.servlet.MultipartConfigElement;
+
+import org.apache.commons.io.input.BOMInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
@@ -43,7 +45,6 @@ import org.jooq.SortOrder;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
-import org.jooq.tools.csv.CSVReader;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.opencsv.CSVReader;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.AirQualityCell;
@@ -839,8 +841,8 @@ public class AirQualityApi {
 		Map<String, Integer> statisticIdLookup = new HashMap<>();
 		
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
-			
-			CSVReader csvReader = new CSVReader (new InputStreamReader(is));				
+			BOMInputStream bis = new BOMInputStream(is, false);
+			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
 
 			String[] record;
 			
@@ -848,6 +850,7 @@ public class AirQualityApi {
 			// Read the header
 			// allow either "column" or "col"; "values" or "value"
 			// todo: warn or abort when both "column" and "col" exist.
+			
 			record = csvReader.readNext();
 			for(int i=0; i < record.length; i++) {
 				switch(record[i].toLowerCase().replace(" ", "")) {
