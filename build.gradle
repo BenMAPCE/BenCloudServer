@@ -55,6 +55,10 @@ dependencies {
 	implementation 'commons-cli:commons-cli:1.4'
 	implementation 'com.opencsv:opencsv:5.8'
 	implementation 'org.apache.commons:commons-lang3:3.9'
+	
+	// Pushing commons-compress version since another dependencies was referencing 1.22 which has a vulnerability
+	implementation 'org.apache.commons:commons-compress:1.24.0'
+	
 	implementation 'org.apache.poi:poi:4.1.0'
 	implementation 'org.apache.poi:poi-ooxml:4.1.0'
 	implementation 'com.squareup.tape2:tape:2.0.0-beta1'
