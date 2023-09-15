@@ -257,7 +257,12 @@ public class ExposureTaskRunnable implements Runnable {
 //					}
 										
 					double deltaQ = baselineValue - scenarioValue;	
-
+					double v1 = 1.0;
+					if (variables.containsKey(exposureConfig.variable)) {
+						v1 = variables.get(exposureConfig.variable).getOrDefault(baselineEntry.getKey(), 0.0);
+					}
+					
+					
 					Expression functionExpression = null;
 					
 					if(exposureFunction.nativeFunction == null) {
@@ -267,7 +272,7 @@ public class ExposureTaskRunnable implements Runnable {
 						functionExpression.setArgumentValue("Q0", scenarioValue);
 						// Currently, the replacement of VARIABLE with the corresponding id is hard-coded, since it's the only one.
 						if (variables.containsKey(exposureConfig.variable)) {
-							functionExpression.setArgumentValue("VARIABLE", variables.get(exposureConfig.variable).getOrDefault(baselineEntry.getKey(), 0.0));
+							functionExpression.setArgumentValue("VARIABLE", v1);
 						}
 					} else {
 						exposureFunction.efArguments.deltaQ = deltaQ;
@@ -275,7 +280,7 @@ public class ExposureTaskRunnable implements Runnable {
 						exposureFunction.efArguments.q0 = scenarioValue;
 						if (variables.containsKey(exposureConfig.variable)) {
 							// Currently, the replacement of VARIABLE with the corresponding id is hard-coded, since it's the only one.
-							exposureFunction.efArguments.v1 = variables.get(exposureConfig.variable).getOrDefault(baselineEntry.getKey(), 0.0);
+							exposureFunction.efArguments.v1 = v1;
 						}
 					}
 
@@ -304,7 +309,7 @@ public class ExposureTaskRunnable implements Runnable {
 								&& (exposureConfig.gender == 3 || exposureConfig.gender == popGender)) {
 
 							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeExposureMap.get(popAgeRange);
-							
+
 							totalSubgroupPop += rangePop;
 
 							if(exposureFunction.nativeFunction == null) {
@@ -327,7 +332,10 @@ public class ExposureTaskRunnable implements Runnable {
 						rec.setGridCol(baselineCell.getGridCol());
 						rec.setGridRow(baselineCell.getGridRow());
 						rec.setExposureFunctionId(exposureConfig.efId);
-						rec.setSubgroupPopulation(totalSubgroupPop);
+						
+						//Use the variable to adjust the population if it's present. Else, v1 = 1.0 and will have no effect 
+						rec.setSubgroupPopulation(totalSubgroupPop * v1);
+						
 						rec.setAllPopulation(totalAllPop);
 						rec.setDeltaAq(deltaQ);
 						rec.setBaselineAq(baselineValue);
