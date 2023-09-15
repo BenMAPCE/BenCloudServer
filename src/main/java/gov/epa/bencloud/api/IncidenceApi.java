@@ -18,6 +18,7 @@ import javax.servlet.MultipartConfigElement;
 
 import java.util.Map.Entry;
 
+import org.apache.commons.io.input.BOMInputStream;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -34,7 +35,6 @@ import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record15;
 import org.jooq.impl.DSL;
-import org.jooq.tools.csv.CSVReader;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +46,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.opencsv.CSVReader;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.HIFConfig;
@@ -565,8 +566,8 @@ public class IncidenceApi {
 
 		
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
-			
-			CSVReader csvReader = new CSVReader (new InputStreamReader(is));				
+			BOMInputStream bis = new BOMInputStream(is, false);
+			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
 
 			String[] record;
 			
