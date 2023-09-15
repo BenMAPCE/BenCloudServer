@@ -624,44 +624,63 @@ public class AirQualityApi {
 				.fetchOne(DSL.count());
 
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
-
-		Result<Record6<Integer, Integer, String, String, String, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(
-						AIR_QUALITY_CELL.GRID_COL,
-						AIR_QUALITY_CELL.GRID_ROW,
-						POLLUTANT_METRIC.NAME.as("metric"),
-						SEASONAL_METRIC.NAME.as("seasonal_metric"),
-						STATISTIC_TYPE.NAME.as("annual_statistic"),
-						AIR_QUALITY_CELL.VALUE
-						)
-				.from(AIR_QUALITY_CELL)
-				.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
-				.leftJoin(POLLUTANT_METRIC).on(AIR_QUALITY_CELL.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-				.leftJoin(SEASONAL_METRIC).on(AIR_QUALITY_CELL.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-				.leftJoin(STATISTIC_TYPE).on(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID.eq(STATISTIC_TYPE.ID))
-				.where(filterCondition)
-				.orderBy(orderFields)
-				.offset((page * rowsPerPage) - rowsPerPage)
-				.limit(rowsPerPage)
-				.fetch();
+		Result<Record6<Integer, Integer, String, String, String, Double>> aqRecords;
 		
-		Record1<String> layerInfo = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(AIR_QUALITY_LAYER.NAME)
-				.from(AIR_QUALITY_LAYER)
-				.where(AIR_QUALITY_LAYER.ID.eq(id))
-				.fetchOne();
-
-		if(request.headers("Accept").equalsIgnoreCase("text/csv")) {
+		if(request.headers("Accept").equalsIgnoreCase("text/csv")) {			
+			//for export (csv)
+			aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+					.select(
+							AIR_QUALITY_CELL.GRID_COL.as("Column"),
+							AIR_QUALITY_CELL.GRID_ROW.as("Row"),
+							POLLUTANT_METRIC.NAME.as("Metric"),
+							SEASONAL_METRIC.NAME.as("Seasonal Metric"),
+							STATISTIC_TYPE.NAME.as("Annual Metric"),
+							AIR_QUALITY_CELL.VALUE.as("Value")
+							)
+					.from(AIR_QUALITY_CELL)
+					.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
+					.leftJoin(POLLUTANT_METRIC).on(AIR_QUALITY_CELL.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+					.leftJoin(SEASONAL_METRIC).on(AIR_QUALITY_CELL.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+					.leftJoin(STATISTIC_TYPE).on(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID.eq(STATISTIC_TYPE.ID))
+					.where(filterCondition)
+					.orderBy(orderFields)
+					.offset((page * rowsPerPage) - rowsPerPage)
+					.limit(rowsPerPage)
+					.fetch();
+			
+			Record1<String> layerInfo = DSL.using(JooqUtil.getJooqConfiguration())
+					.select(AIR_QUALITY_LAYER.NAME)
+					.from(AIR_QUALITY_LAYER)
+					.where(AIR_QUALITY_LAYER.ID.eq(id))
+					.fetchOne();
 			String fileName = createFilename(layerInfo.get(AIR_QUALITY_LAYER.NAME));
 			response.type("text/csv");
 			response.header("Content-Disposition", "attachment; filename="+ fileName);
 			response.header("Access-Control-Expose-Headers", "Content-Disposition");
 						
 			return aqRecords.formatCSV();
-		} else {
-
-			//System.out.println("aqRecords: " + aqRecords.size());
-
+		}
+		else {
+			//for table (json)
+			aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+					.select(
+							AIR_QUALITY_CELL.GRID_COL,
+							AIR_QUALITY_CELL.GRID_ROW,
+							POLLUTANT_METRIC.NAME.as("metric"),
+							SEASONAL_METRIC.NAME.as("seasonal_metric"),
+							STATISTIC_TYPE.NAME.as("annual_statistic"),
+							AIR_QUALITY_CELL.VALUE
+							)
+					.from(AIR_QUALITY_CELL)
+					.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
+					.leftJoin(POLLUTANT_METRIC).on(AIR_QUALITY_CELL.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+					.leftJoin(SEASONAL_METRIC).on(AIR_QUALITY_CELL.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+					.leftJoin(STATISTIC_TYPE).on(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID.eq(STATISTIC_TYPE.ID))
+					.where(filterCondition)
+					.orderBy(orderFields)
+					.offset((page * rowsPerPage) - rowsPerPage)
+					.limit(rowsPerPage)
+					.fetch();
 			ObjectMapper mapper = new ObjectMapper();
 			ObjectNode data = mapper.createObjectNode();
 			
@@ -683,7 +702,7 @@ public class AirQualityApi {
 
 			response.type("application/json");
 			return data;
-		}
+		}		
 	}
 
 	/**
