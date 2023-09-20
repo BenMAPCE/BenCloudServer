@@ -129,4 +129,54 @@ public class TaskUtil {
 
 	}
 
+	public static void deleteExposureResults(String uuid, Boolean deleteTask) {
+		
+		try {
+
+			DSL.using(JooqUtil.getJooqConfiguration())
+					.transaction(ctx -> {
+
+				Result<Record1<Integer>> exposureResultDatasets = 
+						DSL.using(ctx).select(EXPOSURE_RESULT_DATASET.ID).from(EXPOSURE_RESULT_DATASET)
+						.where(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(uuid))
+						.fetch();
+
+				if (exposureResultDatasets.size() == 0 && deleteTask) {
+					DSL.using(ctx).deleteFrom(TASK_COMPLETE)
+					.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+					.execute();
+				} else if (exposureResultDatasets.size() > 1) {
+					log.info("recieved more than 1 Exposure Result Dataset record");
+				} else {
+
+					Record exposureResultDataset = exposureResultDatasets.get(0);
+
+					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT)
+					.where(EXPOSURE_RESULT.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDataset.get(EXPOSURE_RESULT_DATASET.ID)))
+					.execute();
+					
+					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT_DATASET)
+					.where(EXPOSURE_RESULT_DATASET.ID.eq(exposureResultDataset.get(EXPOSURE_RESULT_DATASET.ID)))
+					.execute();
+
+					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT_FUNCTION_CONFIG)
+					.where(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDataset.get(EXPOSURE_RESULT_DATASET.ID)))
+					.execute();
+					
+					if(deleteTask) {
+						DSL.using(ctx).deleteFrom(TASK_COMPLETE)
+						.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+						.execute();
+					}
+
+					
+				}
+			});
+		} catch (Exception e) {
+			log.error("Error deleting exposure results", e);
+		} finally {
+
+		}
+
+	}
 }
