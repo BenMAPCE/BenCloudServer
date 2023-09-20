@@ -536,28 +536,23 @@ public class TaskApi {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseBadRequest(request, response);
 		}
-		
-		// TODO: We have successfully parsed the object. Now, we need to validate the contents.
-//		if(CoreApi.isValidTaskType(task.getType()) == false) {
-//			return CoreApi.getErrorResponseBadRequest(request, response);
-//		}
 
-		// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
-//		int taskCount = TaskApi.getTotalTaskCountForUser(userProfile.get());			
-//		int maxTasks = 20;
-//		
-//		String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
-//		
-//		try {
-//			maxTasks = Integer.parseInt(sMaxTaskPerUser);
-//		} catch(NumberFormatException e) {
-//			//If this is no set in the properties, we will use the default of 20.
-//		}
-//				
-//		if(maxTasks != 0 && taskCount >= maxTasks) {
-//			return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + maxTasks + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
-//		}
-//	
+		// As an interim protection against overloading the system, users can only have a maximum of 40 pending or completed tasks total
+		int taskCount = TaskApi.getTotalTaskCountForUser(userProfile.get());			
+		int maxTasks = 40;
+		
+		String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
+		
+		try {
+			maxTasks = Integer.parseInt(sMaxTaskPerUser);
+		} catch(NumberFormatException e) {
+			//If this is not set in the properties, we will use the default.
+		}
+				
+		if(maxTasks != 0 && taskCount >= maxTasks) {
+			return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks.");
+		}
+	
 		
 		String batchParameters;
 		try {
