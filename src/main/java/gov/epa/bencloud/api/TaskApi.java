@@ -550,7 +550,7 @@ public class TaskApi {
 		}
 				
 		if(maxTasks != 0 && taskCount >= maxTasks) {
-			return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks.");
+			return CoreApi.getSuccessResponse(request, response, 200, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks.");
 		}
 	
 		
