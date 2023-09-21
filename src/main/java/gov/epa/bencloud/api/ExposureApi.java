@@ -287,7 +287,6 @@ public class ExposureApi {
 				.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
-				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
 				.fetch();
 			
 			
@@ -295,22 +294,6 @@ public class ExposureApi {
 				CoreApi.getErrorResponseNotFound(request, response);
 				return;
 			}
-
-//			//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
-//			if(HIFApi.getBaselineGridForHifResults(id) != gridId) {
-//				for(Record res : hifRecords) {
-//					DescriptiveStatistics stats = new DescriptiveStatistics();
-//					Double[] pct = res.getValue(GET_EXPOSURE_RESULTS.PERCENTILES);
-//					for (int i = 0; i < pct.length; i++) {
-//						stats.addValue(pct[i]);
-//					}
-//					
-//					res.setValue(GET_EXPOSURE_RESULTS.MEAN, stats.getMean());
-//					res.setValue(GET_EXPOSURE_RESULTS.VARIANCE, stats.getVariance());
-//					res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
-//					res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_EXPOSURE_RESULTS.BASELINE) * 100.0);
-//				}
-//			}
 
 			for (Record res : efRecords) {
 				res.setValue(DSL.field("formatted_results_2sf", String.class), 
@@ -416,7 +399,6 @@ public class ExposureApi {
 							gridIds[i]))
 					.asTable("ef_result_records");
 				
-				log.info("Before fetch");
 				Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
 						efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
@@ -449,28 +431,7 @@ public class ExposureApi {
 						.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
 
 						.fetch();
-				log.info("After fetch");
-				
-//				//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
-//				if(HIFApi.getBaselineGridForHifResults(id) != gridIds[i]) {
-//					for(Record res : hifRecords) {
-//						DescriptiveStatistics stats = new DescriptiveStatistics();
-//						Double[] pct = res.getValue(GET_EXPOSURE_RESULTS.PERCENTILES);
-//						for (int j = 0; j < pct.length; j++) {
-//							stats.addValue(pct[j]);
-//						}
-//						
-//						res.setValue(GET_EXPOSURE_RESULTS.MEAN, stats.getMean());
-//						
-//						//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
-//						stats.addValue(res.getValue(GET_EXPOSURE_RESULTS.POINT_ESTIMATE));
-//						res.setValue(GET_EXPOSURE_RESULTS.VARIANCE, stats.getVariance());
-//						res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
-//						
-//						res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_EXPOSURE_RESULTS.BASELINE) * 100.0);
-//					}
-//				}
-//
+
 				for (Record res : efRecords) {
 					res.setValue(DSL.field("formatted_results_2sf", String.class), 
 									ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
@@ -478,8 +439,7 @@ public class ExposureApi {
 									ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
 				}
 
-				//Remove percentiles by keeping all other fields
-				efRecordsClean = efRecords; //.into(efRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,29,30));
+				efRecordsClean = efRecords; 
 			} catch(DataAccessException e) {
 				e.printStackTrace();
 				response.status(400);
