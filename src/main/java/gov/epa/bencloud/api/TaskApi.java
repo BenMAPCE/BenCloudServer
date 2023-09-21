@@ -25,6 +25,7 @@ import spark.Request;
 import spark.Response;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -33,6 +34,7 @@ import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record17;
+import org.jooq.Record19;
 import org.jooq.Record22;
 import org.jooq.Result;
 import org.jooq.Table;
@@ -1236,7 +1238,7 @@ public class TaskApi {
 									null,
 									gridIds[i]))
 							.asTable("ef_result_records");
-						Result<Record17<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+						Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 								EXPOSURE_FUNCTION.POPULATION_GROUP,
@@ -1249,9 +1251,13 @@ public class TaskApi {
 								efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
+								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
+								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
+								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
+								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
 								DSL.val(null, String.class).as("formatted_results_2sf"),
 								DSL.val(null, String.class).as("formatted_results_3sf")
 								)
@@ -1264,7 +1270,7 @@ public class TaskApi {
 								.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
 
 								.fetch();
-						log.info("After fetch");
+
 						for (Record res : efRecords) {
 							res.setValue(DSL.field("formatted_results_2sf", String.class), 
 											ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
@@ -1272,8 +1278,6 @@ public class TaskApi {
 											ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
 						}
 						
-						//No need to recalculate mean, variance, std deviation, and percent of baseline for exposure.
-						//No need to remove percentiles
 						efRecordsClean = efRecords;
 					} catch(DataAccessException e) {
 						e.printStackTrace();
