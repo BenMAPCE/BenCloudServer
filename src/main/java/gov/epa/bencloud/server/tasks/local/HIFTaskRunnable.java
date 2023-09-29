@@ -5,12 +5,23 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Vector;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.ParetoDistribution;
+import org.apache.commons.math3.distribution.WeibullDistribution;
+import org.apache.commons.math3.distribution.TriangularDistribution;
+import org.apache.commons.math3.distribution.UniformRealDistribution;
+import org.apache.commons.math3.distribution.LogNormalDistribution;
+import org.apache.commons.math3.distribution.LogisticDistribution;
+import org.apache.commons.math3.distribution.BetaDistribution;
+import org.apache.commons.math3.distribution.CauchyDistribution;
+import org.apache.commons.math3.distribution.ExponentialDistribution;
+import org.apache.commons.math3.distribution.GammaDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jooq.Record;
@@ -37,6 +48,7 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.PopulationCategoryKey;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.PooledDataSource;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
@@ -156,17 +168,9 @@ public class HIFTaskRunnable implements Runnable {
 				boolean ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hifPopAgeRangeMapping, hif, true, h, incidenceLists, incidenceCacheMap);
 				ret = IncidenceApi.addIncidenceOrPrevalenceEntryGroups(hifTaskConfig, hifPopAgeRangeMapping, hif, false, h, prevalenceLists, prevalenceCacheMap);
 				
-				double[] distSamples = getDistributionSamples(h);
-				double[] distBeta = new double[20];
+				double[] distPercentiles = getPercentilesFromDistribution(h);
 				
-				int idxMedian = 0 + distSamples.length / distBeta.length / 2; //the median of the first segment
-				for(int i=0; i < distBeta.length; i++) {
-					// Grab the median from each of the 20 slices of distSamples
-					distBeta[i] = (distSamples[idxMedian]+distSamples[idxMedian-1])/2.0;
-					idxMedian += distSamples.length / distBeta.length;
-				}
-				
-				hifBetaDistributionLists.add(distBeta);
+				hifBetaDistributionLists.add(distPercentiles);
 			}
 			
 			
@@ -206,6 +210,21 @@ public class HIFTaskRunnable implements Runnable {
 			messages.get(messages.size()-1).setStatus("complete");
 			hifTaskLog.addMessage("Loaded population data");
 			messages.add(new TaskMessage("active", "Running health impact functions"));
+
+			List<String> requiredVariableNames = hifTaskConfig.getVariableNames();
+
+			// Variable dataset id, variable name, grid cell id
+			Map<Integer, Map<String, Map<Long, Double>>> variables = new HashMap<Integer, Map<String, Map<Long, Double>>>();
+			
+			for (HIFConfig hifConfig : hifTaskConfig.hifs) {
+				if (!variables.containsKey(hifConfig.variable)) {
+					variables.put(hifConfig.variable, ApiUtil.getVariableValues(requiredVariableNames, hifConfig.variable, hifTaskConfig.gridDefinitionId));
+				}
+			}
+
+			log.debug("VARIABLES ARRAY SIZE: ");
+
+
 			/*
 			 * FOR EACH CELL IN THE BASELINE AIR QUALITY SURFACE
 			 */
@@ -280,23 +299,38 @@ public class HIFTaskRunnable implements Runnable {
 					if(hifFunction.nativeFunction == null) {
 						hifFunctionExpression = hifFunction.interpretedFunction;
 						hifFunctionExpression.setArgumentValue("DELTAQ",deltaQ);
-						hifFunctionExpression.setArgumentValue("Q0", baselineValue);
-						hifFunctionExpression.setArgumentValue("Q1", scenarioValue);
+						hifFunctionExpression.setArgumentValue("Q0", scenarioValue);
+						hifFunctionExpression.setArgumentValue("Q1", baselineValue);
+
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) {
+							hifFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));
+						}
+
 					} else {
 						hifFunction.hifArguments.deltaQ = deltaQ;
-						hifFunction.hifArguments.q0 = baselineValue;
-						hifFunction.hifArguments.q1 = scenarioValue;
+						hifFunction.hifArguments.q0 = scenarioValue;
+						hifFunction.hifArguments.q1 = baselineValue;
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) { 
+							hifFunction.hifArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));	
+						}
 					}
 
 					if(hifBaselineFunction.nativeFunction == null) {
 						hifBaselineExpression = hifBaselineFunction.interpretedFunction;
 						hifBaselineExpression.setArgumentValue("DELTAQ",deltaQ);
-						hifBaselineExpression.setArgumentValue("Q0", baselineValue);
-						hifBaselineExpression.setArgumentValue("Q1", scenarioValue);
+						hifBaselineExpression.setArgumentValue("Q0", scenarioValue);
+						hifBaselineExpression.setArgumentValue("Q1", baselineValue);
+
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) {
+							hifBaselineExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));
+						}
 					} else {
 						hifBaselineFunction.hifArguments.deltaQ = deltaQ;
-						hifBaselineFunction.hifArguments.q0 = baselineValue;
-						hifBaselineFunction.hifArguments.q1 = scenarioValue;
+						hifBaselineFunction.hifArguments.q0 = scenarioValue;
+						hifBaselineFunction.hifArguments.q1 = baselineValue;
+						for (Entry<String, Map<Long, Double>> variable : variables.get(hifConfig.variable).entrySet()) { 
+							hifBaselineFunction.hifArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(populationCell.get(0).getGridCellId(), 0.0));	
+						}
 					}
 
 					HashMap<Integer, Double> popAgeRangeHifMap = hifPopAgeRangeMapping.get(hifConfig.arrayIdx);
@@ -343,7 +377,7 @@ public class HIFTaskRunnable implements Runnable {
 								hifFunctionExpression.setArgumentValue("INCIDENCE", incidence);
 								hifFunctionExpression.setArgumentValue("PREVALENCE", prevalence);
 								hifFunctionExpression.setArgumentValue("POPULATION", rangePop);
-								
+
 								hifFunctionEstimate += hifFunctionExpression.calculate() * seasonalScalar;
 								for(int i=0; i < resultPercentiles.length; i++) {
 									hifFunctionExpression.setArgumentValue("BETA", betaDist[i]);								
@@ -602,21 +636,85 @@ public class HIFTaskRunnable implements Runnable {
 		return hifPopAgeRangeMapping;
 	}
 	
-	private double[] getDistributionSamples(Record h) {
-		//TODO: At the moment, all HIFs are normal distribution. Need to build this out to support other types.
-		double[] samples = new double[10000];
+	/* 
+	 * Gets the 2.5, 7.5, ... percentiles from a distribution defined by a record h
+	 */
+	private double[] getPercentilesFromDistribution(Record h) {
+		double[] percentiles = new double[20];
 		
-		RealDistribution distribution = new NormalDistribution(h.get("beta", Double.class), h.get("p1_beta", Double.class));
-		
-		Random rng = new Random(1);
-		for (int i = 0; i < samples.length; i++)
-		{
-			double x = distribution.inverseCumulativeProbability(rng.nextDouble());
-			samples[i]=x;
+		String distribution_name = h.get("dist_beta", String.class);
+		RealDistribution distribution;
+
+		double beta = h.get("beta", Double.class).doubleValue();
+		double p1 = h.get("p1_beta", Double.class).doubleValue();
+		double p2 = h.get("p2_beta", Double.class).doubleValue();
+
+		/* AT THE TIME OF WRITING THIS CODE, WE ONLY HAVE TEST DATA FOR NORMAL DISTRIBUTIONS.
+		 * AS SUCH, I HAVEN'T TESTED THE CODE FOR OTHER DISTRIBUTIONS FOR BUGS.
+		 */
+
+		switch (distribution_name.toLowerCase()) {
+		case "none":
+			for (int i = 0; i < percentiles.length; i++) {
+				percentiles[i] = beta;
+			}
+			return percentiles;
+		case "normal":
+			// mean, standard deviation
+			distribution = new NormalDistribution(beta, p1);
+			break;
+		case "weibull":
+			// shape, scale (parameters are flipped to match order from desktop version)
+			distribution = new WeibullDistribution(p2, p1);
+			break;
+		case "lognormal":
+			// scale, shape
+			distribution = new LogNormalDistribution(p1, p2);
+			break;
+		case "triangular":
+			// lower, mode, upper
+			distribution = new TriangularDistribution(p1, beta, p2);
+			break;
+		case "exponential":
+			// mean
+			distribution = new ExponentialDistribution(p1);
+			break;
+		case "uniform":
+			// lower, upper
+			distribution = new UniformRealDistribution(p1, p2);
+			break;
+		case "gamma":
+			// shape, scale
+			distribution = new GammaDistribution(p1, p2);
+			break;
+		case "logistic":
+			// mean, scale
+			distribution = new LogisticDistribution(p1, p2);
+			break;
+		case "beta":
+			// alpha, beta
+			distribution = new BetaDistribution(p1, p2);
+			break;
+		case "pareto":
+			// scale, shape
+			distribution = new ParetoDistribution(p1, p2);
+			break;
+		case "cauchy":
+			// median, width
+			distribution = new CauchyDistribution(p1, p2);
+			break;
+		default:
+			// TODO: Report error back to user? 
+			return null;
+		}
+
+		double step = 100.0 / percentiles.length;
+		for (int i = 0; i < percentiles.length; i++) {
+			double p = (step / 2) + (step)*i;
+			percentiles[i] = distribution.inverseCumulativeProbability(p / 100.0);
 		}
 		
-		Arrays.sort(samples);
-		return samples;
+		return percentiles;
 	}
 
 }

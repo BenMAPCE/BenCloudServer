@@ -28,6 +28,9 @@
     * Run the following commands to create and load the benmap database:
         * createdb -T template0 -h localhost -p 5432 -U benmap_system -W benmap
         * psql -d benmap -h localhost -p 5432 -U benmap_system -W -f bencloud-20220630.sql
+    * Apply the necessary patches to the database by running:
+        * psql -d benmap -h localhost -p 5432 -U benmap_system -W -f db/patch-[PATCH NUMBER].sql
+
 
 3. Install [Java Corretto 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
 4. Install [gradle](https://gradle.org/install/)

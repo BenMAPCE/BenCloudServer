@@ -52,6 +52,19 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		/*
+		 * GET grid definitions and their row and col counts
+		 */
+		service.get(apiPrefix + "/grid-definitions-info", (request, response) -> {
+			return GridDefinitionApi.getAllGridDefinitionsInfo(request, response, getUserProfile(request, response));
+		});
+		
+		/**
+		 * GET grid definition table info- row, col, and geometry
+		 */
+		service.get(apiPrefix + "/grid-definitions/:id/contents", (request, response) -> {
+			return GridDefinitionApi.getGridGeometries(request, response, getUserProfile(request, response));
+		});
+		/*
 		 * GET array of all pollutant definitions
 		 */
 		service.get(apiPrefix + "/pollutants", (request, response) -> {
@@ -186,6 +199,27 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
 
+		
+		/*
+		 * GET array of exposure function groups
+		 * PARAMETERS:
+		 *  
+		 *  Response will include array of function ids within each group
+		 */	
+		service.get(apiPrefix + "/exposure-function-groups", (request, response) -> {
+			return ExposureApi.getAllExposureGroups(request, response, getUserProfile(request, response));
+		});
+		
+		/*
+		 * GET selected exposure function groups
+		 * PARAMETERS:
+		 *  
+		 *  Response will include a list of function groups with details of each function
+		 */	
+		service.get(apiPrefix + "/exposure-function-groups/:ids", (request, response) -> {
+			return ExposureApi.getSelectedExposureGroups(request, response, getUserProfile(request, response));
+		});
+		
 		/*
 		 * GET a partially populated batch task config
 
@@ -209,17 +243,48 @@ public class ApiRoutes extends RoutesBase {
 			return b;
 		}, objectMapper::writeValueAsString);
 
-		service.get(apiPrefix + "/batch-task-config-example", (request, response) -> {
-			Object b = TaskApi.getBatchTaskConfigExample(request, response, getUserProfile(request, response));
+		service.get(apiPrefix + "/batch-task-config-example-hif", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfigExampleHIF(request, response, getUserProfile(request, response));
+			response.type("application/json");
+			return b;
+		}, objectMapper::writeValueAsString);
+
+		service.get(apiPrefix + "/batch-task-config-example-exposure", (request, response) -> {
+			Object b = TaskApi.getBatchTaskConfigExampleExposure(request, response, getUserProfile(request, response));
 			response.type("application/json");
 			return b;
 		}, objectMapper::writeValueAsString);
 		
 		/*
-		 * GET a list of incidence datasets
+		 * GET a list of incidence datasets including prevalence
+		 * ..Should incidence include prevalence?
 		 */
 		service.get(apiPrefix + "/incidence", (request, response) -> {
-			return IncidenceApi.getAllIncidenceDatasets(response, getUserProfile(request, response));
+			return IncidenceApi.getAllIncidencePrevalenceDatasets(response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST an incidence dataset
+		 */
+		service.post(apiPrefix + "/incidence-data", (request, response) -> {
+			return IncidenceApi.postIncidenceData(request, response, getUserProfile(request, response));
+		});
+
+			/*
+		 * DELETE a single incidence dataset definition
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/incidence/:id", (request, response) -> {
+
+			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
+
+		});
+		/*
+		 * GET all the contents of an incidence dataset
+		 */
+		service.get(apiPrefix + "/incidence/:id/contents", (request, response) -> {
+			return IncidenceApi.getIncidenceDatasetDetails(request, response, getUserProfile(request, response));
 		});
 		
 		/*
@@ -354,10 +419,68 @@ public class ApiRoutes extends RoutesBase {
 			return null;
 		});
 		
+		/*
+		 * GET exposure function results from an analysis
+		 * PARAMETERS:
+		 *  :id (exposure function results dataset id or task UUID)
+		 *  gridId= (aggregate the results to another grid definition)
+		 *  efId= (filter results to those from one or more functions via comma delimited list)
+		 *  page=
+		 *  rowsPerPage=
+		 *  sortBy=
+		 *  descending=
+		 *  filter=
+		 *  
+		 *  application/json response
+		 */	
+		service.get(apiPrefix + "/exposure-result-datasets/:id/contents", (request, response) -> {
+			//TODO: Implement a new version of this that supports filtering, etc
+			ExposureApi.getExposureResultContents(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
+		/*
+		 * GET exposure function results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (exposure results dataset id or task UUID)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.get(apiPrefix + "/exposure-result-datasets/:id/export", (request, response) -> {
+			//TODO: Implement a new version of this that supports filtering, etc
+			ExposureApi.getExposureResultExport(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
 		service.delete(apiPrefix + "/tasks/:uuid", (request, response) -> {
 			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
 
 		});
+		
+		/*
+		 * Cancel a pending task
+		 */
+		service.put(apiPrefix + "/tasks/:uuid", (request, response) -> {
+			return ApiUtil.cancelTaskAndResults(request, response, getUserProfile(request, response));
+		});
+		
+		/*
+		 * Cancel a pending batch task
+		 */
+		service.put(apiPrefix + "/batch-tasks/:id", (request, response) -> {
+			return ApiUtil.cancelBatchTaskAndResults(request, response, getUserProfile(request, response));
+		});
+
 
 		/*
 		 * Accepts a BatchTaskConfig object in json format
@@ -370,21 +493,47 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		service.delete(apiPrefix + "/batch-tasks/:id", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
+			return ApiUtil.deleteBatchTaskResults(request, response, getUserProfile(request, response));
 
 		});
 
 		service.get(apiPrefix + "/batch-tasks/pending", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
+			ObjectNode data = TaskQueue.getPendingBatchTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
+            return data;
+        });
+        
+        service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
+            ObjectNode data = TaskComplete.getCompletedBatchTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
+			response.type("application/json");
+			return data;
 		});
 		
-		service.get(apiPrefix + "/batch-tasks/completed", (request, response) -> {
-			//TODO: Implement this
-			return CoreApi.getErrorResponseUnimplemented(request, response);
-		});
+		service.get(apiPrefix + "/batch-tasks/:id/scenarios", (request, response) -> {
+            ObjectNode data = TaskApi.getBatchTaskScenarios(request, response, getUserProfile(request, response));
+            response.type("application/json");
+            return data;
+        });
 		
+		/*
+		 * GET results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (batch task id)
+		 *  includeHealthImpact (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeValuation (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeExposure (boolean accepts values true/false and 1/0, default to 0)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.get(apiPrefix + "/batch-tasks/:id/export", (request, response) -> {
+			TaskApi.getResultExport(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
 		
 		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
 			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));

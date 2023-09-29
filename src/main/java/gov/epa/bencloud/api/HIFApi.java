@@ -160,7 +160,9 @@ public class HIFApi {
 				hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
 				hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
 				hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
-				hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES)
+				hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES),
+				DSL.val(null, String.class).as("formatted_results_2sf"),
+				DSL.val(null, String.class).as("formatted_results_3sf")
 				)
 				.from(hifResultRecords)
 				.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
@@ -198,6 +200,13 @@ public class HIFApi {
 					res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 				}
 				
+			}
+
+			for (Record res : hifRecords) {
+				res.setValue(DSL.field("formatted_results_2sf", String.class), 
+								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
+				res.setValue(DSL.field("formatted_results_3sf", String.class), 
+								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
 			}
 		
 			//TODO: Can we remove percentiles?
@@ -329,7 +338,9 @@ public class HIFApi {
 						hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
 						hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
 						hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
-						HIFApi.getBaselineGridForHifResults(id) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+						HIFApi.getBaselineGridForHifResults(id) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES), //Only include percentiles if we're aggregating
+						DSL.val(null, String.class).as("formatted_results_2sf"),
+						DSL.val(null, String.class).as("formatted_results_3sf")
 						)
 						.from(hifResultRecords)
 						.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
@@ -363,8 +374,16 @@ public class HIFApi {
 						res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 					}
 				}
+
+				for (Record res : hifRecords) {
+					res.setValue(DSL.field("formatted_results_2sf", String.class), 
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
+					res.setValue(DSL.field("formatted_results_3sf", String.class), 
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
+				}
+
 				//Remove percentiles by keeping all other fields
-				hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
+				hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,29,30));
 			} catch(DataAccessException e) {
 				e.printStackTrace();
 				response.status(400);

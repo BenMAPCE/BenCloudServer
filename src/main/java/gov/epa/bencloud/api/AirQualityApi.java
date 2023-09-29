@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.servlet.MultipartConfigElement;
+
+import org.apache.commons.io.input.BOMInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
@@ -43,7 +45,6 @@ import org.jooq.SortOrder;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
-import org.jooq.tools.csv.CSVReader;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.opencsv.CSVReader;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.AirQualityCell;
@@ -622,44 +624,63 @@ public class AirQualityApi {
 				.fetchOne(DSL.count());
 
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
-
-		Result<Record6<Integer, Integer, String, String, String, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(
-						AIR_QUALITY_CELL.GRID_COL,
-						AIR_QUALITY_CELL.GRID_ROW,
-						POLLUTANT_METRIC.NAME.as("metric"),
-						SEASONAL_METRIC.NAME.as("seasonal_metric"),
-						STATISTIC_TYPE.NAME.as("annual_statistic"),
-						AIR_QUALITY_CELL.VALUE
-						)
-				.from(AIR_QUALITY_CELL)
-				.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
-				.leftJoin(POLLUTANT_METRIC).on(AIR_QUALITY_CELL.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-				.leftJoin(SEASONAL_METRIC).on(AIR_QUALITY_CELL.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-				.leftJoin(STATISTIC_TYPE).on(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID.eq(STATISTIC_TYPE.ID))
-				.where(filterCondition)
-				.orderBy(orderFields)
-				.offset((page * rowsPerPage) - rowsPerPage)
-				.limit(rowsPerPage)
-				.fetch();
+		Result<Record6<Integer, Integer, String, String, String, Double>> aqRecords;
 		
-		Record1<String> layerInfo = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(AIR_QUALITY_LAYER.NAME)
-				.from(AIR_QUALITY_LAYER)
-				.where(AIR_QUALITY_LAYER.ID.eq(id))
-				.fetchOne();
-
-		if(request.headers("Accept").equalsIgnoreCase("text/csv")) {
+		if(request.headers("Accept").equalsIgnoreCase("text/csv")) {			
+			//for export (csv)
+			aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+					.select(
+							AIR_QUALITY_CELL.GRID_COL.as("Column"),
+							AIR_QUALITY_CELL.GRID_ROW.as("Row"),
+							POLLUTANT_METRIC.NAME.as("Metric"),
+							SEASONAL_METRIC.NAME.as("Seasonal Metric"),
+							STATISTIC_TYPE.NAME.as("Annual Metric"),
+							AIR_QUALITY_CELL.VALUE.as("Value")
+							)
+					.from(AIR_QUALITY_CELL)
+					.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
+					.leftJoin(POLLUTANT_METRIC).on(AIR_QUALITY_CELL.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+					.leftJoin(SEASONAL_METRIC).on(AIR_QUALITY_CELL.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+					.leftJoin(STATISTIC_TYPE).on(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID.eq(STATISTIC_TYPE.ID))
+					.where(filterCondition)
+					.orderBy(orderFields)
+					.offset((page * rowsPerPage) - rowsPerPage)
+					.limit(rowsPerPage)
+					.fetch();
+			
+			Record1<String> layerInfo = DSL.using(JooqUtil.getJooqConfiguration())
+					.select(AIR_QUALITY_LAYER.NAME)
+					.from(AIR_QUALITY_LAYER)
+					.where(AIR_QUALITY_LAYER.ID.eq(id))
+					.fetchOne();
 			String fileName = createFilename(layerInfo.get(AIR_QUALITY_LAYER.NAME));
 			response.type("text/csv");
 			response.header("Content-Disposition", "attachment; filename="+ fileName);
 			response.header("Access-Control-Expose-Headers", "Content-Disposition");
 						
 			return aqRecords.formatCSV();
-		} else {
-
-			//System.out.println("aqRecords: " + aqRecords.size());
-
+		}
+		else {
+			//for table (json)
+			aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+					.select(
+							AIR_QUALITY_CELL.GRID_COL,
+							AIR_QUALITY_CELL.GRID_ROW,
+							POLLUTANT_METRIC.NAME.as("metric"),
+							SEASONAL_METRIC.NAME.as("seasonal_metric"),
+							STATISTIC_TYPE.NAME.as("annual_statistic"),
+							AIR_QUALITY_CELL.VALUE
+							)
+					.from(AIR_QUALITY_CELL)
+					.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(AIR_QUALITY_LAYER.ID))
+					.leftJoin(POLLUTANT_METRIC).on(AIR_QUALITY_CELL.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+					.leftJoin(SEASONAL_METRIC).on(AIR_QUALITY_CELL.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+					.leftJoin(STATISTIC_TYPE).on(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID.eq(STATISTIC_TYPE.ID))
+					.where(filterCondition)
+					.orderBy(orderFields)
+					.offset((page * rowsPerPage) - rowsPerPage)
+					.limit(rowsPerPage)
+					.fetch();
 			ObjectMapper mapper = new ObjectMapper();
 			ObjectNode data = mapper.createObjectNode();
 			
@@ -681,7 +702,7 @@ public class AirQualityApi {
 
 			response.type("application/json");
 			return data;
-		}
+		}		
 	}
 
 	/**
@@ -839,8 +860,8 @@ public class AirQualityApi {
 		Map<String, Integer> statisticIdLookup = new HashMap<>();
 		
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
-			
-			CSVReader csvReader = new CSVReader (new InputStreamReader(is));				
+			BOMInputStream bis = new BOMInputStream(is, false);
+			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
 
 			String[] record;
 			
@@ -848,6 +869,7 @@ public class AirQualityApi {
 			// Read the header
 			// allow either "column" or "col"; "values" or "value"
 			// todo: warn or abort when both "column" and "col" exist.
+			
 			record = csvReader.readNext();
 			for(int i=0; i < record.length; i++) {
 				switch(record[i].toLowerCase().replace(" ", "")) {

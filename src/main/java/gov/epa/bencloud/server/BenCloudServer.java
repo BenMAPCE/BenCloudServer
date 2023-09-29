@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.mariuszgromada.math.mxparser.License;
 import org.pac4j.core.config.Config;
 import org.pac4j.core.context.HttpConstants;
 import org.pac4j.sparkjava.SecurityFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.epa.bencloud.api.CrosswalksApi;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.jobs.JobsUtil;
 import gov.epa.bencloud.server.routes.ApiRoutes;
@@ -56,7 +58,8 @@ public class BenCloudServer {
 			log.error("Unable to set application path", e1);
 		}
 		
-
+		License.iConfirmNonCommercialUse("US EPA");
+		
 		Service benCloudService = Service.ignite()
 				.port(Integer.parseInt(ApplicationUtil.getProperty("server.port")))
 				.threadPool(20);
@@ -116,6 +119,8 @@ public class BenCloudServer {
 			System.exit(-1);
 		}
 		
+		// CrosswalksApi.calculateAreaWeights(18, 28);
+
 		new ApiRoutes(benCloudService);
 		
 		JobsUtil.startJobScheduler();

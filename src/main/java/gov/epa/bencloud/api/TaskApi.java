@@ -10,42 +10,70 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.servlet.MultipartConfigElement;
 
 import spark.Request;
 import spark.Response;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record17;
+import org.jooq.Record19;
+import org.jooq.Record22;
 import org.jooq.Result;
+import org.jooq.Table;
+import org.jooq.exception.DataAccessException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.util.RawValue;
 
 import gov.epa.bencloud.api.model.BatchTaskConfig;
+import gov.epa.bencloud.api.model.ExposureConfig;
+import gov.epa.bencloud.api.model.ExposureTaskConfig;
+import gov.epa.bencloud.api.model.ExposureTaskLog;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
+import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.api.util.ExposureUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopConfig;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
@@ -57,7 +85,9 @@ import gov.epa.bencloud.api.model.ScenarioHIFConfig;
 import gov.epa.bencloud.api.model.ScenarioPopConfig;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
+import gov.epa.bencloud.api.model.ValuationTaskLog;
 import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.api.model.BatchExposureGroup;
 import gov.epa.bencloud.api.model.BatchHIFGroup;
 
 
@@ -278,15 +308,25 @@ public class TaskApi {
 		String scenariosParam;
 		List<Scenario> scenarios = new ArrayList<Scenario>();
 		String hifGroupParam;
-		List<Integer> hifGroupList;
+		List<Integer> hifGroupList = new ArrayList<Integer>();
+		String efGroupParam;
+		List<Integer> efGroupList = new ArrayList<Integer>();
 
 		//boolean userPrefered; //If true, BenMAP will use the incidence/prevalence selected by the user even when there is another dataset which matches the demo groups better.
 		Boolean preserveLegacyBehavior = true;
 
 		try{
 			// HIF group ids passed as a comma-separated list of integers
-			hifGroupParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("groupIds"), "").replace(" ", "");
-			hifGroupList = Stream.of(hifGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			hifGroupParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifGroupIds"), "").replace(" ", "");
+			if(!hifGroupParam.equals("")) {
+				hifGroupList = Stream.of(hifGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			}
+
+			// EF group ids passed as a comma-separated list of integers
+			efGroupParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("efGroupIds"), "").replace(" ", "");
+			if(!efGroupParam.equals("")) {
+				efGroupList = Stream.of(efGroupParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+			}
 
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
@@ -327,7 +367,11 @@ public class TaskApi {
 			for(int i = 0; i < hifGroupList.size(); i++) {
 				BatchHIFGroup tempHifGroup = new BatchHIFGroup();
 				tempHifGroup.id = hifGroupList.get(i);
-				
+			}
+
+			for(int i = 0; i < efGroupList.size(); i++) {
+				BatchExposureGroup tempExposureGroup = new BatchExposureGroup();
+				tempExposureGroup.id = efGroupList.get(i);
 			}
 
 
@@ -412,6 +456,63 @@ public class TaskApi {
 			e.printStackTrace();
 			return CoreApi.getErrorResponse(request, response, 400, "Unable to build response"); 
 		}
+
+		Result<Record> exposureGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(EXPOSURE_FUNCTION_GROUP.NAME
+						, EXPOSURE_FUNCTION_GROUP.ID.as("groupId")
+						, EXPOSURE_FUNCTION_GROUP.HELP_TEXT
+						, EXPOSURE_FUNCTION.asterisk()
+						, RACE.NAME.as("race_name")
+						, GENDER.NAME.as("gender_name")
+						, ETHNICITY.NAME.as("ethnicity_name")
+						)
+				.from(EXPOSURE_FUNCTION_GROUP)
+				.join(EXPOSURE_FUNCTION_GROUP_MEMBER).on(EXPOSURE_FUNCTION_GROUP.ID.eq(EXPOSURE_FUNCTION_GROUP_MEMBER.EXPOSURE_FUNCTION_GROUP_ID))
+				.join(EXPOSURE_FUNCTION).on(EXPOSURE_FUNCTION_GROUP_MEMBER.EXPOSURE_FUNCTION_ID.eq(EXPOSURE_FUNCTION.ID))
+				.join(RACE).on(EXPOSURE_FUNCTION.RACE_ID.eq(RACE.ID))
+				.join(GENDER).on(EXPOSURE_FUNCTION.GENDER_ID.eq(GENDER.ID))
+				.join(ETHNICITY).on(EXPOSURE_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
+				.where(EXPOSURE_FUNCTION_GROUP.ID.in(efGroupList))
+				.orderBy(EXPOSURE_FUNCTION_GROUP.NAME)
+				.fetch();
+
+		Integer efInstanceId = 1;
+		
+		BatchExposureGroup batchExposureGroup = null;
+		currentGroupId = -1;
+
+		try {
+			for(Record r : exposureGroupRecords) {
+				if(currentGroupId != r.getValue(EXPOSURE_FUNCTION_GROUP.ID.as("groupId"))) {
+					currentGroupId = r.getValue(EXPOSURE_FUNCTION_GROUP.ID.as("groupId"));
+					
+					batchExposureGroup = new BatchExposureGroup();
+					batchExposureGroup.id = currentGroupId;
+					batchExposureGroup.name = r.getValue(EXPOSURE_FUNCTION_GROUP.NAME);
+					//batchExposureGroup.helpText = r.getValue(EXPOSURE_FUNCTION_GROUP.HELP_TEXT);
+					b.batchExposureGroups.add(batchExposureGroup);
+				}
+				
+				ExposureConfig efConfig = new ExposureConfig();
+				efConfig.efInstanceId = efInstanceId++;
+				efConfig.efId = r.getValue(EXPOSURE_FUNCTION.ID);		
+				efConfig.efRecord = r.intoMap();
+				
+				//for each scenario and popyear, add this function instance with the appropriate incidence data
+				for(Scenario scenario : scenarios) {
+					for(ScenarioPopConfig popConfig : scenario.popConfigs) {
+						ScenarioHIFConfig scenarioHIFConfig = new ScenarioHIFConfig();
+						scenarioHIFConfig.hifInstanceId = efConfig.efInstanceId;
+						popConfig.scenarioHifConfigs.add(scenarioHIFConfig);
+					}
+				}
+				batchExposureGroup.exposureConfigs.add(efConfig);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponse(request, response, 400, "Unable to build response"); 
+		}
+
 		b.gridDefinitionId = gridDefinitionId;
 		b.pollutantId = pollutantId;
 		b.pollutantName = PollutantApi.getPollutantName(pollutantId);
@@ -437,28 +538,23 @@ public class TaskApi {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseBadRequest(request, response);
 		}
-		
-		// TODO: We have successfully parsed the object. Now, we need to validate the contents.
-//		if(CoreApi.isValidTaskType(task.getType()) == false) {
-//			return CoreApi.getErrorResponseBadRequest(request, response);
-//		}
 
-		// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
-//		int taskCount = TaskApi.getTotalTaskCountForUser(userProfile.get());			
-//		int maxTasks = 20;
-//		
-//		String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
-//		
-//		try {
-//			maxTasks = Integer.parseInt(sMaxTaskPerUser);
-//		} catch(NumberFormatException e) {
-//			//If this is no set in the properties, we will use the default of 20.
-//		}
-//				
-//		if(maxTasks != 0 && taskCount >= maxTasks) {
-//			return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + maxTasks + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
-//		}
-//	
+		// As an interim protection against overloading the system, users can only have a maximum of 40 pending or completed tasks total
+		int taskCount = TaskApi.getTotalTaskCountForUser(userProfile.get());			
+		int maxTasks = 40;
+		
+		String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
+		
+		try {
+			maxTasks = Integer.parseInt(sMaxTaskPerUser);
+		} catch(NumberFormatException e) {
+			//If this is not set in the properties, we will use the default.
+		}
+				
+		if(maxTasks != 0 && taskCount >= maxTasks) {
+			return CoreApi.getSuccessResponse(request, response, 200, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks. You can save the current configuration as a template and return to it later.");
+		}
+	
 		
 		String batchParameters;
 		try {
@@ -481,108 +577,293 @@ public class TaskApi {
 		.fetchOne();
 		Integer batchTaskId = rec.getId();
 		
-		//Create a HIFTaskConfig and ValuationTaskConfig templates for the task parameters
-		HIFTaskConfig hifTaskConfig = new HIFTaskConfig();
-		hifTaskConfig.aqBaselineId = batchTaskConfig.aqBaselineId;
-		hifTaskConfig.popId = batchTaskConfig.popId;
-		
-		ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig();
-		valuationTaskConfig.gridDefinitionId = batchTaskConfig.gridDefinitionId;
-		valuationTaskConfig.useGrowthFactors = true;
-		valuationTaskConfig.useInflationFactors = true;
-		valuationTaskConfig.variableDatasetId = 1;
-		
-		//Combine all the selected HIFs into a big, flat list for processing
-		for (BatchHIFGroup hifGroup : batchTaskConfig.batchHifGroups) {
-			for (HIFConfig hifConfig : hifGroup.hifs) {
-				hifTaskConfig.hifs.add(hifConfig);
-				for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
-					valuationTaskConfig.valuationFunctions.add(valuationConfig);					
+		if(batchTaskConfig.batchHifGroups.size() > 0) {
+			//Create hif and valuation tasks
+			//Create a HIFTaskConfig and ValuationTaskConfig templates for the task parameters
+			HIFTaskConfig hifTaskConfig = new HIFTaskConfig();
+			hifTaskConfig.aqBaselineId = batchTaskConfig.aqBaselineId;
+			hifTaskConfig.popId = batchTaskConfig.popId;
+			
+			ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig();
+			valuationTaskConfig.gridDefinitionId = batchTaskConfig.gridDefinitionId;
+			valuationTaskConfig.useGrowthFactors = true;
+			valuationTaskConfig.useInflationFactors = true;
+			valuationTaskConfig.variableDatasetId = 1;
+			
+			//Combine all the selected HIFs into a big, flat list for processing
+			for (BatchHIFGroup hifGroup : batchTaskConfig.batchHifGroups) {
+				for (HIFConfig hifConfig : hifGroup.hifs) {
+					hifTaskConfig.hifs.add(hifConfig);
+					for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
+						valuationTaskConfig.valuationFunctions.add(valuationConfig);					
+					}
 				}
 			}
-		}
-		
-		boolean hasValuation = valuationTaskConfig.valuationFunctions.size() > 0;
-		
-		// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
-		for (Scenario scenario : batchTaskConfig.aqScenarios) {
-			hifTaskConfig.aqScenarioId = scenario.id;
-			for (ScenarioPopConfig popScenario : scenario.popConfigs) {
-				hifTaskConfig.popYear = popScenario.popYear;
-				hifTaskConfig.name = batchTaskConfig.name + "-" + scenario.name + "-" + popScenario.popYear; // TODO:Figure out nicer name
-				for (ScenarioHIFConfig hifScenario : popScenario.scenarioHifConfigs) {
-					// TODO: Find a more efficient way of doing this?
-					for (HIFConfig hifConfig : hifTaskConfig.hifs) {
-						if (hifConfig.hifInstanceId.equals(hifScenario.hifInstanceId)) {
-							hifConfig.incidenceYear = hifScenario.incidenceYear;
-							hifConfig.prevalenceYear = hifScenario.prevalenceYear;
-							
-							//TODO: Only override here if needed
-						    if(hifConfig.startAge == null) {
-						    	hifConfig.startAge = (Integer) hifConfig.hifRecord.get("start_age"); 
-						    }
-						    if(hifConfig.endAge == null) {
-						    	hifConfig.endAge = (Integer) hifConfig.hifRecord.get("end_age");  
-						    }
-						    if(hifConfig.race == null) {
-						    	hifConfig.race = (Integer) hifConfig.hifRecord.get("race_id"); 
-						    	hifConfig.incidenceRace = hifConfig.race;
-						    	hifConfig.prevalenceRace = hifConfig.race;
-						    }
-						    if(hifConfig.ethnicity == null) {
-						    	hifConfig.ethnicity = (Integer) hifConfig.hifRecord.get("ethnicity_id");
-						    	hifConfig.incidenceEthnicity = hifConfig.ethnicity;
-						    	hifConfig.prevalenceEthnicity = hifConfig.ethnicity;
-						    }
-						    if(hifConfig.gender == null) {
-						    	hifConfig.gender = (Integer) hifConfig.hifRecord.get("gender_id");
-						    	hifConfig.incidenceGender = hifConfig.gender;
-						    	hifConfig.prevalenceGender = hifConfig.gender;
-						    }
-							
-							break;
+			
+			boolean hasValuation = valuationTaskConfig.valuationFunctions.size() > 0;
+			
+			// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
+			for (Scenario scenario : batchTaskConfig.aqScenarios) {
+				hifTaskConfig.aqScenarioId = scenario.id;
+				for (ScenarioPopConfig popScenario : scenario.popConfigs) {
+					hifTaskConfig.popYear = popScenario.popYear;
+					hifTaskConfig.name = batchTaskConfig.name + "-" + scenario.name + "-" + popScenario.popYear; // TODO:Figure out nicer name
+					for (ScenarioHIFConfig hifScenario : popScenario.scenarioHifConfigs) {
+						// TODO: Find a more efficient way of doing this?
+						for (HIFConfig hifConfig : hifTaskConfig.hifs) {
+							if (hifConfig.hifInstanceId.equals(hifScenario.hifInstanceId)) {
+								hifConfig.incidenceYear = hifScenario.incidenceYear;
+								hifConfig.prevalenceYear = hifScenario.prevalenceYear;
+								
+								//TODO: Only override here if needed
+							    if(hifConfig.startAge == null) {
+							    	hifConfig.startAge = (Integer) hifConfig.hifRecord.get("start_age"); 
+							    }
+							    if(hifConfig.endAge == null) {
+							    	hifConfig.endAge = (Integer) hifConfig.hifRecord.get("end_age");  
+							    }
+							    if(hifConfig.race == null) {
+							    	hifConfig.race = (Integer) hifConfig.hifRecord.get("race_id"); 
+							    	hifConfig.incidenceRace = hifConfig.race;
+							    	hifConfig.prevalenceRace = hifConfig.race;
+							    }
+							    if(hifConfig.ethnicity == null) {
+							    	hifConfig.ethnicity = (Integer) hifConfig.hifRecord.get("ethnicity_id");
+							    	hifConfig.incidenceEthnicity = hifConfig.ethnicity;
+							    	hifConfig.prevalenceEthnicity = hifConfig.ethnicity;
+							    }
+							    if(hifConfig.gender == null) {
+							    	hifConfig.gender = (Integer) hifConfig.hifRecord.get("gender_id");
+							    	hifConfig.incidenceGender = hifConfig.gender;
+							    	hifConfig.prevalenceGender = hifConfig.gender;
+							    }
+								
+								break;
+							}
 						}
 					}
-				}
 
-				try {
-					Task hifTask = new Task();
-					hifTask.setUserIdentifier(userProfile.get().getId());
-					hifTask.setType("HIF");
-					hifTask.setBatchId(batchTaskId);
-					hifTask.setName(hifTaskConfig.name);
-					hifTask.setParameters(objectMapper.writeValueAsString(hifTaskConfig));
-					String hifTaskUUID = UUID.randomUUID().toString(); 
-					hifTask.setUuid(hifTaskUUID);
-					TaskQueue.writeTaskToQueue(hifTask);
-					
-					//Only add the valuation task if there are valuation functions to run
-					if(hasValuation) {
-						valuationTaskConfig.hifTaskUuid = hifTaskUUID;
-	
-						Task valuationTask = new Task();
-						valuationTask.setUserIdentifier(userProfile.get().getId());
-						valuationTask.setType("Valuation");
-						valuationTask.setBatchId(batchTaskId);
-						valuationTask.setName(hifTaskConfig.name + "-Valuation");
-						valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
-						valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
-						String valuationTaskUUID = UUID.randomUUID().toString(); 
-						valuationTask.setUuid(valuationTaskUUID);
-						TaskQueue.writeTaskToQueue(valuationTask);	
+					try {
+						Task hifTask = new Task();
+						hifTask.setUserIdentifier(userProfile.get().getId());
+						hifTask.setType("HIF");
+						hifTask.setBatchId(batchTaskId);
+						hifTask.setName(hifTaskConfig.name);
+						hifTask.setParameters(objectMapper.writeValueAsString(hifTaskConfig));
+						String hifTaskUUID = UUID.randomUUID().toString(); 
+						hifTask.setUuid(hifTaskUUID);
+						TaskQueue.writeTaskToQueue(hifTask);
+						
+						//Only add the valuation task if there are valuation functions to run
+						if(hasValuation) {
+							valuationTaskConfig.hifTaskUuid = hifTaskUUID;
+		
+							Task valuationTask = new Task();
+							valuationTask.setUserIdentifier(userProfile.get().getId());
+							valuationTask.setType("Valuation");
+							valuationTask.setBatchId(batchTaskId);
+							valuationTask.setName(hifTaskConfig.name + "-Valuation");
+							valuationTask.setParentUuid(valuationTaskConfig.hifTaskUuid);
+							valuationTask.setParameters(objectMapper.writeValueAsString(valuationTaskConfig));
+							String valuationTaskUUID = UUID.randomUUID().toString(); 
+							valuationTask.setUuid(valuationTaskUUID);
+							TaskQueue.writeTaskToQueue(valuationTask);	
+						}
+						
+					} catch (JsonProcessingException e) {
+						e.printStackTrace();
+						return CoreApi.getErrorResponse(request, response, 400, "Unable to serialize task scenario");
 					}
-					
-				} catch (JsonProcessingException e) {
-					e.printStackTrace();
-					return CoreApi.getErrorResponse(request, response, 400, "Unable to serialize task scenario");
+				}
+			}			
+		} else if(batchTaskConfig.batchExposureGroups.size() > 0) {
+			//Create exposure tasks
+			//Create a HIFTaskConfig and ValuationTaskConfig templates for the task parameters
+			ExposureTaskConfig exposureTaskConfig = new ExposureTaskConfig();
+			exposureTaskConfig.aqBaselineId = batchTaskConfig.aqBaselineId;
+			exposureTaskConfig.popId = batchTaskConfig.popId;
+			
+			
+			//Combine all the selected HIFs into a big, flat list for processing
+			for (BatchExposureGroup exposureGroup : batchTaskConfig.batchExposureGroups) {
+				for (ExposureConfig exposureConfig : exposureGroup.exposureConfigs) {
+					exposureTaskConfig.exposureFunctions.add(exposureConfig);
+				}
+			}
+			
+			// Finally, insert task_queue records (1 per AQ scenario and pop year combo)
+			for (Scenario scenario : batchTaskConfig.aqScenarios) {
+				exposureTaskConfig.aqScenarioId = scenario.id;
+				for (ScenarioPopConfig popScenario : scenario.popConfigs) {
+					exposureTaskConfig.popYear = popScenario.popYear;
+					exposureTaskConfig.name = batchTaskConfig.name + "-" + scenario.name + "-" + popScenario.popYear; // TODO:Figure out nicer name
+
+					try {
+						Task exposureTask = new Task();
+						exposureTask.setUserIdentifier(userProfile.get().getId());
+						exposureTask.setType("Exposure");
+						exposureTask.setBatchId(batchTaskId);
+						exposureTask.setName(exposureTaskConfig.name);
+						exposureTask.setParameters(objectMapper.writeValueAsString(exposureTaskConfig));
+						String hifTaskUUID = UUID.randomUUID().toString(); 
+						exposureTask.setUuid(hifTaskUUID);
+						TaskQueue.writeTaskToQueue(exposureTask);
+						
+					} catch (JsonProcessingException e) {
+						e.printStackTrace();
+						return CoreApi.getErrorResponse(request, response, 400, "Unable to serialize task scenario");
+					}
 				}
 			}
 		}
+
 	
 		return CoreApi.getSuccessResponse(request, response, 200, "Task was submitted");
 	}
 
 
+	public static ObjectNode getBatchTaskScenarios(Request request, Response response, Optional<UserProfile> userProfile) {	
+		String userId = userProfile.get().getId();
+		boolean showAll;
+		int batchTaskId;
+
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode data = mapper.createObjectNode();
+
+		ArrayNode tasks = mapper.createArrayNode();
+		ObjectNode task = mapper.createObjectNode();
+
+		ArrayNode scenarios = mapper.createArrayNode();
+		ObjectNode scenario = mapper.createObjectNode();
+		List<Integer> scenarioIdList = new ArrayList<Integer>();
+
+
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+		batchTaskId = Integer.valueOf(request.params("id"));
+
+			try {
+				LocalDateTime now = LocalDateTime.now();
+				try {
+					Condition batchFilterCondition = DSL.trueCondition();
+					
+					batchFilterCondition = batchFilterCondition.and(TASK_BATCH.ID.eq(batchTaskId));
+
+					// Skip the following for an admin user that wants to see all data
+					if(!showAll || !CoreApi.isAdmin(userProfile)) {
+						batchFilterCondition = batchFilterCondition.and(TASK_BATCH.USER_ID.eq(userId));
+					}
+
+					Result<Record> batchResult = DSL.using(JooqUtil.getJooqConfiguration()).select()
+						.from(TASK_BATCH)
+						.where(batchFilterCondition) 
+						.orderBy(TASK_BATCH.ID.asc())
+						.fetch();
+
+					for(Record batchRecord : batchResult) {
+						tasks = mapper.createArrayNode();
+						data.put("batch_task_name", batchRecord.getValue(TASK_BATCH.NAME));
+						data.put("batch_task_id", batchRecord.getValue(TASK_BATCH.ID));
+						data.put("batch_task_user_id", batchRecord.getValue(TASK_BATCH.USER_ID));
+						JSON batchParams = batchRecord.getValue(TASK_BATCH.PARAMETERS, JSON.class);
+						ObjectMapper batchMapper = new ObjectMapper();
+						JsonNode batchParamsNode = batchMapper.readTree(batchParams.data());
+						data.put("aq_baseline_id", batchParamsNode.get("aqBaselineId").asText());
+						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
+						data.put("aq_baseline_name", aqBaselineName);
+						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
+
+
+						Condition filterCondition = DSL.trueCondition();
+						filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(batchTaskId));
+						Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select()
+							.from(TASK_COMPLETE)
+							.where(filterCondition) 
+							.orderBy(TASK_COMPLETE.TASK_STARTED_DATE.asc())
+							.fetch();
+
+						for (Record record : result) {
+
+							task = mapper.createObjectNode();
+
+							task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
+							task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
+							task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
+							task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
+							
+
+							JsonNode json = null;
+		
+							try {
+								json = objectMapper.readTree(record.getValue(TASK_COMPLETE.TASK_PARAMETERS));
+							} catch (JsonMappingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+								response.status(400);
+								return null;
+							} catch (JsonProcessingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+								response.status(400);
+								return null;
+							} 
+							
+							if(record.getValue(TASK_COMPLETE.TASK_TYPE).equals("HIF") || record.getValue(TASK_COMPLETE.TASK_TYPE).equals("Exposure")) {
+								String aqScenarioId;
+								String popYear;
+								String aqScenarioName;
+								try {
+									aqScenarioId = json.get("aqScenarioId").asText();
+									aqScenarioName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(aqScenarioId));
+									task.put("aq_scenario_name", aqScenarioName);
+									popYear = json.get("popYear").asText();
+									task.put("pop_year", popYear);
+									scenarioIdList.add(json.get("aqScenarioId").asInt());
+								} catch (NullPointerException e) {
+									e.printStackTrace();
+									response.status(400);
+									return null;
+								}
+							} else if (record.getValue(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+								task.put("task_parent_uuid", record.getValue(TASK_COMPLETE.TASK_PARENT_UUID));
+							}
+							
+							tasks.add(task);
+						}
+					}
+
+					Result<Record> scenarioRecords = DSL.using(JooqUtil.getJooqConfiguration()).select()
+						.from(AIR_QUALITY_LAYER)
+						.where(AIR_QUALITY_LAYER.ID.in(scenarioIdList)) 
+						.orderBy(AIR_QUALITY_LAYER.ID.asc())
+						.fetch();
+
+					scenarios = mapper.createArrayNode();
+					for(Record scenarioRecord : scenarioRecords) {
+						scenario = mapper.createObjectNode();
+						scenario.put("scenario_id", scenarioRecord.getValue(AIR_QUALITY_LAYER.ID));
+						scenario.put("scenario_name", scenarioRecord.getValue(AIR_QUALITY_LAYER.NAME));
+						scenarios.add(scenario);
+					}
+
+					data.set("tasks", tasks);
+					data.set("scenarios", scenarios);
+					data.put("success", true);
+
+				} catch (DataAccessException e) {
+					data.put("success", false);
+					data.put("error_message", e.getMessage());
+					log.error("Error getting pending tasks", e);
+				} catch (IllegalArgumentException e) {
+					data.put("success", false);
+					data.put("error_message", e.getMessage());
+					log.error("Error getting pending tasks", e);
+				}
+			} catch (Exception e) {
+				log.error("Error getting pending tasks", e);
+			}
+
+		return data;
+	}
 
 	/**
 	 * 
@@ -592,7 +873,7 @@ public class TaskApi {
 	 * @return a fully populated batch task config that can be POSTed to /batch-tasks.
 	 * 
 	 */
-	public static Object getBatchTaskConfigExample(Request request, Response response, Optional<UserProfile> userProfile) {		
+	public static Object getBatchTaskConfigExampleHIF(Request request, Response response, Optional<UserProfile> userProfile) {		
 		BatchTaskConfig b = new BatchTaskConfig();
 		b.name = "Hello World";
 		
@@ -762,4 +1043,533 @@ public class TaskApi {
 		return b;
 	
 	}
+	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a fully populated batch task config that can be POSTed to /batch-tasks.
+	 * 
+	 */
+	public static Object getBatchTaskConfigExampleExposure(Request request, Response response, Optional<UserProfile> userProfile) {		
+		BatchTaskConfig b = new BatchTaskConfig();
+		b.name = "Hello World";
+		
+		b.gridDefinitionId = 18; //County
+		b.aqBaselineId = 15; //PM2.5_Annual_Baseline_12.35_Partial_Attain_PM NAAQS Proposal_2032
+		b.popId = 40;
+		b.pollutantName = "PM2.5";
+		b.pollutantId = 6;
+		
+		b.aqScenarios = new ArrayList<Scenario>();
+		b.batchExposureGroups = new ArrayList<BatchExposureGroup>();
+		
+		BatchExposureGroup batchExposureGroup = new BatchExposureGroup();
+		batchExposureGroup.id = 5;
+		batchExposureGroup.name = "PM NAAQS RIA 2022";
+		//TODO: Add helpText to BatchHIFGroup
+		
+		// Exposure function #1
+		ExposureConfig exposureConfig = new ExposureConfig();
+		exposureConfig.efId = 1;
+		exposureConfig.efInstanceId = 1;
+		exposureConfig.efRecord = ExposureUtil.getFunctionDefinition(exposureConfig.efId).intoMap();
+		
+		batchExposureGroup.exposureConfigs.add(exposureConfig);
+		
+		// Exposure function #2
+		exposureConfig = new ExposureConfig();
+		exposureConfig.efId = 2;
+		exposureConfig.efInstanceId = 2;
+		exposureConfig.efRecord = ExposureUtil.getFunctionDefinition(exposureConfig.efId).intoMap();
+
+		batchExposureGroup.exposureConfigs.add(exposureConfig);
+		
+		b.batchExposureGroups.add(batchExposureGroup);
+		
+		//CREATE THE SCENARIOS
+		
+		// *** AQ SCENARIO #1
+		Scenario aqScenario = new Scenario();
+		aqScenario.id = 24;
+		aqScenario.name = "PM2.5_Annual_Policy_8.35_Partial_Attain_PM NAAQS Proposal_2032";
+
+		ScenarioPopConfig popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2030;		
+		aqScenario.popConfigs.add(popConfig);
+
+		popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2035;		
+		aqScenario.popConfigs.add(popConfig);
+		b.aqScenarios.add(aqScenario);
+		
+		// *** AQ SCENARIO #2
+		aqScenario = new Scenario();
+		aqScenario.id = 22;
+		aqScenario.name = "PM2.5_Annual_Policy_9.35_Partial_Attain_PM NAAQS Proposal_2032";
+
+		popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2030;		
+		aqScenario.popConfigs.add(popConfig);
+
+		popConfig = new ScenarioPopConfig();
+		popConfig.popYear = 2035;
+				
+		aqScenario.popConfigs.add(popConfig);
+		b.aqScenarios.add(aqScenario);
+		
+		return b;
+	
+	}
+
+
+//
+	public static void getResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
+//		 GET results as a zip file from an analysis
+//		 PARAMETERS:
+//		   :id (batch task id)
+//		   includeHealthImpact (boolean, default to false)
+//		   includeValuation (boolean, default to false)
+//		   includeExposure (boolean, default to false)
+//		   gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		
+		Integer batchId;
+		int[] gridIds;
+		Boolean includeHealthImpact = false;
+		Boolean includeValuation = false;
+		Boolean includeExposure = false;
+		try {
+			String idParam = String.valueOf(request.params("id"));
+			batchId = Integer.valueOf(idParam);
+			includeHealthImpact = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeHealthImpact").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
+			includeValuation = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeValuation").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
+			includeExposure = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeExposure").equals("1")?"true":request.raw().getParameter("includeExposure"), false);
+			
+			String gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
+			if(gridIdParam==null || gridIdParam.equals("")){
+				gridIds=null;
+			}else {
+				String[] gridIdParamArr = gridIdParam.split(",");
+				gridIds = new int[gridIdParamArr.length];
+				for (int i = 0; i < gridIdParamArr.length; i++) {
+					gridIds[i] = Integer.parseInt(gridIdParamArr[i]);
+		        }
+			}				
+
+
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return;
+		}
+		
+		BatchTaskConfig batchTaskConfig = getTaskBatchConfigFromDb(batchId);
+		if(batchTaskConfig==null) {
+			response.status(400);
+			return;
+		}
+		
+		// If a gridId wasn't provided, look up the baseline AQ grid grid for this resultset
+		try {
+			if(gridIds == null) {
+				gridIds = new int[] {batchTaskConfig.gridDefinitionId.intValue()};
+			}
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+			response.status(400);
+			return;
+		}
+					
+		//set zip file name
+		String taskBatchFileName = ApplicationUtil.replaceNonValidCharacters(batchTaskConfig.name);
+		StringBuilder batchTaskLog = new StringBuilder(); 
+		
+		response.header("Content-Disposition", "attachment; filename=" + taskBatchFileName + ".zip");
+		response.header("Access-Control-Expose-Headers", "Content-Disposition");
+		response.type("application/zip");
+		
+		// Get response output stream
+		OutputStream responseOutputStream;
+		ZipOutputStream zipStream;
+		
+		try {
+			responseOutputStream = response.raw().getOutputStream();
+			
+			// Stream .ZIP file to response
+			zipStream = new ZipOutputStream(responseOutputStream);
+		} catch (java.io.IOException e1) {
+			log.error("Error getting output stream", e1);
+			return;
+		}
+		
+//		For now we we export EITHER exposure OR HIF/Valuation results. We may want to change the logic in the future.
+		if(includeExposure) {
+			includeHealthImpact=false;
+			includeValuation=false;
+		}
+		
+		if(includeExposure) {
+			//Exposure results
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			//get valuation task ids
+			List<Integer> exposureResultDatasetIds = create.select()
+					.from(EXPOSURE_RESULT_DATASET)
+					.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+					.fetch(EXPOSURE_RESULT_DATASET.ID);
+			
+			//Loop through each function and each grid definition
+			for(int exposureResultDatasetId : exposureResultDatasetIds) {
+				//csv file name
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(ExposureApi.getExposureTaskConfigFromDb(exposureResultDatasetId).name);
+				for(int i=0; i < gridIds.length; i++) {
+					Result<?> efRecordsClean = null;
+					//Move the following to ValuationApi.java? 
+					//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
+					try {
+						Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
+								GET_EXPOSURE_RESULTS(
+									exposureResultDatasetId, 
+									null,
+									gridIds[i]))
+							.asTable("ef_result_records");
+						Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
+								EXPOSURE_FUNCTION.POPULATION_GROUP,
+								EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
+								EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+								RACE.NAME.as("race"),
+								ETHNICITY.NAME.as("ethnicity"),
+								GENDER.NAME.as("gender"),
+								VARIABLE_ENTRY.NAME.as("variable"),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
+								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
+								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
+								efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
+								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
+								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
+								DSL.val(null, String.class).as("formatted_results_2sf"),
+								DSL.val(null, String.class).as("formatted_results_3sf")
+								)
+								.from(efResultRecords)
+								.join(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
+								.join(EXPOSURE_RESULT_FUNCTION_CONFIG).on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDatasetId).and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID))))
+								.join(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+								.join(ETHNICITY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+								.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+								.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
+
+								.fetch();
+
+						for (Record res : efRecords) {
+							res.setValue(DSL.field("formatted_results_2sf", String.class), 
+											ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
+							res.setValue(DSL.field("formatted_results_3sf", String.class), 
+											ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
+						}
+						
+						efRecordsClean = efRecords;
+					} catch(DataAccessException e) {
+						e.printStackTrace();
+						response.status(400);
+						return;
+					}	
+					try {						
+						zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+						efRecordsClean.formatCSV(zipStream);
+						zipStream.closeEntry();
+						log.info(taskFileName + " added.");
+						} 
+					catch (Exception e) {
+							log.error("Error creating export file", e);
+						} 
+					finally {
+		
+						}
+					ExposureTaskLog efTaskLog = ExposureUtil.getTaskLog(exposureResultDatasetId);
+					batchTaskLog.append(System.getProperty("line.separator"));
+					batchTaskLog.append(efTaskLog.toString(userProfile));
+				}				
+			}					
+		}
+		if(includeHealthImpact) {
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			//get hif task ids
+			List<Integer> hifResultDatasetIds = create.select()
+					.from(HIF_RESULT_DATASET)
+					.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+					.fetch(HIF_RESULT_DATASET.ID);
+			
+			//Loop through each function and each grid definition
+			for(int hifResultDatasetId : hifResultDatasetIds) {
+				//csv file name
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).name);
+				for(int i=0; i < gridIds.length; i++) {
+					Result<?> hifRecordsClean = null;
+					//Move the following to HIFApi.java? 
+					//hifRecordsClean = HIFApi.getHifResultRecordsClean(gridIds[i], hifResultDatasetId) //use this instead?
+					try {
+						Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
+							GET_HIF_RESULTS(
+									hifResultDatasetId, 
+									null, 
+									gridIds[i]))
+							.asTable("hif_result_records");
+						Result<Record> hifRecords = create.select(
+								hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
+								hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
+								ENDPOINT.NAME.as("endpoint"),
+								HEALTH_IMPACT_FUNCTION.AUTHOR,
+								HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+								HEALTH_IMPACT_FUNCTION.LOCATION,
+								HEALTH_IMPACT_FUNCTION.QUALIFIER,
+								HIF_RESULT_FUNCTION_CONFIG.START_AGE,
+								HIF_RESULT_FUNCTION_CONFIG.END_AGE,
+								HEALTH_IMPACT_FUNCTION.BETA,
+								RACE.NAME.as("race"),
+								ETHNICITY.NAME.as("ethnicity"),
+								GENDER.NAME.as("gender"),
+								POLLUTANT_METRIC.NAME.as("metric"),
+								SEASONAL_METRIC.NAME.as("seasonal_metric"),
+								STATISTIC_TYPE.NAME.as("metric_statistic"),
+								hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
+								hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
+								hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
+								hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
+								hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
+								//hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
+								hifResultRecords.field(GET_HIF_RESULTS.MEAN),
+								hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
+								DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
+									.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE)).times(100.0)).as("percent_of_baseline"),
+								hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
+								hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
+								hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
+								hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
+								HIFApi.getBaselineGridForHifResults(hifResultDatasetId) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+								)
+								.from(hifResultRecords)
+								.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+								.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(hifResultDatasetId).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID))))
+								.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+								.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+								.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+								.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+								.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+								.fetch();
+						log.info("After fetch");
+						
+						//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
+						if(HIFApi.getBaselineGridForHifResults(hifResultDatasetId) != gridIds[i]) {
+							for(Record res : hifRecords) {
+								DescriptiveStatistics stats = new DescriptiveStatistics();
+								Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
+								for (int j = 0; j < pct.length; j++) {
+									stats.addValue(pct[j]);
+								}
+								
+								res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
+								
+								//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+								stats.addValue(res.getValue(GET_HIF_RESULTS.POINT_ESTIMATE));
+								res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
+								res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+								
+								res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
+							}
+						}
+						//Remove percentiles by keeping all other fields
+						hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
+					} catch(DataAccessException e) {
+						e.printStackTrace();
+						response.status(400);
+						return;
+					}	
+					try {						
+						zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+						hifRecordsClean.formatCSV(zipStream);
+						zipStream.closeEntry();
+						log.info(taskFileName + " added.");
+						} 
+					catch (Exception e) {
+							log.error("Error creating export file", e);
+						} 
+					finally {
+		
+						}
+					HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(hifResultDatasetId);
+					batchTaskLog.append(System.getProperty("line.separator"));
+					batchTaskLog.append(hifTaskLog.toString(userProfile));
+				}				
+			}					
+		}
+		if(includeValuation) {
+			//Valuation results
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			//get valuation task ids
+			List<Integer> valuationResultDatasetIds = create.select()
+					.from(VALUATION_RESULT_DATASET)
+					.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+					.fetch(VALUATION_RESULT_DATASET.ID);
+			
+			//Loop through each function and each grid definition
+			for(int valuationResultDatasetId : valuationResultDatasetIds) {
+				//csv file name
+				String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).name);
+				for(int i=0; i < gridIds.length; i++) {
+					Result<?> vfRecordsClean = null;
+					//Move the following to ValuationApi.java? 
+					//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
+					try {
+						Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
+								GET_VALUATION_RESULTS(
+									valuationResultDatasetId, 
+									null, 
+									null,
+									gridIds[i]))
+							.asTable("valuation_result_records");
+						Result<Record22<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]>> vfRecords;
+						vfRecords = create.select(
+								vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
+								vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
+								ENDPOINT.NAME.as("endpoint"),
+								VALUATION_FUNCTION.QUALIFIER.as("name"),
+								HEALTH_IMPACT_FUNCTION.AUTHOR,
+								HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+								HEALTH_IMPACT_FUNCTION.QUALIFIER,
+								RACE.NAME.as("race"),
+								ETHNICITY.NAME.as("ethnicity"),
+								GENDER.NAME.as("gender"),
+								POLLUTANT_METRIC.NAME.as("metric"),
+								SEASONAL_METRIC.NAME.as("seasonal_metric"),
+								STATISTIC_TYPE.NAME.as("metric_statistic"),
+								HEALTH_IMPACT_FUNCTION.START_AGE,
+								HEALTH_IMPACT_FUNCTION.END_AGE,
+								vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
+								vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
+								vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
+								vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
+								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
+								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
+								ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+								)
+								.from(vfResultRecords)
+								.join(VALUATION_RESULT_FUNCTION_CONFIG)
+								.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDatasetId)
+										.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID)))
+										.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
+								.join(VALUATION_RESULT_DATASET)
+								.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
+								.join(HIF_RESULT_FUNCTION_CONFIG)
+								.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
+										.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
+								.join(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)))
+								.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+								.join(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
+								.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+								.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+								.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+								.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+								.fetch();
+						log.info("After fetch");
+						
+						//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
+						if(ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) != gridIds[i]) {
+							for(Record res : vfRecords) {
+								DescriptiveStatistics stats = new DescriptiveStatistics();
+								Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
+								for (int j = 0; j < pct.length; j++) {
+									stats.addValue(pct[j]);
+								}
+								
+								res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
+								
+								//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+								stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
+								res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
+								res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+							}
+						}
+						//Remove percentiles by keeping all other fields
+						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
+					} catch(DataAccessException e) {
+						e.printStackTrace();
+						response.status(400);
+						return;
+					}	
+					try {						
+						zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+						vfRecordsClean.formatCSV(zipStream);
+						zipStream.closeEntry();
+						log.info(taskFileName + " added.");
+						} 
+					catch (Exception e) {
+							log.error("Error creating export file", e);
+						} 
+					finally {
+		
+						}
+					ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(valuationResultDatasetId);
+					batchTaskLog.append(System.getProperty("line.separator"));
+					batchTaskLog.append(vfTaskLog.toString());
+				}				
+			}					
+		
+		}
+		
+		
+		// Add log file
+		try {
+			zipStream.putNextEntry(new ZipEntry(taskBatchFileName + "_TaskLog.txt"));
+			
+			zipStream.write(batchTaskLog.toString().getBytes());
+			zipStream.closeEntry();			
+			zipStream.close();
+			responseOutputStream.flush();
+		} catch (Exception e) {
+			log.error("Error writing task log, closing and flushing export", e);
+		}
+		
+		
+	}
+	
+	/**
+	 * @param task batch id
+	 * @return a batch task configuration from a given task batch id.
+	 */
+	public static BatchTaskConfig getTaskBatchConfigFromDb(Integer batchId) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		BatchTaskConfig batchTaskConfig = new BatchTaskConfig();		
+
+		TaskBatchRecord batchTaskRecord = create
+				.selectFrom(TASK_BATCH)
+				.where(TASK_BATCH.ID.eq(batchId))
+				.fetchOne();		
+			
+		try {
+			batchTaskConfig = objectMapper.readValue(batchTaskRecord.getParameters(), BatchTaskConfig.class);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return batchTaskConfig;
+	}
+	
 }

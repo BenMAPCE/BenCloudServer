@@ -2,7 +2,12 @@ package gov.epa.bencloud.api.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidParameterException;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -16,23 +21,32 @@ import javax.servlet.http.Part;
 
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
+import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
+import org.jooq.Record3;
 import org.jooq.Result;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import gov.epa.bencloud.api.CoreApi;
+import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetVariableRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.InflationEntryRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskQueueRecord;
+import gov.epa.bencloud.server.tasks.TaskComplete;
+import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.TaskUtil;
+import gov.epa.bencloud.server.tasks.model.Task;
 import spark.Request;
 import spark.Response;
 
@@ -42,7 +56,7 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "0.3.2";
+	public static final String appVersion = "0.4";
 	public static final int minimumDbVersion = 11;
 	
 	/**
@@ -203,75 +217,223 @@ public class ApiUtil {
 		}
 
 		if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
-			TaskUtil.deleteHifResults(uuid);
+			TaskUtil.deleteHifResults(uuid, true);
 		} else if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
-			TaskUtil.deleteValuationResults(uuid);
+			TaskUtil.deleteValuationResults(uuid, true);
 		}
 		res.status(204);
 		return res;
 	}
-
-	// Note that this implementation is currently incomplete. 
-	// It will currently ONLY return data for the median_income variable. 
-	// It needs to be extended so it will look up each variable that is required.
+	
 	/**
-	 * 
-	 * @param valuationTaskConfig
-	 * @param vfDefinitionList
-	 * @param gridId 
-	 * @return
+	 * Cancel a queued task and remove generated results. Task UUID given in the req parameters.
+	 * @param req
+	 * @param res
+	 * @param userProfile
 	 */
-	public static Map<String, Map<Long, Double>> getVariableValues(ValuationTaskConfig valuationTaskConfig, List<Record> vfDefinitionList, Integer gridId) {
+	
+	public static Object cancelTaskAndResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		String uuid=req.params("uuid");
+		TaskQueueRecord queueTask = DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(TASK_QUEUE)
+				.where(TASK_QUEUE.TASK_UUID.eq(uuid))
+				.fetchAny();
 		
-		// Get all the possible variable names
-		List<String> allVariableNames = ApiUtil.getAllVariableNames(valuationTaskConfig.variableDatasetId);
-		
-		//TODO: Temp override until we can improve variable selection
-		allVariableNames.removeIf(n -> (!n.equals("median_income")));
-		
-		HashMap<String, Map<Long, Double>> variableMap = new HashMap<String, Map<Long, Double>>();
-		
-		Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
-				1, 
-				allVariableNames.get(0), 
-				gridId);
-		//Look at all valuation functions to determine which variables are needed
-		for(String variableName: allVariableNames) {
-			for(Record function : vfDefinitionList) {
-				if(function.get("function_text", String.class).toLowerCase().contains(variableName)) {
-					if(!variableMap.containsKey(variableName)) {
-						variableMap.put(variableName, new HashMap<Long, Double>());
-					}
-				}
-			}
+		if(queueTask == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
 		}
-		// Finally load the cell values for each needed variable
-		for (GetVariableRecord variableRecord : variableRecords) {
-			if(variableMap.containsKey(variableRecord.getVariableName())) {
-				variableMap.get(variableRecord.getVariableName()).put(variableRecord.getGridCellId(), variableRecord.getValue().doubleValue());
-			}
+		if(CoreApi.isAdmin(userProfile) == false && queueTask.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
 		}
 		
+		// If it's a parent task, cancel its children tasks as well
+		Result<Record> resultChild = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
+				.where(TASK_QUEUE.TASK_PARENT_UUID.eq(uuid))
+				.fetch();
+		for (Record record : resultChild) {			
+
+			String childUuid = record.getValue(TASK_QUEUE.TASK_UUID);
+			
+			//remove from worker and update in_process = false
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(childUuid, null, false, "Parent task canceled.");
+			
+			//remove hif and valuation results
+			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
+				TaskUtil.deleteHifResults(childUuid, false);
+			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Valuation")) {
+				TaskUtil.deleteValuationResults(childUuid, false);
+			}			
+		}						
+		
+		//remove (parent) task from worker and update in_process = false
+		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+
+		//remove hif and valuation results
+		if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+			TaskUtil.deleteHifResults(uuid, false);
+		} else if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+			TaskUtil.deleteValuationResults(uuid, false);
+		}
+		res.status(204);
+		return res;
+		
+	}
+	
+	/**
+	 * Cancel a running batch task and remove generated results. batch task id given in the req parameters.
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 */
+	public static Object cancelBatchTaskAndResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		int batchId = Integer.valueOf(req.params("id"));
+		
+		//check batch task existence and ownership
+		Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_BATCH)
+				.where(TASK_BATCH.ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		else if(result.size()==0) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		
+		if(CoreApi.isAdmin(userProfile) == false && result.get(0).getValue(TASK_BATCH.USER_ID).equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
+		}
+		
+		// cancel batch task
+		result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_QUEUE)
+				.where(TASK_QUEUE.TASK_BATCH_ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		
+		for (Record record : result) {			
+
+			String uuid = record.getValue(TASK_QUEUE.TASK_UUID);
+			
+			//remove from worker and update in_process = false
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+			//remove hif and valuation results
+			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
+				TaskUtil.deleteHifResults(uuid, false);
+			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Valuation")) {
+				TaskUtil.deleteValuationResults(uuid, false);
+			}			
+		}		
+				
+		res.status(204);
+		return res;
+		
+	}
+	
+	
+
+	/**
+	 * @param requiredVariableNames
+	 * @param variableDatasetId
+	 * @param gridId
+	 * @return a map from variable names and grid cell ids to variable values
+	 * @throws InvalidParameterException
+	 */
+	public static Map<String, Map<Long, Double>> getVariableValues(List<String> requiredVariableNames, Integer variableDatasetId, Integer gridId) 
+		throws DataAccessException	
+	{
+		Map<String, Map<Long, Double>> variableMap = new HashMap<String, Map<Long, Double>>();
+
+		if (requiredVariableNames == null || requiredVariableNames.size() == 0 || variableDatasetId == null || gridId == null) {
+			return variableMap;
+		}
+
+		// FOR EACH VARIABLE
+		for (String variableName : requiredVariableNames) {
+			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
+					variableDatasetId, 
+					variableName, 
+					gridId);
+
+
+			// Map from grid cell id to variable value
+			Map<Long, Double> values = new HashMap<Long, Double>();
+
+			// FOR EACH GRID CELL
+			for (GetVariableRecord variableRecord : variableRecords) {
+				values.put(variableRecord.getGridCellId(), variableRecord.getValue());
+			}
+
+			variableMap.put(variableName, values);
+		}
+
 		return variableMap;
 	}
 
+	/**
+	 * Like getVariableValues, but instead returning a map from variable id and grid cell id to its value, rather than it's name + grid cell id
+	 * This is used for the exposure tasks
+	 * @param requiredVariableNames
+	 * @param variableDatasetId
+	 * @param gridId
+	 * @return A map from variable ids and grid cell ids to variable values
+	 */
+	public static Map<Integer, Map<Long, Double>> getVariableValuesFromIds(List<Integer> requiredVariableIds, Integer gridId) {
+		Map<Integer, Map<Long, Double>> variableMap = new HashMap<Integer, Map<Long, Double>>();
+
+		if (requiredVariableIds == null || requiredVariableIds.size() == 0 || gridId == null) {
+			return variableMap;
+		}
+
+		// Get the corresponding names and dataset IDs for each variable ID, so we can use Routines.getVariable
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		Result<Record3<Integer, Integer, String>> results = create
+			.select(VARIABLE_ENTRY.ID, VARIABLE_ENTRY.VARIABLE_DATASET_ID, VARIABLE_ENTRY.NAME)
+			.from(VARIABLE_ENTRY)
+			.where(VARIABLE_ENTRY.ID.in(requiredVariableIds))
+			.fetch();
+		
+
+		// FOR EACH VARIABLE
+		for (Record3<Integer, Integer, String> result : results ) {
+			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
+					result.value2(), 
+					result.value3(), 
+					gridId);
+
+
+			// Map from grid cell id to variable value
+			Map<Long, Double> values = new HashMap<Long, Double>();
+
+			// FOR EACH GRID CELL
+			for (GetVariableRecord variableRecord : variableRecords) {
+				values.put(variableRecord.getGridCellId(), variableRecord.getValue());
+			}
+
+			variableMap.put(result.value1(), values);
+		}
+
+		return variableMap;
+	}
+	
+	
 	/**
 	 * 
 	 * @param variableDatasetId
 	 * @return a list of all variable names for a given variable dataset.
 	 */
-	private static List<String> getAllVariableNames(Integer variableDatasetId) {
-		if(variableDatasetId == null) {
+	public static String getVariableName(Integer variableId) {
+		if(variableId == null) {
 			return null;
 		}
 
-		List<String> allVariableNames = DSL.using(JooqUtil.getJooqConfiguration())
+		Record1<String> variableName = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(VARIABLE_ENTRY.NAME)
 				.from(VARIABLE_ENTRY)
-				.where(VARIABLE_ENTRY.VARIABLE_DATASET_ID.eq(variableDatasetId))
-				.orderBy(VARIABLE_ENTRY.NAME)
-				.fetch(VARIABLE_ENTRY.NAME);
-		return allVariableNames;
+				.where(VARIABLE_ENTRY.ID.eq(variableId))
+				.fetchOne();
+		return variableName.value1();
 	}
 
 	/**
@@ -362,4 +524,116 @@ public class ApiUtil {
         return allTemplateNames;
     }
 
+    
+    /**
+	 * Deletes the results of a completed batch_task, task task_batch_id given in the req parameters.
+	 * @param req
+	 * @param res
+	 * @param userProfile
+	 * @return null
+	 */
+	public static Object deleteBatchTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
+		String idParam;
+		Integer batchId;
+		try {
+			idParam = String.valueOf(req.params("id"));
+
+			batchId = Integer.valueOf(idParam);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(req, res);	
+		} catch (Exception e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(req, res);
+		}
+		
+
+		
+		Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_BATCH)
+				.where(TASK_BATCH.ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		else if(result.size()==0) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		
+		if(CoreApi.isAdmin(userProfile) == false && result.get(0).getValue(TASK_BATCH.USER_ID).equalsIgnoreCase(userProfile.get().getId()) == false) {
+			return CoreApi.getErrorResponseForbidden(req, res);
+		}
+		
+		result = DSL.using(JooqUtil.getJooqConfiguration()).select().from(TASK_COMPLETE)
+				.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+				.fetch();
+		
+		if(result == null) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}
+		else if(result.size()==0) {
+			return CoreApi.getErrorResponseNotFound(req, res);
+		}		
+		
+		for (Record record : result) {			
+			//TODO: Do we need to remove children task results before removing parent tasks? 
+			// Valuation results have hif tasks as their parents but both hif and valuation results have the same task_batch_id.
+			String uuid = record.getValue(TASK_COMPLETE.TASK_UUID);
+			if (record.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+				TaskUtil.deleteHifResults(uuid, true);
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+				TaskUtil.deleteValuationResults(uuid, true);
+			}
+			 else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Exposure")) {
+					TaskUtil.deleteExposureResults(uuid, true);
+				}
+		}
+		
+		//delete from batch_task table	
+		DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(TASK_BATCH)
+		.where(TASK_BATCH.ID.eq(batchId))
+		.execute();
+		
+		res.status(204);
+		return res;
+	}
+
+	/*
+	 * Code from https://stackoverflow.com/questions/7548841/round-a-double-to-3-significant-figures
+	 */
+	public static String getValueSigFigs(double value, int significantDigits) {
+		BigDecimal bd = new BigDecimal(value, MathContext.DECIMAL64);
+		bd = bd.round(new MathContext(significantDigits));
+		final int precision = bd.precision();
+		if (precision < significantDigits) {
+			bd = bd.setScale(bd.scale() + (significantDigits-precision));
+		}
+ 
+		String format = "#,###.";
+		for (int i = 0; i < significantDigits; i++){
+			format+="#";
+		}
+		DecimalFormat df = new DecimalFormat(format);
+		return df.format(bd);
+	}
+
+	/**
+	 * Formats results for display
+	 * @param pointEstimate
+	 * @param p2_5
+	 * @param p97_5
+	 * @param sigFigs
+	 * @return string containing formatted point estimate and 95% confidence interval
+	 */
+	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs) {
+		StringBuilder s = new StringBuilder();
+		s.append(getValueSigFigs(pointEstimate, sigFigs));
+		s.append(" (");
+		s.append(getValueSigFigs(p2_5, sigFigs));
+		s.append(" to ");
+		s.append(getValueSigFigs(p97_5, sigFigs));
+		s.append(")");
+
+		return s.toString();
+	}
 }

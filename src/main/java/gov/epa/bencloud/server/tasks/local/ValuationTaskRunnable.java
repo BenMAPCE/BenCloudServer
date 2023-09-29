@@ -5,10 +5,13 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -111,16 +114,8 @@ public class ValuationTaskRunnable implements Runnable {
 				
 				vfConfig.vfRecord = vfDefinition.intoMap();
 				
-				double[] distBetas = new double[100];
-				double[] distSamples = getDistributionSamples(vfDefinition);
-				int idxMedian = 0 + distSamples.length / distBetas.length / 2; //the median of the first segment
-				
-				for(int i=0; i < distBetas.length; i++) {
-					// Grab the median from each of the 100 slices of distList
-					distBetas[i] = (distSamples[idxMedian]+distSamples[idxMedian-1])/2.0;
-					idxMedian += distSamples.length / distBetas.length;
-				}
-				vfBetaDistributionLists.add(distBetas);
+				double[] vfDistPercentiles = getPercentilesFromDistribution(vfDefinition);
+				vfBetaDistributionLists.add(vfDistPercentiles);
 			}
 			
 			
@@ -143,7 +138,8 @@ public class ValuationTaskRunnable implements Runnable {
 			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, valuationTaskConfig.incomeGrowthYear, valuationTaskConfig.useGrowthFactors);
 			
 			//<variableName, <gridCellId, value>>
-			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(valuationTaskConfig, vfDefinitionList, valuationTaskConfig.gridDefinitionId);
+			List<String> requiredVariableNames = valuationTaskConfig.getRequiredVariableNames();
+			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(requiredVariableNames, valuationTaskConfig.variableDatasetId, valuationTaskConfig.gridDefinitionId);
 			
 			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
 
@@ -207,114 +203,35 @@ public class ValuationTaskRunnable implements Runnable {
 							valuationFunction.vfArguments.medicalCostIndex = inflationIndices.get("MedicalCostIndex");
 							valuationFunction.vfArguments.wageIndex = inflationIndices.get("WageIndex");
 
-							//If the function uses a variable that was loaded, set the appropriate argument value for this cell
-							//TODO: Need to improve handling of variables
-							for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
-								if(variable.getKey().equalsIgnoreCase("median_income")) {
-									valuationFunction.vfArguments.medianIncome =  variable.getValue().getOrDefault(hifResult.get(0), 0.0);	
-									break;	
-								}
-							}
+
 							double valuationFunctionEstimate = 0.0;
 							if(valuationFunction.nativeFunction == null) {
 								Expression valuationFunctionExpression = valuationFunction.interpretedFunction;
 								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
-									if(valuationFunctionExpression.getArgument(variable.getKey()) != null) {
-										valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));		
-									}
+									valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));		
 								}
 								valuationFunctionExpression.setArgumentValue("AllGoodsIndex", valuationFunction.vfArguments.allGoodsIndex);
 								valuationFunctionExpression.setArgumentValue("MedicalCostIndex", valuationFunction.vfArguments.medicalCostIndex);
 								valuationFunctionExpression.setArgumentValue("WageIndex", valuationFunction.vfArguments.wageIndex);
-								valuationFunctionExpression.setArgumentValue("median_income", valuationFunction.vfArguments.medianIncome);
 
 								valuationFunctionEstimate = valuationFunctionExpression.calculate();
 							} else {
+
+								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
+									valuationFunction.vfArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));
+								}
+
 								valuationFunctionEstimate = valuationFunction.nativeFunction.calculate(valuationFunction.vfArguments);
 							}
 
 							valuationFunctionEstimate = valuationFunctionEstimate * incomeGrowthFactor * hifEstimate;
 							
-							DescriptiveStatistics distStats = new DescriptiveStatistics();
+							DescriptiveStatistics distStats;
 							Double[] hifPercentiles = (Double[]) hifResult.get("percentiles");
 							
-							for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
-								for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
-									//valuation estimate * hif percentiles * betaDist / hif point estimate * A
-									if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
-										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
-										
-									} else {
-										distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
-									}
-								}
-							}
+							distStats = combineUncertainty(hifPercentiles, betaDist, vfDefinition, valuationFunctionEstimate, hifEstimate);
 							
-							ValuationResultRecord rec = new ValuationResultRecord();
-							rec.setGridCellId(hifResult.get(DSL.field("grid_cell_id", Long.class)));
-							rec.setGridCol(hifResult.get(GET_HIF_RESULTS.GRID_COL));
-							rec.setGridRow(hifResult.get(GET_HIF_RESULTS.GRID_ROW));
-							rec.setHifId(vfConfig.hifId);
-							rec.setVfId(vfConfig.vfId);
-
-							rec.setResult(valuationFunctionEstimate);
-							try {
-
-								if (valuationFunctionEstimate == 0.0) {
-									rec.setPct_2_5(0.0);
-									rec.setPct_97_5(0.00);
-									Double[] percentiles20 = new Double[20];
-									Arrays.fill(percentiles20, 0.0);
-									rec.setPercentiles(percentiles20);
-									rec.setResultMean(0.0);
-									rec.setStandardDev(0.0);
-									rec.setResultVariance(0.0);
-								} else {
-									double[] percentiles = new double[100];
-									Double[] percentiles20 = new Double[20];
-									double[] distValues = distStats.getSortedValues();
-									int idxMedian = distValues.length / percentiles.length / 2; // the median of the first segment
-									int idxMedian20 = distValues.length / percentiles20.length / 2; // the median of the first segment
-									DescriptiveStatistics statsPercentiles = new DescriptiveStatistics();
-									for (int i = 0; i < percentiles.length; i++) {
-										// Grab the median from each of the 100 slices of distStats
-										percentiles[i] = (distValues[idxMedian] + distValues[idxMedian - 1]) / 2.0;
-										//TODO: Maybe it would be faster to create statsPercentiles below and use the other constructor: new DescriptiveStatistics(percentiles);
-										statsPercentiles.addValue(percentiles[i]);
-										idxMedian += distValues.length / percentiles.length;
-									}
-									for (int i = 0; i < percentiles20.length; i++) {
-										// Grab the median from each of the 20 slices of distStats
-										percentiles20[i] = (distValues[idxMedian20] + distValues[idxMedian20 - 1]) / 2.0;
-										//statsPercentiles.addValue(percentiles[i]);
-										idxMedian20 += distValues.length / percentiles20.length;
-									}
-									rec.setPct_2_5((percentiles[1] + percentiles[2]) / 2.0);
-									rec.setPct_97_5((percentiles[96] + percentiles[97]) / 2.0);
-									rec.setPercentiles(percentiles20);
-									rec.setResultMean(statsPercentiles.getMean());
-									
-									//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop version
-									statsPercentiles.addValue(valuationFunctionEstimate);
-									
-									rec.setStandardDev(statsPercentiles.getStandardDeviation());
-									rec.setResultVariance(statsPercentiles.getVariance());
-
-								}
-							} catch (Exception e) {
-								rec.setPct_2_5(0.0);
-								rec.setPct_97_5(0.0);
-								Double[] percentiles20 = new Double[20];
-								Arrays.fill(percentiles20, 0.0);
-								rec.setPercentiles(percentiles20);
-								rec.setStandardDev(0.0);
-								rec.setResultMean(0.0);
-								rec.setResultVariance(0.0);
-								log.info("Error populating valuation estimate", e);
-							}
-
-
-							
+							ValuationResultRecord rec = createResultsRecord(hifResult, vfConfig, valuationFunctionEstimate, distStats);
 							valuationResults.add(rec);
 
 							// Control the size of the results vector by saving partial results along the way
@@ -361,18 +278,78 @@ public class ValuationTaskRunnable implements Runnable {
 		log.info("Valuation Task Complete: " + taskUuid);
 	}
 
-	private double[] getDistributionSamples(Record vfRecord) {
-		double[] samples = new double[10000];
-		Random rng = new Random(1);
-		RealDistribution distribution;
-		
-		switch (vfRecord.get("dist_a", String.class).toLowerCase()) {
-		case "none":		
-			for (int i = 0; i < samples.length; i++)
-			{
-				samples[i]=vfRecord.get("val_a", Double.class).doubleValue();
+	private ValuationResultRecord createResultsRecord(
+			Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]> hifResult, ValuationConfig vfConfig,
+			double valuationFunctionEstimate, DescriptiveStatistics distStats) {
+		ValuationResultRecord rec = new ValuationResultRecord();
+		rec.setGridCellId(hifResult.get(DSL.field("grid_cell_id", Long.class)));
+		rec.setGridCol(hifResult.get(GET_HIF_RESULTS.GRID_COL));
+		rec.setGridRow(hifResult.get(GET_HIF_RESULTS.GRID_ROW));
+		rec.setHifId(vfConfig.hifId);
+		rec.setVfId(vfConfig.vfId);
+
+		rec.setResult(valuationFunctionEstimate);
+		try {
+
+			if (valuationFunctionEstimate == 0.0) {
+				rec.setPct_2_5(0.0);
+				rec.setPct_97_5(0.00);
+				Double[] percentiles20 = new Double[20];
+				Arrays.fill(percentiles20, 0.0);
+				rec.setPercentiles(percentiles20);
+				rec.setResultMean(0.0);
+				rec.setStandardDev(0.0);
+				rec.setResultVariance(0.0);
+			} else {
+				Double[] percentiles20 = new Double[20];
+				// The old code used to grab the percentiles, put them into a new DescriptiveStatistics, and calculate the mean and
+				// variance from that. It's probably better to do the statistics directly on distStats
+				for (int i = 0; i < percentiles20.length; i++) {
+					double p = (100.0 / percentiles20.length * i) + (100.0 / percentiles20.length / 2.0); // 2.5, 7.5, ... 97.5
+					percentiles20[i] = distStats.getPercentile(p);
+				}
+				rec.setPct_2_5(distStats.getPercentile(2.5));
+				rec.setPct_97_5(distStats.getPercentile(97.5));
+				rec.setPercentiles(percentiles20);
+				rec.setResultMean(distStats.getMean());
+			
+				rec.setStandardDev(distStats.getStandardDeviation());
+				rec.setResultVariance(distStats.getVariance());
+
 			}
-			return samples;
+		} catch (Exception e) {
+			rec.setPct_2_5(0.0);
+			rec.setPct_97_5(0.0);
+			Double[] percentiles20 = new Double[20];
+			Arrays.fill(percentiles20, 0.0);
+			rec.setPercentiles(percentiles20);
+			rec.setStandardDev(0.0);
+			rec.setResultMean(0.0);
+			rec.setResultVariance(0.0);
+			log.info("Error populating valuation estimate", e);
+		}
+
+		return rec;
+	}
+
+	/**
+	 * 
+	 * Returns the 2.5, 7.5, ... percentiles from the provided valuation function's distribution.
+	 * @param vfRecord
+	 * @return
+	 */
+	private double[] getPercentilesFromDistribution(Record vfRecord) {
+		double[] percentiles = new double[20];
+		String distributionType = vfRecord.get("dist_a", String.class).toLowerCase();
+		RealDistribution distribution;
+
+		switch (distributionType) {
+		case "none":
+			double value = vfRecord.get("val_a", Double.class).doubleValue();
+			for (int i = 0; i < percentiles.length; i++) {
+				percentiles[i] = value;
+			}
+			return percentiles;
 		case "normal":
 			distribution = new NormalDistribution(vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
 			break;
@@ -389,14 +366,31 @@ public class ValuationTaskRunnable implements Runnable {
 		default:
 			return null;
 		}
-		
-		for (int i = 0; i < samples.length; i++)
-		{
-			double x = distribution.inverseCumulativeProbability(rng.nextDouble());
-			samples[i]=x;
+
+		for (int i = 0; i < percentiles.length; i++) {
+			double p = (100.0/percentiles.length/2) + i*(100.0/percentiles.length);
+			percentiles[i] = distribution.inverseCumulativeProbability(p / 100.0);
 		}
-		Arrays.sort(samples);
-		return samples;
+
+		return percentiles;
 	}
+
+	private DescriptiveStatistics combineUncertainty(Double[] hifPercentiles, double[] betaDist, Record vfDefinition, double valuationFunctionEstimate, double hifEstimate) {
+		DescriptiveStatistics distStats = new DescriptiveStatistics();
+
+		for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
+			for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
+				//valuation estimate * hif percentiles * betaDist / hif point estimate * A
+				if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
+					distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
+				} else {
+					distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
+				}
+			}
+		}
+
+		return distStats;
+	}
+
 
 }

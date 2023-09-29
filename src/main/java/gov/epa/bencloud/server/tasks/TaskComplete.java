@@ -1,14 +1,17 @@
 package gov.epa.bencloud.server.tasks;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_COMPLETE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_BATCH;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_QUEUE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_WORKER;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Date;
 
 import org.jooq.Condition;
 import org.jooq.Record;
@@ -80,7 +83,9 @@ public class TaskComplete {
 						TASK_COMPLETE.TASK_COMPLETE_MESSAGE,
 						TASK_COMPLETE.TASK_SUBMITTED_DATE,
 						TASK_COMPLETE.TASK_STARTED_DATE,
-						TASK_COMPLETE.TASK_COMPLETED_DATE)
+						TASK_COMPLETE.TASK_COMPLETED_DATE,
+						TASK_COMPLETE.USER_ID,
+						TASK_COMPLETE.TASK_BATCH_ID)
 				.values(
 						task.getUserIdentifier(),
 						task.getPriority(),
@@ -95,7 +100,9 @@ public class TaskComplete {
 						taskCompleteMessage,
 						task.getSubmittedDate(),
 						task.getStartedDate(),
-						LocalDateTime.now())
+						LocalDateTime.now(),
+						task.getUserIdentifier(),
+						task.getBatchId())
 				.execute();
 
 				DSL.using(ctx).delete(TASK_QUEUE)
@@ -232,6 +239,213 @@ public class TaskComplete {
 			}
 			
 			data.set("data", tasks);
+			data.put("success", true);
+			data.put("recordsFiltered", records);
+			data.put("recordsTotal", records);
+
+		} catch (DataAccessException e) {
+			data.put("success", false);
+			data.put("error_message", e.getMessage());
+			log.error("Error getting completed tasks", e);
+		} catch (IllegalArgumentException e) {
+			data.put("success", false);
+			data.put("error_message", e.getMessage());
+			log.error("Error getting completed tasks", e);
+		} catch (Exception e) {
+			data.put("success", false);
+			data.put("error_message", "Unknown error");
+			log.error("Error getting completed tasks", e);			
+		}
+	
+		return data;
+	} 
+
+	/**
+	 * 
+	 * @param response 
+	 * @param request 
+	 * @param userProfile
+	 * @param postParameters
+	 * @return an ObjectNode representation of all of a user's completed tasks.
+	 */
+	public static ObjectNode getCompletedBatchTasks(Request request, Response response, Optional<UserProfile> userProfile, Map<String, String[]> postParameters) {
+
+//		log.info("getCompletedTasks");
+//		log.info("userIdentifier: " + userIdentifier);
+		
+//		log.info("length: " + postParameters.get("length")[0]);
+//		log.info("start: " + postParameters.get("start")[0]);
+//		log.info("searchValue: " + postParameters.get("searchValue")[0]);
+//		log.info("sortColumn: " + postParameters.get("sortColumn")[0]);
+//		log.info("sortDirection: " + postParameters.get("sortDirection")[0]);
+
+		String userId = userProfile.get().getId();
+		boolean showAll;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode data = mapper.createObjectNode();
+        
+		ArrayNode batchTasks = mapper.createArrayNode();
+		ObjectNode batchTask = mapper.createObjectNode();
+        ArrayNode tasks = mapper.createArrayNode();
+        ObjectNode task = mapper.createObjectNode();
+        ObjectNode wrappedObject = mapper.createObjectNode();
+
+		showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+        int records = 0;
+
+		try {
+
+			Condition batchFilterCondition = DSL.trueCondition();
+			
+			// Skip the following for an admin user that wants to see all data
+			if(!showAll || !CoreApi.isAdmin(userProfile)) {
+				batchFilterCondition = batchFilterCondition.and(TASK_BATCH.USER_ID.eq(userId));
+			}
+
+			Result<Record> batchResult = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					.from(TASK_BATCH)
+					.where(batchFilterCondition) 
+					.orderBy(TASK_BATCH.ID.asc())
+					.fetch();
+
+			for(Record batchRecord : batchResult) {
+				batchTask = mapper.createObjectNode();
+				tasks = mapper.createArrayNode();
+				batchTask.put("batch_task_name", batchRecord.getValue(TASK_BATCH.NAME));
+				batchTask.put("batch_task_id", batchRecord.getValue(TASK_BATCH.ID));
+				batchTask.put("batch_task_user_id", batchRecord.getValue(TASK_BATCH.USER_ID));
+
+				int id = batchRecord.getValue(TASK_BATCH.ID);
+
+				Condition filterCondition = DSL.trueCondition();
+				filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(id));
+				Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					.from(TASK_COMPLETE)
+					.where(filterCondition) 
+					.orderBy(TASK_COMPLETE.TASK_COMPLETED_DATE.asc())
+					.fetch();
+
+				//If there are tasks in the queue for this batch, the batch stays in the pending table
+				Result<Record> queueResult = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					.from(TASK_QUEUE)
+					.where(TASK_QUEUE.TASK_BATCH_ID.equal(id)) 
+					.fetch();
+
+				if(queueResult.isNotEmpty()) {
+					continue;
+				}
+
+				boolean batchSuccessful = true;
+				LocalDateTime batchCompletedDate = LocalDateTime.MIN;
+				LocalDateTime batchStartedDate = LocalDateTime.now();
+
+				for (Record record : result) {
+
+					task = mapper.createObjectNode();
+
+					task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
+					task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
+					task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
+					task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
+					try {
+						task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
+					} catch (Exception e) {
+						task.put("task_submitted_date", "");
+						e.printStackTrace();
+					}
+					try {
+						task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
+					} catch (Exception e) {
+						task.put("task_started_date", "");
+						e.printStackTrace();
+					}
+
+
+					try {
+						if((record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)).isBefore(batchStartedDate)) {
+							batchStartedDate = record.getValue(TASK_COMPLETE.TASK_STARTED_DATE);
+						}						
+					}
+					catch (Exception e){
+						//batchStartedDate = LocalDateTime.now();
+					}
+					
+
+
+					try {
+						task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
+					} catch (Exception e) {
+						task.put("task_completed_date", "");
+						e.printStackTrace();
+					}
+
+					if((record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)).isAfter(batchCompletedDate)) {
+						batchCompletedDate = record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE);
+					}
+					
+					task.put("task_user_id", record.getValue(TASK_COMPLETE.USER_ID));
+					
+					wrappedObject = mapper.createObjectNode();
+					try {
+						wrappedObject.put("task_wait_time_display", DataUtil.getHumanReadableTime(
+								record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE), 
+								record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
+						wrappedObject.put("task_wait_time_seconds", 
+								ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE),
+										record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
+					} catch (Exception e) {
+						
+						e.printStackTrace();
+					}
+					task.set("task_wait_time", wrappedObject);
+
+					wrappedObject = mapper.createObjectNode();
+					try {
+						wrappedObject.put("task_execution_time_display", DataUtil.getHumanReadableTime(
+								record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
+								record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+						wrappedObject.put("task_execution_time_seconds", 
+								ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_STARTED_DATE),
+										record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					task.set("task_execution_time", wrappedObject);
+
+					try {
+						task.put("task_elapsed_time", DataUtil.getHumanReadableTime(
+								record.getValue(TASK_COMPLETE.TASK_STARTED_DATE), 
+								record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
+					} catch (Exception e) {
+						task.put("task_elapsed_time", "");
+						e.printStackTrace();
+					}
+					
+					task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
+					task.put("task_message", record.getValue(TASK_COMPLETE.TASK_COMPLETE_MESSAGE));
+
+					if(!record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL)) {
+						batchSuccessful = false;
+					}
+										
+					tasks.add(task);
+					records++;
+				}
+				if(result.isNotEmpty()) {
+					batchTask.set("tasks", tasks);
+					batchTask.put("batch_task_successful", batchSuccessful);
+					batchTask.put("batch_completed_date", batchCompletedDate.format(formatter));
+					batchTask.put("batch_execution_time", DataUtil.getHumanReadableTime(
+								batchStartedDate, 
+								batchCompletedDate));
+					batchTasks.add(batchTask);
+				}
+				
+			}
+
+			data.set("data", batchTasks);
 			data.put("success", true);
 			data.put("recordsFiltered", records);
 			data.put("recordsTotal", records);
