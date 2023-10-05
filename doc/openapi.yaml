@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BenMAP API
   description: REST API support for benmap.epa.gov
-  version: 0.3.2
+  version: 0.4.0
 servers:
   - url: http://localhost:4567/api
     description: Local Development
@@ -325,7 +325,7 @@ paths:
           description: Filter by air quality surface id
           schema:
             type: integer
-            default: 10
+            default: 16
       responses:
         '200':
           description: Successfully returned an air quality surface definition.
@@ -429,7 +429,7 @@ paths:
           description: Filter by air quality surface id
           schema:
             type: integer
-            default: 10
+            default: 16
       responses:
         '200':
           description: Successfully returned details of a singly air quality surface.
@@ -901,30 +901,77 @@ paths:
                 items:
                   type: object
                   properties:
-                    name:
-                      type: string
-                      example: "NAAQS PM RIA 2022"
                     id:
                       type: integer
                       example: 1
+                    name:
+                      type: string
+                      example: "EPA Default Subpopulations - 2022 Rulemaking"
                     help_text:
                       type: string
-                      example: "Exposure configurations used to generate the 2022 NAAQS PM RIA"
+                      example: "Exposure configurations most commonly used by EPA"
                     functions:
                       type: array
                       items:
                         type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 1
+                          exposure_dataset_id:
+                            type: integer
+                            example: 1
+                          population_group:
+                            type: string
+                            example: "All: Reference (0-99)"
+                          start_age:
+                            type: integer
+                            example: 0
+                          end_age:
+                            type: integer
+                            example: 99
+                          function_text:
+                            type: string
+                            example: "DELTA * POPULATION"
+                          variable_id:
+                            type: integer
+                            example: null
+                          race_id:
+                            type: integer
+                            example: 5
+                          gender_id:
+                            type: integer
+                            example: 3
+                          ethnicity_id:
+                            type: integer
+                            example: 3
+                          variable_name:
+                            type: string
+                            example: null
+                          race_name:
+                            type: string
+                            example: "ALL"
+                          gender_name:
+                            type: string
+                            example: "ALL"
+                          ethnicity_name:
+                            type: string
+                            example: "ALL"
   /batch-task-config:
     get:
-      summary: Return new batch task config.
+      summary: Returns a new batch task config.
       parameters:
         - in: query
-          name: groupIds
-          required: true
+          name: hifGroupIds
           description: Filter by health impact function group ids
           schema:
             type: integer
             default: 5
+        - in: query
+          name: efGroupIds
+          description: Filter by exposure function group ids
+          schema:
+            type: integer
         - in: query
           name: pollutantId
           required: true
@@ -938,7 +985,7 @@ paths:
           description: baseline AQ surface
           schema:
             type: integer
-            default: 15
+            default: 16
         - in: query
           name: populationId
           required: true
@@ -959,7 +1006,7 @@ paths:
           description: grid definition id for aggregation before valuation
           schema:
             type: string
-            default: 24|2030~2035,22|2030~2035
+            default: 19|2030~2035,21|2030~2035
         - in: query
           name: incidencePrevalenceDataset
           required: true
@@ -969,64 +1016,330 @@ paths:
             default: 1
       responses:
         '200':
-          description: Successfully returned a single health impact function group.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    name:
-                      type: string
-                      example: "Premature Death - Primary"
-                    id:
-                      type: integer
-                      example: 5
-                    help_text:
-                      type: string
-                      example: "some help text"
-                    functions:
-                      type: array
-                      items:
-                        type: integer
-                        example: 861, 881, 890
-  /batch-task-config-example-hif:
-    get:
-      summary: Return new batch task config HIF example.
-      parameters:
-        - in: query
-          name: pollutantId
-          required: true
-          description: Filter by pollutant
-          schema:
-            type: integer
-            default: 6
-      responses:
-        '200':
-          description: Successfully returned a single health impact function group.
+          description: Successfully returned a batch task configuration.
           content:
             application/json:
               schema:
                 type: object
-  /batch-task-config-example-exposure:
-    get:
-      summary: Return new batch task config exposure example.
-      parameters:
-        - in: query
-          name: pollutantId
-          required: true
-          description: Filter by pollutant
-          schema:
-            type: integer
-            default: 6
-      responses:
-        '200':
-          description: Successfully returned an exposure function group.
-          content:
-            application/json:
-              schema:
-                type: object
+                properties:
+                  name:
+                    type: string
+                    example: null
+                  gridDefinitionId:
+                    type: integer
+                    example: 18
+                  aqBaselineId:
+                    type: integer
+                    example: 16
+                  popId:
+                    type: integer
+                    example: 40
+                  pollutantName:
+                    type: string
+                    example: "PM2.5"
+                  pollutantId:
+                    type: integer
+                    example: 6
+                  preserveLegacyBehavior:
+                    type: boolean
+                    example: true
+                  aqScenarios:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 19
+                        name:
+                          type: string
+                          example: "PM Policy Example 1 2032"
+                        popConfigs:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              popYear:
+                                type: integer
+                                example: 2030
+                              popConfigs:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    hifInstanceId:
+                                      type: integer
+                                      example: 1
+                                    incidenceYear:
+                                      type: integer
+                                      example: 2030
+                                    prevalenceYear:
+                                      type: integer
+                                      example: null
+                  batchHifGroups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 5
+                        name:
+                          type: string
+                          example: "Premature Death - Primary"
+                        hifs:
+                          type: array
+                          items: 
+                            type: object
+                            properties: 
+                              hifInstanceId:
+                                type: integer
+                                example: 1
+                              hifId:
+                                type: integer
+                                example: 1011
+                              startAge:
+                                type: integer
+                                example: null
+                              endAge:
+                                type: integer
+                                example: null
+                              race:
+                                type: string
+                                example: null
+                              ethnicity:
+                                type: string
+                                example: null
+                              gender:
+                                type: string
+                                example: null
+                              metric:
+                                type: integer
+                                example: null
+                              seasonalMetric:
+                                type: integer
+                                example: null
+                              metricStatistic:
+                                type: integer
+                                example: null
+                              incidence:
+                                type: integer
+                                example: 1
+                              incidenceName:
+                                type: string
+                                example: "County"
+                              incidenceYear:
+                                type: integer
+                                example: null
+                              incidenceRace:
+                                type: integer
+                                example: 5
+                              incidenceEthnicity:
+                                type: integer
+                                example: 3
+                              incidenceGender:
+                                type: integer
+                                example: 3
+                              prevalence:
+                                type: integer
+                                example: null
+                              prevalenceName:
+                                type: string
+                                example: null
+                              prevalenceYear:
+                                type: integer
+                                example: null
+                              prevalenceRace:
+                                type: integer
+                                example: null
+                              prevalenceEthnicity:
+                                type: integer
+                                example: null
+                              prevalenceGender:
+                                type: integer
+                                example: null
+                              variable:
+                                type: integer
+                                example: null
+                              startDay:
+                                type: integer
+                                example: null
+                              endDay:
+                                type: integer
+                                example: null
+                              totalDays:
+                                type: integer
+                                example: null
+                              hifRecord:
+                                type: object
+                                properties:
+                                  id:
+                                    type: integer
+                                    example: 123
+                                  health_impact_function_dataset_id:
+                                    type: integer
+                                    example: 15
+                                  endpoint_group_id:
+                                    type: integer
+                                    example: 2
+                                  endpoint_id:
+                                    type: integer
+                                    example: 2
+                                  pollutant_id:
+                                    type: integer
+                                    example: 6
+                                  metric_id:
+                                    type: integer
+                                    example: 11
+                                  seasonal_metric_id:
+                                    type: integer
+                                    example: 5
+                                  metric_statistic:
+                                    type: integer
+                                    example: 0
+                                  author:
+                                    type: string
+                                    example: "Peters et al."
+                                  function_year:
+                                    type: integer
+                                    example: 2001
+                                  location:
+                                    type: string
+                                    example: "Boston, MA"
+                                  other_pollutants:
+                                    type: string
+                                    example: null
+                                  qualifier:
+                                    type: string
+                                    example: "Warm Season (April - September). Distributed Lags; Penalized splines; O3 Results (Table 24)"
+                                  reference:
+                                    type: string
+                                    example: "References info"
+                                  start_age:
+                                    type: integer
+                                    example: 65
+                                  end_age:
+                                    type: integer
+                                    example: 99
+                                  function_text:
+                                    type: string
+                                    example: "(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION"
+                                  incidence_dataset_id:
+                                    type: integer
+                                    example: 123
+                                  prevalence_dataset_id:
+                                    type: integer
+                                    example: 123
+                                  variable_dataset_id:
+                                    type: integer
+                                    example: 123
+                                  beta:
+                                    type: number
+                                    example: 0.0242
+                                  dist_beta:
+                                    type: string
+                                    example: "Normal"
+                                  p1_beta:
+                                    type: number
+                                    example: 0.00928
+                                  p2_beta:
+                                    type: number
+                                    example: 0
+                                  val_a:
+                                    type: number
+                                    example: 0.981
+                                  name_a:
+                                    type: string
+                                    example: "% of hospMI surviving 28 days"
+                                  val_b:
+                                    type: number
+                                    example: 0
+                                  name_b:
+                                    type: string
+                                    example: null
+                                  val_c:
+                                    type: number
+                                    example: 0
+                                  name_c:
+                                    type: string
+                                    example: null
+                                  baseline_function_text:
+                                    type: string
+                                    example: "INCIDENCE*POPULATION"
+                                  race_id:
+                                    type: integer
+                                    example: 5
+                                  gender_id:
+                                    type: integer
+                                    example: 3
+                                  ethnicity_id:
+                                    type: integer
+                                    example: 3
+                                  start_day:
+                                    type: integer
+                                    example: 90
+                                  end_day:
+                                    type: integer
+                                    example: 272
+                                  endpoint_group_name:
+                                    type: string
+                                    example: "Acute Myocardial Infarction"
+                                  endpoint_name:
+                                    type: string
+                                    example: "Acute Myocardial Infarction, nonfatal"
+                                  race_name:
+                                    type: string
+                                    example: "ALL"
+                                  gender_name:
+                                    type: string
+                                    example: "ALL"
+                                  ethnicity_name:
+                                    type: string
+                                    example: "ALL"
+                              valuationFunctions:
+                                type: array
+                                items:
+                                  type: object
+                  batchExposureGroups: 
+                    type: array
+                    items:
+                      type: object
+  # /batch-task-config-example-hif:
+  #   get:
+  #     summary: Return new batch task config HIF example.
+  #     parameters:
+  #       - in: query
+  #         name: pollutantId
+  #         required: true
+  #         description: Filter by pollutant
+  #         schema:
+  #           type: integer
+  #           default: 6
+  #     responses:
+  #       '200':
+  #         description: Successfully returned a single health impact function group.
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  # /batch-task-config-example-exposure:
+  #   get:
+  #     summary: Return new batch task config exposure example.
+  #     parameters:
+  #       - in: query
+  #         name: pollutantId
+  #         required: true
+  #         description: Filter by pollutant
+  #         schema:
+  #           type: integer
+  #           default: 6
+  #     responses:
+  #       '200':
+  #         description: Successfully returned an exposure function group.
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
   /incidence:
     get:
       summary: Returns a list of incidence datasets.
@@ -1697,12 +2010,12 @@ paths:
           description: Zip file containing exposure function results from an analysis.
         '500':
           description: System or Server Error.
-  /tasks/pending:
+  /batch-tasks/pending:
     get:
-      summary: Returns a list of pending tasks.
+      summary: Returns a list of pending batch tasks.
       responses:
         '200':
-          description: An array of pending tasks.
+          description: An array of pending batch tasks.
           content:
             application/json:
               schema:
@@ -1712,6 +2025,60 @@ paths:
                     type: array
                     items:
                       type: object
+                      properties: 
+                        batch_task_name:
+                          type: string
+                          example: "PM Policy Example"
+                        batch_task_id:
+                          type: integer
+                          example: 1
+                        batch_task_user_id:
+                          type: string
+                          example: example@example.com
+                        batch_task_progress:
+                          type: string
+                          example: "Completed 0 of 1 tasks."
+                        batch_started_date:
+                          type: string
+                          example: "2023-09-28 09:30:00"
+                        tasks:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              task_name:
+                                type: string
+                                example: "PM Policy Example-PM Policy Example 1 2032-2000"
+                              task_uuid:
+                                type: string
+                                example: "b3e62..."
+                              task_submitted_date:
+                                type: string
+                                example: "2023-09-28 09:30:00"
+                              task_type:
+                                type: string
+                                example: "Exposure"
+                              task_user_id:
+                                type: string
+                                example: "example@example.com"
+                              task_started_message:
+                                type: string
+                                example: "Started at 2023-09-28 09:30:00"
+                              task_progress_message:
+                                type: object
+                                properties:
+                                  status:
+                                    type: string
+                                    example: "active"
+                                  message:
+                                    type: string
+                                    example: "Loading air quality data"
+                              task_percentage:
+                                type: integer
+                                example: 1
+                              task_status: 
+                                type: boolean
+                                example: true
                   success:
                     type: boolean
                     example: true
@@ -1721,12 +2088,12 @@ paths:
                   recordsTotal:
                     type: integer
                     example: 1
-  /tasks/completed:
+  /batch-tasks/completed:
     get:
-      summary: Returns a list of completed tasks.
+      summary: Returns a list of completed batch tasks.
       responses:
         '200':
-          description: Successfully returned an array of completed tasks.
+          description: Successfully returned an array of completed batch tasks.
           content:
             application/json:
               schema:
@@ -1736,6 +2103,78 @@ paths:
                     type: array
                     items:
                       type: object
+                      properties:
+                        batch_task_name:
+                          type: string
+                          example: "PM Policy Example"
+                        batch_task_id:
+                          type: integer
+                          example: 1
+                        batch_task_user_id:
+                          type: string
+                          example: example@example.com
+                        tasks:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              task_name:
+                                type: string
+                                example: "PM Policy Example-PM Policy Example 1 2032-2000"
+                              task_type:
+                                type: string
+                                example: "Exposure"
+                              task_description: 
+                                type: string
+                                example: null
+                              task_uuid:
+                                type: string
+                                example: "b3e62..."
+                              task_submitted_date:
+                                type: string
+                                example: "2023-09-28 09:30:00"
+                              task_completed_date:
+                                type: string
+                                example: "2023-09-28 09:35:00"
+                              task_user_id:
+                                type: string
+                                example: "example@example.com"
+                              task_wait_time:
+                                type: object
+                                properties:
+                                  task_wait_time_display:
+                                    type: string
+                                    example: "0 seconds"
+                                  task_wait_time_seconds:
+                                    type: integer
+                                    example: 0
+                              task_execution_time:
+                                type: object
+                                properties:
+                                  task_execution_time_display:
+                                    type: string
+                                    example: "5 minutes 0 seconds"
+                                  task_execution_time_seconds:
+                                    type: integer
+                                    example: 300
+                              task_elapsed_time: 
+                                type: string
+                                example: "5 minutes 0 seconds"
+                              task_successful:
+                                type: boolean
+                                example: true
+                              task_message: 
+                                type: string
+                                example: "Saved 1,250,000 results"
+                        batch_task_successful:
+                          type: boolean
+                          example: true
+                        batch_completed_date:
+                          type: string
+                          example: "2023-09-28 09:35:00"
+                        batch_execution_time:
+                          type: string
+                          example: "5 minutes 0 seconds"
                   success:
                     type: boolean
                     example: true
@@ -1745,7 +2184,7 @@ paths:
                   recordsTotal:
                     type: integer
                     example: 123     
-  /tasks:
+  /batch-tasks:
     post:
       summary: Add a task.
       parameters:
@@ -1782,71 +2221,119 @@ paths:
                     type: string
                     example: "Valuation"
         '500':
-          description: Server or System Error.
-  /batch-tasks:
-    post:
-      summary: Add a batch of tasks
-      requestBody:
-        description: JSON representation of batchTaskConfig
-        content: 
-          application/json:
-            schema:
-              type: object
+          description: Server or System Error.   
+  /batch-tasks/{id}:
+    delete:
+      summary: Deletes a single batch task.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Filter by batch task id.
+          schema:
+            type: string
+            default: 1
       responses:
         '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-    /batch-tasks/pending:
+          description: Batch task was successfully deleted.
+        '404':
+          description: Not found.
+        '500':
+          description: System or Server Error.
+  /batch-tasks/{id}/scenarios:
     get:
-      summary: Returns a list of pending batch tasks.
+      summary: Returns the task info for a given batch task.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Filter by batch task id.
+          schema:
+            type: string
+            default: 1
       responses:
         '200':
-          description: An array of pending batch tasks.
+          description: Successfully the task info for a given batch task.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  data:
+                  batch_task_name:
+                    type: string
+                    example: "PM Policy Example"
+                  id:
+                    type: integer
+                    example: 1
+                  batch_task_user_id:
+                    type: string
+                    example: "example@example.com"
+                  aq_baseline_id:
+                    type: string
+                    example: "16"
+                  aq_baseline_name:
+                    type: string
+                    example: "PM Baseline Example 2032"
+                  pollutant_name: 
+                    type: string
+                    example: "PM2.5"
+                  tasks:
                     type: array
                     items:
                       type: object
+                      properties:
+                        task_name:
+                          type: string
+                          example: "PM Policy Example-PM Policy Example 1 2032-2000"
+                        task_uuid:
+                          type: string
+                          example: "b3e62..."
+                        task_type:
+                          type: string
+                          example: "Exposure"
+                        task_user_id:
+                          type: string
+                          example: "example@example.com"
+                        aq_scenario_name:
+                          type: string
+                          example: "PM Policy Example 1 2032"
+                        pop_year:
+                          type: integer
+                          example: 2000
+                  scenarios:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        scenario_id:
+                          type: integer
+                          example: 19
+                        scenario_name:
+                          type: string
+                          example: "PM Policy Example 1 2032"
                   success:
                     type: boolean
                     example: true
-                  recordsFiltered:
-                    type: integer
-                    example: 1
-                  recordsTotal:
-                    type: integer
-                    example: 1
-  /batch-tasks/completed:
+        '404':
+          description: Not Found.
+  /batch-tasks/{id}/export:
     get:
-      summary: Returns a list of completed batch tasks.
+      summary: Returns an zip file with results of a batch task.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Batch task id.
+          schema:
+            type: string
+            default: 4
       responses:
         '200':
-          description: Successfully returned an array of completed batch tasks.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                  success:
-                    type: boolean
-                    example: true
-                  recordsFiltered:
-                    type: integer
-                    example: 123
-                  recordsTotal:
-                    type: integer
-                    example: 123   
+          description: Zip file with results of a batch task.
+        '404':
+          description: Not found.
+        '500':
+          description: System or Server Error.
   /task-configs:
     get:
       summary: Returns a list of task configurations.
@@ -1985,6 +2472,24 @@ paths:
       responses:
         '200':
           description: Successfully added a task configuration.
+  /task-configs/{id}:
+    delete:
+      summary: Deletes a task configuration.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Filter by task config id.
+          schema:
+            type: string
+            default: 1
+      responses:
+        '200':
+          description: Task config was successfully deleted.
+        '404':
+          description: Not found.
+        '500':
+          description: System or Server Error.
   /user:
     get:
       summary: Returns the user's id.
