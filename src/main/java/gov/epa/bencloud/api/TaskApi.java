@@ -1133,6 +1133,7 @@ public class TaskApi {
 //		   includeValuation (boolean, default to false)
 //		   includeExposure (boolean, default to false)
 //		   gridId= (comma delimited list. aggregate the results to one or more grid definition)
+//		   hifUuid (when this id is not provided, export all results from this batch; if provided, export the scenario associated with this hif results. 
 		
 		Integer batchId;
 		int[] gridIds;
