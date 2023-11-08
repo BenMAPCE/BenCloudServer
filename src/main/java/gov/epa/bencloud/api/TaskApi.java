@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 
 import javax.servlet.MultipartConfigElement;
 
@@ -576,6 +578,12 @@ public class TaskApi {
 		.returning(TASK_BATCH.ID)
 		.fetchOne();
 		Integer batchTaskId = rec.getId();
+
+		//Some functions are present across multiple endpoint groups
+		//Track all health impact and valuation functions to 
+		// avoid running the same functions multiple times
+		Set<Integer> allHifs = new HashSet<Integer>();
+		
 		
 		if(batchTaskConfig.batchHifGroups.size() > 0) {
 			//Create hif and valuation tasks
@@ -593,9 +601,14 @@ public class TaskApi {
 			//Combine all the selected HIFs into a big, flat list for processing
 			for (BatchHIFGroup hifGroup : batchTaskConfig.batchHifGroups) {
 				for (HIFConfig hifConfig : hifGroup.hifs) {
-					hifTaskConfig.hifs.add(hifConfig);
+					Set<Integer> allValuationFunctions = new HashSet<Integer>();
+					if(allHifs.add(hifConfig.hifId)) {
+						hifTaskConfig.hifs.add(hifConfig);
+					}
 					for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
-						valuationTaskConfig.valuationFunctions.add(valuationConfig);					
+						if(allValuationFunctions.add(valuationConfig.vfId)) {
+							valuationTaskConfig.valuationFunctions.add(valuationConfig);
+						}				
 					}
 				}
 			}

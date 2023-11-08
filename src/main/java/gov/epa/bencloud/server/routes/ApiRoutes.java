@@ -243,17 +243,17 @@ public class ApiRoutes extends RoutesBase {
 			return b;
 		}, objectMapper::writeValueAsString);
 
-		service.get(apiPrefix + "/batch-task-config-example-hif", (request, response) -> {
-			Object b = TaskApi.getBatchTaskConfigExampleHIF(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return b;
-		}, objectMapper::writeValueAsString);
+		// service.get(apiPrefix + "/batch-task-config-example-hif", (request, response) -> {
+		// 	Object b = TaskApi.getBatchTaskConfigExampleHIF(request, response, getUserProfile(request, response));
+		// 	response.type("application/json");
+		// 	return b;
+		// }, objectMapper::writeValueAsString);
 
-		service.get(apiPrefix + "/batch-task-config-example-exposure", (request, response) -> {
-			Object b = TaskApi.getBatchTaskConfigExampleExposure(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return b;
-		}, objectMapper::writeValueAsString);
+		// service.get(apiPrefix + "/batch-task-config-example-exposure", (request, response) -> {
+		// 	Object b = TaskApi.getBatchTaskConfigExampleExposure(request, response, getUserProfile(request, response));
+		// 	response.type("application/json");
+		// 	return b;
+		// }, objectMapper::writeValueAsString);
 		
 		/*
 		 * GET a list of incidence datasets including prevalence
@@ -535,75 +535,6 @@ public class ApiRoutes extends RoutesBase {
 			return null;
 		});
 		
-		service.get(apiPrefix + "/tasks/pending", (request, response) -> {
-			ObjectNode data = TaskQueue.getPendingTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
-			response.type("application/json");
-			return data;
-
-		});
-		
-		service.get(apiPrefix + "/tasks/completed", (request, response) -> {
-
-			ObjectNode data = TaskComplete.getCompletedTasks(request, response, getUserProfile(request, response), getPostParametersAsMap(request));
-			response.type("application/json");
-			return data;
-
-		});
-		
-		service.post(apiPrefix + "/tasks", (request, response) -> {
-
-			String body = request.body();
-			
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode params = mapper.readTree(body);
-
-			try {
-				UserProfile profile = getUserProfile(request, response).get();
-				// As an interim protection against overloading the system, users can only have a maximum of 10 pending or completed tasks total
-				int taskCount = TaskApi.getTotalTaskCountForUser(profile);			
-				int maxTasks = 20;
-				
-				String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
-				
-				try {
-					maxTasks = Integer.parseInt(sMaxTaskPerUser);
-				} catch(NumberFormatException e) {
-					//If this is no set in the properties, we will use the default of 20.
-				}
-						
-				if(maxTasks != 0 && taskCount >= maxTasks) {
-					return CoreApi.getErrorResponse(request, response, 401, "You have reached the maximum of " + maxTasks + " tasks allowed per user. Please delete existing task results before submitting new tasks.");
-				}
-				
-				Task task = new Task();
-				task.setUserIdentifier(profile.getId());
-				task.setType(params.get("type").asText());
-
-				if(CoreApi.isValidTaskType(task.getType()) == false) {
-					return CoreApi.getErrorResponseBadRequest(request, response);
-				}
-				
-				task.setName(params.get("name").asText());
-				task.setParameters(body);
-				task.setUuid(UUID.randomUUID().toString());
-				JsonNode parentTaskUuid = params.get("parent_task_uuid");
-				if(parentTaskUuid != null) {
-					task.setParentUuid(params.get("parent_task_uuid").asText());
-				}
-			
-				TaskQueue.writeTaskToQueue(task);
-				
-				ObjectNode ret = mapper.createObjectNode();
-				ret.put("task_uuid", task.getUuid());
-				response.type("application/json");
-				return ret;
-			} catch(NullPointerException e) {
-				e.printStackTrace();
-				return CoreApi.getErrorResponseBadRequest(request, response);
-			}
-
-		});
-		
 		service.get(apiPrefix + "/task-configs", (request, response) -> {
 			Object data = TaskApi.getTaskConfigs(request, response, getUserProfile(request, response));
 			response.type("application/json");
@@ -668,40 +599,40 @@ public class ApiRoutes extends RoutesBase {
 //			return data;
 //
 //		});
-		service.get(apiPrefix + "/admin/purge-results", (request, response) -> {
-			Object data = CoreApi.getPurgeResults(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
+		// service.get(apiPrefix + "/admin/purge-results", (request, response) -> {
+		// 	Object data = CoreApi.getPurgeResults(request, response, getUserProfile(request, response));
+		// 	response.type("application/json");
+		// 	return data;
 
-		});
+		// });
 		
-		service.get(apiPrefix + "/admin/pods", (request, response) -> {
-			Object data = KubernetesUtil.listPods(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
+		// service.get(apiPrefix + "/admin/pods", (request, response) -> {
+		// 	Object data = KubernetesUtil.listPods(request, response, getUserProfile(request, response));
+		// 	response.type("application/json");
+		// 	return data;
 
-		});
+		// });
 		
-		service.get(apiPrefix + "/admin/top-pods", (request, response) -> {
-			Object data = KubernetesUtil.getTopPods(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
+		// service.get(apiPrefix + "/admin/top-pods", (request, response) -> {
+		// 	Object data = KubernetesUtil.getTopPods(request, response, getUserProfile(request, response));
+		// 	response.type("application/json");
+		// 	return data;
 
-		});
+		// });
 		
-		service.get(apiPrefix + "/admin/job-logs", (request, response) -> {
-			Object data = KubernetesUtil.listJobLogs(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
+		// service.get(apiPrefix + "/admin/job-logs", (request, response) -> {
+		// 	Object data = KubernetesUtil.listJobLogs(request, response, getUserProfile(request, response));
+		// 	response.type("application/json");
+		// 	return data;
 
-		});
+		// });
 		
-		service.get(apiPrefix + "/admin/delete-jobs", (request, response) -> {
-			Object data = KubernetesUtil.deleteJobs(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return data;
+		// service.get(apiPrefix + "/admin/delete-jobs", (request, response) -> {
+		// 	Object data = KubernetesUtil.deleteJobs(request, response, getUserProfile(request, response));
+		// 	response.type("application/json");
+		// 	return data;
 
-		});
+		// });
 		
 	}
 
