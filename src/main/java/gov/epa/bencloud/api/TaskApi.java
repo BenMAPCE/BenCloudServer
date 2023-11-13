@@ -1146,20 +1146,29 @@ public class TaskApi {
 //		   includeValuation (boolean, default to false)
 //		   includeExposure (boolean, default to false)
 //		   gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		// taskUuid=(optional. since there is not a defined class for "scenario", we use parent-child relationship to pull all relevant results)
+		// uuidType = (optional. examples: "H", "V", "E")
+	   
+		
 		
 		Integer batchId;
 		int[] gridIds;
 		Boolean includeHealthImpact = false;
 		Boolean includeValuation = false;
 		Boolean includeExposure = false;
+		String taskUuid="";
+		String uuidType = "";
 		try {
 			String idParam = String.valueOf(request.params("id"));
 			batchId = Integer.valueOf(idParam);
 			includeHealthImpact = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeHealthImpact").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
 			includeValuation = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeValuation").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
 			includeExposure = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeExposure").equals("1")?"true":request.raw().getParameter("includeExposure"), false);
+			taskUuid = ParameterUtil.getParameterValueAsString(request.raw().getParameter("taskUuid"),"");
+			uuidType = ParameterUtil.getParameterValueAsString(request.raw().getParameter("uuidType"),"");			
 			
 			String gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
+
 			if(gridIdParam==null || gridIdParam.equals("")){
 				gridIds=null;
 			}else {
@@ -1229,12 +1238,25 @@ public class TaskApi {
 		if(includeExposure) {
 			//Exposure results
 			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-			//get valuation task ids
-			List<Integer> exposureResultDatasetIds = create.select()
-					.from(EXPOSURE_RESULT_DATASET)
-					.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
-					.fetch(EXPOSURE_RESULT_DATASET.ID);
+			//get valuation task ids 
+			List<Integer> exposureResultDatasetIds;
+			if(uuidType.equals("E")) {
+				//export current scenario
+				exposureResultDatasetIds = create.select()
+						.from(EXPOSURE_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.where(TASK_COMPLETE.TASK_UUID.eq(taskUuid))
+						.fetch(EXPOSURE_RESULT_DATASET.ID);
+			}
+			else {
+				//export all scenarios in this batch task
+				exposureResultDatasetIds = create.select()
+						.from(EXPOSURE_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+						.fetch(EXPOSURE_RESULT_DATASET.ID);
+			}
+			
 			
 			//Loop through each function and each grid definition
 			for(int exposureResultDatasetId : exposureResultDatasetIds) {
@@ -1318,11 +1340,31 @@ public class TaskApi {
 		if(includeHealthImpact) {
 			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 			//get hif task ids
-			List<Integer> hifResultDatasetIds = create.select()
-					.from(HIF_RESULT_DATASET)
-					.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
-					.fetch(HIF_RESULT_DATASET.ID);
+			List<Integer> hifResultDatasetIds;
+			if(uuidType.equals("H")) {
+				//export all hif results from the same senario as taskUuid.
+				hifResultDatasetIds = create.select()
+						.from(HIF_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.and(HIF_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+						.fetch(HIF_RESULT_DATASET.ID);
+			}
+			else if(uuidType.equals("V")) {
+				hifResultDatasetIds = create.select()
+						.from(HIF_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.join(VALUATION_RESULT_DATASET).on(HIF_RESULT_DATASET.ID.eq(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID))
+						.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+						.fetch(HIF_RESULT_DATASET.ID);
+			}
+			else {
+				hifResultDatasetIds = create.select()
+						.from(HIF_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+						.fetch(HIF_RESULT_DATASET.ID);
+			}
+			
 			
 			//Loop through each function and each grid definition
 			for(int hifResultDatasetId : hifResultDatasetIds) {
@@ -1433,11 +1475,33 @@ public class TaskApi {
 			//Valuation results
 			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 			//get valuation task ids
-			List<Integer> valuationResultDatasetIds = create.select()
-					.from(VALUATION_RESULT_DATASET)
-					.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
-					.fetch(VALUATION_RESULT_DATASET.ID);
+			List<Integer> valuationResultDatasetIds;
+			if(uuidType.equals("H")) {
+				//export all val results from the same senario as hif taskUuid.
+				valuationResultDatasetIds = create.select()
+						.from(VALUATION_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
+						.where(HIF_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+						.fetch(VALUATION_RESULT_DATASET.ID);
+			}
+			else if(uuidType.equals("V")) {
+				valuationResultDatasetIds = create.select()
+						.from(VALUATION_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.and(VALUATION_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+						.fetch(VALUATION_RESULT_DATASET.ID);
+			}
+			else {
+				valuationResultDatasetIds = create.select()
+						.from(VALUATION_RESULT_DATASET)
+						.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+						.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+						.fetch(VALUATION_RESULT_DATASET.ID);
+			}
+			
+			
+			
 			
 			//Loop through each function and each grid definition
 			for(int valuationResultDatasetId : valuationResultDatasetIds) {
