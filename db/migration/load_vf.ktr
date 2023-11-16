@@ -696,7 +696,7 @@
 a.A, a.NAMEA, a.DISTA, a.P1A, a.P2A, a.B, a.NAMEB, a.C, a.NAMEC, a.D, a.NAMED
 FROM VALUATIONFUNCTIONS a
 join VALUATIONFUNCTIONALFORMS b on a.FUNCTIONALFORMID = b.FUNCTIONALFORMID
-where a.VALUATIONFUNCTIONDATASETID = 9</sql>
+where a.VALUATIONFUNCTIONDATASETID = 8</sql>
     <limit>0</limit>
     <lookup/>
     <execute_each_row>N</execute_each_row>
