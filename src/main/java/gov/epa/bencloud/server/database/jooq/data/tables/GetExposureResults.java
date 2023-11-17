@@ -9,7 +9,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResu
 
 import org.jooq.Field;
 import org.jooq.Name;
-import org.jooq.Row9;
+import org.jooq.Row10;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -54,6 +54,12 @@ public class GetExposureResults extends TableImpl<GetExposureResultsRecord> {
      * The column <code>data.get_exposure_results.exposure_function_id</code>.
      */
     public final TableField<GetExposureResultsRecord, Integer> EXPOSURE_FUNCTION_ID = createField(DSL.name("exposure_function_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column
+     * <code>data.get_exposure_results.exposure_function_instance_id</code>.
+     */
+    public final TableField<GetExposureResultsRecord, Integer> EXPOSURE_FUNCTION_INSTANCE_ID = createField(DSL.name("exposure_function_instance_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.get_exposure_results.result</code>.
@@ -150,12 +156,12 @@ public class GetExposureResults extends TableImpl<GetExposureResultsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row9 type methods
+    // Row10 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row9<Integer, Integer, Integer, Double, Double, Double, Double, Double, Double> fieldsRow() {
-        return (Row9) super.fieldsRow();
+    public Row10<Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double> fieldsRow() {
+        return (Row10) super.fieldsRow();
     }
 
     /**

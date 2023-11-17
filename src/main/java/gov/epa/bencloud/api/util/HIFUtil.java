@@ -226,7 +226,8 @@ public class HIFUtil {
 						, HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC
 						, HIF_RESULT_FUNCTION_CONFIG.INCIDENCE_DATASET_ID
 						, HIF_RESULT_FUNCTION_CONFIG.PREVALENCE_DATASET_ID
-						, HIF_RESULT_FUNCTION_CONFIG.VARIABLE_DATASET_ID)
+						, HIF_RESULT_FUNCTION_CONFIG.VARIABLE_DATASET_ID
+						, HIF_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID)
 				.values(hifResultDatasetId
 						, hif.hifId
 						, hif.startAge
@@ -239,7 +240,8 @@ public class HIFUtil {
 						, hif.metricStatistic
 						, hif.incidence
 						, hif.prevalence
-						, hif.variable)
+						, hif.variable
+						, hif.hifInstanceId)
 				.execute();
 				
 			}
