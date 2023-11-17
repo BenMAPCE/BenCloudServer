@@ -286,6 +286,7 @@ public class ValuationTaskRunnable implements Runnable {
 		rec.setGridCol(hifResult.get(GET_HIF_RESULTS.GRID_COL));
 		rec.setGridRow(hifResult.get(GET_HIF_RESULTS.GRID_ROW));
 		rec.setHifId(vfConfig.hifId);
+		rec.setHifInstanceId(vfConfig.hifInstanceId);
 		rec.setVfId(vfConfig.vfId);
 
 		rec.setResult(valuationFunctionEstimate);

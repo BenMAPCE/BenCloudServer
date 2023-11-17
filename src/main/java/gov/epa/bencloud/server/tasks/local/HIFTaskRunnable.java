@@ -420,6 +420,7 @@ public class HIFTaskRunnable implements Runnable {
 						rec.setGridCol(baselineCell.getGridCol());
 						rec.setGridRow(baselineCell.getGridRow());
 						rec.setHifId(hifConfig.hifId);
+						rec.setHifInstanceId(hifConfig.hifInstanceId);
 						rec.setPopulation(totalPop);
 						rec.setDeltaAq(deltaQ);
 						rec.setBaselineAq(baselineValue);
