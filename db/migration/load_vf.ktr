@@ -696,7 +696,7 @@
 a.A, a.NAMEA, a.DISTA, a.P1A, a.P2A, a.B, a.NAMEB, a.C, a.NAMEC, a.D, a.NAMED
 FROM VALUATIONFUNCTIONS a
 join VALUATIONFUNCTIONALFORMS b on a.FUNCTIONALFORMID = b.FUNCTIONALFORMID
-where a.VALUATIONFUNCTIONDATASETID = 6</sql>
+where a.VALUATIONFUNCTIONDATASETID = 8</sql>
     <limit>0</limit>
     <lookup/>
     <execute_each_row>N</execute_each_row>
@@ -1194,7 +1194,7 @@ where a.VALUATIONFUNCTIONDATASETID = 6</sql>
     <schema>data</schema>
     <table>valuation_function</table>
     <commit>1000</commit>
-    <truncate>Y</truncate>
+    <truncate>N</truncate>
     <ignore_errors>N</ignore_errors>
     <use_batch>Y</use_batch>
     <specify_fields>Y</specify_fields>

@@ -590,7 +590,7 @@
     <connection>benmap_firebird</connection>
     <sql>SELECT a.VALUATIONFUNCTIONDATASETID, a.VALUATIONFUNCTIONDATASETNAME
 FROM VALUATIONFUNCTIONDATASETS a
-where a.VALUATIONFUNCTIONDATASETID = 6</sql>
+where a.VALUATIONFUNCTIONDATASETID = 8</sql>
     <limit>0</limit>
     <lookup/>
     <execute_each_row>N</execute_each_row>

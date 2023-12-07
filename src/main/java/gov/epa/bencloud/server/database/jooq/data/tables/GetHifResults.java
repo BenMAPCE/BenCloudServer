@@ -9,7 +9,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRe
 
 import org.jooq.Field;
 import org.jooq.Name;
-import org.jooq.Row16;
+import org.jooq.Row17;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -54,6 +54,11 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
      * The column <code>data.get_hif_results.hif_id</code>.
      */
     public final TableField<GetHifResultsRecord, Integer> HIF_ID = createField(DSL.name("hif_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.get_hif_results.hif_instance_id</code>.
+     */
+    public final TableField<GetHifResultsRecord, Integer> HIF_INSTANCE_ID = createField(DSL.name("hif_instance_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.get_hif_results.point_estimate</code>.
@@ -185,12 +190,12 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row16 type methods
+    // Row17 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row16<Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
-        return (Row16) super.fieldsRow();
+    public Row17<Integer, Integer, Integer, Integer, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double[]> fieldsRow() {
+        return (Row17) super.fieldsRow();
     }
 
     /**
