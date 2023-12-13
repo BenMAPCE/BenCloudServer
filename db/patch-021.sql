@@ -387,8 +387,6 @@ UPDATE "data".valuation_result SET hif_instance_id=hif_id where hif_instance_id 
 UPDATE "data".exposure_result_function_config SET exposure_function_instance_id=exposure_function_id where exposure_function_instance_id is null;
 UPDATE "data".exposure_result SET exposure_function_instance_id=exposure_function_id where exposure_function_instance_id is null;
 
-
-
 GRANT CONNECT ON DATABASE benmap TO benmap_system;
 GRANT USAGE ON SCHEMA data, grids, tiger, tiger_data, topology TO benmap_system;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA data, grids TO benmap_system;
