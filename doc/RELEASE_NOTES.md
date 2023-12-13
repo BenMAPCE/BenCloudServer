@@ -12,7 +12,7 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 ### Known Issues
 * ...
 
-## Production 2023-12-13 | [API v0.4.2 and DB v21](https://github.com/BenMAPCE/BenCloudServer/tree/r0.4.2-release) | [UI v0.4.2](https://github.com/BenMAPCE/BenCloudServer/tree/r0.4.2-release)
+## Production 2023-12-12 | [API v0.4.2 and DB v21](https://github.com/BenMAPCE/BenCloudServer/tree/r0.4.2-release) | [UI v0.4.2](https://github.com/BenMAPCE/BenCloudServer/tree/r0.4.2-release)
 
 ### New Features and Improvements
 * Improved View Results interaface behavior to reduce unnecessary tab reloading. (BCD-316)
