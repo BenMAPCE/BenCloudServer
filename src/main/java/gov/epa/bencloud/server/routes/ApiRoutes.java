@@ -462,11 +462,8 @@ public class ApiRoutes extends RoutesBase {
 			return null;
 		});
 		
-		service.delete(apiPrefix + "/tasks/:uuid", (request, response) -> {
-			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
+			// TODO: validateStatus in JS for non-200 codes
 
-		});
-		
 		/*
 		 * Cancel a pending task
 		 */

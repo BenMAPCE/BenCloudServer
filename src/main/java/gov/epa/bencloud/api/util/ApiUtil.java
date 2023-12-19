@@ -195,37 +195,6 @@ public class ApiUtil {
 	}
 	
 	/**
-	 * Deletes the results of a task, task UUID given in the req parameters.
-	 * @param req
-	 * @param res
-	 * @param userProfile
-	 * @return null
-	 */
-	public static Object deleteTaskResults(Request req, Response res, Optional<UserProfile> userProfile) {
-		String uuid = req.params("uuid");
-
-		TaskCompleteRecord completedTask = DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(TASK_COMPLETE)
-				.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
-				.fetchAny();
-
-		if(completedTask == null) {
-			return CoreApi.getErrorResponseNotFound(req, res);
-		}
-		
-		if(CoreApi.isAdmin(userProfile) == false && completedTask.getUserId().equalsIgnoreCase(userProfile.get().getId()) == false) {
-			return CoreApi.getErrorResponseForbidden(req, res);
-		}
-
-		if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
-			TaskUtil.deleteHifResults(uuid, true);
-		} else if (completedTask.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
-			TaskUtil.deleteValuationResults(uuid, true);
-		}
-		res.status(204);
-		return res;
-	}
-	
-	/**
 	 * Cancel a queued task and remove generated results. Task UUID given in the req parameters.
 	 * @param req
 	 * @param res
