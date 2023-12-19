@@ -250,7 +250,7 @@ public class TaskApi {
 		//make sure the new template name is unique among this user's templates
 		List<String>taskNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
 		if (taskNames.contains(name)) {
-			response.status(200);
+			response.status(409);
 			String errorMsg = "A task named " + name + " already exists. Please enter a different name.";
 			return "{\"message\": \"" + errorMsg + "\"}";
 		}	
@@ -554,7 +554,7 @@ public class TaskApi {
 		}
 				
 		if(maxTasks != 0 && taskCount >= maxTasks) {
-			return CoreApi.getSuccessResponse(request, response, 200, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks. You can save the current configuration as a template and return to it later.");
+			return CoreApi.getErrorResponse(request, response, 405, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks. You can save the current configuration as a template and return to it later.");
 		}
 	
 		

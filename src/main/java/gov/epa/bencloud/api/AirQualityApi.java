@@ -826,7 +826,7 @@ public class AirQualityApi {
 				
 		if(layerName == null || pollutantId == null || gridId == null) {
 			response.type("application/json");
-			//response.status(400);
+			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: name, pollutantId, gridId."));
 			return transformValMsgToJSON(validationMsg);
