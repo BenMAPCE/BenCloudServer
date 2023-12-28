@@ -4,6 +4,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.epa.bencloud.api.model.HIFTaskLog;
+import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
 import gov.epa.bencloud.api.util.ApiUtil;
@@ -137,8 +139,8 @@ public class ValuationApi {
 			vfRecords = create.select(
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-				ENDPOINT.NAME.as("endpoint"),
-				VALUATION_FUNCTION.QUALIFIER.as("name"),
+				DSL.val(null, String.class).as("endpoint"),
+				DSL.val(null, String.class).as("name"),
 				HEALTH_IMPACT_FUNCTION.AUTHOR,
 				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 				HEALTH_IMPACT_FUNCTION.QUALIFIER,
@@ -158,7 +160,8 @@ public class ValuationApi {
 				vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
 				vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES),
 				DSL.val(null, String.class).as("formatted_results_2sf"),
-				DSL.val(null, String.class).as("formatted_results_3sf")
+				DSL.val(null, String.class).as("formatted_results_3sf"),
+				vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)
 				)
 				.from(vfResultRecords)
 				.join(VALUATION_RESULT_FUNCTION_CONFIG)
@@ -172,9 +175,7 @@ public class ValuationApi {
 				.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
 						.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID))
 						.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID)))
-				.leftJoin(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)))
 				.leftJoin(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
-				.leftJoin(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
 				.leftJoin(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 				.leftJoin(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.leftJoin(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
@@ -203,12 +204,33 @@ public class ValuationApi {
 					}
 				}
 
+				// Add in valuation function information
+				ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(id);
+				HashMap<Integer, HashMap<String, String>> vfConfigs = new HashMap<Integer, HashMap<String, String>>();
+				
+				for (ValuationConfig vf : vfTaskLog.getVfTaskConfig().valuationFunctions) {
+					if(! vfConfigs.containsKey(vf.vfId)) {
+						HashMap<String, String> vfInfo = new HashMap<String, String>();
+						vfInfo.put("name", vf.vfRecord.get("qualifier").toString());
+						vfInfo.put("endpoint", vf.vfRecord.get("endpoint_name").toString());
+						vfConfigs.put(vf.vfId, vfInfo);
+					}
+				}
+
+				for(Record res : vfRecords) {
+					HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
+					res.setValue(DSL.field("name"), vfConfig.get("name"));
+					res.setValue(DSL.field("endpoint"), vfConfig.get("endpoint"));	
+				}
+				
+				// Add in the formatted results
 				for (Record res : vfRecords) {
 					res.setValue(DSL.field("formatted_results_2sf", String.class), 
 									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
 					res.setValue(DSL.field("formatted_results_3sf", String.class), 
 									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
 				}
+				
 				//Remove percentiles by keeping all other fields
 				vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,23));
 			
@@ -229,12 +251,15 @@ public class ValuationApi {
 		
 	}
 	
+	
 	/**
 	 * Exports all valuation results to a zip file.
 	 * @param request
 	 * @param response
 	 * @param userProfile
 	 */
+	
+	/* OBSOLETE CODE
 	public static void getValuationResultExport(Request request, Response response, Optional<UserProfile> userProfile) {
 		
 		 //*  :id (valuation results dataset id)
@@ -420,6 +445,8 @@ public class ValuationApi {
 		}
 		
 	}
+	
+	*/
 	
 	/**
 	 * 

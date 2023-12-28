@@ -56,7 +56,7 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "0.4.2";
+	public static final String appVersion = "0.4.3";
 	public static final int minimumDbVersion = 21;
 	
 	/**

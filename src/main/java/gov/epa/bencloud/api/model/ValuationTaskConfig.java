@@ -150,15 +150,19 @@ public class ValuationTaskConfig {
 
     public List<String> getRequiredVariableNames() {
 		Set<String> variables = new HashSet<String>();
-
-		for (ValuationConfig vConfig : this.valuationFunctions) {
-			VFunction func = ValuationUtil.getFunctionForVF(vConfig.vfId);
-			variables.addAll(func.getRequiredVariables());
-		}
-
 		List<String> ret = new ArrayList<String>();
-		ret.addAll(variables);
 
+		try {
+			for (ValuationConfig vConfig : this.valuationFunctions) {
+				VFunction func = ValuationUtil.getFunctionForVF(vConfig.vfId);
+				variables.addAll(func.getRequiredVariables());
+			}
+			ret.addAll(variables);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		return ret;
     }
 

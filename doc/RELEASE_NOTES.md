@@ -8,6 +8,8 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 
 ### Bug Fixes
 * The Older Adults (64-99) Exposure analysis group should be 65-99. (BCD-336)
+* Ensure that valuation results are still available if valuation function ids changes. (BCD-334)
+* Replace valuation function dataset with latest version including the updated School Loss Days function. (BCD-337)
 
 ### Known Issues
 * ...
