@@ -427,21 +427,21 @@ public class IncidenceApi {
 
 		Result<Record15<Integer, Integer, String, String, String, String, String, Short, Short, Boolean, String, String, Double, String, Double>> incRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
-						INCIDENCE_VALUE.GRID_COL,
-						INCIDENCE_VALUE.GRID_ROW,
-						ENDPOINT.NAME.as("endpoint"),
-						ENDPOINT_GROUP.NAME.as("endpoint_group"),
-						RACE.NAME.as("race"),
-						GENDER.NAME.as("gender"),
-						ETHNICITY.NAME.as("ethnicity"),
-						INCIDENCE_ENTRY.START_AGE,
-						INCIDENCE_ENTRY.END_AGE,
-						INCIDENCE_ENTRY.PREVALENCE.as("type"),
-						INCIDENCE_ENTRY.TIMEFRAME.as("timeframe"),
-						INCIDENCE_ENTRY.UNITS.as("units"),
-						INCIDENCE_VALUE.VALUE,
-						INCIDENCE_ENTRY.DISTRIBUTION.as("distribution"),
-						INCIDENCE_ENTRY.STANDARD_ERROR
+						INCIDENCE_VALUE.GRID_COL.as("Column"),
+						INCIDENCE_VALUE.GRID_ROW.as("Row"),
+						ENDPOINT.NAME.as("Health Effect"),
+						ENDPOINT_GROUP.NAME.as("Health Effect Group"),
+						RACE.NAME.as("Race"),
+						GENDER.NAME.as("Gender"),
+						ETHNICITY.NAME.as("Ethnicity"),
+						INCIDENCE_ENTRY.START_AGE.as("Start Age"),
+						INCIDENCE_ENTRY.END_AGE.as("End Age"),
+						INCIDENCE_ENTRY.PREVALENCE.as("Type"),
+						INCIDENCE_ENTRY.TIMEFRAME.as("Timeframe"),
+						INCIDENCE_ENTRY.UNITS.as("Units"),
+						INCIDENCE_VALUE.VALUE.as("Value"),
+						INCIDENCE_ENTRY.DISTRIBUTION.as("Distribution"),
+						INCIDENCE_ENTRY.STANDARD_ERROR.as("Standard Error")
 						)
 				.from(INCIDENCE_VALUE)
 				.join(INCIDENCE_ENTRY).on(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.eq(INCIDENCE_ENTRY.ID))
@@ -605,10 +605,10 @@ public class IncidenceApi {
 				case "row":
 					rowIdx=i;
 					break;
-				case "endpoint":
+				case "healtheffect":
 					endpointIdx=i;
 					break;
-				case "endpointgroup":
+				case "healtheffectgroup":
 					endpointGroupIdx=i;
 					break;
 				case "race":
@@ -936,21 +936,6 @@ public class IncidenceApi {
 				validationMsg.messages.add(msg);
 			}
 
-			if(countMissingEthnicity>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingEthnicity == 1) {
-					strRecord = String.valueOf(countMissingEthnicity) + " record is missing a Ethnicity value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingEthnicity) + " records are missing Ethnicity values.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
 			if(lstUndefinedEthnicities.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -959,40 +944,10 @@ public class IncidenceApi {
 				validationMsg.messages.add(msg);
 			}
 
-			if(countMissingRace>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingRace == 1) {
-					strRecord = String.valueOf(countMissingRace) + " record is missing a Race value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingEthnicity) + " records are missing Race values.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
 			if(lstUndefinedRaces.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Ethnicity values are not defined: " + String.join(",", lstUndefinedRaces) + ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(countMissingGender>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingGender == 1) {
-					strRecord = String.valueOf(countMissingGender) + " record is missing a Gender value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingGender) + " records are missing Gender values.";
-				}
-				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1047,36 +1002,6 @@ public class IncidenceApi {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Endpoint Group values are not defined: " + String.join(",", lstUndefinedEndpointGroups) + ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(countMissingTimeframe>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingTimeframe == 1) {
-					strRecord = String.valueOf(countMissingTimeframe) + " record is missing a Timeframe value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingTimeframe) + " records are missing Timeframe values.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(countMissingUnits>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingTimeframe == 1) {
-					strRecord = String.valueOf(countMissingUnits) + " record is missing a Units value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingUnits) + " records are missing Units values.";
-				}
-				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1169,6 +1094,10 @@ public class IncidenceApi {
 				short startAge = Short.valueOf(record[startAgeIdx]);
 				short endAge = Short.valueOf(record[endAgeIdx]);
 				boolean prevalence = "prevalence".equalsIgnoreCase(record[typeIdx]);
+				Double standardError = null;
+				if(!record[standardErrorIdx].equals("")){
+					standardError = Double.valueOf(record[standardErrorIdx]);
+				}
 
 				//check if there is a matching incidence_entry_id for the current row's metrics
 				String entryQuery = String.format("incidence_dataset_id=%d and grid_definition_id=%d and endpoint_group_id=%d and endpoint_id=%d and race_id=%d and gender_id=%d and start_age=%d and end_age=%d and type='%s' and ethnicity_id=%d",
@@ -1217,7 +1146,7 @@ public class IncidenceApi {
 						record[timeFrameIdx].toLowerCase(),
 						record[unitsIdx].toLowerCase(),
 						record[distributionIdx].toLowerCase(),
-						Double.valueOf(record[standardErrorIdx])
+						standardError
 
 					)
 					.returning(INCIDENCE_ENTRY.ID,INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
