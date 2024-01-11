@@ -790,7 +790,9 @@ public class TaskApi {
 						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
 						data.put("aq_baseline_name", aqBaselineName);
 						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
-
+						int valuationGridId = batchParamsNode.get("gridDefinitionId").asInt();
+						data.put("valuation_grid_id", valuationGridId);
+						data.put("valuation_grid_name", GridDefinitionApi.getGridDefinitionName(valuationGridId));
 
 						Condition filterCondition = DSL.trueCondition();
 						filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(batchTaskId));
