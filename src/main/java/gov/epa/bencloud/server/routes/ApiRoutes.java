@@ -547,19 +547,6 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		/*
-		 * GET valuation grid definition using giving task uuid and task type
-		 * Parameters:
-		 * :id is task uuid
-		 * uuidType ("H", "V", or "E")
-		 * Returns both grid definition id and name
-		 */
-		service.get(apiPrefix + "/batch-task-vf-grid/:id", (request, response) -> {
-			Object ret= TaskApi.getValuationGridDefinition(request, response, getUserProfile(request, response));
-			response.type("application/json");
-			return ret;			
-		});
-		
-		/*
 		 * add task
 		 */
 		
