@@ -332,6 +332,7 @@ public class ExposureTaskRunnable implements Runnable {
 						rec.setGridCol(baselineCell.getGridCol());
 						rec.setGridRow(baselineCell.getGridRow());
 						rec.setExposureFunctionId(exposureConfig.efId);
+						rec.setExposureFunctionInstanceId(exposureConfig.efInstanceId);
 						
 						//Use the variable to adjust the population if it's present. Else, v1 = 1.0 and will have no effect 
 						rec.setSubgroupPopulation(totalSubgroupPop * v1);

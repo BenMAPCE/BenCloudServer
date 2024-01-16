@@ -22,11 +22,11 @@ dependencies {
     	exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-client'
 	}
     
-    implementation 'org.eclipse.jetty:jetty-server:9.4.52.v20230823'
-    implementation 'org.eclipse.jetty:jetty-webapp:9.4.52.v20230823'
-    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.52.v20230823'
-    implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.52.v20230823'
-    implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.52.v20230823'
+    implementation 'org.eclipse.jetty:jetty-server:9.4.53.v20231009'
+    implementation 'org.eclipse.jetty:jetty-webapp:9.4.53.v20231009'
+    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.53.v20231009'
+    implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.53.v20231009'
+    implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.53.v20231009'
         
 	implementation 'org.pac4j:spark-pac4j:5.0.1'
 	implementation 'org.pac4j:pac4j-http:5.6.1'
@@ -45,13 +45,13 @@ dependencies {
 	implementation 'io.dropwizard.metrics:metrics-healthchecks:4.2.0'
 	implementation 'io.dropwizard.metrics:metrics-jmx:4.2.0'
 
-	implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
-	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
+	implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
 
 	implementation 'io.vavr:vavr:0.10.0'
 	implementation 'org.slf4j:slf4j-api:2.0.6'
-	implementation 'ch.qos.logback:logback-classic:1.4.5'
+	implementation 'ch.qos.logback:logback-classic:1.4.14'
 	implementation 'commons-cli:commons-cli:1.4'
 	implementation 'com.opencsv:opencsv:5.8'
 	implementation 'org.apache.commons:commons-lang3:3.9'
@@ -66,7 +66,7 @@ dependencies {
 
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
-    implementation 'io.kubernetes:client-java-extended:18.0.1'
+    implementation 'io.kubernetes:client-java-extended:19.0.0'
 
 	implementation 'org.geotools:gt-main:29.0'
 

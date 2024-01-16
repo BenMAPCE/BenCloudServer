@@ -133,6 +133,8 @@ public class KubernetesUtil {
 		}
 	}
 
+	/* Obsolete code
+	 * 
 	public static Object listPods(Request req, Response res, Optional<UserProfile> userProfile) {
 		try {
 			ApiClient client = ClientBuilder.cluster().build();
@@ -274,4 +276,5 @@ public class KubernetesUtil {
 			return "Error: " + e.getMessage();
 		}
 	}
+	*/
 }

@@ -348,6 +348,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
 		 *  
 		 */	
+		/*
 		service.get(apiPrefix + "/health-impact-result-datasets/:id/export", (request, response) -> {
 			//TODO: Implement a new version of this that supports filtering, etc
 			HIFApi.getHifResultExport(request, response, getUserProfile(request, response));
@@ -358,6 +359,7 @@ public class ApiRoutes extends RoutesBase {
 
 			return null;
 		});
+		*/
 		
 		/*
 		 * GET array of all health impact function result datasets
@@ -409,6 +411,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  :id (valuation results dataset id or task UUID)
 		 *  gridId= (comma delimited list. aggregate the results to one or more grid definitions)
 		 */	
+		/*
 		service.get(apiPrefix + "/valuation-result-datasets/:id/export", (request, response) -> {
 			ValuationApi.getValuationResultExport(request, response, getUserProfile(request, response));
 			
@@ -418,6 +421,7 @@ public class ApiRoutes extends RoutesBase {
 
 			return null;
 		});
+		*/
 		
 		/*
 		 * GET exposure function results from an analysis
@@ -451,6 +455,8 @@ public class ApiRoutes extends RoutesBase {
 		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
 		 *  
 		 */	
+		
+		/*
 		service.get(apiPrefix + "/exposure-result-datasets/:id/export", (request, response) -> {
 			//TODO: Implement a new version of this that supports filtering, etc
 			ExposureApi.getExposureResultExport(request, response, getUserProfile(request, response));
@@ -461,12 +467,10 @@ public class ApiRoutes extends RoutesBase {
 
 			return null;
 		});
+		*/
 		
-		service.delete(apiPrefix + "/tasks/:uuid", (request, response) -> {
-			return ApiUtil.deleteTaskResults(request, response, getUserProfile(request, response));
+			// TODO: validateStatus in JS for non-200 codes
 
-		});
-		
 		/*
 		 * Cancel a pending task
 		 */

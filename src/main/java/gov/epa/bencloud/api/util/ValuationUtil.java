@@ -160,10 +160,12 @@ public class ValuationUtil {
 				create.insertInto(VALUATION_RESULT_FUNCTION_CONFIG
 						, VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID
 						, VALUATION_RESULT_FUNCTION_CONFIG.VF_ID
-						, VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID)
+						, VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID
+						, VALUATION_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID)
 				.values(vfResultDatasetId
 						, vf.vfId
-						, vf.hifId)
+						, vf.hifId
+						, vf.hifInstanceId)
 				.execute();
 				
 			}

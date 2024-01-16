@@ -1,5 +1,0 @@
-
-2018-06-05: Updated BENMAP50_DB.exe with latest db  delivered to be included in 1.4.8.0
-
-Note that 7zSD.sfx is a customized version that runs as the Invoker.  Download from:
-https://github.com/github/ghfw-build-extra/blob/master/7-Zip/7zSD.sfx

@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -250,7 +251,7 @@ public class TaskApi {
 		//make sure the new template name is unique among this user's templates
 		List<String>taskNames = ApiUtil.getAllTemplateNamesByUser(userProfile.get().getId());
 		if (taskNames.contains(name)) {
-			response.status(200);
+			response.status(409);
 			String errorMsg = "A task named " + name + " already exists. Please enter a different name.";
 			return "{\"message\": \"" + errorMsg + "\"}";
 		}	
@@ -295,6 +296,7 @@ public class TaskApi {
 		 * &gridDefinitionId=18
 		 * scenarios=24|2030~2035,22|2030~2035  //Note the elaborate delimiting
 		 * &incidencePrevalenceDataset=1
+		 * &applyValuation=EPA Standard
 		 * 
 		 */
 		// 
@@ -313,7 +315,8 @@ public class TaskApi {
 		List<Integer> hifGroupList = new ArrayList<Integer>();
 		String efGroupParam;
 		List<Integer> efGroupList = new ArrayList<Integer>();
-
+		String applyValuation;
+		
 		//boolean userPrefered; //If true, BenMAP will use the incidence/prevalence selected by the user even when there is another dataset which matches the demo groups better.
 		Boolean preserveLegacyBehavior = true;
 
@@ -331,12 +334,15 @@ public class TaskApi {
 			}
 
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
+			applyValuation = ParameterUtil.getParameterValueAsString(request.raw().getParameter("applyValuation"), "");
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
 			populationId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("populationId"), 0);
 			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), AirQualityApi.getAirQualityLayerGridId(baselineId));
 			//userPrefered = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("userPrefered"), false);
 
+			// TODO: Add logic to determine if epa_standard=true should be handled
+			
 			// Scenario ids passed as a comma-separated list of strings. Each scenario represents an AQ surface ID and associated population years
 			// They will be parsed further within the loop below
 			scenariosParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("scenarios"), "");
@@ -554,7 +560,7 @@ public class TaskApi {
 		}
 				
 		if(maxTasks != 0 && taskCount >= maxTasks) {
-			return CoreApi.getSuccessResponse(request, response, 200, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks. You can save the current configuration as a template and return to it later.");
+			return CoreApi.getErrorResponse(request, response, 405, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks. You can save the current configuration as a template and return to it later.");
 		}
 	
 		
@@ -784,7 +790,9 @@ public class TaskApi {
 						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
 						data.put("aq_baseline_name", aqBaselineName);
 						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
-
+						int valuationGridId = batchParamsNode.get("gridDefinitionId").asInt();
+						data.put("valuation_grid_id", valuationGridId);
+						data.put("valuation_grid_name", GridDefinitionApi.getGridDefinitionName(valuationGridId));
 
 						Condition filterCondition = DSL.trueCondition();
 						filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(batchTaskId));
@@ -1161,7 +1169,7 @@ public class TaskApi {
 		try {
 			String idParam = String.valueOf(request.params("id"));
 			batchId = Integer.valueOf(idParam);
-			includeHealthImpact = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeHealthImpact").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
+			includeHealthImpact = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeHealthImpact").equals("1")?"true":request.raw().getParameter("includeHealthImpact"), false);
 			includeValuation = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeValuation").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
 			includeExposure = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeExposure").equals("1")?"true":request.raw().getParameter("includeExposure"), false);
 			taskUuid = ParameterUtil.getParameterValueAsString(request.raw().getParameter("taskUuid"),"");
@@ -1297,8 +1305,10 @@ public class TaskApi {
 								DSL.val(null, String.class).as("formatted_results_3sf")
 								)
 								.from(efResultRecords)
-								.join(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
-								.join(EXPOSURE_RESULT_FUNCTION_CONFIG).on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDatasetId).and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID))))
+								.leftJoin(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
+								.join(EXPOSURE_RESULT_FUNCTION_CONFIG)
+									.on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDatasetId)
+											.and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_INSTANCE_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_INSTANCE_ID))))
 								.join(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 								.join(ETHNICITY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 								.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
@@ -1415,8 +1425,10 @@ public class TaskApi {
 								HIFApi.getBaselineGridForHifResults(hifResultDatasetId) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
 								)
 								.from(hifResultRecords)
-								.join(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
-								.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(hifResultDatasetId).and(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID))))
+								.leftJoin(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+								.join(HIF_RESULT_FUNCTION_CONFIG)
+									.on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(hifResultDatasetId)
+											.and(HIF_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_INSTANCE_ID))))
 								.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
 								.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 								.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
@@ -1425,7 +1437,6 @@ public class TaskApi {
 								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 								.fetch();
-						log.info("After fetch");
 						
 						//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
 						if(HIFApi.getBaselineGridForHifResults(hifResultDatasetId) != gridIds[i]) {
@@ -1500,9 +1511,6 @@ public class TaskApi {
 						.fetch(VALUATION_RESULT_DATASET.ID);
 			}
 			
-			
-			
-			
 			//Loop through each function and each grid definition
 			for(int valuationResultDatasetId : valuationResultDatasetIds) {
 				//csv file name
@@ -1519,12 +1527,12 @@ public class TaskApi {
 									null,
 									gridIds[i]))
 							.asTable("valuation_result_records");
-						Result<Record22<Integer, Integer, String, String, String, Integer, String, String, String, String, String, String, String, Integer, Integer, Double, Double, Double, Double, Double, Double, Double[]>> vfRecords;
+						Result<Record> vfRecords;
 						vfRecords = create.select(
 								vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 								vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-								ENDPOINT.NAME.as("endpoint"),
-								VALUATION_FUNCTION.QUALIFIER.as("name"),
+								DSL.val(null, String.class).as("endpoint"),
+								DSL.val(null, String.class).as("name"),
 								HEALTH_IMPACT_FUNCTION.AUTHOR,
 								HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 								HEALTH_IMPACT_FUNCTION.QUALIFIER,
@@ -1542,21 +1550,20 @@ public class TaskApi {
 								vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
 								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
-								ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+								ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES), //Only include percentiles if we're aggregating
+								vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)
 								)
 								.from(vfResultRecords)
 								.join(VALUATION_RESULT_FUNCTION_CONFIG)
-								.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDatasetId)
-										.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID)))
+									.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDatasetId)
+										.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_INSTANCE_ID)))
 										.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
 								.join(VALUATION_RESULT_DATASET)
-								.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
+									.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
 								.join(HIF_RESULT_FUNCTION_CONFIG)
-								.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
+									.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
 										.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
-								.join(VALUATION_FUNCTION).on(VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)))
 								.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
-								.join(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
 								.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 								.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 								.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
@@ -1564,7 +1571,25 @@ public class TaskApi {
 								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 								.fetch();
-						log.info("After fetch");
+						
+						// Add in valuation function information
+						ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(valuationResultDatasetId);
+						HashMap<Integer, HashMap<String, String>> vfConfigs = new HashMap<Integer, HashMap<String, String>>();
+						
+						for (ValuationConfig vf : vfTaskLog.getVfTaskConfig().valuationFunctions) {
+							if(! vfConfigs.containsKey(vf.vfId)) {
+								HashMap<String, String> vfInfo = new HashMap<String, String>();
+								vfInfo.put("name", vf.vfRecord.get("qualifier").toString());
+								vfInfo.put("endpoint", vf.vfRecord.get("endpoint_name").toString());
+								vfConfigs.put(vf.vfId, vfInfo);
+							}
+						}
+
+						for(Record res : vfRecords) {
+							HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
+							res.setValue(DSL.field("name"), vfConfig.get("name"));
+							res.setValue(DSL.field("endpoint"), vfConfig.get("endpoint"));	
+						}
 						
 						//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
 						if(ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) != gridIds[i]) {

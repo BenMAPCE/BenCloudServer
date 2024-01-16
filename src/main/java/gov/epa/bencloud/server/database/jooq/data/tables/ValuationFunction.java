@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row20;
+import org.jooq.Row21;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -145,6 +145,11 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
      */
     public final TableField<ValuationFunctionRecord, String> NAME_D = createField(DSL.name("name_d"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>data.valuation_function.epa_standard</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Boolean> EPA_STANDARD = createField(DSL.name("epa_standard"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
+
     private ValuationFunction(Name alias, Table<ValuationFunctionRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -220,11 +225,11 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row20 type methods
+    // Row21 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row20<Integer, Integer, Integer, Integer, String, String, Integer, Integer, String, Double, String, String, Double, Double, Double, String, Double, String, Double, String> fieldsRow() {
-        return (Row20) super.fieldsRow();
+    public Row21<Integer, Integer, Integer, Integer, String, String, Integer, Integer, String, Double, String, String, Double, Double, Double, String, Double, String, Double, String, Boolean> fieldsRow() {
+        return (Row21) super.fieldsRow();
     }
 }
