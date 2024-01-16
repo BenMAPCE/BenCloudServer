@@ -1648,5 +1648,62 @@ public class TaskApi {
 		}
 		return batchTaskConfig;
 	}
+
+
+	/**
+	 * Get valuation grid definitino ID from selected senario (giving hif uuid or vf uuid)
+	 * @param id: uuid in the result tab
+	 * uuidType type of uuid (H, V, E)
+	 * @return grid definition id and name.
+	 */
+	public static Object getValuationGridDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+		String idParam = "";
+		String uuidType = "";
+		Integer vfGridId = null;
+		String vfGridName = "";
+		try {
+			idParam = String.valueOf(request.params("id"));	
+			uuidType = ParameterUtil.getParameterValueAsString(request.raw().getParameter("uuidType"),"");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return null;
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			CoreApi.getErrorResponseInvalidId(request, response);
+			return null;
+		}
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		if(uuidType.equals("H")) {			
+			vfGridId = create.select()
+					.from(VALUATION_RESULT_DATASET)
+					.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
+					.where(HIF_RESULT_DATASET.TASK_UUID.eq(idParam))
+					.fetchOne(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID);
+		}
+		else if(uuidType.equals("V")){
+			vfGridId = create.select()
+					.from(VALUATION_RESULT_DATASET)
+					.where(HIF_RESULT_DATASET.TASK_UUID.eq(idParam))
+					.fetchOne(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID);
+		}
+		else if(uuidType.equals("E")){
+			//Integer id = idParam.length() == 36 ? ExposureApi.getExposureResultDatasetId(idParam) : Integer.valueOf(idParam);
+			//grid_definition_id = ExposureApi.getBaselineGridForExposureResults(id);
+			vfGridId=0; 
+		}
+		
+		if (vfGridId !=null) {
+			vfGridName = GridDefinitionApi.getGridDefinitionName(vfGridId);
+		};
+		
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode responseNode = mapper.createObjectNode();
+		responseNode.put("gridDefinitionId", vfGridId);
+		responseNode.put("gridDefinitionName", vfGridName);
+
+		return responseNode;
+	}
+
 	
 }
