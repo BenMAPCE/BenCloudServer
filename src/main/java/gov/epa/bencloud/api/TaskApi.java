@@ -1709,7 +1709,7 @@ public class TaskApi {
 		else if(uuidType.equals("V")){
 			vfGridId = create.select()
 					.from(VALUATION_RESULT_DATASET)
-					.where(HIF_RESULT_DATASET.TASK_UUID.eq(idParam))
+					.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(idParam))
 					.fetchOne(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID);
 		}
 		else if(uuidType.equals("E")){
