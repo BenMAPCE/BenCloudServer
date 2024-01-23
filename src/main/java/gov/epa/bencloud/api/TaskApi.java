@@ -432,7 +432,7 @@ public class TaskApi {
 				hifConfig.hifId = r.getValue(HEALTH_IMPACT_FUNCTION.ID);		
 				hifConfig.hifRecord = r.intoMap();
 				
-				if(applyValuation.equalsIgnoreCase("EPA Standard")) {
+				if(true || applyValuation.equalsIgnoreCase("EPA Standard")) {
 					//WIP: Get default valuation functions for this endpoint
 					Object[] vfIds = ValuationUtil.getFunctionsForEndpoint((Integer) hifConfig.hifRecord.get("endpoint_id"));
 					for (Object vfId : vfIds) {
