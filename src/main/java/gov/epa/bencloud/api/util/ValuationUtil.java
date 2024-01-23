@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.Record;
@@ -222,5 +223,24 @@ public class ValuationUtil {
 		}
 		return null;
 		
+	}
+
+	/**
+	 * 
+	 * @param id
+	 * @return the function definition for a given valuation function id.
+	 */
+	public static Object[] getFunctionsForEndpoint(Integer endpointId) {
+	
+		// Load the function by id
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());		
+		
+		Object[] ret = create
+				.select(VALUATION_FUNCTION.ID)
+				.from(VALUATION_FUNCTION)
+				.where(VALUATION_FUNCTION.ENDPOINT_ID.eq(endpointId))
+				.fetchAnyArray();
+				
+		return ret;
 	}
 }

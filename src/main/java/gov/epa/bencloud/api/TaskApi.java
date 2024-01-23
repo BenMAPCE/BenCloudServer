@@ -12,33 +12,25 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
-
 import javax.servlet.MultipartConfigElement;
 
 import spark.Request;
 import spark.Response;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record17;
 import org.jooq.Record19;
-import org.jooq.Record22;
 import org.jooq.Result;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
@@ -48,17 +40,12 @@ import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.util.RawValue;
-
 import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.ExposureConfig;
 import gov.epa.bencloud.api.model.ExposureTaskConfig;
@@ -66,17 +53,14 @@ import gov.epa.bencloud.api.model.ExposureTaskLog;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
-import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.ExposureUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
-import gov.epa.bencloud.server.database.jooq.data.tables.PopConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
@@ -447,6 +431,25 @@ public class TaskApi {
 				hifConfig.hifInstanceId = hifInstanceId++;
 				hifConfig.hifId = r.getValue(HEALTH_IMPACT_FUNCTION.ID);		
 				hifConfig.hifRecord = r.intoMap();
+				
+				if(applyValuation.equalsIgnoreCase("EPA Standard")) {
+					//WIP: Get default valuation functions for this endpoint
+					Object[] vfIds = ValuationUtil.getFunctionsForEndpoint((Integer) hifConfig.hifRecord.get("endpoint_id"));
+					for (Object vfId : vfIds) {
+						Record vfRecord = ValuationUtil.getFunctionDefinition((Integer) vfId);
+						if(true || vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)) {
+							ValuationConfig vf = new ValuationConfig();
+							vf.hifId = hifConfig.hifId;
+							vf.hifInstanceId = hifConfig.hifInstanceId;
+							vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
+							vf.vfRecord = vfRecord.intoMap();
+							hifConfig.valuationFunctions.add(vf);							
+						}
+					}
+
+					
+				}
+
 				
 				//for each scenario and popyear, add this function instance with the appropriate incidence data
 				for(Scenario scenario : scenarios) {
