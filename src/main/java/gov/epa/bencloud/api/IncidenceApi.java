@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.servlet.MultipartConfigElement;
 
@@ -62,6 +65,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRec
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceEntryRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceValueRecord;
+import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.DataConversionUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
@@ -372,6 +376,20 @@ public class IncidenceApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+
+		// Get response output stream
+		OutputStream responseOutputStream;
+		ZipOutputStream zipStream;
+
+		try {
+			responseOutputStream = response.raw().getOutputStream();
+			
+			// Stream .ZIP file to response
+			zipStream = new ZipOutputStream(responseOutputStream);
+		} catch (java.io.IOException e1) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error getting output stream");
+		}
+
 		try {
 			id = Integer.valueOf(request.params("id"));
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -463,13 +481,22 @@ public class IncidenceApi {
 				.where(INCIDENCE_DATASET.ID.eq(id))
 				.fetchOne();
 
-		if(request.headers("Accept").equalsIgnoreCase("text/csv")) {
+		if(request.headers("Accept").equalsIgnoreCase("application/zip")) {
 			String fileName = createFilename(datasetInfo.get(INCIDENCE_DATASET.NAME));
-			response.type("text/csv");
-			response.header("Content-Disposition", "attachment; filename="+ fileName);
+			response.type("application/zip");
+			response.header("Content-Disposition", "attachment; filename="+ fileName + ".zip");
 			response.header("Access-Control-Expose-Headers", "Content-Disposition");
-						
-			return incRecords.formatCSV();
+			
+			try {
+				zipStream.putNextEntry(new ZipEntry(fileName + ".csv"));
+				incRecords.formatCSV(zipStream);
+				zipStream.closeEntry();
+				zipStream.close();
+				responseOutputStream.flush();
+				return null;
+			} catch (Exception e) {
+				return CoreApi.getErrorResponse(request, response, 400, "Error creating export file");
+			} 
 		} else {
 
 			ObjectMapper mapper = new ObjectMapper();
@@ -1479,7 +1506,7 @@ public class IncidenceApi {
 	 */
 	public static String createFilename(String datasetName) {
 		// Currently allowing periods so we don't break extensions. Need to improve this.
-		return datasetName.replaceAll("[^A-Za-z0-9._-]+", "") + ".csv";
+		return datasetName.replaceAll("[^A-Za-z0-9._-]+", "");
 	}
 
 }
