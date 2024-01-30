@@ -22,6 +22,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import gov.epa.bencloud.api.function.VFArguments;
 import gov.epa.bencloud.api.function.VFNativeFactory;
 import gov.epa.bencloud.api.function.VFunction;
+import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
@@ -230,17 +231,45 @@ public class ValuationUtil {
 	 * @param id
 	 * @return the function definition for a given valuation function id.
 	 */
-	public static Object[] getFunctionsForEndpoint(Integer endpointId) {
+	public static Integer[] getFunctionsForEndpoint(Integer endpointId) {
 	
 		// Load the function by id
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());		
 		
-		Object[] ret = create
+		Integer[] ret = create
 				.select(VALUATION_FUNCTION.ID)
 				.from(VALUATION_FUNCTION)
 				.where(VALUATION_FUNCTION.ENDPOINT_ID.eq(endpointId))
-				.fetchAnyArray();
+				.fetchArray(VALUATION_FUNCTION.ID);
 				
 		return ret;
+	}
+
+	/**
+	 * @param hifConfig
+	 * @param applyValuation
+	 * Add all the valuation functions to this HIF that match applyValuation's values
+	 * NOTE: For now, we only support EPA's default functions. In the future, we'll add
+	 *  a new structure to allow users to create their own lists.
+	 */
+	public static void populateValuationFunctions(HIFConfig hifConfig, String applyValuation) {
+		
+		Integer[] vfIds = ValuationUtil.getFunctionsForEndpoint((Integer) hifConfig.hifRecord.get("endpoint_id"));
+		for (Integer vfId : vfIds) {
+			Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
+			// If we are looking for "EPA Standard" functions and this function is marked as an EPA Standard
+			// Add it if it covers the appropriate age range
+			if(applyValuation.equalsIgnoreCase("EPA Standard") && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+					&& hifConfig.startAge >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
+					&& hifConfig.endAge <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
+				ValuationConfig vf = new ValuationConfig();
+				vf.hifId = hifConfig.hifId;
+				vf.hifInstanceId = hifConfig.hifInstanceId;
+				vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
+				vf.vfRecord = vfRecord.intoMap();
+				hifConfig.valuationFunctions.add(vf);							
+			}
+		}
+		
 	}
 }
