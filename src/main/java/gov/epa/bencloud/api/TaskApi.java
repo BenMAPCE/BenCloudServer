@@ -431,26 +431,18 @@ public class TaskApi {
 				hifConfig.hifInstanceId = hifInstanceId++;
 				hifConfig.hifId = r.getValue(HEALTH_IMPACT_FUNCTION.ID);		
 				hifConfig.hifRecord = r.intoMap();
+				hifConfig.startAge = r.getValue(HEALTH_IMPACT_FUNCTION.START_AGE);
+				hifConfig.endAge = r.getValue(HEALTH_IMPACT_FUNCTION.END_AGE);
 				
-				if(true || applyValuation.equalsIgnoreCase("EPA Standard")) {
-					//WIP: Get default valuation functions for this endpoint
-					Object[] vfIds = ValuationUtil.getFunctionsForEndpoint((Integer) hifConfig.hifRecord.get("endpoint_id"));
-					for (Object vfId : vfIds) {
-						Record vfRecord = ValuationUtil.getFunctionDefinition((Integer) vfId);
-						if(true || vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)) {
-							ValuationConfig vf = new ValuationConfig();
-							vf.hifId = hifConfig.hifId;
-							vf.hifInstanceId = hifConfig.hifInstanceId;
-							vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
-							vf.vfRecord = vfRecord.intoMap();
-							hifConfig.valuationFunctions.add(vf);							
-						}
-					}
-
-					
+				
+				//TODO: Remove this once the UI starts sending the 
+				applyValuation = "EPA Standard";
+				
+				//If the user has specified a default valuation list, add it for this HIF here
+				if(applyValuation != null && !applyValuation.isBlank()) {
+					ValuationUtil.populateValuationFunctions(hifConfig, applyValuation);					
 				}
 
-				
 				//for each scenario and popyear, add this function instance with the appropriate incidence data
 				for(Scenario scenario : scenarios) {
 					for(ScenarioPopConfig popConfig : scenario.popConfigs) {
