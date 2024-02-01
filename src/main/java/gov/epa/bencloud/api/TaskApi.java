@@ -434,10 +434,6 @@ public class TaskApi {
 				hifConfig.startAge = r.getValue(HEALTH_IMPACT_FUNCTION.START_AGE);
 				hifConfig.endAge = r.getValue(HEALTH_IMPACT_FUNCTION.END_AGE);
 				
-				
-				//TODO: Remove this once the UI starts sending the 
-				applyValuation = "EPA Standard";
-				
 				//If the user has specified a default valuation list, add it for this HIF here
 				if(applyValuation != null && !applyValuation.isBlank()) {
 					ValuationUtil.populateValuationFunctions(hifConfig, applyValuation);					
