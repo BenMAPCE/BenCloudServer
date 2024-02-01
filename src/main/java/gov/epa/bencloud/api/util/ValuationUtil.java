@@ -259,7 +259,7 @@ public class ValuationUtil {
 			Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
 			// If we are looking for "EPA Standard" functions and this function is marked as an EPA Standard
 			// Add it if it covers the appropriate age range
-			if(applyValuation.equalsIgnoreCase("EPA Standard") && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+			if(applyValuation.equalsIgnoreCase("Use EPA's current default values") && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
 					&& hifConfig.startAge >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
 					&& hifConfig.endAge <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
 				ValuationConfig vf = new ValuationConfig();
