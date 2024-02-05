@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.function.VFArguments;
 import gov.epa.bencloud.api.function.VFNativeFactory;
 import gov.epa.bencloud.api.function.VFunction;
@@ -255,11 +256,11 @@ public class ValuationUtil {
 	public static void populateValuationFunctions(HIFConfig hifConfig, String applyValuation) {
 		
 		Integer[] vfIds = ValuationUtil.getFunctionsForEndpoint((Integer) hifConfig.hifRecord.get("endpoint_id"));
+		
+		// Tier 1 - Look for valuation function age ranges that completely contain the HIF age range
 		for (Integer vfId : vfIds) {
 			Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
-			// If we are looking for "EPA Standard" functions and this function is marked as an EPA Standard
-			// Add it if it covers the appropriate age range
-			if(applyValuation.equalsIgnoreCase("Use EPA's current default values") && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+			if(applyValuation.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
 					&& hifConfig.startAge >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
 					&& hifConfig.endAge <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
 				ValuationConfig vf = new ValuationConfig();
@@ -269,6 +270,38 @@ public class ValuationUtil {
 				vf.vfRecord = vfRecord.intoMap();
 				hifConfig.valuationFunctions.add(vf);							
 			}
+		}
+		
+		// Tier 2 - If no matches, restrict the HIF age range by 1 year on both sides and check again
+		if(hifConfig.valuationFunctions.size() == 0) {
+			for (Integer vfId : vfIds) {
+				Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
+				if(applyValuation.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+						&& hifConfig.startAge+1 >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
+						&& hifConfig.endAge-1 <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
+					ValuationConfig vf = new ValuationConfig();
+					vf.hifId = hifConfig.hifId;
+					vf.hifInstanceId = hifConfig.hifInstanceId;
+					vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
+					vf.vfRecord = vfRecord.intoMap();
+					hifConfig.valuationFunctions.add(vf);							
+				}
+			}			
+		}
+		
+		// Tier 3 - If still no matches, just include all EPA default functions for this endpoint
+		if(hifConfig.valuationFunctions.size() == 0) {
+			for (Integer vfId : vfIds) {
+				Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
+				if(applyValuation.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)) {
+					ValuationConfig vf = new ValuationConfig();
+					vf.hifId = hifConfig.hifId;
+					vf.hifInstanceId = hifConfig.hifInstanceId;
+					vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
+					vf.vfRecord = vfRecord.intoMap();
+					hifConfig.valuationFunctions.add(vf);							
+				}
+			}			
 		}
 		
 	}

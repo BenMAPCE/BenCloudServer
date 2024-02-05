@@ -280,7 +280,7 @@ public class TaskApi {
 		 * &gridDefinitionId=18
 		 * scenarios=24|2030~2035,22|2030~2035  //Note the elaborate delimiting
 		 * &incidencePrevalenceDataset=1
-		 * &applyValuation=EPA Standard
+		 * &applyValuation=Use EPA's current default values
 		 * 
 		 */
 		// 
