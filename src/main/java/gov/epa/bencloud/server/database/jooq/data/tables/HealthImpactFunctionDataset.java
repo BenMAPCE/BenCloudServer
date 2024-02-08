@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFun
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row2;
@@ -49,7 +48,7 @@ public class HealthImpactFunctionDataset extends TableImpl<HealthImpactFunctionD
     /**
      * The column <code>data.health_impact_function_dataset.id</code>.
      */
-    public final TableField<HealthImpactFunctionDatasetRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<HealthImpactFunctionDatasetRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.health_impact_function_dataset_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.health_impact_function_dataset.name</code>.
@@ -94,11 +93,6 @@ public class HealthImpactFunctionDataset extends TableImpl<HealthImpactFunctionD
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<HealthImpactFunctionDatasetRecord, Integer> getIdentity() {
-        return (Identity<HealthImpactFunctionDatasetRecord, Integer>) super.getIdentity();
     }
 
     @Override

@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -54,7 +53,7 @@ public class TaskWorker extends TableImpl<TaskWorkerRecord> {
     /**
      * The column <code>data.task_worker.task_id</code>.
      */
-    public final TableField<TaskWorkerRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<TaskWorkerRecord, Integer> TASK_ID = createField(DSL.name("task_id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.task_worker_task_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.task_worker.task_worker_uuid</code>.
@@ -112,11 +111,6 @@ public class TaskWorker extends TableImpl<TaskWorkerRecord> {
     @Override
     public List<Index> getIndexes() {
         return Arrays.asList(Indexes.TASK_WORKER_ON_TASK_UUID, Indexes.TASK_WORKER_ON_UUID);
-    }
-
-    @Override
-    public Identity<TaskWorkerRecord, Integer> getIdentity() {
-        return (Identity<TaskWorkerRecord, Integer>) super.getIdentity();
     }
 
     @Override

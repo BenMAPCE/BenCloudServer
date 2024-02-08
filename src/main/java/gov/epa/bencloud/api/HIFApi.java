@@ -1,6 +1,7 @@
 package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
+import static gov.epa.bencloud.server.database.jooq.grids.Tables.*;
 
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -101,7 +102,7 @@ public class HIFApi {
 
 		try {
 			hifIdsParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifId"), "");
-			gridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);
+			gridId = 47; //HARDCODE GLOBAL ANALYSIS //ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
 			rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 1000);
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
@@ -133,6 +134,7 @@ public class HIFApi {
 			Result<Record> hifRecords = create.select(
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
+				FINAL_RFF_COUNTRIES.COUNTRY.as("cell_identifier"),
 				ENDPOINT.NAME.as("endpoint"),
 				HEALTH_IMPACT_FUNCTION.AUTHOR,
 				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
@@ -174,6 +176,7 @@ public class HIFApi {
 				.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
 				.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+				.leftJoin(FINAL_RFF_COUNTRIES).on(FINAL_RFF_COUNTRIES.COL.eq(hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).cast(Long.class)))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)

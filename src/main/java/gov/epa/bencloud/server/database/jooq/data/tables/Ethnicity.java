@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.EthnicityRecord
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row2;
@@ -48,7 +47,7 @@ public class Ethnicity extends TableImpl<EthnicityRecord> {
     /**
      * The column <code>data.ethnicity.id</code>.
      */
-    public final TableField<EthnicityRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<EthnicityRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.ethnicity_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.ethnicity.name</code>.
@@ -91,11 +90,6 @@ public class Ethnicity extends TableImpl<EthnicityRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<EthnicityRecord, Integer> getIdentity() {
-        return (Identity<EthnicityRecord, Integer>) super.getIdentity();
     }
 
     @Override

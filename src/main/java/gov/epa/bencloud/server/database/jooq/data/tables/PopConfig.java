@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.PopConfigRecord
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row2;
@@ -48,7 +47,7 @@ public class PopConfig extends TableImpl<PopConfigRecord> {
     /**
      * The column <code>data.pop_config.id</code>.
      */
-    public final TableField<PopConfigRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<PopConfigRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.pop_config_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.pop_config.name</code>.
@@ -91,11 +90,6 @@ public class PopConfig extends TableImpl<PopConfigRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<PopConfigRecord, Integer> getIdentity() {
-        return (Identity<PopConfigRecord, Integer>) super.getIdentity();
     }
 
     @Override

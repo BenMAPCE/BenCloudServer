@@ -14,7 +14,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row7;
@@ -52,7 +51,7 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
     /**
      * The column <code>data.incidence_dataset.id</code>.
      */
-    public final TableField<IncidenceDatasetRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<IncidenceDatasetRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.incidence_dataset_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.incidence_dataset.name</code>.
@@ -120,11 +119,6 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<IncidenceDatasetRecord, Integer> getIdentity() {
-        return (Identity<IncidenceDatasetRecord, Integer>) super.getIdentity();
     }
 
     @Override

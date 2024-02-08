@@ -110,12 +110,14 @@ public class IncidenceApi {
 		
 		//Use the race, ethnicity, and gender selected earlier in order to look up the exact data this function needs
 		//If needed, convert the ALL entry to the Null entry to match incidence data
+		
+		//HARDCODE GLOBAL ANALYSIS - Incidence is 5,3,3 in this case so no need for override
 		Integer raceId = (isIncidence ? hifConfig.incidenceRace : hifConfig.prevalenceRace);
-		raceId = (raceId == 5 ? 6 : raceId);
+		//raceId = (raceId == 5 ? 6 : raceId);
 		Integer ethnicityId = (isIncidence ? hifConfig.incidenceEthnicity : hifConfig.prevalenceEthnicity);
-		ethnicityId = (ethnicityId == 3 ? 4 : ethnicityId);
+		//ethnicityId = (ethnicityId == 3 ? 4 : ethnicityId);
 		Integer genderId = (isIncidence ? hifConfig.incidenceGender : hifConfig.prevalenceGender);
-		genderId = (genderId == 3 ? 4 : genderId);
+		//genderId = (genderId == 3 ? 4 : genderId);
 		
 
 		

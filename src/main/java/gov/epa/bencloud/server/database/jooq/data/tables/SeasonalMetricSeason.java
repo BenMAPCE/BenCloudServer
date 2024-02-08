@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row6;
@@ -51,7 +50,7 @@ public class SeasonalMetricSeason extends TableImpl<SeasonalMetricSeasonRecord> 
     /**
      * The column <code>data.seasonal_metric_season.id</code>.
      */
-    public final TableField<SeasonalMetricSeasonRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<SeasonalMetricSeasonRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.seasonal_metric_season_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.seasonal_metric_season.seasonal_metric_id</code>.
@@ -116,11 +115,6 @@ public class SeasonalMetricSeason extends TableImpl<SeasonalMetricSeasonRecord> 
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<SeasonalMetricSeasonRecord, Integer> getIdentity() {
-        return (Identity<SeasonalMetricSeasonRecord, Integer>) super.getIdentity();
     }
 
     @Override

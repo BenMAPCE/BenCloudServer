@@ -14,7 +14,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -53,7 +52,7 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
     /**
      * The column <code>data.population_entry.id</code>.
      */
-    public final TableField<PopulationEntryRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<PopulationEntryRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.population_entry_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.population_entry.pop_dataset_id</code>.
@@ -126,11 +125,6 @@ public class PopulationEntry extends TableImpl<PopulationEntryRecord> {
     @Override
     public List<Index> getIndexes() {
         return Arrays.asList(Indexes.POPULATION_ENTRY_ID_IDX);
-    }
-
-    @Override
-    public Identity<PopulationEntryRecord, Integer> getIdentity() {
-        return (Identity<PopulationEntryRecord, Integer>) super.getIdentity();
     }
 
     @Override

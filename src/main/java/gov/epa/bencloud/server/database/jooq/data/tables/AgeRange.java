@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row5;
@@ -51,7 +50,7 @@ public class AgeRange extends TableImpl<AgeRangeRecord> {
     /**
      * The column <code>data.age_range.id</code>.
      */
-    public final TableField<AgeRangeRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<AgeRangeRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.age_range_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.age_range.pop_config_id</code>.
@@ -109,11 +108,6 @@ public class AgeRange extends TableImpl<AgeRangeRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<AgeRangeRecord, Integer> getIdentity() {
-        return (Identity<AgeRangeRecord, Integer>) super.getIdentity();
     }
 
     @Override

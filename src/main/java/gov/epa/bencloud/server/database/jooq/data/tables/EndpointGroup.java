@@ -10,7 +10,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointGroupRe
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row2;
@@ -48,7 +47,7 @@ public class EndpointGroup extends TableImpl<EndpointGroupRecord> {
     /**
      * The column <code>data.endpoint_group.id</code>.
      */
-    public final TableField<EndpointGroupRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<EndpointGroupRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.endpoint_group_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.endpoint_group.name</code>.
@@ -91,11 +90,6 @@ public class EndpointGroup extends TableImpl<EndpointGroupRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<EndpointGroupRecord, Integer> getIdentity() {
-        return (Identity<EndpointGroupRecord, Integer>) super.getIdentity();
     }
 
     @Override

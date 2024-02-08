@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row3;
@@ -51,7 +50,7 @@ public class Endpoint extends TableImpl<EndpointRecord> {
     /**
      * The column <code>data.endpoint.id</code>.
      */
-    public final TableField<EndpointRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<EndpointRecord, Integer> ID = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('data.endpoint_id_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>data.endpoint.endpoint_group_id</code>.
@@ -99,11 +98,6 @@ public class Endpoint extends TableImpl<EndpointRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
-    }
-
-    @Override
-    public Identity<EndpointRecord, Integer> getIdentity() {
-        return (Identity<EndpointRecord, Integer>) super.getIdentity();
     }
 
     @Override

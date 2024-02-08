@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -54,7 +53,7 @@ public class UsCmaq_12kmNation extends TableImpl<UsCmaq_12kmNationRecord> {
     /**
      * The column <code>grids.us_cmaq_12km_nation.gid</code>.
      */
-    public final TableField<UsCmaq_12kmNationRecord, Integer> GID = createField(DSL.name("gid"), SQLDataType.INTEGER.nullable(false).identity(true), this, "");
+    public final TableField<UsCmaq_12kmNationRecord, Integer> GID = createField(DSL.name("gid"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field("nextval('grids.us_cmaq_12km_nation_gid_seq1'::regclass)", SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>grids.us_cmaq_12km_nation.area</code>.
@@ -171,11 +170,6 @@ public class UsCmaq_12kmNation extends TableImpl<UsCmaq_12kmNationRecord> {
     @Override
     public List<Index> getIndexes() {
         return Arrays.asList(Indexes.US_CMAQ_12KM_NATION_GEOM_IDX);
-    }
-
-    @Override
-    public Identity<UsCmaq_12kmNationRecord, Integer> getIdentity() {
-        return (Identity<UsCmaq_12kmNationRecord, Integer>) super.getIdentity();
     }
 
     @Override

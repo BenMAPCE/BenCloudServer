@@ -84,6 +84,7 @@ import org.jooq.Catalog;
 import org.jooq.Configuration;
 import org.jooq.Field;
 import org.jooq.Result;
+import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 
@@ -827,6 +828,84 @@ public class Data extends SchemaImpl {
     @Override
     public Catalog getCatalog() {
         return DefaultCatalog.DEFAULT_CATALOG;
+    }
+
+    @Override
+    public final List<Sequence<?>> getSequences() {
+        return Arrays.asList(
+            Sequences.AGE_RANGE_ID_SEQ,
+            Sequences.AGE_RANGE_ID_SEQ1,
+            Sequences.AIR_QUALITY_LAYER_ID_SEQ,
+            Sequences.AIR_QUALITY_LAYER_ID_SEQ1,
+            Sequences.AIR_QUALITY_LAYER_METRICS_ID_SEQ,
+            Sequences.AIR_QUALITY_LAYER_METRICS_ID_SEQ1,
+            Sequences.CROSSWALK_DATASET_ID_SEQ,
+            Sequences.CROSSWALK_DATASET_ID_SEQ1,
+            Sequences.ENDPOINT_GROUP_ID_SEQ,
+            Sequences.ENDPOINT_GROUP_ID_SEQ1,
+            Sequences.ENDPOINT_ID_SEQ,
+            Sequences.ENDPOINT_ID_SEQ1,
+            Sequences.ETHNICITY_ID_SEQ,
+            Sequences.ETHNICITY_ID_SEQ1,
+            Sequences.GENDER_ID_SEQ,
+            Sequences.GENDER_ID_SEQ1,
+            Sequences.GRID_DEFINITION_ID_SEQ,
+            Sequences.GRID_DEFINITION_ID_SEQ1,
+            Sequences.HEALTH_IMPACT_FUNCTION_DATASET_ID_SEQ,
+            Sequences.HEALTH_IMPACT_FUNCTION_DATASET_ID_SEQ1,
+            Sequences.HEALTH_IMPACT_FUNCTION_GROUP_ID_SEQ,
+            Sequences.HEALTH_IMPACT_FUNCTION_GROUP_ID_SEQ1,
+            Sequences.HEALTH_IMPACT_FUNCTION_ID_SEQ,
+            Sequences.HEALTH_IMPACT_FUNCTION_ID_SEQ1,
+            Sequences.HIF_RESULT_DATASET_ID_SEQ,
+            Sequences.HIF_RESULT_DATASET_ID_SEQ1,
+            Sequences.INCIDENCE_DATASET_ID_SEQ,
+            Sequences.INCIDENCE_DATASET_ID_SEQ1,
+            Sequences.INCIDENCE_ENTRY_ID_SEQ,
+            Sequences.INCIDENCE_ENTRY_ID_SEQ1,
+            Sequences.INCOME_GROWTH_ADJ_DATASET_ID_SEQ,
+            Sequences.INCOME_GROWTH_ADJ_DATASET_ID_SEQ1,
+            Sequences.INCOME_GROWTH_ADJ_FACTOR_ID_SEQ,
+            Sequences.INCOME_GROWTH_ADJ_FACTOR_ID_SEQ1,
+            Sequences.INFLATION_DATASET_ID_SEQ,
+            Sequences.INFLATION_DATASET_ID_SEQ1,
+            Sequences.POLLUTANT_ID_SEQ,
+            Sequences.POLLUTANT_ID_SEQ1,
+            Sequences.POLLUTANT_METRIC_ID_SEQ,
+            Sequences.POLLUTANT_METRIC_ID_SEQ1,
+            Sequences.POP_CONFIG_ID_SEQ,
+            Sequences.POP_CONFIG_ID_SEQ1,
+            Sequences.POPULATION_DATASET_ID_SEQ,
+            Sequences.POPULATION_DATASET_ID_SEQ1,
+            Sequences.POPULATION_ENTRY_ID_SEQ,
+            Sequences.POPULATION_ENTRY_ID_SEQ1,
+            Sequences.RACE_ID_SEQ,
+            Sequences.RACE_ID_SEQ1,
+            Sequences.SEASONAL_METRIC_ID_SEQ,
+            Sequences.SEASONAL_METRIC_ID_SEQ1,
+            Sequences.SEASONAL_METRIC_SEASON_ID_SEQ,
+            Sequences.SEASONAL_METRIC_SEASON_ID_SEQ1,
+            Sequences.STATISTIC_TYPE_ID_SEQ,
+            Sequences.STATISTIC_TYPE_ID_SEQ1,
+            Sequences.TASK_COMPLETE_TASK_ID_SEQ,
+            Sequences.TASK_COMPLETE_TASK_ID_SEQ1,
+            Sequences.TASK_CONFIG_ID_SEQ,
+            Sequences.TASK_CONFIG_ID_SEQ1,
+            Sequences.TASK_QUEUE_TASK_ID_SEQ,
+            Sequences.TASK_QUEUE_TASK_ID_SEQ1,
+            Sequences.TASK_WORKER_TASK_ID_SEQ,
+            Sequences.TASK_WORKER_TASK_ID_SEQ1,
+            Sequences.VALUATION_FUNCTION_DATASET_ID_SEQ,
+            Sequences.VALUATION_FUNCTION_DATASET_ID_SEQ1,
+            Sequences.VALUATION_FUNCTION_ID_SEQ,
+            Sequences.VALUATION_FUNCTION_ID_SEQ1,
+            Sequences.VALUATION_RESULT_DATASET_ID_SEQ,
+            Sequences.VALUATION_RESULT_DATASET_ID_SEQ1,
+            Sequences.VARIABLE_DATASET_ID_SEQ,
+            Sequences.VARIABLE_DATASET_ID_SEQ1,
+            Sequences.VARIABLE_ENTRY_ID_SEQ,
+            Sequences.VARIABLE_ENTRY_ID_SEQ1
+        );
     }
 
     @Override

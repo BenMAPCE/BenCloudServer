@@ -4,6 +4,7 @@
 package gov.epa.bencloud.server.database.jooq.grids;
 
 
+import gov.epa.bencloud.server.database.jooq.grids.tables.FinalRffCountries;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipped;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
@@ -26,6 +27,7 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index FINAL_RFF_COUNTRIES_GEOM_IDX = Internal.createIndex(DSL.name("final_rff_countries_geom_idx"), FinalRffCountries.FINAL_RFF_COUNTRIES, new OrderField[] { FinalRffCountries.FINAL_RFF_COUNTRIES.GEOM }, false);
     public static final Index US_CMAQ_12KM_NATION_CLIPPED_GEOM_IDX = Internal.createIndex(DSL.name("us_cmaq_12km_nation_clipped_geom_idx"), UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED, new OrderField[] { UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED.GEOM }, false);
     public static final Index US_CMAQ_12KM_NATION_GEOM_IDX = Internal.createIndex(DSL.name("us_cmaq_12km_nation_geom_idx"), UsCmaq_12kmNation.US_CMAQ_12KM_NATION, new OrderField[] { UsCmaq_12kmNation.US_CMAQ_12KM_NATION.GEOM }, false);
     public static final Index US_COUNTY_GEOM_IDX = Internal.createIndex(DSL.name("us_county_geom_idx"), UsCounty.US_COUNTY, new OrderField[] { UsCounty.US_COUNTY.GEOM }, false);
