@@ -280,7 +280,7 @@ public class TaskApi {
 		 * &gridDefinitionId=18
 		 * scenarios=24|2030~2035,22|2030~2035  //Note the elaborate delimiting
 		 * &incidencePrevalenceDataset=1
-		 * &applyValuation=Use EPA's current default values
+		 * &valuationSelection=Use EPA's current default values
 		 * 
 		 */
 		// 
@@ -299,7 +299,7 @@ public class TaskApi {
 		List<Integer> hifGroupList = new ArrayList<Integer>();
 		String efGroupParam;
 		List<Integer> efGroupList = new ArrayList<Integer>();
-		String applyValuation;
+		String valuationSelection;
 		
 		//boolean userPrefered; //If true, BenMAP will use the incidence/prevalence selected by the user even when there is another dataset which matches the demo groups better.
 		Boolean preserveLegacyBehavior = true;
@@ -318,7 +318,7 @@ public class TaskApi {
 			}
 
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
-			applyValuation = ParameterUtil.getParameterValueAsString(request.raw().getParameter("applyValuation"), "");
+			valuationSelection = ParameterUtil.getParameterValueAsString(request.raw().getParameter("valuationSelection"), "");
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
 			populationId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("populationId"), 0);
@@ -435,8 +435,8 @@ public class TaskApi {
 				hifConfig.endAge = r.getValue(HEALTH_IMPACT_FUNCTION.END_AGE);
 				
 				//If the user has specified a default valuation list, add it for this HIF here
-				if(applyValuation != null && !applyValuation.isBlank()) {
-					ValuationUtil.populateValuationFunctions(hifConfig, applyValuation);					
+				if(valuationSelection != null && !valuationSelection.isBlank()) {
+					ValuationUtil.populateValuationFunctions(hifConfig, valuationSelection);					
 				}
 
 				//for each scenario and popyear, add this function instance with the appropriate incidence data
