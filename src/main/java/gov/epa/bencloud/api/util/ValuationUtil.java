@@ -248,19 +248,19 @@ public class ValuationUtil {
 
 	/**
 	 * @param hifConfig
-	 * @param applyValuation
-	 * Add all the valuation functions to this HIF that match applyValuation's values
+	 * @param valuationSelection
+	 * Add all the valuation functions to this HIF that match valuationSelection's values
 	 * NOTE: For now, we only support EPA's default functions. In the future, we'll add
 	 *  a new structure to allow users to create their own lists.
 	 */
-	public static void populateValuationFunctions(HIFConfig hifConfig, String applyValuation) {
+	public static void populateValuationFunctions(HIFConfig hifConfig, String valuationSelection) {
 		
 		Integer[] vfIds = ValuationUtil.getFunctionsForEndpoint((Integer) hifConfig.hifRecord.get("endpoint_id"));
 		
 		// Tier 1 - Look for valuation function age ranges that completely contain the HIF age range
 		for (Integer vfId : vfIds) {
 			Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
-			if(applyValuation.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+			if(valuationSelection.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
 					&& hifConfig.startAge >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
 					&& hifConfig.endAge <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
 				ValuationConfig vf = new ValuationConfig();
@@ -276,7 +276,7 @@ public class ValuationUtil {
 		if(hifConfig.valuationFunctions.size() == 0) {
 			for (Integer vfId : vfIds) {
 				Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
-				if(applyValuation.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+				if(valuationSelection.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
 						&& hifConfig.startAge+1 >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
 						&& hifConfig.endAge-1 <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
 					ValuationConfig vf = new ValuationConfig();
@@ -293,7 +293,7 @@ public class ValuationUtil {
 		if(hifConfig.valuationFunctions.size() == 0) {
 			for (Integer vfId : vfIds) {
 				Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
-				if(applyValuation.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)) {
+				if(valuationSelection.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)) {
 					ValuationConfig vf = new ValuationConfig();
 					vf.hifId = hifConfig.hifId;
 					vf.hifInstanceId = hifConfig.hifInstanceId;
