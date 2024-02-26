@@ -1155,7 +1155,7 @@ public class AirQualityApi {
 		} catch (Exception e) {
 			log.error("Error validating AQ file", e);
 			response.type("application/json");
-			//response.status(400);
+			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
 			return transformValMsgToJSON(validationMsg);
