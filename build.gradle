@@ -57,7 +57,7 @@ dependencies {
 	implementation 'org.apache.commons:commons-lang3:3.9'
 	
 	// Pushing commons-compress version since another dependencies was referencing 1.22 which has a vulnerability
-	implementation 'org.apache.commons:commons-compress:1.24.0'
+	implementation 'org.apache.commons:commons-compress:1.26.0'
 	
 	implementation 'org.apache.poi:poi:4.1.0'
 	implementation 'org.apache.poi:poi-ooxml:4.1.0'
