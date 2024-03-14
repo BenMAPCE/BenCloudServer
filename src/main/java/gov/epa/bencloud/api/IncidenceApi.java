@@ -1094,6 +1094,7 @@ public class IncidenceApi {
 		Map<String, Integer> incidenceEntryIds= new HashMap<String,Integer>();
 		
 
+		int rowCount = 0;
 		while ((record = csvReader.readNext()) != null) {
 			//use the hashmaps created from incidenceUtil to get the id of each column metric
 				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
@@ -1186,8 +1187,6 @@ public class IncidenceApi {
 					//otherwise just get the id
 					incidenceEntryId = incidenceEntryIds.get(entryQuery);
 				}
-				
-			
 
 				batch2.values(
 						incidenceEntryId,
@@ -1196,6 +1195,24 @@ public class IncidenceApi {
 						Integer.valueOf(record[rowIdx]),
 						Double.valueOf(record[valueIdx])
 				);
+
+				rowCount++;
+
+				//insert every 250000 rows and clear heap space
+				if(rowCount == 250000) {
+					batch2.execute();
+					batch2.close();
+					batch2 = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(
+							INCIDENCE_VALUE,
+							INCIDENCE_VALUE.INCIDENCE_ENTRY_ID,
+							INCIDENCE_VALUE.GRID_CELL_ID,
+							INCIDENCE_VALUE.GRID_COL,
+							INCIDENCE_VALUE.GRID_ROW,
+							INCIDENCE_VALUE.VALUE
+					);
+					rowCount = 0;
+				}
 				
 			}
 			
