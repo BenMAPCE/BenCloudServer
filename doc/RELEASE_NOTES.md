@@ -1,15 +1,25 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Work in Progress | [API Snapshot](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI Snapshot](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## Production 2024-??-?? | [API v0.5.0" and DB v25?](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0?](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
-* ...
+* Added Incidence and Prevalence dataset review and management to Data Center / Manage Data. (Multiple stories)
+* Add option to automatically assign EPA's default valuation functions to the "Value of effects?" page. (Multiple stories)
+* Improved user interface on "Value of effects?" page to ensure the user can always see and access the selected valuation functions for each health impact function. (BCD-345)
+* Updated user interface to more closely match the epa.gov website. (BCD-146)
+* Changed default aggregation scale for valuation on the "Value of effects?" page from Nation to County for more flexibility when exporting valuation results. Also improved messaging regarding aggregation in the analysis results export dialog. (BCD-341)
 
 ### Bug Fixes
 * The Older Adults (64-99) Exposure analysis group should be 65-99. (BCD-336)
-* Ensure that valuation results are still available if valuation function ids changes. (BCD-334)
+* Ensure that valuation results are still available if valuation function ids change. (BCD-334)
 * Replace valuation function dataset with latest version including the updated School Loss Days function. (BCD-337)
+
+### Pending Items
+* Incidence dataset management
+* Valuation dataset updates
+* User session timeout handling
+* Identify additional usability improvements to include. (batch AQ upload?, improve AQ upload dialog, increase task limit for EPA users, others?)
 
 ### Known Issues
 * ...
