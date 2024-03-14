@@ -1,7 +1,7 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Production 2024-??-?? | [API v0.5.0" and DB v25?](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0?](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## Production 2024-??-?? | [API v0.5.0? and DB v25?](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0?](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
 * Added Incidence and Prevalence dataset review and management to Data Center / Manage Data. (Multiple stories)
