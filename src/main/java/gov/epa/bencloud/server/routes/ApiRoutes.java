@@ -157,6 +157,13 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		/*
+		 * GET array of all population dataset definitions
+		 */
+		service.get(apiPrefix + "/inflation", (request, response) -> {
+			return InflationApi.getAllInflationYears(response, getUserProfile(request, response));
+		});
+		
+		/*
 		 * GET array of all health impact function definitions
 		 */
 		service.get(apiPrefix + "/health-impact-functions", (request, response) -> {

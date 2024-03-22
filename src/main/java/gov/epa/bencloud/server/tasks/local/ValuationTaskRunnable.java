@@ -47,7 +47,7 @@ import gov.epa.bencloud.server.tasks.model.TaskMessage;
 
 public class ValuationTaskRunnable implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(ValuationTaskRunnable.class);
-    protected static ObjectMapper objectMapper = new ObjectMapper();
+	protected static ObjectMapper objectMapper = new ObjectMapper();
 	
 	private String taskUuid;
 	private String taskWorkerUuid;
@@ -76,14 +76,14 @@ public class ValuationTaskRunnable implements Runnable {
 			ValuationTaskConfig valuationTaskConfig = null;
 			if(task.getBatchId() == null) {
 				// This is an old task, from before batch tasks were implemented
-				valuationTaskConfig = new ValuationTaskConfig(task);	
+				valuationTaskConfig = new ValuationTaskConfig(task);    
 			} else {
 				valuationTaskConfig = objectMapper.readValue(task.getParameters(), ValuationTaskConfig.class);
-			}	
+			}    
 			
 			ValuationTaskLog valuationTaskLog = new ValuationTaskLog(valuationTaskConfig, task.getUserIdentifier());
 			valuationTaskLog.setDtStart(LocalDateTime.now());
-			
+
 			messages.get(messages.size()-1).setStatus("complete");
 			
 			messages.add(new TaskMessage("active", "Preparing datasets for valuation"));
@@ -91,20 +91,22 @@ public class ValuationTaskRunnable implements Runnable {
 			
 			valuationTaskConfig.hifResultDatasetId = HIFApi.getHIFResultDatasetId(valuationTaskConfig.hifTaskUuid);
 			
-			if(valuationTaskConfig.hifResultDatasetId == null) {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Unable to load HIF estimates");
+			if (valuationTaskConfig.hifResultDatasetId == null) {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false,
+						"Unable to load HIF estimates");
 				return;
 			}
 			
 			List<VFunction> valuationFunctionList = new ArrayList<VFunction>();
-
+			
 			List<Record> vfDefinitionList = new ArrayList<Record>();
 			ArrayList<double[]> vfBetaDistributionLists = new ArrayList<double[]>();
 			ArrayList<Integer> hifIdList = new ArrayList<Integer>();
 			
-			// Inspect each selected valuation function and create parallel lists of math expressions and valuation function config records
+			// Inspect each selected valuation function and create parallel lists of math
+			// expressions and valuation function config records
 			for (ValuationConfig vfConfig : valuationTaskConfig.valuationFunctions) {
-				if(!hifIdList.contains(vfConfig.hifId)) {
+				if (!hifIdList.contains(vfConfig.hifId)) {
 					hifIdList.add(vfConfig.hifId);
 				}
 				valuationFunctionList.add(ValuationUtil.getFunctionForVF(vfConfig.vfId));
@@ -118,63 +120,71 @@ public class ValuationTaskRunnable implements Runnable {
 				vfBetaDistributionLists.add(vfDistPercentiles);
 			}
 			
-			
 			HIFTaskConfig hifTaskConfig = HIFApi.getHifTaskConfigFromDb(valuationTaskConfig.hifResultDatasetId);
-
-			//If valuationTaskConfig.incidenceAggregationGrid is null, set it to the HIF result grid
-			if(valuationTaskConfig.gridDefinitionId == null ) {
-				valuationTaskConfig.gridDefinitionId = HIFApi.getBaselineGridForHifResults(valuationTaskConfig.hifResultDatasetId);
+			
+			// If valuationTaskConfig.incidenceAggregationGrid is null, set it to the HIF
+			// result grid
+			if (valuationTaskConfig.gridDefinitionId == null) {
+				valuationTaskConfig.gridDefinitionId = HIFApi
+						.getBaselineGridForHifResults(valuationTaskConfig.hifResultDatasetId);
 			}
 			
-			//TEMP OVERRIDE for testing
-			//valuationTaskConfig.gridDefinitionId = 18; //county
+			// TEMP OVERRIDE for testing
+			// valuationTaskConfig.gridDefinitionId = 18; //county
 			
-			//TODO: 2020 is the hardcoded max based on current data. This could be more dynamic.
-			valuationTaskConfig.inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;			
-			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, valuationTaskConfig.inflationYear, valuationTaskConfig.useInflationFactors);
-
-			//TODO: 2050 is the hardcoded max based on current data. This could be more dynamic.
+			// now inflationYear is pulled from user input.
+			// valuationTaskConfig.inflationYear = hifTaskConfig.popYear > 2020 ? 2020 :
+			// hifTaskConfig.popYear;
+			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, valuationTaskConfig.inflationYear,
+					valuationTaskConfig.useInflationFactors);
+			
+			// TODO: 2050 is the hardcoded max based on current data. This could be more
+			// dynamic.
 			valuationTaskConfig.incomeGrowthYear = hifTaskConfig.popYear > 2050 ? 2050 : hifTaskConfig.popYear;
-			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2, valuationTaskConfig.incomeGrowthYear, valuationTaskConfig.useGrowthFactors);
-			
-			//<variableName, <gridCellId, value>>
+			Map<Short, Record2<Short, Double>> incomeGrowthFactors = ApiUtil.getIncomeGrowthFactors(2,
+					valuationTaskConfig.incomeGrowthYear, valuationTaskConfig.useGrowthFactors);
+
+			// <variableName, <gridCellId, value>>
 			List<String> requiredVariableNames = valuationTaskConfig.getRequiredVariableNames();
-			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(requiredVariableNames, valuationTaskConfig.variableDatasetId, valuationTaskConfig.gridDefinitionId);
-			
-			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
+			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(requiredVariableNames,
+					valuationTaskConfig.variableDatasetId, valuationTaskConfig.gridDefinitionId);
+
+			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; // HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
 
 			ArrayList<ValuationResultRecord> valuationResults = new ArrayList<ValuationResultRecord>(maxRowsInMemory);
 			mXparser.setToOverrideBuiltinTokens();
-			
-			int totalCells = HIFApi.getHifResultsRecordCount(valuationTaskConfig.hifResultDatasetId, hifIdList, valuationTaskConfig.gridDefinitionId);
-			
+
+			int totalCells = HIFApi.getHifResultsRecordCount(valuationTaskConfig.hifResultDatasetId, hifIdList,
+					valuationTaskConfig.gridDefinitionId);
+
 			int currentCell = 0;
 			int prevPct = -999;
-			
+
 			/*
 			 * FOR EACH HEALTH IMPACT FUNCTION IN THE RUN
 			 */
-			
-			messages.get(messages.size()-1).setStatus("complete");
+
+			messages.get(messages.size() - 1).setStatus("complete");
 			valuationTaskLog.addMessage("Loaded required datasets");
 
 			messages.add(new TaskMessage("active", "Running valuation functions"));
-			
-			for(Integer hifId : hifIdList) {
 
-				hifResults = HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId, hifId, valuationTaskConfig.gridDefinitionId);					
+			for (Integer hifId : hifIdList) {
+
+				hifResults = HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId, hifId,
+						valuationTaskConfig.gridDefinitionId);
 
 				/*
 				 * FOR EACH ROW IN THE HIF RESULTS
 				 */
 				for (Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]> hifResult : hifResults) {
-					
+
 					// updating task percentage
 					int currentPct = Math.round(currentCell * 100 / totalCells);
 					currentCell++;
 
 					if (prevPct != currentPct) {
-						
+
 						TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 						TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 						prevPct = currentPct;
@@ -187,13 +197,17 @@ public class ValuationTaskRunnable implements Runnable {
 
 						ValuationConfig vfConfig = valuationTaskConfig.valuationFunctions.get(vfIdx);
 						if (vfConfig.hifId.equals(hifResult.get(HIF_RESULT.HIF_ID))) {
-							
-							// Use 1.0 if growth factor is not found or was disabled via valuationTaskConfig.useGrowthFactorsuse
-							Record2<Short, Double> tmp = incomeGrowthFactors != null ? incomeGrowthFactors.getOrDefault(hifResult.get(4, Integer.class).shortValue(), null) : null;
+
+							// Use 1.0 if growth factor is not found or was disabled via
+							// valuationTaskConfig.useGrowthFactorsuse
+							Record2<Short, Double> tmp = incomeGrowthFactors != null
+									? incomeGrowthFactors.getOrDefault(hifResult.get(4, Integer.class).shortValue(),
+											null)
+									: null;
 							double incomeGrowthFactor = tmp == null ? 1.0 : tmp.value2().doubleValue();
-							
+
 							double hifEstimate = hifResult.get(5, Double.class).doubleValue();
-							
+
 							VFunction valuationFunction = valuationFunctionList.get(vfIdx);
 
 							Record vfDefinition = vfDefinitionList.get(vfIdx);
@@ -203,73 +217,82 @@ public class ValuationTaskRunnable implements Runnable {
 							valuationFunction.vfArguments.medicalCostIndex = inflationIndices.get("MedicalCostIndex");
 							valuationFunction.vfArguments.wageIndex = inflationIndices.get("WageIndex");
 
-
 							double valuationFunctionEstimate = 0.0;
-							if(valuationFunction.nativeFunction == null) {
+							if (valuationFunction.nativeFunction == null) {
 								Expression valuationFunctionExpression = valuationFunction.interpretedFunction;
-								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
-									valuationFunctionExpression.setArgumentValue(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));		
+								for (Entry<String, Map<Long, Double>> variable : variables.entrySet()) {
+									valuationFunctionExpression.setArgumentValue(variable.getKey(),
+											variable.getValue().getOrDefault(hifResult.get(0), 0.0));
 								}
-								valuationFunctionExpression.setArgumentValue("AllGoodsIndex", valuationFunction.vfArguments.allGoodsIndex);
-								valuationFunctionExpression.setArgumentValue("MedicalCostIndex", valuationFunction.vfArguments.medicalCostIndex);
-								valuationFunctionExpression.setArgumentValue("WageIndex", valuationFunction.vfArguments.wageIndex);
+								valuationFunctionExpression.setArgumentValue("AllGoodsIndex",
+										valuationFunction.vfArguments.allGoodsIndex);
+								valuationFunctionExpression.setArgumentValue("MedicalCostIndex",
+										valuationFunction.vfArguments.medicalCostIndex);
+								valuationFunctionExpression.setArgumentValue("WageIndex",
+										valuationFunction.vfArguments.wageIndex);
 
 								valuationFunctionEstimate = valuationFunctionExpression.calculate();
 							} else {
 
-								for(Entry<String, Map<Long, Double>> variable  : variables.entrySet()) {
-									valuationFunction.vfArguments.otherArguments.put(variable.getKey(), variable.getValue().getOrDefault(hifResult.get(0), 0.0));
+								for (Entry<String, Map<Long, Double>> variable : variables.entrySet()) {
+									valuationFunction.vfArguments.otherArguments.put(variable.getKey(),
+											variable.getValue().getOrDefault(hifResult.get(0), 0.0));
 								}
 
-								valuationFunctionEstimate = valuationFunction.nativeFunction.calculate(valuationFunction.vfArguments);
+								valuationFunctionEstimate = valuationFunction.nativeFunction
+										.calculate(valuationFunction.vfArguments);
 							}
 
 							valuationFunctionEstimate = valuationFunctionEstimate * incomeGrowthFactor * hifEstimate;
-							
+
 							DescriptiveStatistics distStats;
 							Double[] hifPercentiles = (Double[]) hifResult.get("percentiles");
-							
-							distStats = combineUncertainty(hifPercentiles, betaDist, vfDefinition, valuationFunctionEstimate, hifEstimate);
-							
-							ValuationResultRecord rec = createResultsRecord(hifResult, vfConfig, valuationFunctionEstimate, distStats);
+
+							distStats = combineUncertainty(hifPercentiles, betaDist, vfDefinition,
+									valuationFunctionEstimate, hifEstimate);
+
+							ValuationResultRecord rec = createResultsRecord(hifResult, vfConfig,
+									valuationFunctionEstimate, distStats);
 							valuationResults.add(rec);
 
-							// Control the size of the results vector by saving partial results along the way
-							if(valuationResults.size() >= maxRowsInMemory) {
+							// Control the size of the results vector by saving partial results along the
+							// way
+							if (valuationResults.size() >= maxRowsInMemory) {
 								rowsSaved += valuationResults.size();
-								messages.get(messages.size()-1).setMessage("Saving progress...");
-								TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
+								messages.get(messages.size() - 1).setMessage("Saving progress...");
+								TaskQueue.updateTaskPercentage(taskUuid, currentPct,
+										mapper.writeValueAsString(messages));
 								ValuationUtil.storeResults(task, valuationTaskConfig, valuationResults);
 								valuationResults.clear();
-								messages.get(messages.size()-1).setMessage("Running valuation functions");
-								TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
+								messages.get(messages.size() - 1).setMessage("Running valuation functions");
+								TaskQueue.updateTaskPercentage(taskUuid, currentPct,
+										mapper.writeValueAsString(messages));
 							}
 						}
 					}
 				}
-			
+
 			}
-			
-			
-			
+
 			rowsSaved += valuationResults.size();
-			
-			messages.get(messages.size()-1).setStatus("complete");
+
+			messages.get(messages.size() - 1).setStatus("complete");
 			valuationTaskLog.addMessage("Valuation function calculations complete");
-			
+
 			messages.add(new TaskMessage("active", String.format("Saving %,d results", rowsSaved)));
 			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
-			
+
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			ValuationUtil.storeResults(task, valuationTaskConfig, valuationResults);
-			messages.get(messages.size()-1).setStatus("complete");
-			
+			messages.get(messages.size() - 1).setStatus("complete");
+
 			String completeMessage = String.format("Saved %,d results", rowsSaved);
 			valuationTaskLog.addMessage(completeMessage);
 			valuationTaskLog.setSuccess(true);
 			valuationTaskLog.setDtEnd(LocalDateTime.now());
 			ValuationUtil.storeTaskLog(valuationTaskLog);
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful,
+					completeMessage);
 
 		} catch (Exception e) {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
@@ -303,17 +326,20 @@ public class ValuationTaskRunnable implements Runnable {
 				rec.setResultVariance(0.0);
 			} else {
 				Double[] percentiles20 = new Double[20];
-				// The old code used to grab the percentiles, put them into a new DescriptiveStatistics, and calculate the mean and
-				// variance from that. It's probably better to do the statistics directly on distStats
+				// The old code used to grab the percentiles, put them into a new
+				// DescriptiveStatistics, and calculate the mean and
+				// variance from that. It's probably better to do the statistics directly on
+				// distStats
 				for (int i = 0; i < percentiles20.length; i++) {
-					double p = (100.0 / percentiles20.length * i) + (100.0 / percentiles20.length / 2.0); // 2.5, 7.5, ... 97.5
+					double p = (100.0 / percentiles20.length * i) + (100.0 / percentiles20.length / 2.0); // 2.5, 7.5,
+																											// ... 97.5
 					percentiles20[i] = distStats.getPercentile(p);
 				}
 				rec.setPct_2_5(distStats.getPercentile(2.5));
 				rec.setPct_97_5(distStats.getPercentile(97.5));
 				rec.setPercentiles(percentiles20);
 				rec.setResultMean(distStats.getMean());
-			
+
 				rec.setStandardDev(distStats.getStandardDeviation());
 				rec.setResultVariance(distStats.getVariance());
 
@@ -335,7 +361,9 @@ public class ValuationTaskRunnable implements Runnable {
 
 	/**
 	 * 
-	 * Returns the 2.5, 7.5, ... percentiles from the provided valuation function's distribution.
+	 * Returns the 2.5, 7.5, ... percentiles from the provided valuation function's
+	 * distribution.
+	 * 
 	 * @param vfRecord
 	 * @return
 	 */
@@ -352,46 +380,54 @@ public class ValuationTaskRunnable implements Runnable {
 			}
 			return percentiles;
 		case "normal":
-			distribution = new NormalDistribution(vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
+			distribution = new NormalDistribution(vfRecord.get("val_a", Double.class).doubleValue(),
+					vfRecord.get("p1a", Double.class).doubleValue());
 			break;
 		case "weibull":
-			distribution = new WeibullDistribution(vfRecord.get("p2a", Double.class).doubleValue(), vfRecord.get("p1a", Double.class).doubleValue());
+			distribution = new WeibullDistribution(vfRecord.get("p2a", Double.class).doubleValue(),
+					vfRecord.get("p1a", Double.class).doubleValue());
 			break;
 		case "lognormal":
-			distribution = new LogNormalDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
+			distribution = new LogNormalDistribution(vfRecord.get("p1a", Double.class).doubleValue(),
+					vfRecord.get("p2a", Double.class).doubleValue());
 			break;
 		case "triangular":
-			//lower, mode, upper
-			distribution = new TriangularDistribution(vfRecord.get("p1a", Double.class).doubleValue(), vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
+			// lower, mode, upper
+			distribution = new TriangularDistribution(vfRecord.get("p1a", Double.class).doubleValue(),
+					vfRecord.get("val_a", Double.class).doubleValue(), vfRecord.get("p2a", Double.class).doubleValue());
 			break;
 		default:
 			return null;
 		}
 
 		for (int i = 0; i < percentiles.length; i++) {
-			double p = (100.0/percentiles.length/2) + i*(100.0/percentiles.length);
+			double p = (100.0 / percentiles.length / 2) + i * (100.0 / percentiles.length);
 			percentiles[i] = distribution.inverseCumulativeProbability(p / 100.0);
 		}
 
 		return percentiles;
 	}
 
-	private DescriptiveStatistics combineUncertainty(Double[] hifPercentiles, double[] betaDist, Record vfDefinition, double valuationFunctionEstimate, double hifEstimate) {
+	private DescriptiveStatistics combineUncertainty(Double[] hifPercentiles, double[] betaDist, Record vfDefinition,
+			double valuationFunctionEstimate, double hifEstimate) {
 		DescriptiveStatistics distStats = new DescriptiveStatistics();
 
-		for(int hifPctIdx=0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
-			for(int betaIdx=0; betaIdx < betaDist.length; betaIdx++) {
-				//valuation estimate * hif percentiles * betaDist / hif point estimate * A
-				if(vfDefinition.get("val_a", Double.class) == null || vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
-					distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
+		for (int hifPctIdx = 0; hifPctIdx < hifPercentiles.length; hifPctIdx++) {
+			for (int betaIdx = 0; betaIdx < betaDist.length; betaIdx++) {
+				// valuation estimate * hif percentiles * betaDist / hif point estimate * A
+				if (vfDefinition.get("val_a", Double.class) == null
+						|| vfDefinition.get("val_a", Double.class).doubleValue() == 0.0) {
+					distStats.addValue(
+							valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() / hifEstimate);
 				} else {
-					distStats.addValue(valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx] / (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));			
+					distStats.addValue(
+							valuationFunctionEstimate * hifPercentiles[hifPctIdx].doubleValue() * betaDist[betaIdx]
+									/ (hifEstimate * vfDefinition.get("val_a", Double.class).doubleValue()));
 				}
 			}
 		}
 
 		return distStats;
 	}
-
 
 }

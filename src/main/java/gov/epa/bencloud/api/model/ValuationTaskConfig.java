@@ -72,6 +72,8 @@ public class ValuationTaskConfig {
 			// 8/24/2022
 			// After discussion with EPA, it was determined that we should revert to previous behavior
 			// growth and inflation years will be set to the closest year possible to population year
+			// 2/1/2024
+			// To introduce valuation with cessation lags, change inflation year to user defined value, and income growth year will be dynamically defined depends on study year (pop year) and lag year
 			// **********************************************************************************
 			this.useInflationFactors = true; //params.has("useInflationFactors") ? params.get("useInflationFactors").asBoolean(false) : false;
 			this.useGrowthFactors = true; //params.has("useGrowthFactors") ? params.get("useGrowthFactors").asBoolean(false) : false;
@@ -81,7 +83,7 @@ public class ValuationTaskConfig {
 			this.hifResultDatasetId = params.get("hif_result_dataset_id").asInt();
 			this.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").toString().isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
 			this.gridDefinitionId = params.get("grid_definition_id")==null || params.get("grid_definition_id").toString().isEmpty() ? null : params.get("grid_definition_id").asInt();
-			
+			this.inflationYear = params.get("inflation_year")==null || params.get("inflation_year").toString().isEmpty() ? null : params.get("inflation_year").asInt();
 			JsonNode functions = params.get("functions");
 
 			for (JsonNode function : functions) {
