@@ -37,6 +37,8 @@ public class ValuationTaskConfig {
 	public Integer variableDatasetId = null;
 	public Integer inflationYear = null;
 	public Integer incomeGrowthYear = null;
+	public Double discountRate = null;
+	public Boolean useDecliningDR = false;
 	
 	public Boolean useInflationFactors = true;
 	public Boolean useGrowthFactors = true;
@@ -83,7 +85,10 @@ public class ValuationTaskConfig {
 			this.hifResultDatasetId = params.get("hif_result_dataset_id").asInt();
 			this.variableDatasetId = params.get("variable_dataset_id")==null || params.get("variable_dataset_id").toString().isEmpty() ? 1 : params.get("variable_dataset_id").asInt();
 			this.gridDefinitionId = params.get("grid_definition_id")==null || params.get("grid_definition_id").toString().isEmpty() ? null : params.get("grid_definition_id").asInt();
-			this.inflationYear = params.get("inflation_year")==null || params.get("inflation_year").toString().isEmpty() ? null : params.get("inflation_year").asInt();
+			//this is only called by non-batch runs, which is obsolete. inflation year and DR may not be able to assign correctly as it's never tested.
+			this.inflationYear = params.get("inflationYear")==null || params.get("inflationYear").toString().isEmpty() ? null : params.get("inflationYear").asInt();
+			this.discountRate = params.get("discountRate")==null || params.get("discountRate").toString().isEmpty() ? null : params.get("discountRate").asDouble();
+			this.useDecliningDR = params.get("useDecliningDR")==null || params.get("useDecliningDR").toString().isEmpty() ? null : params.get("useDecliningDR").asBoolean();
 			JsonNode functions = params.get("functions");
 
 			for (JsonNode function : functions) {

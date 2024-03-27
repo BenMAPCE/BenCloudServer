@@ -44,6 +44,8 @@ public class BatchTaskConfig {
 	public Integer pollutantId = 0;
 	public Boolean preserveLegacyBehavior = true;
 	public Integer inflationYear = null;
+	public Double discountRate = 0d;
+	public Boolean useDecliningDR = false;
 	public List<Scenario> aqScenarios = new ArrayList<Scenario>();
 	public List<BatchHIFGroup> batchHifGroups = new ArrayList<BatchHIFGroup>();
 	public List<BatchExposureGroup> batchExposureGroups = new ArrayList<BatchExposureGroup>();
@@ -75,6 +77,8 @@ public class BatchTaskConfig {
 			this.aqBaselineId = config.get("pre_policy_aq_id").asInt();
 			this.popId = config.get("population_id").asInt();
 			this.inflationYear = params.get("inflationYear").asInt();
+			this.discountRate = params.get("discountRate").asDouble();
+			this.useDecliningDR = params.get("useDecliningDR").asBoolean();
 			
 			JsonNode scenarios = config.get("scenarios");
 

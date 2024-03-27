@@ -595,6 +595,8 @@ public class TaskApi {
 			valuationTaskConfig.useInflationFactors = true;
 			valuationTaskConfig.variableDatasetId = 1;
 			valuationTaskConfig.inflationYear = batchTaskConfig.inflationYear;
+			valuationTaskConfig.discountRate = batchTaskConfig.discountRate;
+			valuationTaskConfig.useDecliningDR = batchTaskConfig.useDecliningDR;
 			
 			//Combine all the selected HIFs into a big, flat list for processing
 			for (BatchHIFGroup hifGroup : batchTaskConfig.batchHifGroups) {
