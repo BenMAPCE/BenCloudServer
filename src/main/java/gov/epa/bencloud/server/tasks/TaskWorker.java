@@ -20,7 +20,6 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.TaskWorkerRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
@@ -32,7 +31,7 @@ public class TaskWorker {
 
 	public static int maxTaskWorkers = 0;
 
-	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 15; 
+	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 20; 
 
 	static {
 		maxTaskWorkers = Integer.parseInt(ApplicationUtil.getProperty("max.task.workers"));
@@ -114,7 +113,8 @@ public class TaskWorker {
 		}
 
 		if (transactionSuccessful) {
-			
+			//TODO: Refactor this code. The case should only handle the local tasks. Else, call runTaskAsJob.
+			// Although, we should validate the task type before starting the job to be sure it's valid.
 			Thread t = null;
 			
 			switch (task.getType()) {
@@ -146,8 +146,8 @@ public class TaskWorker {
 				break;
 				
 			default:
-				 t = new Thread(new TaskWorkerRunnable(task.getUuid(), taskWorkerUuid));
-				 t.start();
+				log.error("Unknown task type: " + task.getType());
+				 //TODO: Unknown task type. Add code to clean up task record.
 				break;
 			}
 		} else {

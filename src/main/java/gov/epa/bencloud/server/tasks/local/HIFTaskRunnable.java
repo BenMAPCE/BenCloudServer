@@ -1,6 +1,5 @@
 package gov.epa.bencloud.server.tasks.local;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Vector;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -32,9 +30,6 @@ import org.mariuszgromada.math.mxparser.mXparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.epa.bencloud.api.AirQualityApi;
@@ -43,17 +38,13 @@ import gov.epa.bencloud.api.PopulationApi;
 import gov.epa.bencloud.api.function.HIFunction;
 import gov.epa.bencloud.api.model.AirQualityCell;
 import gov.epa.bencloud.api.model.AirQualityCellMetric;
-import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.PopulationCategoryKey;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
-import gov.epa.bencloud.server.database.PooledDataSource;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultRecord;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
