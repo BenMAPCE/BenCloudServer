@@ -267,7 +267,7 @@ public class ApiRoutes extends RoutesBase {
 		 * ..Should incidence include prevalence?
 		 */
 		service.get(apiPrefix + "/incidence", (request, response) -> {
-			return IncidenceApi.getAllIncidencePrevalenceDatasets(response, getUserProfile(request, response));
+			return IncidenceApi.getAllIncidencePrevalenceDatasets(request, response, getUserProfile(request, response));
 		});
 
 		/*
@@ -292,6 +292,13 @@ public class ApiRoutes extends RoutesBase {
 		 */
 		service.get(apiPrefix + "/incidence/:id/contents", (request, response) -> {
 			return IncidenceApi.getIncidenceDatasetDetails(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * GET all the years of an incidence dataset
+		 */
+		service.get(apiPrefix + "/incidence-dataset-years", (request, response) -> {
+			return IncidenceApi.getIncidenceDatasetYears(request, response, getUserProfile(request, response));
 		});
 		
 		/*
