@@ -875,8 +875,8 @@ public class IncidenceApi {
 				//year is required and should be an integer
 				str = record[yearIdx];
 				if(str=="" || !str.matches("-?\\d+")) {
-				//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "column value " + str + " is not a valid integer." + "\r\n";
-				countYearTypeError++;
+					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "column value " + str + " is not a valid integer." + "\r\n";
+					countYearTypeError++;
 				}	
 
 				//standard error should be a double and >= 0
@@ -1165,7 +1165,8 @@ public class IncidenceApi {
 				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
 				int endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
 				int endpointId = endpointIdLookup.get(endpointGroupName).get(record[endpointIdx].toLowerCase());
-				
+				int row = Integer.valueOf(record[rowIdx]);
+				int column = Integer.valueOf(record[columnIdx]);
 
 				String raceName = record[raceIdx].toLowerCase();
 				if (raceName.equals("")){
@@ -1310,9 +1311,9 @@ public class IncidenceApi {
 		try {
 			//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
 			List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
-    		DSLContext context = DSL.using(configuration);
+				DSLContext context = DSL.using(configuration);
 
-			Result<IncidenceValueRecord> result = context
+				Result<IncidenceValueRecord> result = context
 					.deleteFrom(INCIDENCE_VALUE)
 					.where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
 						context.select(INCIDENCE_ENTRY.ID)
@@ -1325,17 +1326,26 @@ public class IncidenceApi {
 			});
 
 			// Next, delete the entries using the collected incidence entry IDs
-			try {
-				create.deleteFrom(INCIDENCE_ENTRY)
-					.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
-					.execute();
-			} catch (DataAccessException e) {
+			if(deletedIncidenceEntryIds.size() == 0) {
+				try {
+					create.deleteFrom(INCIDENCE_ENTRY)
+						.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+						.execute();
+				} catch (DataAccessException e) {
+				}
+			} else {
+				try {
+					create.deleteFrom(INCIDENCE_ENTRY)
+						.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+						.execute();
+				} catch (DataAccessException e) {
+				}
 			}
 
 			// Finally, delete the dataset from the incidence datasets table
 			create.deleteFrom(INCIDENCE_DATASET)
-										.where(INCIDENCE_DATASET.ID.eq(id))
-										.execute();
+				.where(INCIDENCE_DATASET.ID.eq(id))
+				.execute();
 					
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -1373,38 +1383,45 @@ public class IncidenceApi {
 		if(datasetResult.getShareScope() == Constants.SHARING_ALL || !(datasetResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
-		
 
+		//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
+		List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
+			DSLContext context = DSL.using(configuration);
 
-	//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
-	List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
-    DSLContext context = DSL.using(configuration);
+			Result<IncidenceValueRecord> result = context
+				.deleteFrom(INCIDENCE_VALUE)
+				.where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
+					context.select(INCIDENCE_ENTRY.ID)
+						.from(INCIDENCE_ENTRY)
+						.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+				))
+				.returning(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID)
+				.fetch();
 
-    Result<IncidenceValueRecord> result = context
-            .deleteFrom(INCIDENCE_VALUE)
-            .where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
-                context.select(INCIDENCE_ENTRY.ID)
-                       .from(INCIDENCE_ENTRY)
-                       .where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
-            ))
-            .returning(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID)
-            .fetch();
+			return result.getValues(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID);
+		});
 
-    return result.getValues(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID);
-});
+		// Next, delete the entries using the collected incidence entry IDs
+		if(deletedIncidenceEntryIds.size() == 0) {
+			try {
+				create.deleteFrom(INCIDENCE_ENTRY)
+					.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+					.execute();
+			} catch (DataAccessException e) {
+			}
+		} else {
+			try {
+				create.deleteFrom(INCIDENCE_ENTRY)
+					.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+					.execute();
+			} catch (DataAccessException e) {
+			}
+		}
 
-	// Next, delete the entries using the collected incidence entry IDs
-	try {
-		create.deleteFrom(INCIDENCE_ENTRY)
-			.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+		// Finally, delete the dataset from the incidence datasets table
+		int numDeletedDatasets = create.deleteFrom(INCIDENCE_DATASET)
+			.where(INCIDENCE_DATASET.ID.eq(id))
 			.execute();
-	} catch (DataAccessException e) {
-	}
-
-	// Finally, delete the dataset from the incidence datasets table
-	int numDeletedDatasets = create.deleteFrom(INCIDENCE_DATASET)
-								.where(INCIDENCE_DATASET.ID.eq(id))
-								.execute();
 			
 		//if no datasets were deleted, return an error
 		if(numDeletedDatasets == 0) {
