@@ -1,7 +1,7 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Production 2024-??-?? | [API v0.5.0? and DB v25?](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0?](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## Production 2024-??-?? | [API v0.5.0 and DB v25](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
 * Added Incidence and Prevalence dataset review and management to Data Center / Manage Data. (Multiple stories)
@@ -14,12 +14,12 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 * The Older Adults (64-99) Exposure analysis group should be 65-99. (BCD-336)
 * Ensure that valuation results are still available if valuation function ids change. (BCD-334)
 * Replace valuation function dataset with latest version including the updated School Loss Days function. (BCD-337)
+* Changed annual metric on existing air quality surfaces to Mean rather than None. This does not affect calculations currently, but was updated for correctness. (BCD-329)
 
 ### Pending Items
-* Incidence dataset management
-* Valuation dataset updates
-* User session timeout handling
-* Identify additional usability improvements to include. (batch AQ upload?, improve AQ upload dialog, increase task limit for EPA users, others?)
+* User session timeout handling (BCD-233, BCD-224)
+* Improvements to air quality upload dialog (BCD-359)
+* EPA.gov users may now store up to 1000 completed tasks. Other users are limited to 40. (BCD-358)
 
 ### Known Issues
 * ...
