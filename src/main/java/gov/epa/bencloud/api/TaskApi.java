@@ -559,7 +559,7 @@ public class TaskApi {
 		}
 
 		// If user is part of epa.gov, use theEpaUser max count instead
-		if(userProfile.get().getId().toLowerCase().endsWith("epa.gov")) {
+		if(CoreApi.getUserEmail(request, response, userProfile).toLowerCase().endsWith("epa.gov")) {
 			maxTasks = maxEpaTasks;
 		}
 		
