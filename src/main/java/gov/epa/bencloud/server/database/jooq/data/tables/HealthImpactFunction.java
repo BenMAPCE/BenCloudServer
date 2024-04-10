@@ -227,6 +227,11 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
      */
     public final TableField<HealthImpactFunctionRecord, Integer> END_DAY = createField(DSL.name("end_day"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>data.health_impact_function.lag_fraction</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Double[]> LAG_FRACTION = createField(DSL.name("lag_fraction"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
     private HealthImpactFunction(Name alias, Table<HealthImpactFunctionRecord> aliased) {
         this(alias, aliased, null);
     }

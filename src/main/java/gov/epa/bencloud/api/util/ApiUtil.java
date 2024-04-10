@@ -121,6 +121,47 @@ public class ApiUtil {
 				
 		return incomeGrowthFactorRecords;
 	}
+	
+	/**
+	 * All income growth data of selected dataset from the db
+	 * @param id Income growth adjustment dataset id
+	 * @param useGrowthFactors 
+	 * @return a map of income growth factors, with key = endpoint group id, value = map of income growth adjustment of each year.
+	 */
+	public static Map<Short, Map<Short, Double>> getAllIncomeGrowthFactors(int id, Boolean useGrowthFactors) {
+
+		if(! useGrowthFactors) {
+			return null;
+		}
+		
+		Result<Record3<Short, Short, Double>> results = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(INCOME_GROWTH_ADJ_FACTOR.ENDPOINT_GROUP_ID,
+						INCOME_GROWTH_ADJ_FACTOR.GROWTH_YEAR,
+						INCOME_GROWTH_ADJ_FACTOR.MEAN_VALUE)
+				.from(INCOME_GROWTH_ADJ_FACTOR)
+				.where(INCOME_GROWTH_ADJ_FACTOR.INCOME_GROWTH_ADJ_DATASET_ID.eq((short)id))
+				.fetch();
+		
+		Map<Short, Map<Short, Double>> incomeGrowthFactorRecords =  new HashMap<Short, Map<Short, Double>>();	
+		for(Record3<Short, Short, Double> result: results) {
+			Short endPointID = result.value1();
+			Short growthYear = result.value2();
+			Double growthValue = result.value3();
+			
+			Map<Short, Double> incomeGrowthByYear = incomeGrowthFactorRecords.getOrDefault(endPointID,null);
+			if(incomeGrowthByYear==null) {
+				incomeGrowthByYear = new HashMap<Short, Double>();
+				incomeGrowthByYear.put(growthYear, growthValue);
+				incomeGrowthFactorRecords.put(endPointID, incomeGrowthByYear);
+			}
+			else {
+				incomeGrowthByYear.put(growthYear, growthValue);
+				incomeGrowthFactorRecords.put(endPointID, incomeGrowthByYear);
+			}			
+		}
+		
+		return incomeGrowthFactorRecords;
+	}
 
 	/**
 	 * 

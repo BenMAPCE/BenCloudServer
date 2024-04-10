@@ -13,7 +13,6 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row21;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -150,6 +149,26 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
      */
     public final TableField<ValuationFunctionRecord, Boolean> EPA_STANDARD = createField(DSL.name("epa_standard"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
 
+    /**
+     * The column <code>data.valuation_function.val_a_array</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Double[]> VAL_A_ARRAY = createField(DSL.name("val_a_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_function.val_b_array</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Double[]> VAL_B_ARRAY = createField(DSL.name("val_b_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_function.val_c_array</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Double[]> VAL_C_ARRAY = createField(DSL.name("val_c_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_function.val_d_array</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Double[]> VAL_D_ARRAY = createField(DSL.name("val_d_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
     private ValuationFunction(Name alias, Table<ValuationFunctionRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -222,14 +241,5 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     @Override
     public ValuationFunction rename(Name name) {
         return new ValuationFunction(name, null);
-    }
-
-    // -------------------------------------------------------------------------
-    // Row21 type methods
-    // -------------------------------------------------------------------------
-
-    @Override
-    public Row21<Integer, Integer, Integer, Integer, String, String, Integer, Integer, String, Double, String, String, Double, Double, Double, String, Double, String, Double, String, Boolean> fieldsRow() {
-        return (Row21) super.fieldsRow();
     }
 }
