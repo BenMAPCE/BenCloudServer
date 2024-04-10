@@ -217,6 +217,23 @@ public class CoreApi {
 	 * @param req
 	 * @param res
 	 * @param userOptionalProfile
+	 * @return user's email or empty string
+	 */
+	public static String getUserEmail(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
+
+		UserProfile userProfile = userOptionalProfile.get();
+
+		Object tmpMail = userProfile.getAttribute(Constants.HEADER_MAIL);
+
+		return tmpMail==null ? "" : tmpMail.toString();
+
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userOptionalProfile
 	 * @return an ObjectNode representation of the application and database version.
 	 */
 	public static Object getVersion(Request req, Response res, Optional<UserProfile> userOptionalProfile) {

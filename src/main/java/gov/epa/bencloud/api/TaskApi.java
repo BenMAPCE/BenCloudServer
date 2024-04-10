@@ -541,8 +541,10 @@ public class TaskApi {
 		// As an interim protection against overloading the system, users can only have a maximum of 40 pending or completed tasks total
 		int taskCount = TaskApi.getTotalTaskCountForUser(userProfile.get());			
 		int maxTasks = 40;
+		int maxEpaTasks = 1000;
 		
 		String sMaxTaskPerUser = ApplicationUtil.getProperty("default.max.tasks.per.user"); 
+		String sMaxTaskPerEpaUser = ApplicationUtil.getProperty("default.max.tasks.per.epa.user"); 
 		
 		try {
 			maxTasks = Integer.parseInt(sMaxTaskPerUser);
@@ -550,6 +552,17 @@ public class TaskApi {
 			//If this is not set in the properties, we will use the default.
 		}
 				
+		try {
+			maxEpaTasks = Integer.parseInt(sMaxTaskPerEpaUser);
+		} catch(NumberFormatException e) {
+			//If this is not set in the properties, we will use the default.
+		}
+
+		// If user is part of epa.gov, use theEpaUser max count instead
+		if(CoreApi.getUserEmail(request, response, userProfile).toLowerCase().endsWith("epa.gov")) {
+			maxTasks = maxEpaTasks;
+		}
+		
 		if(maxTasks != 0 && taskCount >= maxTasks) {
 			return CoreApi.getErrorResponse(request, response, 405, "You have reached the maximum of " + maxTasks + " task scenarios allowed per user. Please delete existing task results before submitting new tasks. You can save the current configuration as a template and return to it later.");
 		}
