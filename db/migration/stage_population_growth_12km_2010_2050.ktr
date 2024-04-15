@@ -593,7 +593,7 @@
   <order>
     <hop>
       <from>Load 12 km pop for each year</from>
-      <to>stage.population_growth_2000_2050</to>
+      <to>stage.population_growth</to>
       <enabled>Y</enabled>
     </hop>
   </order>
@@ -852,7 +852,7 @@ where POPULATIONDATASETID = 37
     </GUI>
   </step>
   <step>
-    <name>stage.population_growth_2000_2050</name>
+    <name>stage.population_growth</name>
     <type>TableOutput</type>
     <description/>
     <distribute>Y</distribute>
@@ -864,7 +864,7 @@ where POPULATIONDATASETID = 37
     </partitioning>
     <connection>benmap_postgres</connection>
     <schema>stage</schema>
-    <table>population_growth_2000_2050</table>
+    <table>population_growth</table>
     <commit>1000</commit>
     <truncate>Y</truncate>
     <ignore_errors>N</ignore_errors>

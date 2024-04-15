@@ -18,11 +18,9 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 * Replace valuation function dataset with latest version including the updated School Loss Days function. (BCD-337)
 * Changed annual metric on existing air quality surfaces to Mean rather than None. This does not affect calculations currently, but was updated for correctness. (BCD-329)
 
-### Pending Items
-* Improvements to user session timeout handling (BCD-233, BCD-224)
-
 ### Known Issues
-* Large result datasets may fail to export successfully if 12km grid is included. As a workaround, please run fewer functions, fewer scenarios, or export results aggregated to county or state. This will be improved in a future release.
+* Large result datasets may fail to export successfully if 12km grid is included. As a workaround, please run fewer functions, fewer scenarios, or export results aggregated to county or state. This will be improved in a future release. (BCD-361, BCD-362)
+* Improvements are needed to improve application behavior when a user's session times out after 15 minutes. Currently, user's must refresh the page in the browser to log in and continue using the application. (BCD-233, BCD-224)
 
 ## Production 2023-12-12 | [API v0.4.2 and DB v21](https://github.com/BenMAPCE/BenCloudServer/tree/r0.4.2-release) | [UI v0.4.2](https://github.com/BenMAPCE/BenCloudServer/tree/r0.4.2-release)
 
