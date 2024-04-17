@@ -60,8 +60,6 @@ build_stage_jars:
   stage: code_build
   only:
     - tags
-  except:
-    - /^(?!main).+@/
   image: gradle:alpine
   tags:
     - benmapstagegitlab
@@ -103,8 +101,6 @@ build_stage_server_image:
   stage: image_build
   only:
     - tags
-  except:
-    - /^(?!main).+@/
   tags:
     - benmapstagegitlab
   image:
@@ -137,8 +133,6 @@ build_stage_runner_image:
   stage: image_build
   only:
     - tags
-  except:
-    - /^(?!main).+@/
   tags:
     - benmapstagegitlab
   image:
@@ -208,8 +202,6 @@ deploy_staging:
   stage: deploy_nonprod
   only:
     - tags
-  except:
-    - /^(?!main).+@/
   tags:
     - benmapstagegitlab
   when: manual
