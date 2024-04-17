@@ -45,9 +45,9 @@ dependencies {
 	implementation 'io.dropwizard.metrics:metrics-healthchecks:4.2.0'
 	implementation 'io.dropwizard.metrics:metrics-jmx:4.2.0'
 
-	implementation 'com.fasterxml.jackson.core:jackson-core:2.15.3'
-	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.3'
+	implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
 
 	implementation 'io.vavr:vavr:0.10.0'
 	implementation 'org.slf4j:slf4j-api:2.0.6'
@@ -57,7 +57,7 @@ dependencies {
 	implementation 'org.apache.commons:commons-lang3:3.9'
 	
 	// Pushing commons-compress version since another dependencies was referencing 1.22 which has a vulnerability
-	implementation 'org.apache.commons:commons-compress:1.24.0'
+	implementation 'org.apache.commons:commons-compress:1.26.0'
 	
 	implementation 'org.apache.poi:poi:4.1.0'
 	implementation 'org.apache.poi:poi-ooxml:4.1.0'
@@ -66,7 +66,7 @@ dependencies {
 
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
-    implementation 'io.kubernetes:client-java-extended:18.0.1'
+    implementation 'io.kubernetes:client-java-extended:19.0.0'
 
 	implementation 'org.geotools:gt-main:29.0'
 

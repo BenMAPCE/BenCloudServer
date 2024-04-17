@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.Record;
@@ -18,9 +19,11 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.function.VFArguments;
 import gov.epa.bencloud.api.function.VFNativeFactory;
 import gov.epa.bencloud.api.function.VFunction;
+import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
@@ -221,6 +224,85 @@ public class ValuationUtil {
 			e.printStackTrace();
 		}
 		return null;
+		
+	}
+
+	/**
+	 * 
+	 * @param id
+	 * @return the function definition for a given valuation function id.
+	 */
+	public static Integer[] getFunctionsForEndpoint(Integer endpointId) {
+	
+		// Load the function by id
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());		
+		
+		Integer[] ret = create
+				.select(VALUATION_FUNCTION.ID)
+				.from(VALUATION_FUNCTION)
+				.where(VALUATION_FUNCTION.ENDPOINT_ID.eq(endpointId))
+				.fetchArray(VALUATION_FUNCTION.ID);
+				
+		return ret;
+	}
+
+	/**
+	 * @param hifConfig
+	 * @param valuationSelection
+	 * Add all the valuation functions to this HIF that match valuationSelection's values
+	 * NOTE: For now, we only support EPA's default functions. In the future, we'll add
+	 *  a new structure to allow users to create their own lists.
+	 */
+	public static void populateValuationFunctions(HIFConfig hifConfig, String valuationSelection) {
+		
+		Integer[] vfIds = ValuationUtil.getFunctionsForEndpoint((Integer) hifConfig.hifRecord.get("endpoint_id"));
+		
+		// Tier 1 - Look for valuation function age ranges that completely contain the HIF age range
+		for (Integer vfId : vfIds) {
+			Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
+			if(valuationSelection.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+					&& hifConfig.startAge >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
+					&& hifConfig.endAge <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
+				ValuationConfig vf = new ValuationConfig();
+				vf.hifId = hifConfig.hifId;
+				vf.hifInstanceId = hifConfig.hifInstanceId;
+				vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
+				vf.vfRecord = vfRecord.intoMap();
+				hifConfig.valuationFunctions.add(vf);							
+			}
+		}
+		
+		// Tier 2 - If no matches, restrict the HIF age range by 1 year on both sides and check again
+		if(hifConfig.valuationFunctions.size() == 0) {
+			for (Integer vfId : vfIds) {
+				Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
+				if(valuationSelection.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)
+						&& hifConfig.startAge+1 >= vfRecord.get(VALUATION_FUNCTION.START_AGE)
+						&& hifConfig.endAge-1 <= vfRecord.get(VALUATION_FUNCTION.END_AGE)) {
+					ValuationConfig vf = new ValuationConfig();
+					vf.hifId = hifConfig.hifId;
+					vf.hifInstanceId = hifConfig.hifInstanceId;
+					vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
+					vf.vfRecord = vfRecord.intoMap();
+					hifConfig.valuationFunctions.add(vf);							
+				}
+			}			
+		}
+		
+		// Tier 3 - If still no matches, just include all EPA default functions for this endpoint
+		if(hifConfig.valuationFunctions.size() == 0) {
+			for (Integer vfId : vfIds) {
+				Record vfRecord = ValuationUtil.getFunctionDefinition(vfId);
+				if(valuationSelection.equalsIgnoreCase(Constants.EPA_STANDARD_VALUATION) && vfRecord.get(VALUATION_FUNCTION.EPA_STANDARD)) {
+					ValuationConfig vf = new ValuationConfig();
+					vf.hifId = hifConfig.hifId;
+					vf.hifInstanceId = hifConfig.hifInstanceId;
+					vf.vfId = vfRecord.get(VALUATION_FUNCTION.ID);
+					vf.vfRecord = vfRecord.intoMap();
+					hifConfig.valuationFunctions.add(vf);							
+				}
+			}			
+		}
 		
 	}
 }

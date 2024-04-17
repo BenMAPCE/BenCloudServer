@@ -1,0 +1,43 @@
+We currently support background task processing for calculating HIF, Valuation, and Exposure results only. This user story will extend our current model for server-side task processing to include other types of tasks such as longrunning import or export processes. For the most part, our current structure works well as-is. The main addition that is needed, beyond feature-specific coding, is the addition of an object store to hold files the user has uploaded or can download.
+
+General Needs
+Add a new set of classes to allow storage of file objects in S3. This will include the following methods:
+FilestoreApi.getFile(String id) S3Object (or another more useful return type)
+FilestoreApi.putFile(String id, S3Object) Boolean
+FilestoreApi.getUniquePrefix() Returns a unique string that will be added as a prefix to any stored object.
+
+When files are stored, we will get a unique prefix and combine it with the original filename to form the unique name of the file.
+For example: a1b2b3\OriginalFilename.csv
+
+We have not previously utilized object storage so this task will start with a bit of research in order to best utilize S3 in our Kubernetes hosting environment. It is assumed the S3 bucket and credentials will be stored as CI/CD variables and passed into the server and taskrunner classes when run.
+
+When running locally, the FilestoreClass should automatically revert to using a local storage folder (which will be specified Local.properties)
+
+Task Runner Extensions
+1. Add new TaskRunnable classes to *.server.tasks.local. (rename package to server.tasks.runnable): AQImportTaskRunnable, ResultExportTaskRunnable
+  a. We need an object store to stage the AQ inputs and also to store the export outputs
+2. Extend TaskWorker.startTaskWorker() and BenCloudTaskRunner.main() to support additional task types
+3. Extend task queue UI and API calls. 
+
+Air Quality Import
+When user uploads AQ files, store in S3 bucket and then save location information (object id) in task queue record.
+
+For AQ import, user will see progress. 
+Running imports can be canceled by the user. 
+Completed tasks allow the user to jump to the Manage AQ screen to review the results of the import. 
+The user can also download a detailed log of the import.
+Failed imports will allow the user to download a detailed log explaining what went wrong.
+Deleting an AQ import task will not delete the associated AQ surfaces.
+
+The AQ import process will run in two phases.
+First, all files must be validated to ensure the process will succeed.
+After validation, files will be imported one at a time. 
+Task progress will be updated along the way.
+Once the import has completed (whether successful or not) the uploaded files will be removed from S3.
+
+Results Export
+When export completes, store results in S3 bucket and then save location information in the task queue record
+For result export, user will see progress. 
+User can cancel export process.
+Once completed, user can download the resulting file.
+Q: Should we automatically purge exports after a period of time?

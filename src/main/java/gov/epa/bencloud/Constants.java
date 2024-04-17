@@ -11,4 +11,6 @@ public final class Constants {
     public static final String HEADER_GROUPS = "ismemberof";
     public static final String HEADER_DISPLAY_NAME = "displayname";
     public static final String HEADER_MAIL = "mail";
+    
+    public static final String EPA_STANDARD_VALUATION = "Use EPA's current default values";
 }

@@ -14,7 +14,6 @@ stages:
   - image_scan
   - application_scan
   - deploy_nonprod
-  - deploy_prod
 
 include:
   - remote: 'https://gitlab.com/prismacloud-public/shift-left/extension/-/raw/master/.pcs.gitlab-ci.yml'
@@ -59,8 +58,8 @@ build_dev_jars:
 
 build_stage_jars:
   stage: code_build
-  only: 
-    - main
+  only:
+    - tags
   image: gradle:alpine
   tags:
     - benmapstagegitlab
@@ -100,8 +99,8 @@ build_dev_server_image:
 
 build_stage_server_image:
   stage: image_build
-  only: 
-    - main
+  only:
+    - tags
   tags:
     - benmapstagegitlab
   image:
@@ -110,7 +109,7 @@ build_stage_server_image:
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudserver/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_TAG
   dependencies:
     - build_stage_jars
 
@@ -132,8 +131,8 @@ build_dev_runner_image:
 
 build_stage_runner_image:
   stage: image_build
-  only: 
-    - main
+  only:
+    - tags
   tags:
     - benmapstagegitlab
   image:
@@ -142,7 +141,7 @@ build_stage_runner_image:
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/bencloudtaskrunner/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_TAG
   dependencies:
     - build_stage_jars
 
@@ -156,7 +155,7 @@ prisma_cloud_compute_scan:
   variables:
     GIT_STRATEGY: none
   script:
-    - 'export PRISMA_CI_TOKEN=$(curl -kH "Content-Type: application/json" -d "{\"username\":\"$PRISMA_CI_USERNAME\", \"password\":\"$PRISMA_CI_PASSWORD\"}" https://prismacloud.epa.gov/api/v22.12/authenticate | jq -r .token)'
+    - 'export PRISMA_CI_TOKEN=$(curl -kH "Content-Type: application/json" -d "{\"username\":\"$PRISMA_CI_USERNAME\", \"password\":\"$PRISMA_CI_PASSWORD\"}" https://prismacloud.epa.gov/api/v32.01/authenticate | jq -r .token)'
     - 'curl --progress-bar -L -k --header "Authorization: Bearer $PRISMA_CI_TOKEN" https://prismacloud.epa.gov/api/v1/util/twistcli > twistcli; chmod a+x twistcli;'
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
@@ -201,8 +200,8 @@ deploy_testdev:
 
 deploy_staging:
   stage: deploy_nonprod
-  only: 
-    - main
+  only:
+    - tags
   tags:
     - benmapstagegitlab
   when: manual

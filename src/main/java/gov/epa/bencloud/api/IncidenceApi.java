@@ -1,10 +1,19 @@
 package gov.epa.bencloud.api;
 
-import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT_GROUP;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.ETHNICITY;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.GENDER;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.GET_INCIDENCE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_DATASET;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_ENTRY;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_VALUE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.RACE;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -12,11 +21,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.servlet.MultipartConfigElement;
-
-import java.util.Map.Entry;
 
 import org.apache.commons.io.input.BOMInputStream;
 import org.jooq.Condition;
@@ -24,16 +34,16 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.InsertValuesStep5;
 import org.jooq.JSONFormat;
+import org.jooq.JSONFormat.RecordFormat;
+import org.jooq.OrderField;
+import org.jooq.Record;
+import org.jooq.Record1;
+import org.jooq.Record16;
 import org.jooq.Record3;
 import org.jooq.Record8;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.exception.DataAccessException;
-import org.jooq.JSONFormat.RecordFormat;
-import org.jooq.OrderField;
-import org.jooq.Record;
-import org.jooq.Record1;
-import org.jooq.Record15;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -53,11 +63,10 @@ import gov.epa.bencloud.api.model.HIFConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.PopulationCategoryKey;
 import gov.epa.bencloud.api.model.ValidationMessage;
-import gov.epa.bencloud.api.util.IncidenceUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.api.util.IncidenceUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
-import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceEntryRecord;
@@ -223,12 +232,60 @@ public class IncidenceApi {
 
 	/**
 	 * 
+	 * @param request
 	 * @param response
 	 * @param userProfile
-	 * @return a JSON representation of all incidence datasets.
+	 * @return a JSON representation of all incidence AND prevalence datasets.
 	 */
-	public static Object getAllIncidencePrevalenceDatasets(Response response, Optional<UserProfile> userProfile) {
-		return getAllIncidencePrevalenceDatasets(response);
+	public static Object getAllIncidencePrevalenceDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
+		boolean showAll;
+		try {
+			showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+		
+		String userId = userProfile.get().getId();
+	
+		Condition filterCondition = DSL.trueCondition();
+		Condition userFilterCondition = DSL.trueCondition();
+
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			userFilterCondition = userFilterCondition.and(INCIDENCE_DATASET.USER_ID.eq(userId));
+			userFilterCondition = userFilterCondition.or(INCIDENCE_DATASET.SHARE_SCOPE.isTrue());
+			filterCondition = filterCondition.and(userFilterCondition);
+		}
+
+		Result<Record8<String, Integer, Integer, Integer[], String, Short, String, LocalDateTime >> records = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(INCIDENCE_DATASET.NAME,
+						INCIDENCE_DATASET.ID,
+						INCIDENCE_DATASET.GRID_DEFINITION_ID,
+						DSL.arrayAggDistinct(INCIDENCE_ENTRY.YEAR).orderBy(INCIDENCE_ENTRY.YEAR).as("years"),
+						INCIDENCE_DATASET.USER_ID,
+						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.FILENAME,
+						INCIDENCE_DATASET.UPLOAD_DATE
+						)
+				.from(INCIDENCE_DATASET)
+				.join(INCIDENCE_ENTRY).on(INCIDENCE_DATASET.ID.eq(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID))
+				.where(filterCondition)
+				.groupBy(INCIDENCE_DATASET.NAME,
+						INCIDENCE_DATASET.ID,
+						INCIDENCE_DATASET.GRID_DEFINITION_ID,
+						INCIDENCE_DATASET.USER_ID,
+						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.FILENAME,
+						INCIDENCE_DATASET.UPLOAD_DATE
+						)
+				.orderBy(INCIDENCE_DATASET.NAME)
+				.fetch();
+		
+		response.type("application/json");
+		return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 	
 	/**
@@ -237,8 +294,8 @@ public class IncidenceApi {
 	 * @param userProfile
 	 * @return a JSON representation of all incidence datasets.
 	 */
-	public static Object getAllIncidenceDatasets(Response response, Optional<UserProfile> userProfile) {
-		return getAllIncidencePrevalenceDatasets(response, false);
+	public static Object getAllIncidenceDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
+		return getAllIncidencePrevalenceDatasets(request, response, userProfile, false);
 	}
 
 
@@ -250,7 +307,7 @@ public class IncidenceApi {
 	 * @return a JSON representation of all prevalance datasets.
 	 */
 	public static Object getAllPrevalenceDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
-		return getAllIncidencePrevalenceDatasets(response, true);
+		return getAllIncidencePrevalenceDatasets(request, response, userProfile, true);
 	}
 	
 
@@ -260,7 +317,7 @@ public class IncidenceApi {
 	 * @param prevalence true if prevalance, false if incidence
 	 * @return a JSON representation of all incidence or prevalance datasets.
 	 */
-	public static Object getAllIncidencePrevalenceDatasets(Response response, boolean prevalence) {
+	public static Object getAllIncidencePrevalenceDatasets(Request request, Response response, Optional<UserProfile> userProfile, boolean prevalence) {
 		Result<Record8<String, Integer, Integer, Integer[], String, Short, String, LocalDateTime >> records = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(INCIDENCE_DATASET.NAME,
 						INCIDENCE_DATASET.ID,
@@ -288,41 +345,6 @@ public class IncidenceApi {
 		response.type("application/json");
 		return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
-	/**
-	 * 
-	 * @param response
-	 * 
-	 * @return a JSON representation of all incidence AND prevalance datasets.
-	 */
-	public static Object getAllIncidencePrevalenceDatasets(Response response) {
-		Result<Record8<String, Integer, Integer, Integer[], String, Short, String, LocalDateTime >> records = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(INCIDENCE_DATASET.NAME,
-						INCIDENCE_DATASET.ID,
-						INCIDENCE_DATASET.GRID_DEFINITION_ID,
-						DSL.arrayAggDistinct(INCIDENCE_ENTRY.YEAR).orderBy(INCIDENCE_ENTRY.YEAR).as("years"),
-						INCIDENCE_DATASET.USER_ID,
-						INCIDENCE_DATASET.SHARE_SCOPE,
-						INCIDENCE_DATASET.FILENAME,
-						INCIDENCE_DATASET.UPLOAD_DATE
-						)
-				.from(INCIDENCE_DATASET)
-				.join(INCIDENCE_ENTRY).on(INCIDENCE_DATASET.ID.eq(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID))
-				.groupBy(INCIDENCE_DATASET.NAME,
-						INCIDENCE_DATASET.ID,
-						INCIDENCE_DATASET.GRID_DEFINITION_ID,
-						INCIDENCE_DATASET.USER_ID,
-						INCIDENCE_DATASET.SHARE_SCOPE,
-						INCIDENCE_DATASET.FILENAME,
-						INCIDENCE_DATASET.UPLOAD_DATE
-						)
-				.orderBy(INCIDENCE_DATASET.NAME)
-				.fetch();
-		
-		response.type("application/json");
-		return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
-	}
-
-
 
 	/**
 	 * 
@@ -372,6 +394,21 @@ public class IncidenceApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+		int year;
+
+		// Get response output stream
+		OutputStream responseOutputStream;
+		ZipOutputStream zipStream;
+
+		try {
+			responseOutputStream = response.raw().getOutputStream();
+			
+			// Stream .ZIP file to response
+			zipStream = new ZipOutputStream(responseOutputStream);
+		} catch (java.io.IOException e1) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error getting output stream");
+		}
+
 		try {
 			id = Integer.valueOf(request.params("id"));
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -379,6 +416,7 @@ public class IncidenceApi {
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			year = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("year"), 0);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -392,10 +430,16 @@ public class IncidenceApi {
 
 		Condition filterCondition = DSL.trueCondition();
 		Condition incidenceDatasetCondition = DSL.trueCondition();
-		
+		Condition yearFilterCondition = DSL.trueCondition();
+				
 		if (id != 0) {
 			incidenceDatasetCondition = DSL.field(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID).eq(id);
 			filterCondition = filterCondition.and(incidenceDatasetCondition);
+		}
+
+		if (year != 0) {
+			yearFilterCondition = DSL.field(INCIDENCE_ENTRY.YEAR).eq(year);
+			filterCondition = filterCondition.and(yearFilterCondition);
 		}
 
 		if (!"".equals(filter)) {
@@ -425,23 +469,25 @@ public class IncidenceApi {
 
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 
-		Result<Record15<Integer, Integer, String, String, String, String, String, Short, Short, Boolean, String, String, Double, String, Double>> incRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record16<Integer, Integer, String, String, String, String, String, Integer, Short, Short, String, String, String, Double, String, Double>> incRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(
-						INCIDENCE_VALUE.GRID_COL,
-						INCIDENCE_VALUE.GRID_ROW,
-						ENDPOINT.NAME.as("endpoint"),
-						ENDPOINT_GROUP.NAME.as("endpoint_group"),
-						RACE.NAME.as("race"),
-						GENDER.NAME.as("gender"),
-						ETHNICITY.NAME.as("ethnicity"),
-						INCIDENCE_ENTRY.START_AGE,
-						INCIDENCE_ENTRY.END_AGE,
-						INCIDENCE_ENTRY.PREVALENCE.as("type"),
-						INCIDENCE_ENTRY.TIMEFRAME.as("timeframe"),
-						INCIDENCE_ENTRY.UNITS.as("units"),
-						INCIDENCE_VALUE.VALUE,
-						INCIDENCE_ENTRY.DISTRIBUTION.as("distribution"),
-						INCIDENCE_ENTRY.STANDARD_ERROR
+						INCIDENCE_VALUE.GRID_COL.as("Column"),
+						INCIDENCE_VALUE.GRID_ROW.as("Row"),
+						ENDPOINT.NAME.as("Health Effect"),
+						ENDPOINT_GROUP.NAME.as("Health Effect Group"),
+						RACE.NAME.as("Race"),
+						GENDER.NAME.as("Gender"),
+						ETHNICITY.NAME.as("Ethnicity"),
+						INCIDENCE_ENTRY.YEAR.as("Year"),
+						INCIDENCE_ENTRY.START_AGE.as("Start Age"),
+						INCIDENCE_ENTRY.END_AGE.as("End Age"),
+						DSL.when(INCIDENCE_ENTRY.PREVALENCE.eq(true), "Prevalence")
+						.when(INCIDENCE_ENTRY.PREVALENCE.eq(false), "Incidence").as("Type"),
+						INCIDENCE_ENTRY.TIMEFRAME.as("Timeframe"),
+						INCIDENCE_ENTRY.UNITS.as("Units"),
+						INCIDENCE_VALUE.VALUE.as("Value"),
+						INCIDENCE_ENTRY.DISTRIBUTION.as("Distribution"),
+						INCIDENCE_ENTRY.STANDARD_ERROR.as("Standard Error")
 						)
 				.from(INCIDENCE_VALUE)
 				.join(INCIDENCE_ENTRY).on(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.eq(INCIDENCE_ENTRY.ID))
@@ -463,13 +509,22 @@ public class IncidenceApi {
 				.where(INCIDENCE_DATASET.ID.eq(id))
 				.fetchOne();
 
-		if(request.headers("Accept").equalsIgnoreCase("text/csv")) {
+		if(request.headers("Accept").equalsIgnoreCase("application/zip")) {
 			String fileName = createFilename(datasetInfo.get(INCIDENCE_DATASET.NAME));
-			response.type("text/csv");
-			response.header("Content-Disposition", "attachment; filename="+ fileName);
+			response.type("application/zip");
+			response.header("Content-Disposition", "attachment; filename="+ fileName + ".zip");
 			response.header("Access-Control-Expose-Headers", "Content-Disposition");
-						
-			return incRecords.formatCSV();
+			
+			try {
+				zipStream.putNextEntry(new ZipEntry(fileName + ".csv"));
+				incRecords.formatCSV(zipStream);
+				zipStream.closeEntry();
+				zipStream.close();
+				responseOutputStream.flush();
+				return null;
+			} catch (Exception e) {
+				return CoreApi.getErrorResponse(request, response, 400, "Error creating export file");
+			} 
 		} else {
 
 			ObjectMapper mapper = new ObjectMapper();
@@ -494,6 +549,36 @@ public class IncidenceApi {
 			response.type("application/json");
 			return data;
 		}
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of the incidence dataset years for a given incidence dataset (incidence dataset id is a request parameter).
+	 */
+	public static Object getIncidenceDatasetYears(Request request, Response response, Optional<UserProfile> userProfile) {
+
+		int incidenceDatasetId;
+		try{
+			incidenceDatasetId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidenceDatasetId"), 0);
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+
+		Result<?> years = DSL.using(JooqUtil.getJooqConfiguration())
+			.selectDistinct(INCIDENCE_ENTRY.YEAR)
+			.from(INCIDENCE_ENTRY)
+			.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(incidenceDatasetId))
+			.fetch();
+		
+		response.type("application/json");
+		return years.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
 	public static Object postIncidenceData(Request request, Response response, Optional<UserProfile> userProfile) {
@@ -549,6 +634,7 @@ public class IncidenceApi {
 		int raceIdx=-999;
 		int genderIdx=-999;
 		int ethnicityIdx=-999;
+		int yearIdx=-999;
 		int startAgeIdx=-999;
 		int endAgeIdx=-999;
 		int typeIdx=-999;
@@ -605,10 +691,10 @@ public class IncidenceApi {
 				case "row":
 					rowIdx=i;
 					break;
-				case "endpoint":
+				case "healtheffect":
 					endpointIdx=i;
 					break;
-				case "endpointgroup":
+				case "healtheffectgroup":
 					endpointGroupIdx=i;
 					break;
 				case "race":
@@ -619,6 +705,9 @@ public class IncidenceApi {
 					break;
 				case "ethnicity":
 					ethnicityIdx=i;
+					break;
+				case "year":
+					yearIdx=i;
 					break;
 				case "startage":
 					startAgeIdx=i;
@@ -648,7 +737,7 @@ public class IncidenceApi {
 					System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
-			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointGroupIdx, endpointIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, typeIdx, timeFrameIdx, unitsIdx, valueIdx, distributionIdx, standardErrorIdx);
+			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointGroupIdx, endpointIdx, raceIdx, genderIdx, ethnicityIdx, yearIdx, startAgeIdx, endAgeIdx, typeIdx, timeFrameIdx, unitsIdx, valueIdx, distributionIdx, standardErrorIdx);
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
 
@@ -675,18 +764,11 @@ public class IncidenceApi {
 			int rowCount = 0;
 			int countColTypeError = 0;
 			int countRowTypeError = 0;
+			int countYearTypeError = 0;
 
-			int countMissingRace = 0;
 			int countMissingEthnicity = 0;
-			int countMissingGender = 0;
 			int countMissingEndpoint = 0;
 			int countMissingEndpointGroup = 0;
-		
-			//Distribution and SE might be optional?
-			int countMissingTimeframe = 0;
-			int countMissingUnits = 0;
-			int countMissingDistribution = 0;
-			int countMissingSE = 0;
 
 			int countValueTypeError = 0;
 			int countValueError = 0;
@@ -696,6 +778,7 @@ public class IncidenceApi {
 			List<String> lstUndefinedEthnicities = new ArrayList<String>();
 			List<String> lstUndefinedRaces = new ArrayList<String>();
 			List<String> lstUndefinedGenders = new ArrayList<String>();
+			List<String> lstUndefinedYears = new ArrayList<String>();
 			List<String> lstUndefinedEndpoints = new ArrayList<String>();
 			List<String> lstUndefinedEndpointGroups = new ArrayList<String>();
 
@@ -720,20 +803,14 @@ public class IncidenceApi {
 				String str = "";
 
 				str = record[ethnicityIdx];
-				if(str == "") {
-					countMissingEthnicity ++;
-				}
-				if(!ethnicityIdLookup.containsKey(str.toLowerCase() ) ) {
+				if(!ethnicityIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
 					if (!lstUndefinedEthnicities.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedEthnicities.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 				
 				str = record[raceIdx];
-				if(str == "") {
-					countMissingRace ++;
-				}
-				if(!raceIdLookup.containsKey(str.toLowerCase())) {
+				if(!raceIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
 					if (!lstUndefinedRaces.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedRaces.add(String.valueOf(str.toLowerCase()));
 					}
@@ -741,10 +818,7 @@ public class IncidenceApi {
 
 				
 				str= record[genderIdx];
-				if(str == "") {
-					countMissingGender ++;
-				}
-				if(!genderIdLookup.containsKey(str.toLowerCase()) ) {
+				if(!genderIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
 					if (!lstUndefinedGenders.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedGenders.add(String.valueOf(str.toLowerCase()));
 					}
@@ -769,17 +843,6 @@ public class IncidenceApi {
 						lstUndefinedEndpointGroups.add(String.valueOf(str.toLowerCase()));
 					}
 				}
-
-				str = record[timeFrameIdx];
-				if(str == "") {
-					countMissingTimeframe ++;
-				}
-
-				str = record[timeFrameIdx];
-				if(str == "") {
-					countMissingDistribution++;
-				}
-
 			
 				
 		// 		//step 3: Verify data types for each field
@@ -804,12 +867,17 @@ public class IncidenceApi {
 						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid as it is less than 0."+ "\r\n";
 						countValueTypeError ++;
 					}
-				}
-				
-				catch(NumberFormatException e){
+				} catch(NumberFormatException e){
 					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid double."+ "\r\n";
 					countValueError ++;
 				}
+
+				//year is required and should be an integer
+				str = record[yearIdx];
+				if(str=="" || !str.matches("-?\\d+")) {
+					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "column value " + str + " is not a valid integer." + "\r\n";
+					countYearTypeError++;
+				}	
 
 				//standard error should be a double and >= 0
 				str = record[valueIdx];
@@ -835,6 +903,7 @@ public class IncidenceApi {
 						+ "~" + record[raceIdx].toLowerCase()
 						+ "~" + record[genderIdx].toLowerCase()
 						+ "~" + record[ethnicityIdx].toLowerCase()
+						+ "~" + record[yearIdx].toLowerCase()
 						+ "~" + record[startAgeIdx].toLowerCase()
 						+ "~" + record[endAgeIdx].toLowerCase()
 						+ "~" + record[typeIdx].toLowerCase()
@@ -856,7 +925,7 @@ public class IncidenceApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countColTypeError == 1) {
-					strRecord = String.valueOf(countColTypeError) + " record has Column values not a valid integer.";
+					strRecord = String.valueOf(countColTypeError) + " record has a Column value that is not a valid integer.";
 				}
 				else {
 					strRecord = String.valueOf(countColTypeError) + " records have Column values that are not valid integers.";
@@ -870,10 +939,25 @@ public class IncidenceApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countRowTypeError == 1) {
-					strRecord = String.valueOf(countRowTypeError) + " record has Row values not a valid integer.";
+					strRecord = String.valueOf(countRowTypeError) + " record has a Row value that is not a valid integer.";
 				}
 				else {
 					strRecord = String.valueOf(countRowTypeError) + " records have Row values that are not valid integers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countYearTypeError>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countYearTypeError == 1) {
+					strRecord = String.valueOf(countYearTypeError) + " record has a Year value that is not a valid integer.";
+				}
+				else {
+					strRecord = String.valueOf(countYearTypeError) + " records have Year values that are not valid integers.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -888,7 +972,7 @@ public class IncidenceApi {
 					strRecord = String.valueOf(countValueTypeError) + " record has an incidence value that is not a valid number.";
 				}
 				else {
-					strRecord = String.valueOf(countValueTypeError) + " records have  incidence values that are not valid numbers.";
+					strRecord = String.valueOf(countValueTypeError) + " records have incidence values that are not valid numbers.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -936,40 +1020,10 @@ public class IncidenceApi {
 				validationMsg.messages.add(msg);
 			}
 
-			if(countMissingEthnicity>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingEthnicity == 1) {
-					strRecord = String.valueOf(countMissingEthnicity) + " record is missing a Ethnicity value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingEthnicity) + " records are missing Ethnicity values.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
 			if(lstUndefinedEthnicities.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Ethnicity values are not defined: " + String.join(",", lstUndefinedEthnicities) + ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(countMissingRace>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingRace == 1) {
-					strRecord = String.valueOf(countMissingRace) + " record is missing a Race value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingEthnicity) + " records are missing Race values.";
-				}
-				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -982,25 +1036,18 @@ public class IncidenceApi {
 				validationMsg.messages.add(msg);
 			}
 
-			if(countMissingGender>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingGender == 1) {
-					strRecord = String.valueOf(countMissingGender) + " record is missing a Gender value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingGender) + " records are missing Gender values.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
 			if(lstUndefinedGenders.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Ethnicity values are not defined: " + String.join(",", lstUndefinedGenders) + ".";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(lstUndefinedYears.size()>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				msg.message = "The following Year values are invalid: " + String.join(",", lstUndefinedYears) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1047,36 +1094,6 @@ public class IncidenceApi {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following Endpoint Group values are not defined: " + String.join(",", lstUndefinedEndpointGroups) + ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(countMissingTimeframe>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingTimeframe == 1) {
-					strRecord = String.valueOf(countMissingTimeframe) + " record is missing a Timeframe value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingTimeframe) + " records are missing Timeframe values.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(countMissingUnits>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingTimeframe == 1) {
-					strRecord = String.valueOf(countMissingUnits) + " record is missing a Units value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingUnits) + " records are missing Units values.";
-				}
-				msg.message = strRecord + "";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1142,12 +1159,14 @@ public class IncidenceApi {
 		Map<String, Integer> incidenceEntryIds= new HashMap<String,Integer>();
 		
 
+		int rowCount = 0;
 		while ((record = csvReader.readNext()) != null) {
 			//use the hashmaps created from incidenceUtil to get the id of each column metric
 				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
 				int endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
 				int endpointId = endpointIdLookup.get(endpointGroupName).get(record[endpointIdx].toLowerCase());
-				
+				int row = Integer.valueOf(record[rowIdx]);
+				int column = Integer.valueOf(record[columnIdx]);
 
 				String raceName = record[raceIdx].toLowerCase();
 				if (raceName.equals("")){
@@ -1166,18 +1185,24 @@ public class IncidenceApi {
 					ethnicityName = "all";
 				}
 				int ethnicityId = ethnicityIdLookup.get(ethnicityName);
+				int year = Integer.valueOf(record[yearIdx]);
 				short startAge = Short.valueOf(record[startAgeIdx]);
 				short endAge = Short.valueOf(record[endAgeIdx]);
 				boolean prevalence = "prevalence".equalsIgnoreCase(record[typeIdx]);
+				Double standardError = null;
+				if(!record[standardErrorIdx].equals("")){
+					standardError = Double.valueOf(record[standardErrorIdx]);
+				}
 
 				//check if there is a matching incidence_entry_id for the current row's metrics
-				String entryQuery = String.format("incidence_dataset_id=%d and grid_definition_id=%d and endpoint_group_id=%d and endpoint_id=%d and race_id=%d and gender_id=%d and start_age=%d and end_age=%d and type='%s' and ethnicity_id=%d",
+				String entryQuery = String.format("incidence_dataset_id=%d and grid_definition_id=%d and endpoint_group_id=%d and endpoint_id=%d and race_id=%d and gender_id=%d and year=%d and start_age=%d and end_age=%d and type='%s' and ethnicity_id=%d",
 				incidenceDatasetId,
 				gridId,
 				endpointGroupId,
 				endpointId,
 				raceId,
 				genderId,
+				year,
 				startAge,
 				endAge,
 				prevalence,
@@ -1195,6 +1220,7 @@ public class IncidenceApi {
 							INCIDENCE_ENTRY.ENDPOINT_ID,
 							INCIDENCE_ENTRY.RACE_ID,
 							INCIDENCE_ENTRY.GENDER_ID,
+							INCIDENCE_ENTRY.YEAR,
 							INCIDENCE_ENTRY.START_AGE,
 							INCIDENCE_ENTRY.END_AGE,
 							INCIDENCE_ENTRY.PREVALENCE,
@@ -1210,6 +1236,7 @@ public class IncidenceApi {
 						endpointId,
 						raceId,
 						genderId,
+						Integer.valueOf(record[yearIdx]),
 						Short.valueOf(record[startAgeIdx]),
 						Short.valueOf(record[endAgeIdx]),
 						"prevalence".equalsIgnoreCase(record[typeIdx]),
@@ -1217,7 +1244,7 @@ public class IncidenceApi {
 						record[timeFrameIdx].toLowerCase(),
 						record[unitsIdx].toLowerCase(),
 						record[distributionIdx].toLowerCase(),
-						Double.valueOf(record[standardErrorIdx])
+						standardError
 
 					)
 					.returning(INCIDENCE_ENTRY.ID,INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
@@ -1230,8 +1257,6 @@ public class IncidenceApi {
 					//otherwise just get the id
 					incidenceEntryId = incidenceEntryIds.get(entryQuery);
 				}
-				
-			
 
 				batch2.values(
 						incidenceEntryId,
@@ -1240,6 +1265,24 @@ public class IncidenceApi {
 						Integer.valueOf(record[rowIdx]),
 						Double.valueOf(record[valueIdx])
 				);
+
+				rowCount++;
+
+				//insert every 250000 rows and clear heap space
+				if(rowCount == 250000) {
+					batch2.execute();
+					batch2.close();
+					batch2 = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(
+							INCIDENCE_VALUE,
+							INCIDENCE_VALUE.INCIDENCE_ENTRY_ID,
+							INCIDENCE_VALUE.GRID_CELL_ID,
+							INCIDENCE_VALUE.GRID_COL,
+							INCIDENCE_VALUE.GRID_ROW,
+							INCIDENCE_VALUE.VALUE
+					);
+					rowCount = 0;
+				}
 				
 			}
 			
@@ -1268,9 +1311,9 @@ public class IncidenceApi {
 		try {
 			//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
 			List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
-    		DSLContext context = DSL.using(configuration);
+				DSLContext context = DSL.using(configuration);
 
-			Result<IncidenceValueRecord> result = context
+				Result<IncidenceValueRecord> result = context
 					.deleteFrom(INCIDENCE_VALUE)
 					.where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
 						context.select(INCIDENCE_ENTRY.ID)
@@ -1283,17 +1326,26 @@ public class IncidenceApi {
 			});
 
 			// Next, delete the entries using the collected incidence entry IDs
-			try {
-				create.deleteFrom(INCIDENCE_ENTRY)
-					.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
-					.execute();
-			} catch (DataAccessException e) {
+			if(deletedIncidenceEntryIds.size() == 0) {
+				try {
+					create.deleteFrom(INCIDENCE_ENTRY)
+						.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+						.execute();
+				} catch (DataAccessException e) {
+				}
+			} else {
+				try {
+					create.deleteFrom(INCIDENCE_ENTRY)
+						.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+						.execute();
+				} catch (DataAccessException e) {
+				}
 			}
 
 			// Finally, delete the dataset from the incidence datasets table
 			create.deleteFrom(INCIDENCE_DATASET)
-										.where(INCIDENCE_DATASET.ID.eq(id))
-										.execute();
+				.where(INCIDENCE_DATASET.ID.eq(id))
+				.execute();
 					
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -1331,38 +1383,45 @@ public class IncidenceApi {
 		if(datasetResult.getShareScope() == Constants.SHARING_ALL || !(datasetResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
-		
 
+		//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
+		List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
+			DSLContext context = DSL.using(configuration);
 
-	//first, get the incidence entry ids that would be deleted and delete the rows from the incidence values table that have that entry id
-	List<Integer> deletedIncidenceEntryIds = create.transactionResult(configuration -> {
-    DSLContext context = DSL.using(configuration);
+			Result<IncidenceValueRecord> result = context
+				.deleteFrom(INCIDENCE_VALUE)
+				.where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
+					context.select(INCIDENCE_ENTRY.ID)
+						.from(INCIDENCE_ENTRY)
+						.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+				))
+				.returning(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID)
+				.fetch();
 
-    Result<IncidenceValueRecord> result = context
-            .deleteFrom(INCIDENCE_VALUE)
-            .where(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID.in(
-                context.select(INCIDENCE_ENTRY.ID)
-                       .from(INCIDENCE_ENTRY)
-                       .where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
-            ))
-            .returning(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID)
-            .fetch();
+			return result.getValues(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID);
+		});
 
-    return result.getValues(INCIDENCE_VALUE.INCIDENCE_ENTRY_ID);
-});
+		// Next, delete the entries using the collected incidence entry IDs
+		if(deletedIncidenceEntryIds.size() == 0) {
+			try {
+				create.deleteFrom(INCIDENCE_ENTRY)
+					.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(id))
+					.execute();
+			} catch (DataAccessException e) {
+			}
+		} else {
+			try {
+				create.deleteFrom(INCIDENCE_ENTRY)
+					.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+					.execute();
+			} catch (DataAccessException e) {
+			}
+		}
 
-	// Next, delete the entries using the collected incidence entry IDs
-	try {
-		create.deleteFrom(INCIDENCE_ENTRY)
-			.where(INCIDENCE_ENTRY.ID.in(deletedIncidenceEntryIds))
+		// Finally, delete the dataset from the incidence datasets table
+		int numDeletedDatasets = create.deleteFrom(INCIDENCE_DATASET)
+			.where(INCIDENCE_DATASET.ID.eq(id))
 			.execute();
-	} catch (DataAccessException e) {
-	}
-
-	// Finally, delete the dataset from the incidence datasets table
-	int numDeletedDatasets = create.deleteFrom(INCIDENCE_DATASET)
-								.where(INCIDENCE_DATASET.ID.eq(id))
-								.execute();
 			
 		//if no datasets were deleted, return an error
 		if(numDeletedDatasets == 0) {
@@ -1550,7 +1609,7 @@ public class IncidenceApi {
 	 */
 	public static String createFilename(String datasetName) {
 		// Currently allowing periods so we don't break extensions. Need to improve this.
-		return datasetName.replaceAll("[^A-Za-z0-9._-]+", "") + ".csv";
+		return datasetName.replaceAll("[^A-Za-z0-9._-]+", "");
 	}
 
 }
