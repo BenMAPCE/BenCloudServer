@@ -64,6 +64,10 @@ public class HIFNativeFactory {
             return new HIFNative25();
         } else if (functionalForm.equalsIgnoreCase(HIFNative26.functionalForm)) {
             return new HIFNative26();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative27.functionalForm)) {
+            return new HIFNative27();
+        } else if (functionalForm.equalsIgnoreCase(HIFNative28.functionalForm)) {
+            return new HIFNative28();
         }
         
         return null;
