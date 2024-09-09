@@ -614,11 +614,12 @@ public class TaskApi {
 					Set<Integer> allValuationFunctions = new HashSet<Integer>();
 					if(allHifs.add(hifConfig.hifId)) {
 						hifTaskConfig.hifs.add(hifConfig);
-					}
-					for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
-						if(allValuationFunctions.add(valuationConfig.vfId)) {
-							valuationTaskConfig.valuationFunctions.add(valuationConfig);
-						}				
+						//Update 09/24 - prevent valuation function duplication if the hif config is already processed
+						for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
+							if(allValuationFunctions.add(valuationConfig.vfId)) {
+								valuationTaskConfig.valuationFunctions.add(valuationConfig);
+							}
+						}
 					}
 				}
 			}
