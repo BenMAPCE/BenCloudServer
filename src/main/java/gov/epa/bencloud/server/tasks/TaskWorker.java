@@ -113,43 +113,41 @@ public class TaskWorker {
 		}
 
 		if (transactionSuccessful) {
-			//TODO: Refactor this code. The case should only handle the local tasks. Else, call runTaskAsJob.
-			// Although, we should validate the task type before starting the job to be sure it's valid.
 			Thread t = null;
 			
+			// If it's not a recognized task type, we have an error 
 			switch (task.getType()) {
 			case "HIF":
-				if(ApplicationUtil.usingLocalProperties()) {
-					t = new Thread(new HIFTaskRunnable(task.getUuid(), taskWorkerUuid));
-					t.start();	
-				} else {
-					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
-				}
-				break;
-				
 			case "Valuation":
-				if(ApplicationUtil.usingLocalProperties()) {
-					t = new Thread(new ValuationTaskRunnable(task.getUuid(), taskWorkerUuid));
-					t.start();	
-				} else {
-					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
-				}
-				break;
-
 			case "Exposure":
-				if(ApplicationUtil.usingLocalProperties()) {
-					t = new Thread(new ExposureTaskRunnable(task.getUuid(), taskWorkerUuid));
-					t.start();	
-				} else {
-					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
-				}
 				break;
-				
 			default:
 				log.error("Unknown task type: " + task.getType());
 				 //TODO: Unknown task type. Add code to clean up task record.
-				break;
+				return;			
 			}
+			
+			// If running in the cloud, start task as k8s job
+			if(! ApplicationUtil.usingLocalProperties()) {
+				KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
+				return;
+			}
+
+			// This is a valid task type running in a non-k8s environment so we'll run the task directly
+			switch (task.getType()) {
+			case "HIF":
+				t = new Thread(new HIFTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			case "Valuation":
+				t = new Thread(new ValuationTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();
+				break;
+			case "Exposure":
+				t = new Thread(new ExposureTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			}	
 		} else {
 			TaskQueue.returnTaskToQueue(task.getUuid());
 		}

@@ -121,9 +121,6 @@ public class ValuationTaskRunnable implements Runnable {
 				valuationTaskConfig.gridDefinitionId = HIFApi.getBaselineGridForHifResults(valuationTaskConfig.hifResultDatasetId);
 			}
 			
-			//TEMP OVERRIDE for testing
-			//valuationTaskConfig.gridDefinitionId = 18; //county
-			
 			//TODO: 2020 is the hardcoded max based on current data. This could be more dynamic.
 			valuationTaskConfig.inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;			
 			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, valuationTaskConfig.inflationYear, valuationTaskConfig.useInflationFactors);
@@ -136,7 +133,7 @@ public class ValuationTaskRunnable implements Runnable {
 			List<String> requiredVariableNames = valuationTaskConfig.getRequiredVariableNames();
 			Map<String, Map<Long, Double>> variables = ApiUtil.getVariableValues(requiredVariableNames, valuationTaskConfig.variableDatasetId, valuationTaskConfig.gridDefinitionId);
 			
-			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null; //HIFApi.getHifResultsForValuation(valuationTaskConfig.hifResultDatasetId);
+			Result<Record7<Long, Integer, Integer, Integer, Integer, Double, Double[]>> hifResults = null;
 
 			ArrayList<ValuationResultRecord> valuationResults = new ArrayList<ValuationResultRecord>(maxRowsInMemory);
 			mXparser.setToOverrideBuiltinTokens();
@@ -242,6 +239,7 @@ public class ValuationTaskRunnable implements Runnable {
 						}
 					}
 				}
+				hifResults.clear();
 			
 			}
 			

@@ -44,7 +44,6 @@ public class BenCloudTaskRunner {
 			log.error("Unable to load application properties", e);
 			System.exit(-1);
 		}
-
 		try {
 			if (!ApplicationUtil.validateProperties()) {
 				log.error("properties are not all valid, application exiting");
@@ -54,10 +53,6 @@ public class BenCloudTaskRunner {
 			log.error("Unable to validate application properties", e);
 			System.exit(-1);
 		}
-		
-		ApplicationUtil.configureLogging();
-		LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
-		Logger logger = loggerContext.getLogger("gov.epa.bencloud");
 			
 		try {
 			applicationPath = new File(".").getCanonicalPath();
@@ -88,6 +83,7 @@ public class BenCloudTaskRunner {
 			} else if(task.getType().equalsIgnoreCase("HIF")) {
 				HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
 				ht.run();
+				ht = null;
 				
 				//After the HIFs are done, let's go ahead and look for any valuation tasks
 				Task childTask = TaskQueue.getChildValuationTaskFromQueueRecord(taskUuid);
