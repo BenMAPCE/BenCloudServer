@@ -9,7 +9,7 @@ ADD config /bencloud/config
 RUN mkdir /bencloud/logs
 RUN chmod 777 /bencloud/logs
 
-ENTRYPOINT java -Xms14G -Xmx14G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar
+ENTRYPOINT java -Xms16G -Xmx16G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar
 
 EXPOSE 4567
 
