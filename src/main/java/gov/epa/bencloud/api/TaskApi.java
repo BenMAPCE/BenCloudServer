@@ -401,6 +401,7 @@ public class TaskApi {
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(hifGroupList)
 						.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId))
+						.and(HEALTH_IMPACT_FUNCTION.METRIC_ID.contains(baselineMetricId))
 						)
 				.orderBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME)
 				.fetch();
