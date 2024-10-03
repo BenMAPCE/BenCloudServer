@@ -378,6 +378,14 @@ public class TaskApi {
 			return CoreApi.getErrorResponse(request, response, 400, "Unable to process request");
 			
 		}
+
+		Record1<Integer> baselineMetricRecord = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(AIR_QUALITY_LAYER_METRICS.METRIC_ID)
+				.from(AIR_QUALITY_LAYER_METRICS)
+				.where(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(baselineId))
+				.fetchOne();
+
+		Integer baselineMetricId = baselineMetricRecord.value1();
 		
 		
 		Result<Record> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
@@ -401,6 +409,7 @@ public class TaskApi {
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(hifGroupList)
 						.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId))
+						.and(HEALTH_IMPACT_FUNCTION.METRIC_ID.contains(baselineMetricId))
 						)
 				.orderBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME)
 				.fetch();
@@ -614,11 +623,12 @@ public class TaskApi {
 					Set<Integer> allValuationFunctions = new HashSet<Integer>();
 					if(allHifs.add(hifConfig.hifId)) {
 						hifTaskConfig.hifs.add(hifConfig);
-					}
-					for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
-						if(allValuationFunctions.add(valuationConfig.vfId)) {
-							valuationTaskConfig.valuationFunctions.add(valuationConfig);
-						}				
+						//Update 09/24 - prevent valuation function duplication if the hif config is already processed
+						for (ValuationConfig valuationConfig : hifConfig.valuationFunctions) {
+							if(allValuationFunctions.add(valuationConfig.vfId)) {
+								valuationTaskConfig.valuationFunctions.add(valuationConfig);
+							}
+						}
 					}
 				}
 			}
@@ -1492,7 +1502,7 @@ public class TaskApi {
 			//get valuation task ids
 			List<Integer> valuationResultDatasetIds;
 			if(uuidType.equals("H")) {
-				//export all val results from the same senario as hif taskUuid.
+				//export all val results from the same scenario as hif taskUuid.
 				valuationResultDatasetIds = create.select()
 						.from(VALUATION_RESULT_DATASET)
 						.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
