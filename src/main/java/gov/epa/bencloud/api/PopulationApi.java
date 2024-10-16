@@ -335,18 +335,31 @@ public class PopulationApi {
 	 */
 	public static Object getAllPopulationDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 
+//			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
+//					.select(POPULATION_DATASET.NAME,
+//							POPULATION_DATASET.ID,
+//							POPULATION_DATASET.GRID_DEFINITION_ID,
+//							DSL.arrayAggDistinct(POPULATION_ENTRY.POP_YEAR).orderBy(POPULATION_ENTRY.POP_YEAR).as("years"))
+//					.from(POPULATION_DATASET)
+//					.join(POPULATION_ENTRY).on(POPULATION_DATASET.ID.eq(POPULATION_ENTRY.POP_DATASET_ID))
+//					.groupBy(POPULATION_DATASET.NAME,
+//							POPULATION_DATASET.ID,
+//							POPULATION_DATASET.GRID_DEFINITION_ID)
+//					.orderBy(POPULATION_DATASET.NAME)
+//					.fetch();
 			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID,
-							DSL.arrayAggDistinct(POPULATION_ENTRY.POP_YEAR).orderBy(POPULATION_ENTRY.POP_YEAR).as("years"))
+							DSL.arrayAggDistinct(T_POP_DATASET_YEAR.POP_YEAR).orderBy(T_POP_DATASET_YEAR.POP_YEAR).as("years"))
 					.from(POPULATION_DATASET)
-					.join(POPULATION_ENTRY).on(POPULATION_DATASET.ID.eq(POPULATION_ENTRY.POP_DATASET_ID))
+					.join(T_POP_DATASET_YEAR).on(POPULATION_DATASET.ID.eq(T_POP_DATASET_YEAR.POP_DATASET_ID))
 					.groupBy(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID)
 					.orderBy(POPULATION_DATASET.NAME)
 					.fetch();
+							
 			
 			response.type("application/json");
 			return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
