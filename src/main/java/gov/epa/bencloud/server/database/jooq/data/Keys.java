@@ -36,6 +36,8 @@ import gov.epa.bencloud.server.database.jooq.data.tables.PopConfigGender;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopConfigRace;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationEntry;
+import gov.epa.bencloud.server.database.jooq.data.tables.PopulationGrowth;
+import gov.epa.bencloud.server.database.jooq.data.tables.PopulationGrowthWeight;
 import gov.epa.bencloud.server.database.jooq.data.tables.Race;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
@@ -82,6 +84,8 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.PopConfigRaceRe
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PopConfigRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationEntryRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationGrowthRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationGrowthWeightRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.RaceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.SeasonalMetricRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.SeasonalMetricSeasonRecord;
@@ -142,6 +146,8 @@ public class Keys {
     public static final UniqueKey<PopConfigRecord> POP_CONFIG_PKEY = Internal.createUniqueKey(PopConfig.POP_CONFIG, DSL.name("pop_config_pkey"), new TableField[] { PopConfig.POP_CONFIG.ID }, true);
     public static final UniqueKey<PopulationDatasetRecord> POPULATION_DATASET_PKEY = Internal.createUniqueKey(PopulationDataset.POPULATION_DATASET, DSL.name("population_dataset_pkey"), new TableField[] { PopulationDataset.POPULATION_DATASET.ID }, true);
     public static final UniqueKey<PopulationEntryRecord> POPULATION_ENTRY_PKEY = Internal.createUniqueKey(PopulationEntry.POPULATION_ENTRY, DSL.name("population_entry_pkey"), new TableField[] { PopulationEntry.POPULATION_ENTRY.ID }, true);
+    public static final UniqueKey<PopulationGrowthRecord> POPULATION_GROWTH_PK = Internal.createUniqueKey(PopulationGrowth.POPULATION_GROWTH, DSL.name("population_growth_pk"), new TableField[] { PopulationGrowth.POPULATION_GROWTH.RACE_ID, PopulationGrowth.POPULATION_GROWTH.GENDER_ID, PopulationGrowth.POPULATION_GROWTH.ETHNICITY_ID, PopulationGrowth.POPULATION_GROWTH.AGE_RANGE_ID, PopulationGrowth.POPULATION_GROWTH.GRID_CELL_ID, PopulationGrowth.POPULATION_GROWTH.POP_YEAR }, true);
+    public static final UniqueKey<PopulationGrowthWeightRecord> POPULATION_GROWTH_WEIGHT_PK = Internal.createUniqueKey(PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT, DSL.name("population_growth_weight_pk"), new TableField[] { PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.POP_DATASET_ID, PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.POP_YEAR, PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.RACE_ID, PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.ETHNICITY_ID, PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.SOURCE_GRID_CELL_ID, PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.TARGET_GRID_CELL_ID }, true);
     public static final UniqueKey<RaceRecord> RACE_PKEY = Internal.createUniqueKey(Race.RACE, DSL.name("race_pkey"), new TableField[] { Race.RACE.ID }, true);
     public static final UniqueKey<SeasonalMetricRecord> SEASONAL_METRIC_PKEY = Internal.createUniqueKey(SeasonalMetric.SEASONAL_METRIC, DSL.name("seasonal_metric_pkey"), new TableField[] { SeasonalMetric.SEASONAL_METRIC.ID }, true);
     public static final UniqueKey<SeasonalMetricSeasonRecord> SEASONAL_METRIC_SEASON_PKEY = Internal.createUniqueKey(SeasonalMetricSeason.SEASONAL_METRIC_SEASON, DSL.name("seasonal_metric_season_pkey"), new TableField[] { SeasonalMetricSeason.SEASONAL_METRIC_SEASON.ID }, true);

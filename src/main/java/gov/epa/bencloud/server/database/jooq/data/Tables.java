@@ -50,12 +50,15 @@ import gov.epa.bencloud.server.database.jooq.data.tables.PopConfigGender;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopConfigRace;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationEntry;
+import gov.epa.bencloud.server.database.jooq.data.tables.PopulationGrowth;
+import gov.epa.bencloud.server.database.jooq.data.tables.PopulationGrowthWeight;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationValue;
 import gov.epa.bencloud.server.database.jooq.data.tables.Race;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetric;
 import gov.epa.bencloud.server.database.jooq.data.tables.SeasonalMetricSeason;
 import gov.epa.bencloud.server.database.jooq.data.tables.Settings;
 import gov.epa.bencloud.server.database.jooq.data.tables.StatisticType;
+import gov.epa.bencloud.server.database.jooq.data.tables.TPopDatasetYear;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskBatch;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
@@ -69,6 +72,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunction
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableValue;
+import gov.epa.bencloud.server.database.jooq.data.tables._RaceId;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
@@ -86,6 +90,11 @@ import org.jooq.Result;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>data._race_id</code>.
+     */
+    public static final _RaceId _RACE_ID = _RaceId._RACE_ID;
 
     /**
      * The table <code>data.age_range</code>.
@@ -708,6 +717,16 @@ public class Tables {
     public static final PopulationEntry POPULATION_ENTRY = PopulationEntry.POPULATION_ENTRY;
 
     /**
+     * The table <code>data.population_growth</code>.
+     */
+    public static final PopulationGrowth POPULATION_GROWTH = PopulationGrowth.POPULATION_GROWTH;
+
+    /**
+     * The table <code>data.population_growth_weight</code>.
+     */
+    public static final PopulationGrowthWeight POPULATION_GROWTH_WEIGHT = PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT;
+
+    /**
      * The table <code>data.population_value</code>.
      */
     public static final PopulationValue POPULATION_VALUE = PopulationValue.POPULATION_VALUE;
@@ -736,6 +755,11 @@ public class Tables {
      * The table <code>data.statistic_type</code>.
      */
     public static final StatisticType STATISTIC_TYPE = StatisticType.STATISTIC_TYPE;
+
+    /**
+     * The table <code>data.t_pop_dataset_year</code>.
+     */
+    public static final TPopDatasetYear T_POP_DATASET_YEAR = TPopDatasetYear.T_POP_DATASET_YEAR;
 
     /**
      * The table <code>data.task_batch</code>.

@@ -16,7 +16,6 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row16;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -128,6 +127,46 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
      */
     public final TableField<ValuationResultRecord, Integer> VF_INSTANCE_ID = createField(DSL.name("vf_instance_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>data.valuation_result.result_lagged</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> RESULT_LAGGED = createField(DSL.name("result_lagged"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_result.result_lagged_disc</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> RESULT_LAGGED_DISC = createField(DSL.name("result_lagged_disc"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_result.result_mean_array</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> RESULT_MEAN_ARRAY = createField(DSL.name("result_mean_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_result.result_dev_array</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> RESULT_DEV_ARRAY = createField(DSL.name("result_dev_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_result.result_variance_array</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> RESULT_VARIANCE_ARRAY = createField(DSL.name("result_variance_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_result.pct_2_5_array</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> PCT_2_5_ARRAY = createField(DSL.name("pct_2_5_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_result.pct_97_5_array</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> PCT_97_5_ARRAY = createField(DSL.name("pct_97_5_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_result.percentiles_array</code>.
+     */
+    public final TableField<ValuationResultRecord, Double[]> PERCENTILES_ARRAY = createField(DSL.name("percentiles_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
     private ValuationResult(Name alias, Table<ValuationResultRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -195,14 +234,5 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     @Override
     public ValuationResult rename(Name name) {
         return new ValuationResult(name, null);
-    }
-
-    // -------------------------------------------------------------------------
-    // Row16 type methods
-    // -------------------------------------------------------------------------
-
-    @Override
-    public Row16<Integer, Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Double, Double, Double[], Integer, Integer> fieldsRow() {
-        return (Row16) super.fieldsRow();
     }
 }
