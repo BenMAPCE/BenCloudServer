@@ -73,7 +73,6 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunction
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableValue;
-import gov.epa.bencloud.server.database.jooq.data.tables._RaceId;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
@@ -104,11 +103,6 @@ public class Data extends SchemaImpl {
      * The reference instance of <code>data</code>
      */
     public static final Data DATA = new Data();
-
-    /**
-     * The table <code>data._race_id</code>.
-     */
-    public final _RaceId _RACE_ID = _RaceId._RACE_ID;
 
     /**
      * The table <code>data.age_range</code>.
@@ -856,7 +850,6 @@ public class Data extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
-            _RaceId._RACE_ID,
             AgeRange.AGE_RANGE,
             AirQualityCell.AIR_QUALITY_CELL,
             AirQualityLayer.AIR_QUALITY_LAYER,
