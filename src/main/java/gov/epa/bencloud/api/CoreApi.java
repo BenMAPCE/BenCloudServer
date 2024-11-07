@@ -2,6 +2,7 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,9 @@ import org.pac4j.core.profile.UserProfile;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,6 +33,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
+import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.ApiUtil;
 
 import spark.Request;
@@ -273,4 +278,51 @@ public class CoreApi {
 		return false;
 	}
 
+	/**
+	 * Transforms records into a JsonNode.
+	 * @param records
+	 * @return the trasformed records as a JsonNode.
+	 */
+	public static JsonNode transformRecordsToJSON(Record records) {
+		
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode data = mapper.createObjectNode();
+
+        JsonNode recordsJSON = null;
+		try {
+			JsonFactory factory = mapper.getFactory();
+			JsonParser jp = factory.createParser(
+					records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
+			recordsJSON = mapper.readTree(jp);
+		} catch (JsonParseException e) {
+			log.error("Error parsing JSON",e);
+		} catch (JsonProcessingException e) {
+			log.error("Error processing JSON",e);
+		} catch (IOException e) {
+			log.error("IO Exception", e);
+		}
+		
+		return recordsJSON;
+		
+	}
+	
+	/**
+	 * Transforms a validation message into a JsonNode
+	 * @param validationMessage
+	 * @return the transformed validation message as a JsonNode.
+	 */
+	public static JsonNode transformValMsgToJSON(ValidationMessage validationMessage) {
+		
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode recordsJSON = null;
+		//ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+		try {
+			recordsJSON = mapper.valueToTree(validationMessage);
+		} catch (Exception e) {
+			log.error("Error converting validation message to JSON",e);
+		} 
+		
+		return recordsJSON;
+		
+	}
 }

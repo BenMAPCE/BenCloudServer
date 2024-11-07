@@ -829,7 +829,7 @@ public class AirQualityApi {
 			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: name, pollutantId, gridId."));
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 
 		//TODO: REMOVE THIS. IT'S JUST A WORKAROUND FOR A TEMPORARY UI BUG
@@ -844,7 +844,7 @@ public class AirQualityApi {
 			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please enter a different name."));
 			response.type("application/json");
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
 		AirQualityLayerRecord aqRecord=null;
@@ -930,7 +930,7 @@ public class AirQualityApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 				response.type("application/json");
-				return transformValMsgToJSON(validationMsg);
+				return CoreApi.transformValMsgToJSON(validationMsg);
 			}
 			
 			pollutantMetricIdLookup = AirQualityUtil.getPollutantMetricIdLookup(pollutantId);
@@ -1146,7 +1146,7 @@ public class AirQualityApi {
 			if(!validationMsg.success) {
 				response.type("application/json");
 				//response.status(400);
-				return transformValMsgToJSON(validationMsg); 
+				return CoreApi.transformValMsgToJSON(validationMsg); 
 			}
 							
 			
@@ -1158,7 +1158,7 @@ public class AirQualityApi {
 			//response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
 		Integer aqLayerId = null;
@@ -1292,12 +1292,12 @@ public class AirQualityApi {
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of air quality file."));
 			deleteAirQualityLayerDefinition(aqLayerId, userProfile);
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
 		response.type("application/json");
 		validationMsg.success = true;
-		return transformValMsgToJSON(validationMsg); 
+		return CoreApi.transformValMsgToJSON(validationMsg); 
 	}
 	
 	// This version of this method is used when an error occurs during AQ surface upload to clean up
@@ -1547,54 +1547,6 @@ public class AirQualityApi {
 			orderFields.add(DSL.field("grid_col", Integer.class.getName()).sort(SortOrder.ASC));	
 			orderFields.add(DSL.field("grid_row", Integer.class.getName()).sort(SortOrder.ASC));	
 		}
-	}
-
-	/**
-	 * Transforms records into a JsonNode.
-	 * @param records
-	 * @return the trasformed records as a JsonNode.
-	 */
-	private static JsonNode transformRecordsToJSON(Record records) {
-		
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode data = mapper.createObjectNode();
-
-        JsonNode recordsJSON = null;
-		try {
-			JsonFactory factory = mapper.getFactory();
-			JsonParser jp = factory.createParser(
-					records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
-			recordsJSON = mapper.readTree(jp);
-		} catch (JsonParseException e) {
-			log.error("Error parsing JSON",e);
-		} catch (JsonProcessingException e) {
-			log.error("Error processing JSON",e);
-		} catch (IOException e) {
-			log.error("IO Exception", e);
-		}
-		
-		return recordsJSON;
-		
-	}
-	
-	/**
-	 * Transforms a validation message into a JsonNode
-	 * @param validationMessage
-	 * @return the transformed validation message as a JsonNode.
-	 */
-	private static JsonNode transformValMsgToJSON(ValidationMessage validationMessage) {
-		
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode recordsJSON = null;
-		//ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-		try {
-			recordsJSON = mapper.valueToTree(validationMessage);
-		} catch (Exception e) {
-			log.error("Error converting validation message to JSON",e);
-		} 
-		
-		return recordsJSON;
-		
 	}
 
 }

@@ -1,6 +1,7 @@
 -- 10/24/2024
 -- Add file table
--- 
+-- Add support for user-uploaded grid definitions
+
 UPDATE "data".settings SET value_int=29 where "key"='version';
 
 CREATE TABLE "data".file (
@@ -14,3 +15,6 @@ CREATE TABLE "data".file (
 	created_date timestamp NULL,
 	CONSTRAINT file_pk PRIMARY KEY (id)
 );
+
+ALTER TABLE "data".grid_definition ADD user_id text NULL;
+ALTER TABLE "data".grid_definition ADD share_scope int2 DEFAULT 0 NULL;

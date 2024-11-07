@@ -17,7 +17,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row7;
+import org.jooq.Row8;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -83,6 +83,11 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
      * The column <code>data.population_growth.growth_value</code>.
      */
     public final TableField<PopulationGrowthRecord, Double> GROWTH_VALUE = createField(DSL.name("growth_value"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.population_growth.base_pop_year</code>.
+     */
+    public final TableField<PopulationGrowthRecord, Short> BASE_POP_YEAR = createField(DSL.name("base_pop_year"), SQLDataType.SMALLINT.nullable(false), this, "");
 
     private PopulationGrowth(Name alias, Table<PopulationGrowthRecord> aliased) {
         this(alias, aliased, null);
@@ -159,11 +164,11 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row7 type methods
+    // Row8 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Integer, Integer, Integer, Integer, Integer, Short, Double> fieldsRow() {
-        return (Row7) super.fieldsRow();
+    public Row8<Integer, Integer, Integer, Integer, Integer, Short, Double, Short> fieldsRow() {
+        return (Row8) super.fieldsRow();
     }
 }

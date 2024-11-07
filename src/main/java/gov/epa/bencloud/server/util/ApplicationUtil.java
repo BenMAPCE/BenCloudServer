@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
@@ -121,6 +123,18 @@ public class ApplicationUtil {
 //			propertiesOK = false;
 //		}
 
+		String fileStorePath = getProperty("file.store.path");
+		if(fileStorePath == null) {
+			log.info("file.store.path property not defined");
+			propertiesOK = false;
+			return propertiesOK;
+		}
+		if(Files.notExists(Paths.get(fileStorePath))) {
+			log.info("file.store.path does not exist or is not accessible: " + fileStorePath);
+			propertiesOK = false;
+			return propertiesOK;			
+		}
+		
 		if (null == getProperty("max.task.workers")) {
 			log.info("max.task.workers property not defined");
 			propertiesOK = false;

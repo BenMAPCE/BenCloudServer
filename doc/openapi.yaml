@@ -61,6 +61,61 @@ paths:
                     table_name:
                       type: string
                       example: "grids.us_cmaq_12km_nation"
+    post:
+      summary: Post a grid definition.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+               type: object
+               properties:
+                 name:
+                   type: string
+                 filename:
+                   type: string
+                 file:
+                   type: string
+                   format: binary
+      responses:
+        '200':
+          description: Successfully uploaded a grid definition.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: ""
+                        message:
+                          type: string
+                          example: ""
+        '500':
+          description: Server or System Error
+  /grid-definitions/{id}:
+    delete:
+      summary: Remove a single grid definition.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by grid id
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Successfully removed a grid definition.
+        '204':
+          description: Successfully removed a grid definition.
   /pollutants:
     get:
       summary: Returns the list of pollutants.
@@ -2490,6 +2545,22 @@ paths:
           description: Not found.
         '500':
           description: System or Server Error.
+  /admin/files/{id}:
+    delete:
+      summary: Remove a single file.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: file id
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Successfully removed a grid definition.
+        '204':
+          description: Successfully removed a grid definition.
   /user:
     get:
       summary: Returns the user's id.

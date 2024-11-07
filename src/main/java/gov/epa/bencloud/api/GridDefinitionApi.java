@@ -2,7 +2,11 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.Optional;
+
+import javax.servlet.MultipartConfigElement;
 
 import org.jetbrains.annotations.NotNull;
 import org.jooq.JSONFormat;
@@ -20,6 +24,10 @@ import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.api.model.ValidationMessage;
+import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
@@ -150,5 +158,45 @@ public class GridDefinitionApi {
 		
 	}
 
+	/*
+	 * 
+	 */
+	public static Object postGridDefinitionShapefile(Request request, Response response, Optional<UserProfile> userProfile) {
+		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+
+		String gridName;
+		String filename;
+		LocalDateTime uploadDate;
+		String metadata;
+		ValidationMessage validationMsg = new ValidationMessage();
+		Integer filestoreId;	
+		
+		try{
+			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
+			gridName = ApiUtil.getMultipartFormParameterAsString(request, "name");
+			metadata = "{\"name\":\"" + gridName + "\"}";	
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+		
+		// TODO: Make sure it's a zip file
+		
+		// Store file in Filestore
+		try (InputStream is = request.raw().getPart("file").getInputStream()) {
+			filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_GRID, userProfile.get().getId(), metadata);
+		} catch (Exception e) {
+			log.error("Error saving shape file", e);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred saving your shape file."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+		
+		// TODO: Add record to task_batch and task_queue to import the new grid
+		
+		// Return success
+		return CoreApi.getSuccessResponse(request, response, 200, "Shapefile saved for processing: " + filestoreId);
+	}
 	
 }

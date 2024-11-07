@@ -64,6 +64,17 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/grid-definitions/:id/contents", (request, response) -> {
 			return GridDefinitionApi.getGridGeometries(request, response, getUserProfile(request, response));
 		});
+		
+		/*
+		 * POST a single grid definition
+		 * PARAMETERS:
+		 *  zip file
+		 *  name=
+		 */
+		service.post(apiPrefix + "/grid-definitions", (request, response) -> {
+			return GridDefinitionApi.postGridDefinitionShapefile(request, response, getUserProfile(request, response));
+		});
+		
 		/*
 		 * GET array of all pollutant definitions
 		 */
@@ -605,6 +616,16 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
+		/*
+		 * DELETE a single file from the file store
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/admin/files/:id", (request, response) -> {
+
+			return FilestoreApi.deleteFile(request, response, getUserProfile(request, response));
+
+		});
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */

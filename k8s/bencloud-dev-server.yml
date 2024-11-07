@@ -13,7 +13,6 @@ spec:
     targetPort: 4567
   selector:
     app: bencloud-server
-
 ---
 # Currently very permissive. Need to refine
 apiVersion: rbac.authorization.k8s.io/v1
@@ -53,9 +52,7 @@ rules:
       - serviceaccounts
       - services
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -68,9 +65,21 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: api-cluster-role 
-
 ---
-
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bencloud-server-pv-claim
+  namespace: benmap-dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: efs-sc
+  volumeName: bencloud-server-pv
+  resources:
+    requests:
+      storage: 5Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -112,6 +121,9 @@ spec:
          requests:
           memory: 24G
           cpu: 8
+        volumeMounts:
+          - name: bencloud-server
+            mountPath: /app-data
         livenessProbe:
          tcpSocket:
             port: 4567
@@ -153,9 +165,11 @@ spec:
         - containerPort: 4567
       imagePullSecrets:
       - name: glcr-auth
-
+      volumes:
+        - name: bencloud-server
+          persistentVolumeClaim:
+            claimName: bencloud-server-pv-claim
 ---
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
