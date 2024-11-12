@@ -82,63 +82,6 @@ public class CoreApi {
 
 	/**
 	 * 
-	 * @param req
-	 * @param res
-	 * @param userProfile
-	 * @return
-	 */
-	public static Object getPurgeResults(Request req, Response res, Optional<UserProfile> userProfile) {
-		if(! isAdmin(userProfile)) {
-			return false;
-		}
-
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-
-		create
-		.deleteFrom(TASK_WORKER)
-		.execute();
-
-		create
-		.deleteFrom(TASK_QUEUE)
-		.execute();
-		
-		create
-		.deleteFrom(TASK_COMPLETE)
-		.execute();
-
-		create
-		.deleteFrom(HIF_RESULT)
-		.execute();
-		
-		create
-		.deleteFrom(HIF_RESULT_FUNCTION_CONFIG)
-		.execute();
-		
-		create
-		.deleteFrom(HIF_RESULT_DATASET)
-		.execute();
-		
-		create
-		.deleteFrom(VALUATION_RESULT)
-		.execute();
-		
-		create
-		.deleteFrom(VALUATION_RESULT_FUNCTION_CONFIG)
-		.execute();
-		
-		create
-		.deleteFrom(VALUATION_RESULT_DATASET)
-		.execute();
-		
-		create
-		.execute("vacuum analyze");
-		
-		return true;
-	}
-
-
-	/**
-	 * 
 	 * @param userOptionalProfile
 	 * @return true if the current user's role is admin. If not, returns false.
 	 */
@@ -254,29 +197,7 @@ public class CoreApi {
 		return responseNode;
 	}
 
-	/**
-	 * 
-	 * @param req
-	 * @param res
-	 * @param userProfile
-	 * @return 
-	 */
-	public static Object getFixWeiFunction(Request req, Response res, Optional<UserProfile> userProfile) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		create.update(HEALTH_IMPACT_FUNCTION)
-			.set(HEALTH_IMPACT_FUNCTION.START_AGE, 65)
-			.where(HEALTH_IMPACT_FUNCTION.ID.eq(1018))
-			.execute();	
-		
-		return "{'message': 'done'}";
-	}
 
-	public static boolean isValidTaskType(String type) {
-		if(type.equalsIgnoreCase("HIF") || type.equalsIgnoreCase("Valuation")) {
-			return true;
-		}
-		return false;
-	}
 
 	/**
 	 * Transforms records into a JsonNode.

@@ -7,7 +7,7 @@ package gov.epa.bencloud.server.database.jooq.data.tables.records;
 import gov.epa.bencloud.server.database.jooq.data.tables.PopulationGrowth;
 
 import org.jooq.Field;
-import org.jooq.Record6;
+import org.jooq.Record7;
 import org.jooq.Record8;
 import org.jooq.Row8;
 import org.jooq.impl.UpdatableRecordImpl;
@@ -138,8 +138,8 @@ public class PopulationGrowthRecord extends UpdatableRecordImpl<PopulationGrowth
     // -------------------------------------------------------------------------
 
     @Override
-    public Record6<Integer, Integer, Integer, Integer, Integer, Short> key() {
-        return (Record6) super.key();
+    public Record7<Integer, Integer, Integer, Integer, Integer, Short, Short> key() {
+        return (Record7) super.key();
     }
 
     // -------------------------------------------------------------------------

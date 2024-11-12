@@ -16,11 +16,13 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ch.qos.logback.classic.LoggerContext;
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
+import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -80,14 +82,14 @@ public class BenCloudTaskRunner {
 			if(task == null || task.getType() == null) {
 				log.error("Task not found in queue");
 				
-			} else if(task.getType().equalsIgnoreCase("HIF")) {
+			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_HIF)) {
 				HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
 				ht.run();
 				ht = null;
 				
 				//After the HIFs are done, let's go ahead and look for any valuation tasks
 				Task childTask = TaskQueue.getChildValuationTaskFromQueueRecord(taskUuid);
-				if(childTask != null && childTask.getType().equalsIgnoreCase("Valuation")) {
+				if(childTask != null && childTask.getType().equalsIgnoreCase(Constants.TASK_TYPE_VALUATION)) {
 					//Switch the task worker to the valuation task
 					DSL.using(JooqUtil.getJooqConfiguration()).update(TASK_WORKER)
 					.set(TASK_WORKER.TASK_UUID, childTask.getUuid())
@@ -105,11 +107,14 @@ public class BenCloudTaskRunner {
 					ValuationTaskRunnable vt = new ValuationTaskRunnable(childTask.getUuid(), taskRunnerUuid);
 					vt.run();	
 				}
-			} else if(task.getType().equalsIgnoreCase("Valuation")) {				
+			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_VALUATION)) {				
 				ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
 				vt.run();
-			} else if(task.getType().equalsIgnoreCase("Exposure")) {				
+			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_EXPOSURE)) {				
 				ExposureTaskRunnable et = new ExposureTaskRunnable(taskUuid, taskRunnerUuid);
+				et.run();
+			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_GRID_IMPORT)) {				
+				GridImportTaskRunnable et = new GridImportTaskRunnable(taskUuid, taskRunnerUuid);
 				et.run();
 			} else {
 				log.error("Unknown task type: " + task.getType());

@@ -129,7 +129,7 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.POPULATION_GROWTH_WT_IDX);
+        return Arrays.asList(Indexes.POPULATION_GROWTH_IDX);
     }
 
     @Override

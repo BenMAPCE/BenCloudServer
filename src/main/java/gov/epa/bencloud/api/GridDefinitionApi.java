@@ -9,6 +9,7 @@ import java.util.Optional;
 import javax.servlet.MultipartConfigElement;
 
 import org.jetbrains.annotations.NotNull;
+import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.SelectConditionStep;
@@ -29,6 +30,7 @@ import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
@@ -199,4 +201,30 @@ public class GridDefinitionApi {
 		return CoreApi.getSuccessResponse(request, response, 200, "Shapefile saved for processing: " + filestoreId);
 	}
 	
+	/**
+	 * Deletes a grid definition from the database (grid id is a request parameter).
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return
+	 */
+	public static Object deleteGridDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+		
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		
+		//TODO: Delete table from grids schema, all crosswalks related to this grid, and then delete record from grid_definition table
+		// Users can delete their own grids. Admins can delete any non-shared grid
+		// We should add validation to prevent deletion if the grid is tied to any result sets or other datasets
+		
+		response.status(204);
+		return response;
+
+	} 
 }

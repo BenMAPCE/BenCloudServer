@@ -16,9 +16,11 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
+import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -117,9 +119,10 @@ public class TaskWorker {
 			
 			// If it's not a recognized task type, we have an error 
 			switch (task.getType()) {
-			case "HIF":
-			case "Valuation":
-			case "Exposure":
+			case Constants.TASK_TYPE_HIF:
+			case Constants.TASK_TYPE_VALUATION:
+			case Constants.TASK_TYPE_EXPOSURE:
+			case Constants.TASK_TYPE_GRID_IMPORT:
 				break;
 			default:
 				log.error("Unknown task type: " + task.getType());
@@ -135,16 +138,20 @@ public class TaskWorker {
 
 			// This is a valid task type running in a non-k8s environment so we'll run the task directly
 			switch (task.getType()) {
-			case "HIF":
+			case Constants.TASK_TYPE_HIF:
 				t = new Thread(new HIFTaskRunnable(task.getUuid(), taskWorkerUuid));
 				t.start();	
 				break;
-			case "Valuation":
+			case Constants.TASK_TYPE_VALUATION:
 				t = new Thread(new ValuationTaskRunnable(task.getUuid(), taskWorkerUuid));
 				t.start();
 				break;
-			case "Exposure":
+			case Constants.TASK_TYPE_EXPOSURE:
 				t = new Thread(new ExposureTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			case Constants.TASK_TYPE_GRID_IMPORT:
+				t = new Thread(new GridImportTaskRunnable(task.getUuid(), taskWorkerUuid));
 				t.start();	
 				break;
 			}	
