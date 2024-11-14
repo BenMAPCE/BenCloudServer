@@ -36,16 +36,16 @@ public class PopulationGrowthWeightRecord extends UpdatableRecordImpl<Population
     }
 
     /**
-     * Setter for <code>data.population_growth_weight.pop_year</code>.
+     * Setter for <code>data.population_growth_weight.base_pop_year</code>.
      */
-    public void setPopYear(Short value) {
+    public void setBasePopYear(Short value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>data.population_growth_weight.pop_year</code>.
+     * Getter for <code>data.population_growth_weight.base_pop_year</code>.
      */
-    public Short getPopYear() {
+    public Short getBasePopYear() {
         return (Short) get(1);
     }
 
@@ -153,7 +153,7 @@ public class PopulationGrowthWeightRecord extends UpdatableRecordImpl<Population
 
     @Override
     public Field<Short> field2() {
-        return PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.POP_YEAR;
+        return PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT.BASE_POP_YEAR;
     }
 
     @Override
@@ -188,7 +188,7 @@ public class PopulationGrowthWeightRecord extends UpdatableRecordImpl<Population
 
     @Override
     public Short component2() {
-        return getPopYear();
+        return getBasePopYear();
     }
 
     @Override
@@ -223,7 +223,7 @@ public class PopulationGrowthWeightRecord extends UpdatableRecordImpl<Population
 
     @Override
     public Short value2() {
-        return getPopYear();
+        return getBasePopYear();
     }
 
     @Override
@@ -259,7 +259,7 @@ public class PopulationGrowthWeightRecord extends UpdatableRecordImpl<Population
 
     @Override
     public PopulationGrowthWeightRecord value2(Short value) {
-        setPopYear(value);
+        setBasePopYear(value);
         return this;
     }
 
@@ -319,11 +319,11 @@ public class PopulationGrowthWeightRecord extends UpdatableRecordImpl<Population
     /**
      * Create a detached, initialised PopulationGrowthWeightRecord
      */
-    public PopulationGrowthWeightRecord(Integer popDatasetId, Short popYear, Integer raceId, Integer ethnicityId, Long sourceGridCellId, Long targetGridCellId, Double growthWeight) {
+    public PopulationGrowthWeightRecord(Integer popDatasetId, Short basePopYear, Integer raceId, Integer ethnicityId, Long sourceGridCellId, Long targetGridCellId, Double growthWeight) {
         super(PopulationGrowthWeight.POPULATION_GROWTH_WEIGHT);
 
         setPopDatasetId(popDatasetId);
-        setPopYear(popYear);
+        setBasePopYear(basePopYear);
         setRaceId(raceId);
         setEthnicityId(ethnicityId);
         setSourceGridCellId(sourceGridCellId);

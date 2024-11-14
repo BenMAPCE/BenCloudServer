@@ -55,9 +55,9 @@ public class PopulationGrowthWeight extends TableImpl<PopulationGrowthWeightReco
     public final TableField<PopulationGrowthWeightRecord, Integer> POP_DATASET_ID = createField(DSL.name("pop_dataset_id"), SQLDataType.INTEGER.nullable(false), this, "");
 
     /**
-     * The column <code>data.population_growth_weight.pop_year</code>.
+     * The column <code>data.population_growth_weight.base_pop_year</code>.
      */
-    public final TableField<PopulationGrowthWeightRecord, Short> POP_YEAR = createField(DSL.name("pop_year"), SQLDataType.SMALLINT.nullable(false), this, "");
+    public final TableField<PopulationGrowthWeightRecord, Short> BASE_POP_YEAR = createField(DSL.name("base_pop_year"), SQLDataType.SMALLINT.nullable(false), this, "");
 
     /**
      * The column <code>data.population_growth_weight.race_id</code>.
