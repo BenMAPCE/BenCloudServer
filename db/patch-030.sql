@@ -2,7 +2,7 @@
 -- Add file table
 -- Add support for user-uploaded grid definitions
 
-UPDATE "data".settings SET value_int=29 where "key"='version';
+UPDATE "data".settings SET value_int=30 where "key"='version';
 
 CREATE TABLE "data".file (
 	id serial NOT NULL,

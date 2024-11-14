@@ -63,7 +63,8 @@ public class GridImportTaskRunnable implements Runnable {
 			// Extract and validate shapefile. Add any errors to the task log and abort if file cannot be imported
 			
 			// Generate unique name for shapefile. Maybe just a uuid?
-			// Import shapefile into grids schema using the unique name
+			// Import shapefile into grids schema using the unique name.
+			// Make sure and update the messages object with meaningful progress along the way and also increment the task percentage to show progress
 			// Create record in grid_definition table with grid name, table name, and user info
 			// Remove shapefile from file store using FileStoreUtil.deleteFile()
 			
