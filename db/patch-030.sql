@@ -1,6 +1,7 @@
 -- 10/24/2024
 -- Add file table
 -- Add support for user-uploaded grid definitions
+-- Remove old field from valuation_result
 
 UPDATE "data".settings SET value_int=30 where "key"='version';
 
@@ -18,3 +19,5 @@ CREATE TABLE "data".file (
 
 ALTER TABLE "data".grid_definition ADD user_id text NULL;
 ALTER TABLE "data".grid_definition ADD share_scope int2 DEFAULT 0 NULL;
+
+ALTER TABLE "data".valuation_result DROP COLUMN IF EXISTS percentiles_array;
