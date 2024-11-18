@@ -59,7 +59,7 @@ public class GridImportTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			
 			//TODO:
-			// Use gridImportTaskConfig to get file id and FilestoreUtil.getFile() to access file.
+			// Use gridImportTaskConfig to get file id and FilestoreUtil.getFilePath(id) to access file.
 			// Extract and validate shapefile. Add any errors to the task log and abort if file cannot be imported
 			
 			// Generate unique name for shapefile. Maybe just a uuid?
@@ -67,7 +67,9 @@ public class GridImportTaskRunnable implements Runnable {
 			// Make sure and update the messages object with meaningful progress along the way and also increment the task percentage to show progress
 			// Create record in grid_definition table with grid name, table name, and user info
 			// Remove shapefile from file store using FileStoreUtil.deleteFile()
-			
+			// Note: Do not generate crosswalks at this point. 
+			//  We will integrate that into our other processes to ensure the crosswalk exists before calling db functions that use it
+			//  This will avoid creating unnecessary crosswalks
 			
 			messages.get(messages.size()-1).setStatus("complete");
 			

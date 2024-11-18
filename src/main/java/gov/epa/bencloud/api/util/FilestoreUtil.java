@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
@@ -30,6 +31,22 @@ public class FilestoreUtil {
 	private static final Logger log = LoggerFactory.getLogger(FilestoreUtil.class);
 
 	/*
+	 * Return the local path to the file associated with id
+	 * This method does not enforce user-level security. That is the responsibility of the caller.
+	 * The caller must NOT delete the file directly and should instead use the deleteFile(id) method
+	 * 
+	 * @param id
+	 */
+	public static Path getFilePath(Integer id) {
+		// Return the Path for the file in the filestore
+		// This will allow the caller to read the file using the desired libraries
+		
+		String filestorePath = ApplicationUtil.getProperty("file.store.path");
+		return Paths.get(filestorePath, id.toString());
+
+	}
+	
+	/*
 	 * Return the file associated with id
 	 * This method does not enforce user-level security. That is the responsibility of the caller.
 	 * @param id
@@ -38,6 +55,7 @@ public class FilestoreUtil {
 		// Query file table for fileName and return file
 		String filestorePath = ApplicationUtil.getProperty("file.store.path");
 		
+		//TODO
 		return null;
 	}
 
@@ -48,11 +66,11 @@ public class FilestoreUtil {
 	 * @param user_id
 	 * @param metadata
 	 */
-	public static Integer putFile(File file, String fileName, String user_id, String metadata) {		
-		String filestorePath = ApplicationUtil.getProperty("file.store.path");
-		//TODO: Get inputstream for file and call method below. Clean up file when done?
-		return null;
-	}
+//	public static Integer putFile(File file, String fileName, String user_id, String metadata) {		
+//		String filestorePath = ApplicationUtil.getProperty("file.store.path");
+//		//TODO: Get inputstream for file and call method below. Clean up file when done?
+//		return null;
+//	}
 
 	public static Integer putFile(InputStream is, String filename, String fileType, String user_id, String metadata) {
 		// Insert record into file table
