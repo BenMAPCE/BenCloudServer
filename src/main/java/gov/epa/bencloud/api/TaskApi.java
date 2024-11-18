@@ -1298,7 +1298,7 @@ public class TaskApi {
 						Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
-								EXPOSURE_FUNCTION.POPULATION_GROUP,
+								EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
 								EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
 								EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
 								RACE.NAME.as("race"),
@@ -1323,11 +1323,11 @@ public class TaskApi {
 								.join(EXPOSURE_RESULT_FUNCTION_CONFIG)
 									.on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDatasetId)
 											.and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_INSTANCE_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_INSTANCE_ID))))
-								.join(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+								.leftJoin(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 								.join(ETHNICITY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 								.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
 								.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
-
+                                .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
 								.fetch();
 
 						for (Record res : efRecords) {

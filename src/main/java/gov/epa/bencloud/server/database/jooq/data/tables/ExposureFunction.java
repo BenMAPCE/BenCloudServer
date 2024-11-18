@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row10;
+import org.jooq.Row12;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -95,6 +95,16 @@ public class ExposureFunction extends TableImpl<ExposureFunctionRecord> {
      */
     public final TableField<ExposureFunctionRecord, String> FUNCTION_TEXT = createField(DSL.name("function_text"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>data.exposure_function.generate_complement</code>.
+     */
+    public final TableField<ExposureFunctionRecord, Boolean> GENERATE_COMPLEMENT = createField(DSL.name("generate_complement"), SQLDataType.BOOLEAN.defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
+
+    /**
+     * The column <code>data.exposure_function.complement_name</code>.
+     */
+    public final TableField<ExposureFunctionRecord, String> COMPLEMENT_NAME = createField(DSL.name("complement_name"), SQLDataType.CLOB, this, "");
+
     private ExposureFunction(Name alias, Table<ExposureFunctionRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -170,11 +180,11 @@ public class ExposureFunction extends TableImpl<ExposureFunctionRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row10 type methods
+    // Row12 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row10<Integer, Integer, String, Integer, Integer, Integer, Integer, Integer, Integer, String> fieldsRow() {
-        return (Row10) super.fieldsRow();
+    public Row12<Integer, Integer, String, Integer, Integer, Integer, Integer, Integer, Integer, String, Boolean, String> fieldsRow() {
+        return (Row12) super.fieldsRow();
     }
 }
