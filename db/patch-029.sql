@@ -17,7 +17,7 @@ drop index data."population_growth_wt_idx";
 CREATE INDEX population_growth_idx ON data.population_growth USING btree (pop_year, race_id, ethnicity_id, grid_cell_id,base_pop_year);
 
 -- Rename the pop_year column to base_pop_year in pop growth weight table
-ALTER TABLE "data".population_growth_weight RENAME COLUMN pop_year TO base_pop_year
+ALTER TABLE "data".population_growth_weight RENAME COLUMN pop_year TO base_pop_year;
 
 -- Update get_population FUNCTION
 -- DROP FUNCTION "data".get_population(int4, int4, _int4, _int4, _int4, _int4, bool, bool, bool, bool, int4);
