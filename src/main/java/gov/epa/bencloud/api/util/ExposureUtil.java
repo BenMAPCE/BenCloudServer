@@ -151,6 +151,10 @@ public class ExposureUtil {
 			
 			// Each exposure result function config contains the details of how the function was configured
 			for(ExposureConfig exposureFunction : exposureTaskConfig.exposureFunctions) {
+				int gender = exposureFunction.efRecord.get("complement_gender") != null ? (int)exposureFunction.efRecord.get("complement_gender") : exposureFunction.gender;
+				int ethnicity = exposureFunction.efRecord.get("complement_ethnicity") != null ? (int)exposureFunction.efRecord.get("complement_ethnicity") : exposureFunction.ethnicity;
+				Integer race = exposureFunction.efRecord.get("complement_race") != null ? null : exposureFunction.race;
+
 				create.insertInto(EXPOSURE_RESULT_FUNCTION_CONFIG
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_ID
@@ -160,16 +164,20 @@ public class ExposureUtil {
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID
-						, EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID)
+						, EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID
+						, EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP
+						, EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER)
 				.values(exposureResultDatasetId
 						, exposureFunction.efId
 						, exposureFunction.efInstanceId						
 						, exposureFunction.startAge
 						, exposureFunction.endAge
-						, exposureFunction.race
-						, exposureFunction.gender
-						, exposureFunction.ethnicity
-						, exposureFunction.variable)
+						, race
+						, gender
+						, ethnicity
+						, exposureFunction.variable
+						, (String) exposureFunction.efRecord.get("population_group")
+						, (String) exposureFunction.efRecord.get("hidden_sort_order"))
 				.execute();
 				
 			}

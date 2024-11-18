@@ -11,7 +11,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row12;
+import org.jooq.Row14;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -109,6 +109,18 @@ public class ExposureResultFunctionConfig extends TableImpl<ExposureResultFuncti
      */
     public final TableField<ExposureResultFunctionConfigRecord, Integer> EXPOSURE_FUNCTION_INSTANCE_ID = createField(DSL.name("exposure_function_instance_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column
+     * <code>data.exposure_result_function_config.population_group</code>.
+     */
+    public final TableField<ExposureResultFunctionConfigRecord, String> POPULATION_GROUP = createField(DSL.name("population_group"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column
+     * <code>data.exposure_result_function_config.hidden_sort_order</code>.
+     */
+    public final TableField<ExposureResultFunctionConfigRecord, String> HIDDEN_SORT_ORDER = createField(DSL.name("hidden_sort_order"), SQLDataType.CLOB, this, "");
+
     private ExposureResultFunctionConfig(Name alias, Table<ExposureResultFunctionConfigRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -177,11 +189,11 @@ public class ExposureResultFunctionConfig extends TableImpl<ExposureResultFuncti
     }
 
     // -------------------------------------------------------------------------
-    // Row12 type methods
+    // Row14 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> fieldsRow() {
-        return (Row12) super.fieldsRow();
+    public Row14<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, String, String> fieldsRow() {
+        return (Row14) super.fieldsRow();
     }
 }
