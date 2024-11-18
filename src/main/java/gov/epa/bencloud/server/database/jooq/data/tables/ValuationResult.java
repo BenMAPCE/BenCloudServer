@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row17;
+import org.jooq.Row16;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -128,11 +128,6 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
      */
     public final TableField<ValuationResultRecord, Integer> VF_INSTANCE_ID = createField(DSL.name("vf_instance_id"), SQLDataType.INTEGER, this, "");
 
-    /**
-     * The column <code>data.valuation_result.percentiles_array</code>.
-     */
-    public final TableField<ValuationResultRecord, Double[]> PERCENTILES_ARRAY = createField(DSL.name("percentiles_array"), SQLDataType.FLOAT.getArrayDataType(), this, "");
-
     private ValuationResult(Name alias, Table<ValuationResultRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -203,11 +198,11 @@ public class ValuationResult extends TableImpl<ValuationResultRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row17 type methods
+    // Row16 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row17<Integer, Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Double, Double, Double[], Integer, Integer, Double[]> fieldsRow() {
-        return (Row17) super.fieldsRow();
+    public Row16<Integer, Integer, Integer, Integer, Integer, Long, Double, Double, Double, Double, Double, Double, Double, Double[], Integer, Integer> fieldsRow() {
+        return (Row16) super.fieldsRow();
     }
 }
