@@ -27,7 +27,7 @@ dependencies {
     implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.53.v20231009'
     implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.53.v20231009'
     implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.53.v20231009'
-        
+    implementation 'org.bitbucket.b_c:jose4j:0.9.4'
 	implementation 'org.pac4j:spark-pac4j:5.0.1'
 	implementation 'org.pac4j:pac4j-http:5.6.1'
 
@@ -66,7 +66,7 @@ dependencies {
 
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
-    implementation 'io.kubernetes:client-java-extended:19.0.0'
+    implementation 'io.kubernetes:client-java-extended:19.0.1'
 
 	implementation 'org.geotools:gt-main:32.0'
 	implementation 'org.geotools:gt-shapefile:32.0'
