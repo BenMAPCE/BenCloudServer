@@ -16,6 +16,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunction;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
+import gov.epa.bencloud.server.database.jooq.data.tables.File;
 import gov.epa.bencloud.server.database.jooq.data.tables.Gender;
 import gov.epa.bencloud.server.database.jooq.data.tables.GridDefinition;
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunction;
@@ -64,6 +65,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureFunctio
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureFunctionGroupRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureResultDatasetRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.FileRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GenderRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionDatasetRecord;
@@ -130,6 +132,7 @@ public class Keys {
     public static final UniqueKey<ExposureFunctionDatasetRecord> EXPOSURE_FUNCTION_DATASET_PKEY = Internal.createUniqueKey(ExposureFunctionDataset.EXPOSURE_FUNCTION_DATASET, DSL.name("exposure_function_dataset_pkey"), new TableField[] { ExposureFunctionDataset.EXPOSURE_FUNCTION_DATASET.ID }, true);
     public static final UniqueKey<ExposureFunctionGroupRecord> EXPOSURE_FUNCTION_GROUP_PKEY = Internal.createUniqueKey(ExposureFunctionGroup.EXPOSURE_FUNCTION_GROUP, DSL.name("exposure_function_group_pkey"), new TableField[] { ExposureFunctionGroup.EXPOSURE_FUNCTION_GROUP.ID }, true);
     public static final UniqueKey<ExposureResultDatasetRecord> EXPOSURE_RESULT_DATASET_PKEY = Internal.createUniqueKey(ExposureResultDataset.EXPOSURE_RESULT_DATASET, DSL.name("exposure_result_dataset_pkey"), new TableField[] { ExposureResultDataset.EXPOSURE_RESULT_DATASET.ID }, true);
+    public static final UniqueKey<FileRecord> FILE_PK = Internal.createUniqueKey(File.FILE, DSL.name("file_pk"), new TableField[] { File.FILE.ID }, true);
     public static final UniqueKey<GenderRecord> GENDER_PKEY = Internal.createUniqueKey(Gender.GENDER, DSL.name("gender_pkey"), new TableField[] { Gender.GENDER.ID }, true);
     public static final UniqueKey<GridDefinitionRecord> GRID_DEFINITION_PKEY = Internal.createUniqueKey(GridDefinition.GRID_DEFINITION, DSL.name("grid_definition_pkey"), new TableField[] { GridDefinition.GRID_DEFINITION.ID }, true);
     public static final UniqueKey<HealthImpactFunctionRecord> HEALTH_IMPACT_FUNCTION_PKEY = Internal.createUniqueKey(HealthImpactFunction.HEALTH_IMPACT_FUNCTION, DSL.name("health_impact_function_pkey"), new TableField[] { HealthImpactFunction.HEALTH_IMPACT_FUNCTION.ID }, true);

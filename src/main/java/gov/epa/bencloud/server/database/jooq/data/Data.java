@@ -21,6 +21,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroupMe
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResult;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultFunctionConfig;
+import gov.epa.bencloud.server.database.jooq.data.tables.File;
 import gov.epa.bencloud.server.database.jooq.data.tables.Gender;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
@@ -183,6 +184,11 @@ public class Data extends SchemaImpl {
      * The table <code>data.exposure_result_function_config</code>.
      */
     public final ExposureResultFunctionConfig EXPOSURE_RESULT_FUNCTION_CONFIG = ExposureResultFunctionConfig.EXPOSURE_RESULT_FUNCTION_CONFIG;
+
+    /**
+     * The table <code>data.file</code>.
+     */
+    public final File FILE = File.FILE;
 
     /**
      * The table <code>data.gender</code>.
@@ -866,6 +872,7 @@ public class Data extends SchemaImpl {
             ExposureResult.EXPOSURE_RESULT,
             ExposureResultDataset.EXPOSURE_RESULT_DATASET,
             ExposureResultFunctionConfig.EXPOSURE_RESULT_FUNCTION_CONFIG,
+            File.FILE,
             Gender.GENDER,
             GetExposureResults.GET_EXPOSURE_RESULTS,
             GetHifResults.GET_HIF_RESULTS,

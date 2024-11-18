@@ -20,6 +20,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroupMe
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResult;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultFunctionConfig;
+import gov.epa.bencloud.server.database.jooq.data.tables.File;
 import gov.epa.bencloud.server.database.jooq.data.tables.Gender;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
@@ -169,6 +170,11 @@ public class Tables {
      * The table <code>data.exposure_result_function_config</code>.
      */
     public static final ExposureResultFunctionConfig EXPOSURE_RESULT_FUNCTION_CONFIG = ExposureResultFunctionConfig.EXPOSURE_RESULT_FUNCTION_CONFIG;
+
+    /**
+     * The table <code>data.file</code>.
+     */
+    public static final File FILE = File.FILE;
 
     /**
      * The table <code>data.gender</code>.

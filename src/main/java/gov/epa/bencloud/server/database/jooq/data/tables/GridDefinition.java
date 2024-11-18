@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row8;
+import org.jooq.Row10;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -84,6 +84,16 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
      * The column <code>data.grid_definition.table_name</code>.
      */
     public final TableField<GridDefinitionRecord, String> TABLE_NAME = createField(DSL.name("table_name"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.grid_definition.user_id</code>.
+     */
+    public final TableField<GridDefinitionRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.grid_definition.share_scope</code>.
+     */
+    public final TableField<GridDefinitionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     private GridDefinition(Name alias, Table<GridDefinitionRecord> aliased) {
         this(alias, aliased, null);
@@ -160,11 +170,11 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row8 type methods
+    // Row10 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, String, Integer, Integer, String, Integer, String, String> fieldsRow() {
-        return (Row8) super.fieldsRow();
+    public Row10<Integer, String, Integer, Integer, String, Integer, String, String, String, Short> fieldsRow() {
+        return (Row10) super.fieldsRow();
     }
 }
