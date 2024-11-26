@@ -23,7 +23,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record19;
-import org.jooq.Record20;
+import org.jooq.Record21;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
@@ -256,13 +256,14 @@ public class ExposureApi {
 				.asTable("ef_result_records");
 
 		try{
-			Result<Record20<Integer, Integer, String, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+			Result<Record21<Integer, Integer, String, String, Integer, Integer, String, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
 				efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 				EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
 				EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER,
 				EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
 				EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+				EXPOSURE_RESULT_FUNCTION_CONFIG.FUNCTION_TYPE,
 				RACE.NAME.as("race"),
 				ETHNICITY.NAME.as("ethnicity"),
 				GENDER.NAME.as("gender"),
