@@ -166,7 +166,8 @@ public class ExposureUtil {
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID
 						, EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP
-						, EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER)
+						, EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER
+						, EXPOSURE_RESULT_FUNCTION_CONFIG.FUNCTION_TYPE)
 				.values(exposureResultDatasetId
 						, exposureFunction.efId
 						, exposureFunction.efInstanceId						
@@ -177,7 +178,8 @@ public class ExposureUtil {
 						, ethnicity
 						, exposureFunction.variable
 						, (String) exposureFunction.efRecord.get("population_group")
-						, (String) exposureFunction.efRecord.get("hidden_sort_order"))
+						, (String) exposureFunction.efRecord.get("hidden_sort_order")
+						, (String) exposureFunction.efRecord.get("function_type"))
 				.execute();
 				
 			}
