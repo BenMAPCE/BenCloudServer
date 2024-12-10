@@ -202,10 +202,14 @@ public class GridDefinitionApi {
 
 		paramsNode.put("name", gridName);
 		paramsNode.put("userId", userProfile.get().getId());
+
+		
 		
 		// Store file in Filestore
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_GRID, userProfile.get().getId(), paramsNode.toString());
+			
+			// TODO: Make sure it's a zip file and perform other validation here
 		} catch (Exception e) {
 			log.error("Error saving shape file", e);
 			response.type("application/json");
@@ -361,6 +365,7 @@ public class GridDefinitionApi {
 		//TODO: Delete table from grids schema, all crosswalks related to this grid, and then delete record from grid_definition table
 		// Users can delete their own grids. Admins can delete any non-shared grid
 		// We should add validation to prevent deletion if the grid is tied to any result sets or other datasets
+		// TODO: Add list of places to check for previous usage of grid before deleting
 		
 		response.status(204);
 		return response;
