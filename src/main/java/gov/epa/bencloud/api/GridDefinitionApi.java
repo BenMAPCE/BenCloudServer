@@ -191,7 +191,8 @@ public class GridDefinitionApi {
 
 		paramsNode.put("name", gridName);
 		paramsNode.put("userId", userProfile.get().getId());
-		// TODO: Make sure it's a zip file
+		// TODO: Make sure it's a zip file and perform other validation here
+		
 		
 		// Store file in Filestore
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
@@ -203,6 +204,8 @@ public class GridDefinitionApi {
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred saving your shape file."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
+		
+		// Add filestoreId so task processor can find the uploaded file
 		paramsNode.put("filestoreId", filestoreId);
 		
 		// Add records to task_batch and task_queue to import the new grid
