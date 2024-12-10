@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.servlet.MultipartConfigElement;
 
@@ -25,12 +26,18 @@ import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
+import gov.epa.bencloud.server.tasks.TaskQueue;
+import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
@@ -169,24 +176,26 @@ public class GridDefinitionApi {
 		String gridName;
 		String filename;
 		LocalDateTime uploadDate;
-		String metadata;
 		ValidationMessage validationMsg = new ValidationMessage();
 		Integer filestoreId;	
 		
 		try{
 			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
-			gridName = ApiUtil.getMultipartFormParameterAsString(request, "name");
-			metadata = "{\"name\":\"" + gridName + "\"}";	
+			gridName = ApiUtil.getMultipartFormParameterAsString(request, "name");	
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
-		
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode paramsNode = mapper.createObjectNode();
+
+		paramsNode.put("name", gridName);
+		paramsNode.put("userId", userProfile.get().getId());
 		// TODO: Make sure it's a zip file
 		
 		// Store file in Filestore
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
-			filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_GRID, userProfile.get().getId(), metadata);
+			filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_GRID, userProfile.get().getId(), paramsNode.toString());
 		} catch (Exception e) {
 			log.error("Error saving shape file", e);
 			response.type("application/json");
@@ -194,8 +203,24 @@ public class GridDefinitionApi {
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred saving your shape file."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
+		paramsNode.put("filestoreId", filestoreId);
 		
-		// TODO: Add record to task_batch and task_queue to import the new grid
+		// Add records to task_batch and task_queue to import the new grid
+		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
+				.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
+				.values("Grid import: " + filename, paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
+				.returning(TASK_BATCH.ID).fetchOne();
+		Integer batchTaskId = rec.getId();
+
+		Task gridImportTask = new Task();
+		gridImportTask.setUserIdentifier(userProfile.get().getId());
+		gridImportTask.setType(Constants.TASK_TYPE_GRID_IMPORT);
+		gridImportTask.setBatchId(batchTaskId);
+		gridImportTask.setName("Grid import: " + filename);
+		gridImportTask.setParameters(paramsNode.toString());
+		String gridImportTaskUUID = UUID.randomUUID().toString();
+		gridImportTask.setUuid(gridImportTaskUUID);
+		TaskQueue.writeTaskToQueue(gridImportTask);
 		
 		// Return success
 		return CoreApi.getSuccessResponse(request, response, 200, "Shapefile saved for processing: " + filestoreId);
