@@ -202,8 +202,6 @@ public class GridDefinitionApi {
 
 		paramsNode.put("name", gridName);
 		paramsNode.put("userId", userProfile.get().getId());
-
-		
 		
 		// Store file in Filestore
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
@@ -227,7 +225,6 @@ public class GridDefinitionApi {
 
 			shpFiles = ApiUtil.findFilesByExtension(tempFolder, ".shp");
 		} catch (IOException e) {
-
 			try {
 				FileUtils.deleteDirectory(new File(tempFolder));
 			} catch (IOException e1) {
@@ -259,6 +256,54 @@ public class GridDefinitionApi {
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 
+		// Ensure DBF and SHX files in folder
+		List<Path> dbfFiles; 
+		List<Path> shxFiles;
+		try {
+			dbfFiles = ApiUtil.findFilesByExtension(tempFolder, ".dbf");
+			shxFiles = ApiUtil.findFilesByExtension(tempFolder, ".shx");
+		} catch (IOException e) {
+			try {
+				FileUtils.deleteDirectory(new File(tempFolder));
+			} catch (IOException e1) {
+				log.error("Error deleteing temp folder", e1);
+			}
+			FilestoreUtil.deleteFile(filestoreId);
+
+			log.error("Error finding DBF or SHX files");
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error", "Error finding DBF or SHX files"));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
+		Boolean hasDbf = dbfFiles.size() > 0;
+		Boolean hasShx = shxFiles.size() > 0;
+		if (!hasDbf || !hasShx) {
+			try {
+				FileUtils.deleteDirectory(new File(tempFolder));
+			} catch (IOException e) {
+				log.error("Error deleteing temp folder", e);
+			}
+			FilestoreUtil.deleteFile(filestoreId);
+
+			String errorMessage = "Missing ";
+			if (hasDbf && !hasShx) {
+				errorMessage = errorMessage + "\"SHX\" file";
+			}
+			else if (!hasDbf && hasShx) {
+				errorMessage = errorMessage + "\"DBF\" file";
+			}
+			else if (!hasDbf && !hasShx) {
+				errorMessage = errorMessage + "\"SHX\" and \"DBF\" file";
+			}
+			log.error(errorMessage);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error",errorMessage));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+		
 		// Validate Rows and Columns
 		File inFile = shpFiles.get(0).toFile();
 		try {
