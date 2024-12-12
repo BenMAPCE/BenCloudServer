@@ -2,13 +2,24 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import javax.servlet.MultipartConfigElement;
 
+import org.apache.commons.io.FileUtils;
+import org.geotools.api.data.DataStore;
+import org.geotools.api.data.DataStoreFinder;
+import org.geotools.api.feature.simple.SimpleFeatureType;
+import org.geotools.api.feature.type.AttributeDescriptor;
+import org.geotools.util.URLs;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
@@ -191,8 +202,6 @@ public class GridDefinitionApi {
 
 		paramsNode.put("name", gridName);
 		paramsNode.put("userId", userProfile.get().getId());
-
-		
 		
 		// Store file in Filestore
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
@@ -207,6 +216,155 @@ public class GridDefinitionApi {
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
+		// Unzip File
+		Path filestoreFilePath = FilestoreUtil.getFilePath(filestoreId);
+		String tempFolder = System.getProperty("java.io.tmpdir") + File.separator + filestoreId;
+		List<Path> shpFiles;
+		try {
+			ApiUtil.unzip(filestoreFilePath.toString(), tempFolder);
+
+			shpFiles = ApiUtil.findFilesByExtension(tempFolder, ".shp");
+		} catch (IOException e) {
+			try {
+				FileUtils.deleteDirectory(new File(tempFolder));
+			} catch (IOException e1) {
+				log.error("Error deleteing temp folder", e1);
+			}
+			FilestoreUtil.deleteFile(filestoreId);
+
+			log.error("Error unzipping file", e);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred unzipping your shape file."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
+		// Ensure exactly 1 shape file in folder
+		int shpFileSize = shpFiles.size(); 
+		if(shpFileSize != 1) {
+			try {
+				FileUtils.deleteDirectory(new File(tempFolder));
+			} catch (IOException e) {
+				log.error("Error deleteing temp folder", e);
+			}
+			FilestoreUtil.deleteFile(filestoreId);
+
+			log.error(shpFileSize + " shape files in zip");
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error", shpFileSize + " shape files in zip."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
+		// Ensure DBF and SHX files in folder
+		List<Path> dbfFiles; 
+		List<Path> shxFiles;
+		try {
+			dbfFiles = ApiUtil.findFilesByExtension(tempFolder, ".dbf");
+			shxFiles = ApiUtil.findFilesByExtension(tempFolder, ".shx");
+		} catch (IOException e) {
+			try {
+				FileUtils.deleteDirectory(new File(tempFolder));
+			} catch (IOException e1) {
+				log.error("Error deleteing temp folder", e1);
+			}
+			FilestoreUtil.deleteFile(filestoreId);
+
+			log.error("Error finding DBF or SHX files");
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error", "Error finding DBF or SHX files"));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
+		Boolean hasDbf = dbfFiles.size() > 0;
+		Boolean hasShx = shxFiles.size() > 0;
+		if (!hasDbf || !hasShx) {
+			try {
+				FileUtils.deleteDirectory(new File(tempFolder));
+			} catch (IOException e) {
+				log.error("Error deleteing temp folder", e);
+			}
+			FilestoreUtil.deleteFile(filestoreId);
+
+			String errorMessage = "Missing ";
+			if (hasDbf && !hasShx) {
+				errorMessage = errorMessage + "\"SHX\" file";
+			}
+			else if (!hasDbf && hasShx) {
+				errorMessage = errorMessage + "\"DBF\" file";
+			}
+			else if (!hasDbf && !hasShx) {
+				errorMessage = errorMessage + "\"SHX\" and \"DBF\" file";
+			}
+			log.error(errorMessage);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error",errorMessage));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+		
+		// Validate Rows and Columns
+		File inFile = shpFiles.get(0).toFile();
+		try {
+			DataStore inputDataStore = DataStoreFinder.getDataStore(Collections.singletonMap("url", URLs.fileToUrl(inFile)));
+			String inputTypeName = inputDataStore.getTypeNames()[0];
+			SimpleFeatureType inputType = inputDataStore.getSchema(inputTypeName);
+
+			List<AttributeDescriptor> attributeDescriptors = inputType.getAttributeDescriptors();
+
+			boolean hasColumn = false;
+			boolean hasRow = false;
+			for (AttributeDescriptor desc : attributeDescriptors) {
+				String name = desc.getLocalName().toLowerCase();
+				if (name.equals("col")) {
+					hasColumn = true;
+				}
+				if (name.equals("row")) {
+					hasRow = true;
+				}
+			}
+
+			if (!hasColumn || !hasRow) {
+				try {
+					FileUtils.deleteDirectory(new File(tempFolder));
+				} catch (IOException e1) {
+					log.error("Error deleteing temp folder", e1);
+				}
+				FilestoreUtil.deleteFile(filestoreId);
+
+				String errorMessage = "Shape file missing ";
+				if (hasColumn && !hasRow) {
+					errorMessage = errorMessage + "\"row\" attribute";
+				}
+				else if (!hasColumn && hasRow) {
+					errorMessage = errorMessage + "\"col\" attribute";
+				}
+				else if (!hasColumn && !hasRow) {
+					errorMessage = errorMessage + "\"row\" and \"col\" attributes";
+				}
+				log.error(errorMessage);
+				response.type("application/json");
+				validationMsg.success=false;
+				validationMsg.messages.add(new ValidationMessage.Message("error",errorMessage));
+				return CoreApi.transformValMsgToJSON(validationMsg);
+			}
+
+		} catch (Exception e) {
+			try {
+				FileUtils.deleteDirectory(new File(tempFolder));
+			} catch (IOException e1) {
+				log.error("Error deleteing temp folder", e1);
+			}
+			FilestoreUtil.deleteFile(filestoreId);
+
+			log.error("Error reading shapefile", e);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error reading shape file."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
 		// Add filestoreId so task processor can find the uploaded file
 		paramsNode.put("filestoreId", filestoreId);
 		
