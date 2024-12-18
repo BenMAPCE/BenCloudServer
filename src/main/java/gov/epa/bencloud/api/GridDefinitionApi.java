@@ -26,6 +26,7 @@ import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.SelectConditionStep;
 import org.jooq.SelectJoinStep;
+import org.jooq.exception.DataAccessException;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
@@ -46,6 +47,7 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -407,8 +409,37 @@ public class GridDefinitionApi {
 		} 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
-		//TODO: Delete table from grids schema, all crosswalks related to this grid, and then delete record from grid_definition table
-		// Users can delete their own grids. Admins can delete any non-shared grid
+		GridDefinitionRecord gridDefinitionResult = create.selectFrom(GRID_DEFINITION).where(GRID_DEFINITION.ID.eq(id)).fetchAny();
+		if(gridDefinitionResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Nobody can delete shared layers
+		//All users can delete their own layers
+		//Admins can delete any non-shared layers
+		if(gridDefinitionResult.getShareScope() == Constants.SHARING_ALL || !(gridDefinitionResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		// Drop the table
+		String tableName = gridDefinitionResult.getTableName();
+		try {
+			create.dropTable(tableName).execute();
+		} catch (DataAccessException e) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error dropping table");
+		}
+
+		// Finally, delete the grid definition from the grid definition table
+		int numDeletedGridDefinitions = create.deleteFrom(GRID_DEFINITION)
+			.where(GRID_DEFINITION.ID.eq(id))
+			.execute();
+
+		// If no grid definition were deleted, return an error
+		if(numDeletedGridDefinitions == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error deleting grid definition");
+		}
+
+		// TODO: Delete all crosswalks related to this grid
 		// We should add validation to prevent deletion if the grid is tied to any result sets or other datasets
 		// TODO: Add list of places to check for previous usage of grid before deleting
 		
