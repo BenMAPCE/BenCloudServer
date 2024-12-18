@@ -407,7 +407,7 @@ public class GridDefinitionApi {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		} 
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
 		
 		GridDefinitionRecord gridDefinitionResult = create.selectFrom(GRID_DEFINITION).where(GRID_DEFINITION.ID.eq(id)).fetchAny();
 		if(gridDefinitionResult == null) {
@@ -422,9 +422,8 @@ public class GridDefinitionApi {
 		}
 
 		// Drop the table
-		String tableName = gridDefinitionResult.getTableName();
 		try {
-			create.dropTable(tableName).execute();
+			create.dropTable(gridDefinitionResult.getTableName()).execute();
 		} catch (DataAccessException e) {
 			return CoreApi.getErrorResponse(request, response, 400, "Error dropping table");
 		}
