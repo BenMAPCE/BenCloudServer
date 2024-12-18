@@ -146,6 +146,14 @@ public class CrosswalksApi{
         }
                      
     }
+
+public static void ensureCrosswalkExists(int sourceId, int targetId) {
+	// TODO Look for a crosswalk that will convert from sourceId to targetId
+	//  If it doesn't already exist, create it now
+	System.out.println("Creating crosswalk for " + sourceId + " to " + targetId);
+	calculateAreaWeights(sourceId, targetId);
+	
+}
     
 
     // public static void main(String[] args) {

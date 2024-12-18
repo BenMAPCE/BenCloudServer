@@ -41,6 +41,7 @@ public class GridImportTaskConfig {
 	public String name;
 	public Integer filestoreId;
 	public String userId;
+	public Integer gridDefinitionId;
 
 	/*
 	 * Default constructor
