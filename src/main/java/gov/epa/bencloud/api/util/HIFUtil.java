@@ -269,7 +269,7 @@ public class HIFUtil {
 	 * @param functionIncidenceDataset
 	 * @param functionPrevalenceDataset
 	 */
-	public static void setIncidencePrevalence(HIFConfig hifConfig, Scenario scenario, ScenarioPopConfig scenarioPopConfig, ScenarioHIFConfig scenarioHIFConfig, int defaultIncidencePrevalenceDataset, Boolean userPrefered) {
+	public static void setIncidencePrevalence(HIFConfig hifConfig, Scenario scenario, ScenarioPopConfig scenarioPopConfig, ScenarioHIFConfig scenarioHIFConfig, int defaultIncidencePrevalenceDataset, Boolean userPrefered, int populationId) {
 
 		
 		try {
@@ -361,6 +361,19 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 							.fetchAny();
+					//hard-code for 2020 dataset. When population dataset is 2020, use 2020 incidence
+					if(populationId == 50 ||populationId == 51 ||populationId == 52) {
+						bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+								.fetchAny();
+					}
 					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 						incidenceRace = raceId;
@@ -377,12 +390,27 @@ public class HIFUtil {
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
 										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
 								.fetchAny();
+						//hard-code for 2020 dataset. When population dataset is 2020, use 2020 incidence
+						if(populationId == 50 ||populationId == 51 ||populationId == 52) {
+							bestId = DSL.using(JooqUtil.getJooqConfiguration())
+									.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+									.from(INCIDENCE_ENTRY)
+									.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
+											.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+											.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
+											.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
+											.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+											.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+									.fetchAny();
+						}
+						
 						if(bestId != null && bestId.value1() !=null) {
 							dsId = bestId.value1();
 							incidenceRace = 5;
 							incidenceEthnicity = 3;
 							incidenceGender = 3;
 						}
+						
 					}
 					
 					if(dsId!=0) {
@@ -427,7 +455,7 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-							.fetchOne();
+							.fetchOne();	
 					
 //					if(countPrevalence.value1() <= 0 && userPrefered) {
 //						countPrevalence = DSL.using(JooqUtil.getJooqConfiguration())
@@ -476,6 +504,19 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 							.fetchAny();
+					//hard-code for 2020 dataset. When population dataset is 2020, use 2020 prevalence
+					if(populationId >=50) {
+						bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.eq(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+								.fetchAny();
+						}
 					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 						prevalenceRace = raceId;
@@ -492,6 +533,19 @@ public class HIFUtil {
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
 										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
 								.fetchAny();
+						//hard-code for 2020 dataset. When population dataset is 2020, use 2020 prevalence
+						if(populationId >=50) {
+							bestId = DSL.using(JooqUtil.getJooqConfiguration())
+									.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+									.from(INCIDENCE_ENTRY)
+									.where(INCIDENCE_ENTRY.PREVALENCE.eq(true)
+											.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+											.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
+											.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
+											.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+											.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+									.fetchAny();
+							}
 						if(bestId != null && bestId.value1() !=null) {
 							dsId = bestId.value1();
 							prevalenceRace = 5;

@@ -460,7 +460,7 @@ public class TaskApi {
 						ScenarioHIFConfig scenarioHIFConfig = new ScenarioHIFConfig();
 						scenarioHIFConfig.hifInstanceId = hifConfig.hifInstanceId;
 
-						HIFUtil.setIncidencePrevalence(hifConfig, scenario, popConfig, scenarioHIFConfig, defaultIncidencePrevalenceDataset, true);
+						HIFUtil.setIncidencePrevalence(hifConfig, scenario, popConfig, scenarioHIFConfig, defaultIncidencePrevalenceDataset, true, populationId);
 						popConfig.scenarioHifConfigs.add(scenarioHIFConfig);
 					}
 				}
@@ -622,6 +622,12 @@ public class TaskApi {
 			valuationTaskConfig.useGrowthFactors = true;
 			valuationTaskConfig.useInflationFactors = true;
 			valuationTaskConfig.variableDatasetId = 1;
+			//TODO: This is temporarily hard coded to test with both 2010 and 2020 datasets in the database. In the future, we want to allow users to select variable dataset
+			//all 2020 poulation datasets have id >=50
+			if (hifTaskConfig.popId ==50 || hifTaskConfig.popId ==51 || hifTaskConfig.popId ==52) {
+				valuationTaskConfig.variableDatasetId = 2;
+			}
+			
 			
 			//Combine all the selected HIFs into a big, flat list for processing
 			for (BatchHIFGroup hifGroup : batchTaskConfig.batchHifGroups) {
