@@ -50,6 +50,16 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
     }
 
     /**
+     * The column <code>data.population_growth.base_pop_year</code>.
+     */
+    public final TableField<PopulationGrowthRecord, Short> BASE_POP_YEAR = createField(DSL.name("base_pop_year"), SQLDataType.SMALLINT.nullable(false), this, "");
+
+    /**
+     * The column <code>data.population_growth.pop_year</code>.
+     */
+    public final TableField<PopulationGrowthRecord, Short> POP_YEAR = createField(DSL.name("pop_year"), SQLDataType.SMALLINT.nullable(false), this, "");
+
+    /**
      * The column <code>data.population_growth.race_id</code>.
      */
     public final TableField<PopulationGrowthRecord, Integer> RACE_ID = createField(DSL.name("race_id"), SQLDataType.INTEGER.nullable(false), this, "");
@@ -75,19 +85,9 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
     public final TableField<PopulationGrowthRecord, Integer> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.INTEGER.nullable(false), this, "");
 
     /**
-     * The column <code>data.population_growth.pop_year</code>.
-     */
-    public final TableField<PopulationGrowthRecord, Short> POP_YEAR = createField(DSL.name("pop_year"), SQLDataType.SMALLINT.nullable(false), this, "");
-
-    /**
      * The column <code>data.population_growth.growth_value</code>.
      */
     public final TableField<PopulationGrowthRecord, Double> GROWTH_VALUE = createField(DSL.name("growth_value"), SQLDataType.DOUBLE, this, "");
-
-    /**
-     * The column <code>data.population_growth.base_pop_year</code>.
-     */
-    public final TableField<PopulationGrowthRecord, Short> BASE_POP_YEAR = createField(DSL.name("base_pop_year"), SQLDataType.SMALLINT.nullable(false), this, "");
 
     private PopulationGrowth(Name alias, Table<PopulationGrowthRecord> aliased) {
         this(alias, aliased, null);
@@ -129,12 +129,12 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.POPULATION_GROWTH_IDX);
+        return Arrays.asList(Indexes.POPULATION_GROWTH_BASE_POP_YEAR_IDX, Indexes.POPULATION_GROWTH_RACE_ETHNICITY_GRID_AGE_GENDER_IDX, Indexes.POPULATION_GROWTH_RACE_ETHNICITY_GRID_IDX);
     }
 
     @Override
     public UniqueKey<PopulationGrowthRecord> getPrimaryKey() {
-        return Keys.POPULATION_GROWTH_PK;
+        return Keys.POPULATION_GROWTHP_PK;
     }
 
     @Override
@@ -168,7 +168,7 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Integer, Integer, Integer, Integer, Integer, Short, Double, Short> fieldsRow() {
+    public Row8<Short, Short, Integer, Integer, Integer, Integer, Integer, Double> fieldsRow() {
         return (Row8) super.fieldsRow();
     }
 }
