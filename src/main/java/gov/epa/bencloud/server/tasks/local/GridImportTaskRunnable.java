@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -138,7 +139,7 @@ public class GridImportTaskRunnable implements Runnable {
 				gridTableName = importShapefile(shapefilePath);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.error("Error importing shapefile", e);
 			}
 			
 			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -224,16 +225,21 @@ public class GridImportTaskRunnable implements Runnable {
 
 	    // Write to database
 	    DataStore dbDataStore = DataStoreFinder.getDataStore(dbParams);    
-
+	    
+	    log.debug("dbDataStore: " + dbDataStore);
+	    
+	    Iterator it = DataStoreFinder.getAvailableDataStores();
+	    while(it.hasNext()){
+	      log.debug("Available data store: " + it.next());
+	    }
+	    
 	    // Prepend the "g_" on the unique table name to avoid the need to quote it in SQL if it starts with a number
 	    // Also, tables that begin with "g_" will be excluded during jOOQ code generation
 	    String gridTableName = "g_" + UUID.randomUUID().toString().replace("-", "");
 	    
 	    SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-
-	    //builder.addAll(inputType.getAttributeDescriptors());
 	    
-	    //Inspect the dbSchema and make note of the names of the geom, col, and row fields
+	    //Inspect the shapefile and make note of the names of the geom, col, and row fields
 	    // Sometimes the geom column might be named something else (e.g. the_geom or geometry) and col/row might be proper or upper case (e.g. Col or COL)
 	    // We currently use SQL alter table commands below to fix the key columns after the table is created
 	    String geomColumnName = null;
@@ -261,7 +267,6 @@ public class GridImportTaskRunnable implements Runnable {
 							// TODO Throw error: Unable to determine projection of shapefile.
 							e.printStackTrace();
 						}
-
 
 	    	        builder.setCRS(crs);
 	    	        GeometryDescriptor g = inputType.getGeometryDescriptor();

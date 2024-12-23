@@ -71,10 +71,10 @@
   <logger name="org.jooq" additivity="false" level="info">
     <appender-ref ref="STDOUT" />
   </logger>
-<!--   
-  <logger name="gov.epa.bencloud" additivity="false" level="debug">
-    <appender-ref ref="STDOUT" />
-  </logger> -->
+  
+   <logger name="org.geotools" additivity="false" level="DEBUG">
+   	<appender-ref ref="STDOUT" />
+   </logger>
   
    <logger name="gov.epa.bencloud" additivity="false" level="debug">
     <appender-ref ref="STDOUT" />
