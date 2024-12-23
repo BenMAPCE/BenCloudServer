@@ -29,13 +29,21 @@ import org.geotools.api.feature.type.AttributeDescriptor;
 import org.geotools.api.feature.type.AttributeType;
 import org.geotools.api.feature.type.GeometryDescriptor;
 import org.geotools.api.feature.type.GeometryType;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.NoSuchAuthorityCodeException;
+import org.geotools.api.referencing.crs.CRSAuthorityFactory;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.data.postgis.PostgisNGDataStoreFactory;
+import org.geotools.feature.AttributeTypeBuilder;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.NameImpl;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.feature.type.AttributeDescriptorImpl;
 import org.geotools.feature.type.AttributeTypeImpl;
 import org.geotools.feature.type.GeometryDescriptorImpl;
+import org.geotools.referencing.CRS;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.geotools.referencing.factory.OrderedAxisAuthorityFactory;
 import org.geotools.util.URLs;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -221,11 +229,8 @@ public class GridImportTaskRunnable implements Runnable {
 	    String gridTableName = "g_" + UUID.randomUUID().toString().replace("-", "");
 	    
 	    SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-	    builder.setName(gridTableName);
-	    builder.setSuperType((SimpleFeatureType) inputType.getSuper());
-	    builder.addAll(inputType.getAttributeDescriptors());
-	    
-	    SimpleFeatureType dbSchema = builder.buildFeatureType();
+
+	    //builder.addAll(inputType.getAttributeDescriptors());
 	    
 	    //Inspect the dbSchema and make note of the names of the geom, col, and row fields
 	    // Sometimes the geom column might be named something else (e.g. the_geom or geometry) and col/row might be proper or upper case (e.g. Col or COL)
@@ -233,12 +238,42 @@ public class GridImportTaskRunnable implements Runnable {
 	    String geomColumnName = null;
 	    String colColumnName = null;
 	    String rowColumnName = null;
-	    for (AttributeDescriptor att : dbSchema.getAttributeDescriptors()) {
+	    AttributeTypeBuilder attributeBuilder = new AttributeTypeBuilder();
+	    
+	    for (AttributeDescriptor att : inputType.getAttributeDescriptors()) {
 	    	String name = att.getLocalName();
 	    	AttributeType type = att.getType();
 	    	if (type instanceof GeometryType) {
 	    		// Remember this as the geom column name
 	    		geomColumnName = name;
+
+	    	    if (inputType.getCoordinateReferenceSystem() == null) {
+	    	        // The geometry column doesn't have a CRS so let's hope it's NAD83 and try it
+	    	        CoordinateReferenceSystem crs = null;
+
+						// NAD83 PRJ from PostGIS
+						// TODO: Find more elegant way to handle this
+						String wkt = "GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]]";
+						try {
+							crs = CRS.parseWKT(wkt);
+						} catch (FactoryException e) {
+							// TODO Throw error: Unable to determine projection of shapefile.
+							e.printStackTrace();
+						}
+
+
+	    	        builder.setCRS(crs);
+	    	        GeometryDescriptor g = inputType.getGeometryDescriptor();
+	    	        attributeBuilder.init(g);
+	    	        attributeBuilder.setCRS(crs);
+	    	        GeometryDescriptor att2 = (GeometryDescriptor) attributeBuilder.buildDescriptor(g.getLocalName());
+	    	        builder.add(att2);
+	    	        builder.setDefaultGeometry(att2.getLocalName());
+	    	    } else {
+	    	        builder.add(att);
+	    	        builder.setDefaultGeometry(att.getLocalName());
+	    	      }
+	    		
 	    	} else {
 	    		// See if this is the col or row column
 	    		if(name.equalsIgnoreCase("col")) { 
@@ -246,9 +281,13 @@ public class GridImportTaskRunnable implements Runnable {
 	    		} else if(name.equalsIgnoreCase("row")) {
 	    			rowColumnName = name;
 	    		}
+	    		builder.add(att);
 	    	}
-	    }
 
+	    }
+	    builder.setName(gridTableName);
+	    builder.setSuperType((SimpleFeatureType) inputType.getSuper());
+	    SimpleFeatureType dbSchema = builder.buildFeatureType();
 	    dbDataStore.createSchema(dbSchema);
 	    SimpleFeatureStore dbFeatureStore = (SimpleFeatureStore) dbDataStore.getFeatureSource(gridTableName);
 	    dbFeatureStore.addFeatures(inputFeatureCollection);
@@ -267,6 +306,8 @@ public class GridImportTaskRunnable implements Runnable {
 	    if(rowColumnName != null && !rowColumnName.equals("row")) {
 	    	create.execute("alter table grids." + gridTableName + " rename column \"" + rowColumnName + "\" to row;");
 	    }
+	    
+	    //TODO: Analyze tables immediately after creation?
 	    
 	    return gridTableName;
 	}
