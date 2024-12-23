@@ -211,6 +211,7 @@ public class GridImportTaskRunnable implements Runnable {
 	    dbParams.put(PostgisNGDataStoreFactory.DATABASE.key, PooledDataSource.dbName);
 	    dbParams.put(PostgisNGDataStoreFactory.SCHEMA.key, "grids");
 
+	    log.debug("dbParams: " + dbParams.toString());
 	    // Read the shapefile
 	    DataStore inputDataStore = DataStoreFinder.getDataStore(Collections.singletonMap("url", URLs.fileToUrl(inFile)));
 
