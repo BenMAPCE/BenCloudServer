@@ -21,6 +21,11 @@ import gov.epa.bencloud.server.util.ApplicationUtil;
 public class PooledDataSource {
 
 	private static HikariDataSource dataSource;
+	public static String dbHost;
+	public static String dbPort;
+	public static String dbName;
+	public static String dbUser;
+	public static String dbPassword;
 	private static final Logger log = LoggerFactory.getLogger(PooledDataSource.class);
 
 	static {
@@ -114,6 +119,11 @@ public class PooledDataSource {
 			
 			try {
 				dataSource = new HikariDataSource( config );
+				dbHost = databaseHost;
+				dbPort = databasePort;
+				dbName = databaseName;
+				dbUser = databaseUser;
+				dbPassword = databasePassword;
 			} catch (Exception e1) {
 				log.error("Error creating HikariDataSource", e1);
 			}

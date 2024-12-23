@@ -11,9 +11,10 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionR
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row10;
+import org.jooq.Row11;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -95,6 +96,11 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
      */
     public final TableField<GridDefinitionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
+    /**
+     * The column <code>data.grid_definition.task_log</code>.
+     */
+    public final TableField<GridDefinitionRecord, JSON> TASK_LOG = createField(DSL.name("task_log"), SQLDataType.JSON, this, "");
+
     private GridDefinition(Name alias, Table<GridDefinitionRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -170,11 +176,11 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row10 type methods
+    // Row11 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row10<Integer, String, Integer, Integer, String, Integer, String, String, String, Short> fieldsRow() {
-        return (Row10) super.fieldsRow();
+    public Row11<Integer, String, Integer, Integer, String, Integer, String, String, String, Short, JSON> fieldsRow() {
+        return (Row11) super.fieldsRow();
     }
 }

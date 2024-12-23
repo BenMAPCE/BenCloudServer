@@ -70,7 +70,7 @@ dependencies {
 
 	implementation 'org.geotools:gt-main:32.0'
 	implementation 'org.geotools:gt-shapefile:32.0'
-	testImplementation 'org.geotools.jdbc:gt-jdbc-postgis:32.0'
+	implementation 'org.geotools.jdbc:gt-jdbc-postgis:32.0'
 	
 	testImplementation(platform('org.junit:junit-bom:5.9.3'))
 	testImplementation('org.junit.jupiter:junit-jupiter')
