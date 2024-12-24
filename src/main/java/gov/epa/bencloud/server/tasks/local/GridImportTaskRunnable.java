@@ -42,6 +42,7 @@ import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.feature.type.AttributeDescriptorImpl;
 import org.geotools.feature.type.AttributeTypeImpl;
 import org.geotools.feature.type.GeometryDescriptorImpl;
+import org.geotools.jdbc.JDBCDataStore;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.referencing.factory.OrderedAxisAuthorityFactory;
@@ -204,7 +205,8 @@ public class GridImportTaskRunnable implements Runnable {
 		File inFile = filePath.toFile();
 		
 	    Map<String, Object> dbParams = new HashMap<>();
-	    dbParams.put(PostgisNGDataStoreFactory.DBTYPE.key, PostgisNGDataStoreFactory.DBTYPE.sample);
+	    //dbParams.put(PostgisNGDataStoreFactory.DBTYPE.key, PostgisNGDataStoreFactory.DBTYPE.sample);
+	    dbParams.put(PostgisNGDataStoreFactory.DBTYPE.key, "postgis");
 	    dbParams.put(PostgisNGDataStoreFactory.USER.key, PooledDataSource.dbUser);
 	    dbParams.put(PostgisNGDataStoreFactory.PASSWD.key, PooledDataSource.dbPassword);
 	    dbParams.put(PostgisNGDataStoreFactory.HOST.key, PooledDataSource.dbHost);
