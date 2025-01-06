@@ -199,6 +199,23 @@ public class GridDefinitionApi {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
+
+		// Make sure the name is unique among this user's grid definitions and shared ones
+		List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration())
+			.select(GRID_DEFINITION.NAME)
+			.from(GRID_DEFINITION)
+			.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
+			.or(GRID_DEFINITION.SHARE_SCOPE.eq((short)1))
+			.orderBy(GRID_DEFINITION.USER_ID)
+			.fetch(GRID_DEFINITION.NAME);
+		if (gridDefinitionNames.contains(gridName)) {
+			log.error("A grid definition named " + gridName + " already exisxts.");
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error", "A grid definition named " + gridName + " already exists. Please enter a different name."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}	
+
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode paramsNode = mapper.createObjectNode();
 
@@ -479,7 +496,7 @@ public class GridDefinitionApi {
 			return CoreApi.getErrorResponse(request, response, 400, "You can only rename grid definitions created by yourself.");
 		}
 
-		// Make sure the new name is unique among this user's grid definitions ans shared ones
+		// Make sure the new name is unique among this user's grid definitions and shared ones
 		List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration())
 			.select(GRID_DEFINITION.NAME)
 			.from(GRID_DEFINITION)
