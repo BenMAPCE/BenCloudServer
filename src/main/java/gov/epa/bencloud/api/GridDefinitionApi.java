@@ -446,4 +446,62 @@ public class GridDefinitionApi {
 		return response;
 
 	} 
+
+	/**
+	 * Renames a grid definition from the database (grid id is a request parameter).
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return
+	 */
+	public static Object renameGridDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+
+		Integer id;
+		String newName;
+
+		try {
+			id = Integer.valueOf(request.params("id"));
+			newName = ApiUtil.getMultipartFormParameterAsString(request, "newName");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		
+		// Users can only edit grid definitions created by themselves 		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());	
+		Result<Record1<Integer>> res = create.select(GRID_DEFINITION.ID)
+				.from(GRID_DEFINITION)
+				.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
+				.and(GRID_DEFINITION.ID.eq(id))
+				.fetch();
+		if(res==null) {
+			return CoreApi.getErrorResponse(request, response, 400, "You can only rename grid definitions created by yourself.");
+		}
+
+		// Make sure the new name is unique among this user's grid definitions ans shared ones
+		List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration())
+			.select(GRID_DEFINITION.NAME)
+			.from(GRID_DEFINITION)
+			.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
+			.or(GRID_DEFINITION.SHARE_SCOPE.eq((short)1))
+			.orderBy(GRID_DEFINITION.USER_ID)
+			.fetch(GRID_DEFINITION.NAME);
+		if (gridDefinitionNames.contains(newName)) {
+			String errorMsg = "A grid definition named " + newName + " already exists. Please enter a different name.";
+			return CoreApi.getErrorResponse(request, response, 409, errorMsg);
+		}	
+		
+		// Rename grid definition
+		int countRows = create.update(GRID_DEFINITION)
+			.set(GRID_DEFINITION.NAME, newName)
+			.where(GRID_DEFINITION.ID.eq(id))
+			.execute();
+		if(countRows == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Unknown error");
+		}
+
+		// Return success
+		return CoreApi.getSuccessResponse(request, response, 200, "Successfully renamed.");
+	}
 }
