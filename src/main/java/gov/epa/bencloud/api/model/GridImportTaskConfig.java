@@ -39,7 +39,9 @@ public class GridImportTaskConfig {
 	private static final Logger log = LoggerFactory.getLogger(GridImportTaskConfig.class);
 	
 	public String name;
-	public Integer fileId;
+	public Integer filestoreId;
+	public String userId;
+	public Integer gridDefinitionId;
 
 	/*
 	 * Default constructor

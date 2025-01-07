@@ -1301,6 +1301,9 @@ public class TaskApi {
 					//Move the following to ValuationApi.java? 
 					//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
 					try {
+						//If the crosswalk isn't there, create it now
+						CrosswalksApi.ensureCrosswalkExists(batchTaskConfig.gridDefinitionId.intValue(), gridIds[i]);
+						
 						Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 								GET_EXPOSURE_RESULTS(
 									exposureResultDatasetId, 
