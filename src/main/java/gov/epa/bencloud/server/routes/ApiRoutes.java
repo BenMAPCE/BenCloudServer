@@ -85,6 +85,16 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		/*
+		 * Rename a single grid definition
+		 * PARAMETERS:
+		 *  :id
+		 *  newName=
+		 */
+		service.put(apiPrefix + "/grid-definitions/:id", (request, response) -> {
+			return GridDefinitionApi.renameGridDefinition(request, response, getUserProfile(request, response));
+		});
+
+		/*
 		 * GET array of all pollutant definitions
 		 */
 		service.get(apiPrefix + "/pollutants", (request, response) -> {
