@@ -304,7 +304,9 @@ public class ApiUtil {
 				TaskUtil.deleteHifResults(uuid, false);
 			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Valuation")) {
 				TaskUtil.deleteValuationResults(uuid, false);
-			}			
+			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Exposure")) {
+				TaskUtil.deleteExposureResults(uuid, false);
+			}		
 		}		
 				
 		res.status(204);
