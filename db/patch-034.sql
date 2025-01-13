@@ -12,9 +12,11 @@ UPDATE "data".settings SET value_int=34 WHERE "key"='version';
 
 /***Change population_growth table to partition table. ****/
 --backup current 2010 data
-ALTER TABLE population_growth  RENAME TO population_growth_2010_backup;
+ALTER TABLE "data".population_growth  RENAME TO population_growth_2010_backup;
 
 --create partitioned table
+ALTER INDEX IF EXISTS "data".zzz_population_growth_pk RENAME TO zzz_population_growth_backup_pk;
+
 CREATE TABLE "data".population_growth (
 	base_pop_year int2 NOT NULL,
 	pop_year int2 NOT NULL,
@@ -96,7 +98,7 @@ INSERT INTO "data".population_growth (base_pop_year, pop_year, race_id, gender_i
 select base_pop_year, pop_year, race_id, gender_id, ethnicity_id, age_range_id, grid_cell_id, growth_value from "data".population_growth_2010_backup;
 
 --remove backup table. 
-DROP TABLE "data".population_growth_2010_backup
+DROP TABLE "data".population_growth_2010_backup;
 
 --create a material view to store base_pop_year for each data set. 
 --when running get_population function, we use base_year to select population growth dataset. 
