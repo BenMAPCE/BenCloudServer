@@ -209,7 +209,7 @@ public class GridDefinitionApi {
 			.orderBy(GRID_DEFINITION.USER_ID)
 			.fetch(GRID_DEFINITION.NAME);
 		if (gridDefinitionNames.contains(gridName)) {
-			log.error("A grid definition named " + gridName + " already exisxts.");
+			log.error("A grid definition named " + gridName + " already exists.");
 			response.type("application/json");
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error", "A grid definition named " + gridName + " already exists. Please enter a different name."));
