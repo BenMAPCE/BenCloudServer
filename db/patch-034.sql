@@ -12,11 +12,13 @@ UPDATE "data".settings SET value_int=34 WHERE "key"='version';
 
 /***Change population_growth table to partition table. ****/
 --backup current 2010 data
-ALTER TABLE data.population_growth RENAME TO population_growth_2010_backup;
+ALTER TABLE "data".population_growth  RENAME TO population_growth_2010_backup;
 
 ALTER TABLE "data".population_growth_2010_backup RENAME CONSTRAINT population_growth_pk TO population_growth_2010_backup_pk;
 
 --create partitioned table
+ALTER INDEX IF EXISTS "data".zzz_population_growth_pk RENAME TO zzz_population_growth_backup_pk;
+
 CREATE TABLE "data".population_growth (
 	base_pop_year int2 NOT NULL,
 	pop_year int2 NOT NULL,
