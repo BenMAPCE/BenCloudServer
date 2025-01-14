@@ -12,7 +12,9 @@ UPDATE "data".settings SET value_int=34 WHERE "key"='version';
 
 /***Change population_growth table to partition table. ****/
 --backup current 2010 data
-ALTER TABLE "data".population_growth  RENAME TO population_growth_2010_backup;
+alter table "data".population_growth rename to population_growth_2010_backup;
+
+--DROP TABLE "data".population_growth;
 
 --create partitioned table
 ALTER INDEX IF EXISTS "data".population_growth_pk RENAME TO population_growth_backup_pk;
@@ -30,68 +32,68 @@ CREATE TABLE "data".population_growth (
 )
 PARTITION BY LIST (base_pop_year);
 
-CREATE INDEX population_growth_race_ethnicity_grid_idx ON data.population_growth USING btree (race_id, ethnicity_id, grid_cell_id);
-CREATE INDEX population_growth_race_ethnicity_grid_age_gender_idx ON data.population_growth (race_id, ethnicity_id, grid_cell_id, age_range_id, gender_id);
+CREATE INDEX population_growth_race_ethnicity_grid_idx ON "data".population_growth USING btree (race_id, ethnicity_id, grid_cell_id);
+CREATE INDEX population_growth_race_ethnicity_grid_age_gender_idx ON "data".population_growth (race_id, ethnicity_id, grid_cell_id, age_range_id, gender_id);
 CREATE INDEX population_growth_base_pop_year_idx ON "data".population_growth (base_pop_year);
 
 ALTER TABLE "data".population_value ADD CONSTRAINT population_value_pk PRIMARY KEY (pop_entry_id,grid_cell_id);
 
 --create partitions 
-create table data.population_growth_b2010 partition of population_growth for values in (2010) partition by LIST (pop_year); 
+create table data.population_growth_b2010 partition of data.population_growth for values in (2010) partition by LIST (pop_year); 
 
 --create subpaartitions
-create table data.population_growth_b2010_t2000 partition of population_growth_b2010 for values in (2000); 
-create table data.population_growth_b2010_t2001 partition of population_growth_b2010 for values in (2001); 
-create table data.population_growth_b2010_t2002 partition of population_growth_b2010 for values in (2002); 
-create table data.population_growth_b2010_t2003 partition of population_growth_b2010 for values in (2003); 
-create table data.population_growth_b2010_t2004 partition of population_growth_b2010 for values in (2004); 
-create table data.population_growth_b2010_t2005 partition of population_growth_b2010 for values in (2005); 
-create table data.population_growth_b2010_t2006 partition of population_growth_b2010 for values in (2006); 
-create table data.population_growth_b2010_t2007 partition of population_growth_b2010 for values in (2007); 
-create table data.population_growth_b2010_t2008 partition of population_growth_b2010 for values in (2008); 
-create table data.population_growth_b2010_t2009 partition of population_growth_b2010 for values in (2009); 
-create table data.population_growth_b2010_t2010 partition of population_growth_b2010 for values in (2010); 
-create table data.population_growth_b2010_t2011 partition of population_growth_b2010 for values in (2011); 
-create table data.population_growth_b2010_t2012 partition of population_growth_b2010 for values in (2012); 
-create table data.population_growth_b2010_t2013 partition of population_growth_b2010 for values in (2013); 
-create table data.population_growth_b2010_t2014 partition of population_growth_b2010 for values in (2014); 
-create table data.population_growth_b2010_t2015 partition of population_growth_b2010 for values in (2015); 
-create table data.population_growth_b2010_t2016 partition of population_growth_b2010 for values in (2016); 
-create table data.population_growth_b2010_t2017 partition of population_growth_b2010 for values in (2017); 
-create table data.population_growth_b2010_t2018 partition of population_growth_b2010 for values in (2018); 
-create table data.population_growth_b2010_t2019 partition of population_growth_b2010 for values in (2019); 
-create table data.population_growth_b2010_t2020 partition of population_growth_b2010 for values in (2020); 
-create table data.population_growth_b2010_t2021 partition of population_growth_b2010 for values in (2021); 
-create table data.population_growth_b2010_t2022 partition of population_growth_b2010 for values in (2022); 
-create table data.population_growth_b2010_t2023 partition of population_growth_b2010 for values in (2023); 
-create table data.population_growth_b2010_t2024 partition of population_growth_b2010 for values in (2024); 
-create table data.population_growth_b2010_t2025 partition of population_growth_b2010 for values in (2025); 
-create table data.population_growth_b2010_t2026 partition of population_growth_b2010 for values in (2026); 
-create table data.population_growth_b2010_t2027 partition of population_growth_b2010 for values in (2027); 
-create table data.population_growth_b2010_t2028 partition of population_growth_b2010 for values in (2028); 
-create table data.population_growth_b2010_t2029 partition of population_growth_b2010 for values in (2029); 
-create table data.population_growth_b2010_t2030 partition of population_growth_b2010 for values in (2030); 
-create table data.population_growth_b2010_t2031 partition of population_growth_b2010 for values in (2031); 
-create table data.population_growth_b2010_t2032 partition of population_growth_b2010 for values in (2032); 
-create table data.population_growth_b2010_t2033 partition of population_growth_b2010 for values in (2033); 
-create table data.population_growth_b2010_t2034 partition of population_growth_b2010 for values in (2034); 
-create table data.population_growth_b2010_t2035 partition of population_growth_b2010 for values in (2035); 
-create table data.population_growth_b2010_t2036 partition of population_growth_b2010 for values in (2036); 
-create table data.population_growth_b2010_t2037 partition of population_growth_b2010 for values in (2037); 
-create table data.population_growth_b2010_t2038 partition of population_growth_b2010 for values in (2038); 
-create table data.population_growth_b2010_t2039 partition of population_growth_b2010 for values in (2039); 
-create table data.population_growth_b2010_t2040 partition of population_growth_b2010 for values in (2040); 
-create table data.population_growth_b2010_t2041 partition of population_growth_b2010 for values in (2041); 
-create table data.population_growth_b2010_t2042 partition of population_growth_b2010 for values in (2042); 
-create table data.population_growth_b2010_t2043 partition of population_growth_b2010 for values in (2043); 
-create table data.population_growth_b2010_t2044 partition of population_growth_b2010 for values in (2044); 
-create table data.population_growth_b2010_t2045 partition of population_growth_b2010 for values in (2045); 
-create table data.population_growth_b2010_t2046 partition of population_growth_b2010 for values in (2046); 
-create table data.population_growth_b2010_t2047 partition of population_growth_b2010 for values in (2047); 
-create table data.population_growth_b2010_t2048 partition of population_growth_b2010 for values in (2048); 
-create table data.population_growth_b2010_t2049 partition of population_growth_b2010 for values in (2049); 
-create table data.population_growth_b2010_t2050 partition of population_growth_b2010 for values in (2050); 
-create table data.population_growth_b2010_t2055 partition of population_growth_b2010 for values in (2055); 
+create table data.population_growth_b2010_t2000 partition of data.population_growth_b2010 for values in (2000); 
+create table data.population_growth_b2010_t2001 partition of data.population_growth_b2010 for values in (2001); 
+create table data.population_growth_b2010_t2002 partition of data.population_growth_b2010 for values in (2002); 
+create table data.population_growth_b2010_t2003 partition of data.population_growth_b2010 for values in (2003); 
+create table data.population_growth_b2010_t2004 partition of data.population_growth_b2010 for values in (2004); 
+create table data.population_growth_b2010_t2005 partition of data.population_growth_b2010 for values in (2005); 
+create table data.population_growth_b2010_t2006 partition of data.population_growth_b2010 for values in (2006); 
+create table data.population_growth_b2010_t2007 partition of data.population_growth_b2010 for values in (2007); 
+create table data.population_growth_b2010_t2008 partition of data.population_growth_b2010 for values in (2008); 
+create table data.population_growth_b2010_t2009 partition of data.population_growth_b2010 for values in (2009); 
+create table data.population_growth_b2010_t2010 partition of data.population_growth_b2010 for values in (2010); 
+create table data.population_growth_b2010_t2011 partition of data.population_growth_b2010 for values in (2011); 
+create table data.population_growth_b2010_t2012 partition of data.population_growth_b2010 for values in (2012); 
+create table data.population_growth_b2010_t2013 partition of data.population_growth_b2010 for values in (2013); 
+create table data.population_growth_b2010_t2014 partition of data.population_growth_b2010 for values in (2014); 
+create table data.population_growth_b2010_t2015 partition of data.population_growth_b2010 for values in (2015); 
+create table data.population_growth_b2010_t2016 partition of data.population_growth_b2010 for values in (2016); 
+create table data.population_growth_b2010_t2017 partition of data.population_growth_b2010 for values in (2017); 
+create table data.population_growth_b2010_t2018 partition of data.population_growth_b2010 for values in (2018); 
+create table data.population_growth_b2010_t2019 partition of data.population_growth_b2010 for values in (2019); 
+create table data.population_growth_b2010_t2020 partition of data.population_growth_b2010 for values in (2020); 
+create table data.population_growth_b2010_t2021 partition of data.population_growth_b2010 for values in (2021); 
+create table data.population_growth_b2010_t2022 partition of data.population_growth_b2010 for values in (2022); 
+create table data.population_growth_b2010_t2023 partition of data.population_growth_b2010 for values in (2023); 
+create table data.population_growth_b2010_t2024 partition of data.population_growth_b2010 for values in (2024); 
+create table data.population_growth_b2010_t2025 partition of data.population_growth_b2010 for values in (2025); 
+create table data.population_growth_b2010_t2026 partition of data.population_growth_b2010 for values in (2026); 
+create table data.population_growth_b2010_t2027 partition of data.population_growth_b2010 for values in (2027); 
+create table data.population_growth_b2010_t2028 partition of data.population_growth_b2010 for values in (2028); 
+create table data.population_growth_b2010_t2029 partition of data.population_growth_b2010 for values in (2029); 
+create table data.population_growth_b2010_t2030 partition of data.population_growth_b2010 for values in (2030); 
+create table data.population_growth_b2010_t2031 partition of data.population_growth_b2010 for values in (2031); 
+create table data.population_growth_b2010_t2032 partition of data.population_growth_b2010 for values in (2032); 
+create table data.population_growth_b2010_t2033 partition of data.population_growth_b2010 for values in (2033); 
+create table data.population_growth_b2010_t2034 partition of data.population_growth_b2010 for values in (2034); 
+create table data.population_growth_b2010_t2035 partition of data.population_growth_b2010 for values in (2035); 
+create table data.population_growth_b2010_t2036 partition of data.population_growth_b2010 for values in (2036); 
+create table data.population_growth_b2010_t2037 partition of data.population_growth_b2010 for values in (2037); 
+create table data.population_growth_b2010_t2038 partition of data.population_growth_b2010 for values in (2038); 
+create table data.population_growth_b2010_t2039 partition of data.population_growth_b2010 for values in (2039); 
+create table data.population_growth_b2010_t2040 partition of data.population_growth_b2010 for values in (2040); 
+create table data.population_growth_b2010_t2041 partition of data.population_growth_b2010 for values in (2041); 
+create table data.population_growth_b2010_t2042 partition of data.population_growth_b2010 for values in (2042); 
+create table data.population_growth_b2010_t2043 partition of data.population_growth_b2010 for values in (2043); 
+create table data.population_growth_b2010_t2044 partition of data.population_growth_b2010 for values in (2044); 
+create table data.population_growth_b2010_t2045 partition of data.population_growth_b2010 for values in (2045); 
+create table data.population_growth_b2010_t2046 partition of data.population_growth_b2010 for values in (2046); 
+create table data.population_growth_b2010_t2047 partition of data.population_growth_b2010 for values in (2047); 
+create table data.population_growth_b2010_t2048 partition of data.population_growth_b2010 for values in (2048); 
+create table data.population_growth_b2010_t2049 partition of data.population_growth_b2010 for values in (2049); 
+create table data.population_growth_b2010_t2050 partition of data.population_growth_b2010 for values in (2050); 
+create table data.population_growth_b2010_t2055 partition of data.population_growth_b2010 for values in (2055); 
 
 --insert growth data from backup table
 INSERT INTO "data".population_growth (base_pop_year, pop_year, race_id, gender_id, ethnicity_id, age_range_id, grid_cell_id, growth_value)
