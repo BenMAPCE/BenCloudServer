@@ -46,6 +46,7 @@ import org.pac4j.core.profile.UserProfile;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import gov.epa.bencloud.api.CoreApi;
+import gov.epa.bencloud.api.CrosswalksApi;
 import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -332,6 +333,10 @@ public class ApiUtil {
 
 		// FOR EACH VARIABLE
 		for (String variableName : requiredVariableNames) {
+
+			//If the crosswalk isn't there, create it now
+			CrosswalksApi.ensureCrosswalkExists(getVariableGridDefinitionId(variableDatasetId,variableName),gridId);
+
 			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 					variableDatasetId, 
 					variableName, 
@@ -378,6 +383,10 @@ public class ApiUtil {
 
 		// FOR EACH VARIABLE
 		for (Record3<Integer, Integer, String> result : results ) {
+
+			//If the crosswalk isn't there, create it now
+			CrosswalksApi.ensureCrosswalkExists(getVariableGridDefinitionId(result.value2(),result.value3()),gridId);
+
 			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 					result.value2(), 
 					result.value3(), 
@@ -415,6 +424,27 @@ public class ApiUtil {
 				.where(VARIABLE_ENTRY.ID.eq(variableId))
 				.fetchOne();
 		return variableName.value1();
+	}
+
+	/**
+	 * 
+	 * @param variableDatasetId
+	 * @param variableName
+	 * @return a grid definition id for a given variable entry.
+	 */
+	public static Integer getVariableGridDefinitionId(Integer variableDatasetId, String variableName) {
+		if(variableDatasetId == null) {
+			return null;
+		}
+
+		Record1<Integer> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(VARIABLE_ENTRY.GRID_DEFINITION_ID)
+				.from(VARIABLE_ENTRY)
+				.where(VARIABLE_ENTRY.VARIABLE_DATASET_ID.eq(variableDatasetId)
+					.and(VARIABLE_ENTRY.NAME.eq(variableName)))
+				.fetchOne();
+		
+		return record.value1();
 	}
 
 	/**
