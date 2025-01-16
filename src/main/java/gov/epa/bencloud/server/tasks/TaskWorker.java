@@ -33,7 +33,7 @@ public class TaskWorker {
 
 	public static int maxTaskWorkers = 0;
 
-	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 20; 
+	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 120; 
 
 	static {
 		maxTaskWorkers = Integer.parseInt(ApplicationUtil.getProperty("max.task.workers"));
