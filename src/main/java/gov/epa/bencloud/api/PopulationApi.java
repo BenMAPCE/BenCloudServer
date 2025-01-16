@@ -79,6 +79,9 @@ public class PopulationApi {
         		break;
         	}
         }
+
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(hifTaskConfig.popId),aqGrid);
         
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
@@ -146,6 +149,9 @@ public class PopulationApi {
         		break;
         	}
         }
+
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(exposureTaskConfig.popId),aqGrid);
         
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				exposureTaskConfig.popId, 
@@ -384,6 +390,22 @@ public class PopulationApi {
 				.fetchOne();
 		
 		return record;
-		}
+	}
+
+	/**
+	 * 
+	 * @param id 
+	 * @return the population dataset's grid definition id
+	 */
+	public static Integer getPopulationGridDefinitionId(Integer id) {
+
+		Record1<Integer> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(POPULATION_DATASET.GRID_DEFINITION_ID)
+				.from(POPULATION_DATASET)
+				.where(POPULATION_DATASET.ID.eq(id))
+				.fetchOne();
+		
+		return record.value1();
+	}
 	
 }
