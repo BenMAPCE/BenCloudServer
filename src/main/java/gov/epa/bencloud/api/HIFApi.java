@@ -121,6 +121,8 @@ public class HIFApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), gridId);
 
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
@@ -299,9 +301,14 @@ public class HIFApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		Integer baselineGridId = HIFApi.getBaselineGridForHifResults(id);
+
 		for(int i=0; i < gridIds.length; i++) {
 			Result<?> hifRecordsClean = null;
 			try {
+				//If the crosswalk isn't there, create it now
+				CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
+
 				Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 					GET_HIF_RESULTS(
 							id, 
@@ -438,6 +445,9 @@ public class HIFApi {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), incidenceAggregationGrid);
+
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
 						id, 
@@ -816,6 +826,9 @@ public class HIFApi {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(hifResultDatasetId), incidenceAggregationGrid);
+
 		Record1<Integer> hifResultCount = create
 				.select(DSL.count())
 				.from(GET_HIF_RESULTS(

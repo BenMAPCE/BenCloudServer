@@ -125,6 +125,9 @@ public class ValuationApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(ValuationApi.getBaselineGridForValuationResults(id), gridId);
+
 		Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 				GET_VALUATION_RESULTS(
 						id, 
@@ -597,17 +600,15 @@ public class ValuationApi {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
-		Record1<Integer> aqId = create
-				.select(AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
+		Record1<Integer> gridId = create
+				.select(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID)
 				.from(VALUATION_RESULT_DATASET)
-				.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
-				.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_LAYER.ID.eq(HIF_RESULT_DATASET.BASELINE_AQ_LAYER_ID))
 				.where(VALUATION_RESULT_DATASET.ID.eq(valuationResultDatasetId))
 				.fetchOne();
 
-		if(aqId == null) {
+		if(gridId == null) {
 			return null;
 		}
-		return aqId.value1();
+		return gridId.value1();
 	}
 }

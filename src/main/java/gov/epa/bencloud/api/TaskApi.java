@@ -1302,7 +1302,7 @@ public class TaskApi {
 					//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
 					try {
 						//If the crosswalk isn't there, create it now
-						CrosswalksApi.ensureCrosswalkExists(batchTaskConfig.gridDefinitionId.intValue(), gridIds[i]);
+						CrosswalksApi.ensureCrosswalkExists(batchTaskConfig.gridDefinitionId, gridIds[i]);
 						
 						Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 								GET_EXPOSURE_RESULTS(
@@ -1409,10 +1409,14 @@ public class TaskApi {
 			for(int hifResultDatasetId : hifResultDatasetIds) {
 				//csv file name
 				String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).name);
+				Integer baselineGridId = HIFApi.getBaselineGridForHifResults(hifResultDatasetId);
 				for(int i=0; i < gridIds.length; i++) {
 					Result<?> hifRecordsClean = null;
 					//Move the following to HIFApi.java? 
 					//hifRecordsClean = HIFApi.getHifResultRecordsClean(gridIds[i], hifResultDatasetId) //use this instead?
+					
+					//If the crosswalk isn't there, create it now
+					CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 					try {
 						Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 							GET_HIF_RESULTS(
@@ -1544,10 +1548,14 @@ public class TaskApi {
 			for(int valuationResultDatasetId : valuationResultDatasetIds) {
 				//csv file name
 				String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).name);
+				Integer baselineGridId = ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId);				
 				for(int i=0; i < gridIds.length; i++) {
 					Result<?> vfRecordsClean = null;
 					//Move the following to ValuationApi.java? 
 					//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
+					
+					//If the crosswalk isn't there, create it now
+					CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 					try {
 						Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 								GET_VALUATION_RESULTS(
@@ -1830,6 +1838,9 @@ public class TaskApi {
 						//Move the following to ValuationApi.java? 
 						//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
 						try {
+							//If the crosswalk isn't there, create it now
+							CrosswalksApi.ensureCrosswalkExists(batchTaskConfig.gridDefinitionId, gridIds[i]);
+						
 							Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 									GET_EXPOSURE_RESULTS(
 										exposureResultDatasetId, 
@@ -1935,10 +1946,14 @@ public class TaskApi {
 				for(int hifResultDatasetId : hifResultDatasetIds) {
 					//csv file name
 					String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).name);
+					Integer baselineGridId = HIFApi.getBaselineGridForHifResults(hifResultDatasetId);
 					for(int i=0; i < gridIds.length; i++) {
 						Result<?> hifRecordsClean = null;
 						//Move the following to HIFApi.java? 
 						//hifRecordsClean = HIFApi.getHifResultRecordsClean(gridIds[i], hifResultDatasetId) //use this instead?
+
+						//If the crosswalk isn't there, create it now
+						CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 						try {
 							Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 								GET_HIF_RESULTS(
@@ -2070,10 +2085,14 @@ public class TaskApi {
 				for(int valuationResultDatasetId : valuationResultDatasetIds) {
 					//csv file name
 					String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).name);
+					Integer baselineGridId = ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId);				
 					for(int i=0; i < gridIds.length; i++) {
 						Result<?> vfRecordsClean = null;
 						//Move the following to ValuationApi.java? 
 						//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
+						
+						//If the crosswalk isn't there, create it now
+						CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 						try {
 							Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 									GET_VALUATION_RESULTS(
