@@ -438,6 +438,41 @@ public class GridDefinitionApi {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 
+		// Block if Air Quality Layer has Grid Definition
+		if(create.fetchExists(create.selectFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in air quality layer.");
+		}
+
+		// Block if Exposure Result Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(EXPOSURE_RESULT_DATASET).where(EXPOSURE_RESULT_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in exposure result dataset.");
+		}
+
+		// Block if Incidence Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(INCIDENCE_DATASET).where(INCIDENCE_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in incidence dataset.");
+		}
+
+		// Block if Population Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(POPULATION_DATASET).where(POPULATION_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in population dataset.");
+		}
+
+		// Block if Variable Entry has Grid Definition
+		if(create.fetchExists(create.selectFrom(VARIABLE_ENTRY).where(VARIABLE_ENTRY.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in variable entry.");
+		}
+
+		// Block if HIF Result Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(HIF_RESULT_DATASET).where(HIF_RESULT_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in HIF result dataset.");
+		}
+
+		// Block if Valuation Result Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(VALUATION_RESULT_DATASET).where(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in valuation result dataset.");
+		}
+
 		// Drop the table
 		try {
 			create.dropTable(gridDefinitionResult.getTableName()).execute();
