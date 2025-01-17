@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -471,6 +472,30 @@ public class GridDefinitionApi {
 		// Block if Valuation Result Dataset has Grid Definition
 		if(create.fetchExists(create.selectFrom(VALUATION_RESULT_DATASET).where(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID.eq(id)))){
 			return CoreApi.getErrorResponse(request, response, 400, "Cannot delete because grid definition is used in valuation result dataset.");
+		}
+
+		// Delete Crosswalks
+		Result<Record1<Integer>> crosswalkIdResults = create
+				.select(CROSSWALK_DATASET.ID)
+				.from(CROSSWALK_DATASET)
+				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(id)
+						.or(CROSSWALK_DATASET.TARGET_GRID_ID.eq(id)))
+				.fetch();
+
+		if (crosswalkIdResults != null && crosswalkIdResults.size() > 0) {
+
+			ArrayList<Integer> crosswalkIds = new ArrayList<Integer>();
+			for (Record1<Integer> crosswalkIdRecord : crosswalkIdResults) {
+				crosswalkIds.add(crosswalkIdRecord.value1());
+			}
+
+			create.deleteFrom(CROSSWALK_ENTRY)
+					.where(CROSSWALK_ENTRY.CROSSWALK_ID.in(crosswalkIds))
+					.execute();
+
+			create.deleteFrom(CROSSWALK_DATASET)
+					.where(CROSSWALK_DATASET.ID.in(crosswalkIds))
+					.execute();
 		}
 
 		// Drop the table
