@@ -210,13 +210,13 @@ public class TaskComplete {
 						task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
 					} catch (Exception e) {
 						task.put("task_submitted_date", "");
-						e.printStackTrace();
+						//e.printStackTrace();
 					}
 					try {
 						task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
 					} catch (Exception e) {
 						task.put("task_started_date", "");
-						e.printStackTrace();
+						//e.printStackTrace();
 					}
 
 
