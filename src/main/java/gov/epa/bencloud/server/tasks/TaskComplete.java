@@ -235,7 +235,7 @@ public class TaskComplete {
 						task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
 					} catch (Exception e) {
 						task.put("task_completed_date", "");
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 
 					if((record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)).isAfter(batchCompletedDate)) {
@@ -254,7 +254,7 @@ public class TaskComplete {
 										record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
 					} catch (Exception e) {
 						
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 					task.set("task_wait_time", wrappedObject);
 
@@ -267,7 +267,7 @@ public class TaskComplete {
 								ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_STARTED_DATE),
 										record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
 					} catch (Exception e) {
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 					task.set("task_execution_time", wrappedObject);
 
@@ -277,7 +277,7 @@ public class TaskComplete {
 								record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
 					} catch (Exception e) {
 						task.put("task_elapsed_time", "");
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 					
 					task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
