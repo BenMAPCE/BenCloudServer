@@ -25,6 +25,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,8 +136,7 @@ public class ResultExportTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			
 			/*
-			 * TODO
-			 * parse the export request
+			 * parse the export request parameters
 			 * process the export request
 			 * place the zip file in the file store
 			 * mark task complete and clean up
@@ -595,6 +596,8 @@ public class ResultExportTaskRunnable implements Runnable {
 			String fileMetadata = "{\"name\":\"" + zipFileName + ".zip\"}";
 			Integer fsid = FilestoreUtil.putFile(new FileInputStream(tmpZipFile), zipFileName + ".zip", Constants.FILE_TYPE_RESULT_EXPORT, task.getUserIdentifier(), fileMetadata);
 			resultExportTaskConfig.filestoreId = fsid;
+			
+			Files.delete(Paths.get(tmpZipFile.getPath()));
 			
 			TaskQueue.updateTaskParameters(task.getUuid(), mapper.writeValueAsString(resultExportTaskConfig));
 			
