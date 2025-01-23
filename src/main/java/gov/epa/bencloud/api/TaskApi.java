@@ -30,7 +30,8 @@ import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record19;
+import org.jooq.Record17;
+import org.jooq.Record21;
 import org.jooq.Result;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
@@ -1324,12 +1325,13 @@ public class TaskApi {
 									null,
 									gridIds[i]))
 							.asTable("ef_result_records");
-						Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+						Result<Record17<Integer, Integer, String, Integer, Integer, String, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> efRecords = create.select(
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 								EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
 								EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
 								EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+								EXPOSURE_RESULT_FUNCTION_CONFIG.FUNCTION_TYPE,
 								RACE.NAME.as("race"),
 								ETHNICITY.NAME.as("ethnicity"),
 								GENDER.NAME.as("gender"),
@@ -1339,13 +1341,10 @@ public class TaskApi {
 								efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
 								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
 								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-								efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
 								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
-								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
-								DSL.val(null, String.class).as("formatted_results_2sf"),
-								DSL.val(null, String.class).as("formatted_results_3sf")
+								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population")
 								)
 								.from(efResultRecords)
 								.leftJoin(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
@@ -1358,13 +1357,6 @@ public class TaskApi {
 								.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
                                 .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
 								.fetch();
-
-						for (Record res : efRecords) {
-							res.setValue(DSL.field("formatted_results_2sf", String.class), 
-											ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
-							res.setValue(DSL.field("formatted_results_3sf", String.class), 
-											ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
-						}
 						
 						efRecordsClean = efRecords;
 					} catch(DataAccessException e) {
