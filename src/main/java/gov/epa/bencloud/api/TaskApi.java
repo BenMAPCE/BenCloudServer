@@ -812,9 +812,23 @@ public class TaskApi {
 						JSON batchParams = batchRecord.getValue(TASK_BATCH.PARAMETERS, JSON.class);
 						ObjectMapper batchMapper = new ObjectMapper();
 						JsonNode batchParamsNode = batchMapper.readTree(batchParams.data());
+
 						data.put("aq_baseline_id", batchParamsNode.get("aqBaselineId").asText());
 						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
 						data.put("aq_baseline_name", aqBaselineName);
+
+						Record1<String> metricName = 
+						DSL.using(JooqUtil.getJooqConfiguration())
+							.select(
+									POLLUTANT_METRIC.NAME
+									)
+							.from(POLLUTANT_METRIC)
+							.join(AIR_QUALITY_LAYER_METRICS).on(AIR_QUALITY_LAYER_METRICS.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+							.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_LAYER.ID.eq(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID))				
+							.where(AIR_QUALITY_LAYER.ID.eq(batchParamsNode.get("aqBaselineId").asInt()))
+							.fetchOne();
+
+						data.put("task_metric_name", metricName.value1());
 						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
 						int valuationGridId = batchParamsNode.get("gridDefinitionId").asInt();
 						data.put("valuation_grid_id", valuationGridId);
