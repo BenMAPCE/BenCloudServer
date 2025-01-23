@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -436,6 +437,65 @@ public class GridDefinitionApi {
 		//Admins can delete any non-shared layers
 		if(gridDefinitionResult.getShareScope() == Constants.SHARING_ALL || !(gridDefinitionResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
 			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		// Block if Air Quality Layer has Grid Definition
+		if(create.fetchExists(create.selectFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 403, "Cannot delete because grid definition is used in air quality layer.");
+		}
+
+		// Block if Exposure Result Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(EXPOSURE_RESULT_DATASET).where(EXPOSURE_RESULT_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 403, "Cannot delete because grid definition is used in exposure result dataset.");
+		}
+
+		// Block if Incidence Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(INCIDENCE_DATASET).where(INCIDENCE_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 403, "Cannot delete because grid definition is used in incidence dataset.");
+		}
+
+		// Block if Population Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(POPULATION_DATASET).where(POPULATION_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 403, "Cannot delete because grid definition is used in population dataset.");
+		}
+
+		// Block if Variable Entry has Grid Definition
+		if(create.fetchExists(create.selectFrom(VARIABLE_ENTRY).where(VARIABLE_ENTRY.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 403, "Cannot delete because grid definition is used in variable entry.");
+		}
+
+		// Block if HIF Result Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(HIF_RESULT_DATASET).where(HIF_RESULT_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 403, "Cannot delete because grid definition is used in HIF result dataset.");
+		}
+
+		// Block if Valuation Result Dataset has Grid Definition
+		if(create.fetchExists(create.selectFrom(VALUATION_RESULT_DATASET).where(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID.eq(id)))){
+			return CoreApi.getErrorResponse(request, response, 403, "Cannot delete because grid definition is used in valuation result dataset.");
+		}
+
+		// Delete Crosswalks
+		Result<Record1<Integer>> crosswalkIdResults = create
+				.select(CROSSWALK_DATASET.ID)
+				.from(CROSSWALK_DATASET)
+				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(id)
+						.or(CROSSWALK_DATASET.TARGET_GRID_ID.eq(id)))
+				.fetch();
+
+		if (crosswalkIdResults != null && crosswalkIdResults.size() > 0) {
+
+			ArrayList<Integer> crosswalkIds = new ArrayList<Integer>();
+			for (Record1<Integer> crosswalkIdRecord : crosswalkIdResults) {
+				crosswalkIds.add(crosswalkIdRecord.value1());
+			}
+
+			create.deleteFrom(CROSSWALK_ENTRY)
+					.where(CROSSWALK_ENTRY.CROSSWALK_ID.in(crosswalkIds))
+					.execute();
+
+			create.deleteFrom(CROSSWALK_DATASET)
+					.where(CROSSWALK_DATASET.ID.in(crosswalkIds))
+					.execute();
 		}
 
 		// Drop the table

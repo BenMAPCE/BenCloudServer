@@ -22,6 +22,7 @@ import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
+import gov.epa.bencloud.server.tasks.local.ResultExportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
@@ -33,7 +34,7 @@ public class TaskWorker {
 
 	public static int maxTaskWorkers = 0;
 
-	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 20; 
+	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 120; 
 
 	static {
 		maxTaskWorkers = Integer.parseInt(ApplicationUtil.getProperty("max.task.workers"));
@@ -123,6 +124,7 @@ public class TaskWorker {
 			case Constants.TASK_TYPE_VALUATION:
 			case Constants.TASK_TYPE_EXPOSURE:
 			case Constants.TASK_TYPE_GRID_IMPORT:
+			case Constants.TASK_TYPE_RESULT_EXPORT:
 				break;
 			default:
 				log.error("Unknown task type: " + task.getType());
@@ -152,6 +154,10 @@ public class TaskWorker {
 				break;
 			case Constants.TASK_TYPE_GRID_IMPORT:
 				t = new Thread(new GridImportTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			case Constants.TASK_TYPE_RESULT_EXPORT:
+				t = new Thread(new ResultExportTaskRunnable(task.getUuid(), taskWorkerUuid));
 				t.start();	
 				break;
 			}	

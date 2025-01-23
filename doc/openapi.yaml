@@ -2373,7 +2373,7 @@ paths:
           description: Not Found.
   /batch-tasks/{id}/export:
     get:
-      summary: Returns an zip file with results of a batch task.
+      summary: Returns a zip file with results of a batch task.
       parameters:
         - name: id
           in: path
@@ -2382,6 +2382,72 @@ paths:
           schema:
             type: string
             default: 4
+      responses:
+        '200':
+          description: Zip file with results of a batch task.
+        '404':
+          description: Not found.
+        '500':
+          description: System or Server Error.
+    post:
+      summary: Posts a request to generate a zip file with results of a batch task.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Batch task id.
+          schema:
+            type: integer
+            default: 4
+        - name: gridId
+          in: query
+          required: true
+          description: Comma delimited grid ids
+          schema:
+            type: string
+            default: 20
+        - name: includeHealthImpact
+          in: query
+          required: true
+          description: Include health impact results?
+          schema:
+            type: integer
+            default: 0
+        - name: includeValuation
+          in: query
+          required: true
+          description: Include valuation results?
+          schema:
+            type: integer
+            default: 0
+        - name: includeExposure
+          in: query
+          required: true
+          description: Include exposure results?
+          schema:
+            type: integer
+            default: 0
+        - name: taskUuid
+          in: query
+          required: true
+          description: task uuid
+          schema:
+            type: string
+            default: abc
+        - name: uuidType
+          in: query
+          required: true
+          description: export type?
+          schema:
+            type: string
+            default: E
+        - name: exportType
+          in: query
+          required: true
+          description: export type
+          schema:
+            type: string
+            default: E
       responses:
         '200':
           description: Zip file with results of a batch task.

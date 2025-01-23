@@ -85,6 +85,11 @@ public class CrosswalksApi {
 		// TODO Pass the messages object in here so the crosswalk generator can update when a background task is running
 		// and keep the runner alive
 
+		if (sourceId == targetId) {
+			log.debug("No need for crosswalk as source and target are the same: " + sourceId);
+			return true;
+		}
+
 		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
 		Record1<Integer> cw = dslContext.select(CROSSWALK_DATASET.ID).from(CROSSWALK_DATASET)
 				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(sourceId).and(CROSSWALK_DATASET.TARGET_GRID_ID.eq(targetId)))

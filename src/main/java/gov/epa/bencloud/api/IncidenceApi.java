@@ -153,7 +153,12 @@ public class IncidenceApi {
 		arrEthnicityId[0] = ethnicityId;
 		Integer[] arrGenderId = new Integer[1];
 		arrGenderId[0] = genderId;
+
+		Integer aqGridId = AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId);
 		
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getIncidenceGridDefinitionId(incPrevId),aqGridId);
+
 		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
@@ -167,7 +172,7 @@ public class IncidenceApi {
 				false,
 				false, 
 				true, 
-				AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId))
+				aqGridId)
 				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
 		
 		
@@ -361,6 +366,23 @@ public class IncidenceApi {
 		
 		return record.value1();
 	}
+
+	/**
+	 * 
+	 * @param id incidence dataset id
+	 * @return the grid definition ID of a given incidence dataset.
+	 */
+	public static Integer getIncidenceGridDefinitionId(int id) {
+
+		Record1<Integer> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(INCIDENCE_DATASET.GRID_DEFINITION_ID)
+				.from(INCIDENCE_DATASET)
+				.where(INCIDENCE_DATASET.ID.eq(id))
+				.fetchOne();
+		
+		return record.value1();
+	}
+
 	/**
 	 *  @return the names of all the incidence or prevalence datasets
 	 */

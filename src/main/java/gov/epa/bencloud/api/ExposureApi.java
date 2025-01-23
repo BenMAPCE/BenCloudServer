@@ -248,6 +248,9 @@ public class ExposureApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(ExposureApi.getBaselineGridForExposureResults(id), gridId);
+
 		Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 				GET_EXPOSURE_RESULTS(
 						id, 
@@ -384,9 +387,14 @@ public class ExposureApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		Integer baselineGridId = ExposureApi.getBaselineGridForExposureResults(id);
+
 		for(int i=0; i < gridIds.length; i++) {
 			Result<?> efRecordsClean = null;
 			try {
+				//If the crosswalk isn't there, create it now
+				CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
+
 				Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 					GET_EXPOSURE_RESULTS(
 							id, 

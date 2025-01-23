@@ -176,6 +176,40 @@ public class TaskQueue {
 		}
 	}
 
+	public static void updateTaskParameters(String taskUuid, String parameters) {
+
+		try {
+
+			DSL.using(JooqUtil.getJooqConfiguration())
+			.transactionResult(ctx -> {
+
+				Result<Record> result = DSL.using(ctx).select().from(TASK_QUEUE)
+						.where(TASK_QUEUE.TASK_UUID.eq(taskUuid))
+						.limit(1)
+						.forUpdate()
+						.fetch();
+
+				if (result.size() == 0) {
+					// log.info("no tasks to process");
+				} else if (result.size() > 1) {
+					log.info("recieved more than 1 task record");
+				} else {
+					Record record = result.get(0);
+
+					DSL.using(ctx).update(TASK_QUEUE)
+					.set(TASK_QUEUE.TASK_PARAMETERS, parameters)
+					.where(TASK_QUEUE.TASK_UUID.eq(taskUuid))
+					.execute();
+				}
+				return taskUuid;
+			});
+
+		} catch (Exception e) {
+			log.error("Error updating task", e);
+		} finally {
+
+		}
+	}
 
 	public static void returnTaskToQueue(String uuid) {
 

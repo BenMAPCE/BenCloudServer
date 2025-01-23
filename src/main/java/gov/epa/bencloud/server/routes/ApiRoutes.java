@@ -576,6 +576,26 @@ public class ApiRoutes extends RoutesBase {
 			return null;
 		});
 		
+		/*
+		 * POST request to export results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (batch task id)
+		 *  includeHealthImpact (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeValuation (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeExposure (boolean accepts values true/false and 1/0, default to 0)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.post(apiPrefix + "/batch-tasks/:id/export", (request, response) -> {
+			TaskApi.postResultExportTask(request, response, getUserProfile(request, response));
+			
+			if(response.status() == 400) {
+				return CoreApi.getErrorResponseInvalidId(request, response);
+			}
+
+			return null;
+		});
+		
 		service.get(apiPrefix + "/task-configs", (request, response) -> {
 			Object data = TaskApi.getTaskConfigs(request, response, getUserProfile(request, response));
 			response.type("application/json");
