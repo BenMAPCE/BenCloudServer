@@ -1593,6 +1593,7 @@ public class TaskApi {
 								vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
 								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
+								vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE).as("point_estimate (2020$)"),
 								ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES), //Only include percentiles if we're aggregating
 								vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)
 								)
@@ -1652,7 +1653,7 @@ public class TaskApi {
 							}
 						}
 						//Remove percentiles by keeping all other fields
-						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
+						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,21,16,17,18,19,20));
 					} catch(DataAccessException e) {
 						e.printStackTrace();
 						response.status(400);
