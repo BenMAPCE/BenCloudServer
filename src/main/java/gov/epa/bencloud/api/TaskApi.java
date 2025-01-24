@@ -30,7 +30,8 @@ import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record19;
+import org.jooq.Record17;
+import org.jooq.Record21;
 import org.jooq.Result;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
@@ -812,9 +813,23 @@ public class TaskApi {
 						JSON batchParams = batchRecord.getValue(TASK_BATCH.PARAMETERS, JSON.class);
 						ObjectMapper batchMapper = new ObjectMapper();
 						JsonNode batchParamsNode = batchMapper.readTree(batchParams.data());
+
 						data.put("aq_baseline_id", batchParamsNode.get("aqBaselineId").asText());
 						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
 						data.put("aq_baseline_name", aqBaselineName);
+
+						Record1<String> metricName = 
+						DSL.using(JooqUtil.getJooqConfiguration())
+							.select(
+									POLLUTANT_METRIC.NAME
+									)
+							.from(POLLUTANT_METRIC)
+							.join(AIR_QUALITY_LAYER_METRICS).on(AIR_QUALITY_LAYER_METRICS.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+							.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_LAYER.ID.eq(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID))				
+							.where(AIR_QUALITY_LAYER.ID.eq(batchParamsNode.get("aqBaselineId").asInt()))
+							.fetchOne();
+
+						data.put("task_metric_name", metricName.value1());
 						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
 						int valuationGridId = batchParamsNode.get("gridDefinitionId").asInt();
 						data.put("valuation_grid_id", valuationGridId);
@@ -1310,12 +1325,13 @@ public class TaskApi {
 									null,
 									gridIds[i]))
 							.asTable("ef_result_records");
-						Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+						Result<Record17<Integer, Integer, String, Integer, Integer, String, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> efRecords = create.select(
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 								EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
 								EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
 								EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+								EXPOSURE_RESULT_FUNCTION_CONFIG.FUNCTION_TYPE,
 								RACE.NAME.as("race"),
 								ETHNICITY.NAME.as("ethnicity"),
 								GENDER.NAME.as("gender"),
@@ -1325,13 +1341,10 @@ public class TaskApi {
 								efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
 								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
 								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-								efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 								efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
 								DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
-								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
-								DSL.val(null, String.class).as("formatted_results_2sf"),
-								DSL.val(null, String.class).as("formatted_results_3sf")
+								.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population")
 								)
 								.from(efResultRecords)
 								.leftJoin(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
@@ -1344,13 +1357,6 @@ public class TaskApi {
 								.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
                                 .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
 								.fetch();
-
-						for (Record res : efRecords) {
-							res.setValue(DSL.field("formatted_results_2sf", String.class), 
-											ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
-							res.setValue(DSL.field("formatted_results_3sf", String.class), 
-											ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
-						}
 						
 						efRecordsClean = efRecords;
 					} catch(DataAccessException e) {
@@ -1587,6 +1593,7 @@ public class TaskApi {
 								vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
 								vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
+								vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE).as("point_estimate (2020$)"),
 								ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES), //Only include percentiles if we're aggregating
 								vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)
 								)
@@ -1646,7 +1653,7 @@ public class TaskApi {
 							}
 						}
 						//Remove percentiles by keeping all other fields
-						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
+						vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,21,16,17,18,19,20));
 					} catch(DataAccessException e) {
 						e.printStackTrace();
 						response.status(400);

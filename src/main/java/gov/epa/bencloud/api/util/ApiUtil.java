@@ -640,10 +640,11 @@ public class ApiUtil {
 	 */
 	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs) {
 		StringBuilder s = new StringBuilder();
+		s.append("$");
 		s.append(getValueSigFigs(pointEstimate, sigFigs));
-		s.append(" (");
+		s.append(" ($");
 		s.append(getValueSigFigs(p2_5, sigFigs));
-		s.append(" to ");
+		s.append(" to $");
 		s.append(getValueSigFigs(p97_5, sigFigs));
 		s.append(")");
 
