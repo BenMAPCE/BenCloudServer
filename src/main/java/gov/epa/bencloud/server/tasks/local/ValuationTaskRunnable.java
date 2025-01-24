@@ -122,7 +122,7 @@ public class ValuationTaskRunnable implements Runnable {
 			}
 			
 			//TODO: 2020 is the hardcoded max based on current data. This could be more dynamic.
-			valuationTaskConfig.inflationYear = hifTaskConfig.popYear > 2020 ? 2020 : hifTaskConfig.popYear;			
+			valuationTaskConfig.inflationYear = 2020;			
 			Map<String, Double> inflationIndices = ApiUtil.getInflationIndices(4, valuationTaskConfig.inflationYear, valuationTaskConfig.useInflationFactors);
 
 			//TODO: 2050 is the hardcoded max based on current data. This could be more dynamic.
