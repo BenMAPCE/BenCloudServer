@@ -1,6 +1,4 @@
--- add new grid tables. make adjustments in the grid_definition table.
-
--- PENDING / DRAFT CHANGES. DO NOT APPLY YET
+-- make adjustments in the grid_definition table.
 
 UPDATE "data".settings SET value_int=36 WHERE "key"='version';
 
