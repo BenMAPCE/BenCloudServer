@@ -2627,6 +2627,30 @@ paths:
           description: Successfully removed a grid definition.
         '204':
           description: Successfully removed a grid definition.
+  /files/{id}:
+    get:
+      summary: Retrieve a file by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: file id
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: File successfully retrieved.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: File not found.
+        "403":
+          description: Forbidden.
+        "400":
+          description: Invalid request.
   /user:
     get:
       summary: Returns the user's id.
