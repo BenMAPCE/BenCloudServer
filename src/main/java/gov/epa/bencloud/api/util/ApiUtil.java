@@ -678,7 +678,7 @@ public class ApiUtil {
         Files.walkFileTree(Paths.get(directoryPath), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (file.toString().endsWith(extension)) {
+                if (file.toString().endsWith(extension) && !file.toString().contains("__MACOSX")) {
                     matchingFiles.add(file);
                 }
                 return FileVisitResult.CONTINUE;
