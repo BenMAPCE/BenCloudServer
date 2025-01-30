@@ -665,6 +665,16 @@ public class ApiRoutes extends RoutesBase {
 			return FilestoreApi.deleteFile(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * GET a single file from the file store
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.get(apiPrefix + "/files/:id", (request, response) -> {
+			return FilestoreApi.getFile(request, response, getUserProfile(request, response));
+		});
+
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */

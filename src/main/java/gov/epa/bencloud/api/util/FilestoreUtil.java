@@ -52,11 +52,7 @@ public class FilestoreUtil {
 	 * @param id
 	 */
 	public static File getFile(Integer id) {
-		// Query file table for fileName and return file
-		String filestorePath = ApplicationUtil.getProperty("file.store.path");
-		
-		//TODO
-		return null;
+		return getFilePath(id).toFile();
 	}
 
 	/*
