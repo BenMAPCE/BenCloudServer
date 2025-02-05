@@ -587,13 +587,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  
 		 */	
 		service.post(apiPrefix + "/batch-tasks/:id/export", (request, response) -> {
-			TaskApi.postResultExportTask(request, response, getUserProfile(request, response));
-			
-			if(response.status() == 400) {
-				return CoreApi.getErrorResponseInvalidId(request, response);
-			}
-
-			return null;
+			return TaskApi.postResultExportTask(request, response, getUserProfile(request, response));
 		});
 		
 		service.get(apiPrefix + "/task-configs", (request, response) -> {
