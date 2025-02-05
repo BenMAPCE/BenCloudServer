@@ -594,9 +594,11 @@ public class ResultExportTaskRunnable implements Runnable {
 			}
 			
 			String fileMetadata = "{\"name\":\"" + zipFileName + ".zip\"}";
-			Integer fsid = FilestoreUtil.putFile(new FileInputStream(tmpZipFile), zipFileName + ".zip", Constants.FILE_TYPE_RESULT_EXPORT, task.getUserIdentifier(), fileMetadata);
-			resultExportTaskConfig.filestoreId = fsid;
-			
+			try (FileInputStream fis = new FileInputStream(tmpZipFile)) {
+				Integer fsid = FilestoreUtil.putFile(fis, zipFileName + ".zip", Constants.FILE_TYPE_RESULT_EXPORT, task.getUserIdentifier(), fileMetadata);
+				resultExportTaskConfig.filestoreId = fsid;
+			} // Ending try will close FileInputStream before delete
+
 			Files.delete(Paths.get(tmpZipFile.getPath()));
 			
 			TaskQueue.updateTaskParameters(task.getUuid(), mapper.writeValueAsString(resultExportTaskConfig));
