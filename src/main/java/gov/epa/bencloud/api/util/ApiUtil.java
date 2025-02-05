@@ -45,6 +45,7 @@ import org.pac4j.core.profile.UserProfile;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.CoreApi;
 import gov.epa.bencloud.api.CrosswalksApi;
 import gov.epa.bencloud.api.HIFApi;
@@ -592,13 +593,13 @@ public class ApiUtil {
 			//TODO: Do we need to remove children task results before removing parent tasks? 
 			// Valuation results have hif tasks as their parents but both hif and valuation results have the same task_batch_id.
 			String uuid = record.getValue(TASK_COMPLETE.TASK_UUID);
-			if (record.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+			if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_HIF)) {
 				TaskUtil.deleteHifResults(uuid, true);
-			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_VALUATION)) {
 				TaskUtil.deleteValuationResults(uuid, true);
-			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Exposure")) {
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_EXPOSURE)) {
 				TaskUtil.deleteExposureResults(uuid, true);
-			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Result Export")) {
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_RESULT_EXPORT)) {
 				TaskUtil.deleteResultExportResults(uuid, true);
 			}
 		}
