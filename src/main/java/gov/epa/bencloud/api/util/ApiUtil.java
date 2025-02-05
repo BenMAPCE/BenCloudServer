@@ -596,10 +596,11 @@ public class ApiUtil {
 				TaskUtil.deleteHifResults(uuid, true);
 			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
 				TaskUtil.deleteValuationResults(uuid, true);
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Exposure")) {
+				TaskUtil.deleteExposureResults(uuid, true);
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Result Export")) {
+				TaskUtil.deleteResultExportResults(uuid, true);
 			}
-			 else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Exposure")) {
-					TaskUtil.deleteExposureResults(uuid, true);
-				}
 		}
 		
 		//delete from batch_task table	
