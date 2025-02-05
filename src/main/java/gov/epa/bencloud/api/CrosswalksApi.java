@@ -1,6 +1,10 @@
 package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
+
+import java.util.Arrays;
+import java.util.List;
+
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.CrosswalkDatasetRecord;
 import org.jooq.impl.DSL;
@@ -88,6 +92,14 @@ public class CrosswalksApi {
 		if (sourceId == targetId) {
 			log.debug("No need for crosswalk as source and target are the same: " + sourceId);
 			return true;
+		}
+
+		List<Integer> gridSourceIds2010 = Arrays.asList(18, 19, 20);
+		List<Integer> gridTargetIds2010 = Arrays.asList(18, 19);
+		List<Integer> gridIds2020 = Arrays.asList(68, 69, 70, 83);
+		if ((gridSourceIds2010.contains(sourceId) && gridIds2020.contains(targetId)) || (gridIds2020.contains(sourceId) || gridTargetIds2010.contains(targetId))) {
+			log.error("Do not create crosswalks for certain grid definitions");
+			return false;
 		}
 
 		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
