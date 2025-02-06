@@ -364,7 +364,7 @@ public class IncidenceApi {
 				.where(INCIDENCE_DATASET.ID.eq(id))
 				.fetchOne();
 		
-		return record.value1();
+		return record==null ? "No name found for id: " + id : record.value1();
 	}
 
 	/**

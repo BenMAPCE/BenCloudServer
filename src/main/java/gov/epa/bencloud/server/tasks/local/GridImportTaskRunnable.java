@@ -290,6 +290,7 @@ public class GridImportTaskRunnable implements Runnable {
 	    	}
 
 	    }
+	    
 	    builder.setName(gridTableName);
 	    builder.setSuperType((SimpleFeatureType) inputType.getSuper());
 	    SimpleFeatureType dbSchema = builder.buildFeatureType();
