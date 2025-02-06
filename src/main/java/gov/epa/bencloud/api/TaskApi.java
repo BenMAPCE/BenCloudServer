@@ -1759,18 +1759,15 @@ public class TaskApi {
 	
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
-				CoreApi.getErrorResponseInvalidId(request, response);
-				return null;
+				return CoreApi.getErrorResponseInvalidId(request, response);
 			} catch (IllegalArgumentException e) {
 				e.printStackTrace();
-				CoreApi.getErrorResponseInvalidId(request, response);
-				return null;
+				return CoreApi.getErrorResponseInvalidId(request, response);
 			}
 			
 			BatchTaskConfig batchTaskConfig = getTaskBatchConfigFromDb(batchId);
 			if(batchTaskConfig==null) {
-				response.status(400);
-				return null;
+				return CoreApi.getErrorResponseNotFound(request, response);
 			}
 			
 			// If a gridId wasn't provided, look up the baseline AQ grid grid for this resultset
@@ -1780,8 +1777,7 @@ public class TaskApi {
 				}
 			} catch (NullPointerException e) {
 				e.printStackTrace();
-				response.status(400);
-				return null;
+				return CoreApi.getErrorResponse(request, response, 404, "Grid definition id not found");
 			}
 				
 			ObjectMapper mapper = new ObjectMapper();
