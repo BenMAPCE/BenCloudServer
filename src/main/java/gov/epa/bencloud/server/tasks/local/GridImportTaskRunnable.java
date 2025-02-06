@@ -4,7 +4,9 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +18,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -23,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.geotools.api.data.DataStore;
 import org.geotools.api.data.DataStoreFinder;
 import org.geotools.api.data.FeatureSource;
+import org.geotools.api.data.FeatureStore;
 import org.geotools.api.data.SimpleFeatureStore;
 import org.geotools.api.feature.simple.SimpleFeature;
 import org.geotools.api.feature.simple.SimpleFeatureType;
@@ -32,6 +36,7 @@ import org.geotools.api.feature.type.GeometryDescriptor;
 import org.geotools.api.feature.type.GeometryType;
 import org.geotools.api.referencing.FactoryException;
 import org.geotools.api.referencing.NoSuchAuthorityCodeException;
+import org.geotools.api.referencing.ReferenceIdentifier;
 import org.geotools.api.referencing.crs.CRSAuthorityFactory;
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.data.postgis.PostgisNGDataStoreFactory;
@@ -47,6 +52,7 @@ import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.referencing.factory.OrderedAxisAuthorityFactory;
 import org.geotools.util.URLs;
+import org.geotools.util.Version;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
@@ -72,6 +78,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
+import gov.epa.bencloud.server.util.ApplicationUtil;
 
 /*
  * Import a user uploaded shapefile as a grid definition.
@@ -95,7 +102,7 @@ public class GridImportTaskRunnable implements Runnable {
 	}
 
 	private boolean taskSuccessful = true;
-
+	
 	public void run() {
 		
 		log.info("Grid Import Task Begin: " + taskUuid);
@@ -136,11 +143,10 @@ public class GridImportTaskRunnable implements Runnable {
 			// This function will guarantee that the geometry column will be named "geom"
 			//  and "col" and "row" will be lowercase
 			String gridTableName=null;
-			try {
-				gridTableName = importShapefile(shapefilePath);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				log.error("Error importing shapefile", e);
+			gridTableName = importShapefile(shapefilePath);
+			
+			if(gridTableName == null) {
+				throw new Exception("Grid file processing failed.");
 			}
 			
 			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
@@ -214,7 +220,6 @@ public class GridImportTaskRunnable implements Runnable {
 	    dbParams.put(PostgisNGDataStoreFactory.DATABASE.key, PooledDataSource.dbName);
 	    dbParams.put(PostgisNGDataStoreFactory.SCHEMA.key, "grids");
 
-	    log.debug("dbParams: " + dbParams.toString());
 	    // Read the shapefile
 	    DataStore inputDataStore = DataStoreFinder.getDataStore(Collections.singletonMap("url", URLs.fileToUrl(inFile)));
 
@@ -227,13 +232,6 @@ public class GridImportTaskRunnable implements Runnable {
 
 	    // Write to database
 	    DataStore dbDataStore = DataStoreFinder.getDataStore(dbParams);    
-	    
-	    log.debug("dbDataStore: " + dbDataStore);
-	    
-	    Iterator it = DataStoreFinder.getAvailableDataStores();
-	    while(it.hasNext()){
-	      log.debug("Available data store: " + it.next());
-	    }
 	    
 	    // Prepend the "g_" on the unique table name to avoid the need to quote it in SQL if it starts with a number
 	    // Also, tables that begin with "g_" will be excluded during jOOQ code generation
@@ -266,7 +264,6 @@ public class GridImportTaskRunnable implements Runnable {
 						try {
 							crs = CRS.parseWKT(wkt);
 						} catch (FactoryException e) {
-							// TODO Throw error: Unable to determine projection of shapefile.
 							e.printStackTrace();
 						}
 
@@ -278,10 +275,10 @@ public class GridImportTaskRunnable implements Runnable {
 	    	        builder.add(att2);
 	    	        builder.setDefaultGeometry(att2.getLocalName());
 	    	    } else {
-	    	        builder.add(att);
+	    	        builder.setCRS(inputType.getCoordinateReferenceSystem());
+	    	    	builder.add(att);
 	    	        builder.setDefaultGeometry(att.getLocalName());
-	    	      }
-	    		
+	    	    }
 	    	} else {
 	    		// See if this is the col or row column
 	    		if(name.equalsIgnoreCase("col")) { 
@@ -315,10 +312,6 @@ public class GridImportTaskRunnable implements Runnable {
 	    	create.execute("alter table grids." + gridTableName + " rename column \"" + rowColumnName + "\" to row;");
 	    }
 	    
-	    //TODO: Analyze tables immediately after creation?
-	    
 	    return gridTableName;
 	}
-	
-	
 }

@@ -265,7 +265,7 @@ public class GridDefinitionApi {
 			try {
 				FileUtils.deleteDirectory(new File(tempFolder));
 			} catch (IOException e) {
-				log.error("Error deleteing temp folder", e);
+				log.error("Error deleting temp folder", e);
 			}
 			FilestoreUtil.deleteFile(filestoreId);
 
