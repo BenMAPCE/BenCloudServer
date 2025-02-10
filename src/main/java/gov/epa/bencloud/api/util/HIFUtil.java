@@ -362,7 +362,7 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 							.fetchAny();
 					//hard-code for 2020 dataset. When population dataset is 2020, use 2020 incidence
-					if(populationId == 50 ||populationId == 51 ||populationId == 52) {
+					if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
 						bestId = DSL.using(JooqUtil.getJooqConfiguration())
 								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 								.from(INCIDENCE_ENTRY)
@@ -391,7 +391,7 @@ public class HIFUtil {
 										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
 								.fetchAny();
 						//hard-code for 2020 dataset. When population dataset is 2020, use 2020 incidence
-						if(populationId == 50 ||populationId == 51 ||populationId == 52) {
+						if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
 							bestId = DSL.using(JooqUtil.getJooqConfiguration())
 									.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 									.from(INCIDENCE_ENTRY)
@@ -505,7 +505,7 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 							.fetchAny();
 					//hard-code for 2020 dataset. When population dataset is 2020, use 2020 prevalence
-					if(populationId == 50 ||populationId == 51 ||populationId == 52) {
+					if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
 						bestId = DSL.using(JooqUtil.getJooqConfiguration())
 								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 								.from(INCIDENCE_ENTRY)
@@ -534,7 +534,7 @@ public class HIFUtil {
 										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
 								.fetchAny();
 						//hard-code for 2020 dataset. When population dataset is 2020, use 2020 prevalence
-						if(populationId == 50 ||populationId == 51 ||populationId == 52) {
+						if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
 							bestId = DSL.using(JooqUtil.getJooqConfiguration())
 									.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 									.from(INCIDENCE_ENTRY)
