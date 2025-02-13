@@ -16,7 +16,7 @@ import org.jooq.Record8;
 import org.jooq.SelectConditionStep;
 
 public class CrosswalksApi {
-	private static final Logger log = LoggerFactory.getLogger(PollutantApi.class);
+	private static final Logger log = LoggerFactory.getLogger(CrosswalksApi.class);
 
 	/**
 	 * calculates the crosswalks between two different grid definitions in both
@@ -103,6 +103,7 @@ public class CrosswalksApi {
 		}
 
 		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
+		// Check and create source to target
 		Record1<Integer> cw = dslContext.select(CROSSWALK_DATASET.ID).from(CROSSWALK_DATASET)
 				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(sourceId).and(CROSSWALK_DATASET.TARGET_GRID_ID.eq(targetId)))
 				.fetchAny();
@@ -113,6 +114,19 @@ public class CrosswalksApi {
 			log.debug("Created crosswalk for " + sourceId + " to " + targetId);
 		} else {
 			log.debug("Crosswalk " + cw.getValue(CROSSWALK_DATASET.ID) + " exists for " + sourceId + " to " + targetId);
+		}
+		
+		// Check and create target to source
+		cw = dslContext.select(CROSSWALK_DATASET.ID).from(CROSSWALK_DATASET)
+				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(targetId).and(CROSSWALK_DATASET.TARGET_GRID_ID.eq(sourceId)))
+				.fetchAny();
+
+		if (cw == null || cw.getValue(CROSSWALK_DATASET.ID) == null) {
+			log.debug("Creating crosswalk for " + targetId + " to " + sourceId);
+			calculateAreaWeights(targetId, sourceId);
+			log.debug("Created crosswalk for " + targetId + " to " + sourceId);
+		} else {
+			log.debug("Crosswalk " + cw.getValue(CROSSWALK_DATASET.ID) + " exists for " + targetId + " to " + sourceId);
 		}
 		// TODO: Update this to return false if an error occurs
 		return true;
