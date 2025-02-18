@@ -280,9 +280,12 @@ public class HIFUtil {
 			int raceId = (Integer) function.get("race_id");
 			int genderId = (Integer) function.get("gender_id");
 			int ethnicityId = (Integer) function.get("ethnicity_id");
+			int startAge  = (Integer) function.get("start_age");
+			int endAge  = (Integer) function.get("end_age");
 			String functionText = function.get("function_text").toString().toLowerCase();
 			boolean isPrevalenceFunction = functionText.contains("prevalence");
 			boolean isIncidenceFunction = functionText.contains("incidence");
+			boolean useEPADefault = defaultIncidencePrevalenceDataset == -1 ? true : false;
 			boolean defaultDatasetSupportsIncidenceForEndpoint = false;
 			boolean defaultDatasetSupportsPrevalenceForEndpoint = false;
 			
@@ -292,14 +295,18 @@ public class HIFUtil {
 			int prevalenceRace = 0;
 			int prevalenceEthnicity = 0;
 			int prevalenceGender = 0;
+			int incidenceStartAge = 0;
+			int incidenceEndAge = 0;
 
 			if (isIncidenceFunction) {
 				
-				//step 1: check if the default dataset a perfect match	
-				if(defaultIncidencePrevalenceDataset != 0) {
+				//step 1: check if the default dataset a perfect match, non-EPA defaults
+				if(defaultIncidencePrevalenceDataset != 0 && !useEPADefault) {
 					incidenceRace = raceId;
 					incidenceEthnicity = ethnicityId;
 					incidenceGender = genderId;
+					incidenceStartAge = startAge;
+					incidenceEndAge = endAge;
 					Record1<Integer> countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
 							.select(DSL.count())
 							.from(INCIDENCE_ENTRY)
@@ -308,8 +315,25 @@ public class HIFUtil {
 									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.START_AGE.eq((short) startAge))
+									.and(INCIDENCE_ENTRY.END_AGE.eq((short) endAge)))
 							.fetchOne();
+
+					//if there is no perfect match, check for partial age range matching
+					if(countIncidence.value1() == 0) {
+						countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+							.select(DSL.count())
+							.from(INCIDENCE_ENTRY)
+							.where((INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset))
+									.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge))))
+							.fetchOne();
+					}
 					
 					//step 2: if the default dataset is not a perfect match, check if it's a partial match (dataset's group (e.g. ALL) includes hif group (e.g. White))
 //					if(countIncidence.value1() <= 0 && userPrefered) {
@@ -328,6 +352,45 @@ public class HIFUtil {
 //								.fetchAny();				
 //					}
 					defaultDatasetSupportsIncidenceForEndpoint = countIncidence.value1() > 0;
+				//step 1: check if the default dataset a perfect match within the EPA default functions
+				} else if(defaultIncidencePrevalenceDataset != 0 && useEPADefault) {
+					incidenceRace = raceId;
+					incidenceEthnicity = ethnicityId;
+					incidenceGender = genderId;
+					incidenceStartAge = startAge;
+					incidenceEndAge = endAge;
+					Record1<Integer> countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+					.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+							.from(INCIDENCE_ENTRY)
+							.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(1,2,3,4,5)
+									.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.START_AGE.eq((short) startAge))
+									.and(INCIDENCE_ENTRY.END_AGE.eq((short) endAge)))
+							.fetchAny();
+
+					//if there is no perfect match, check for partial age range matching
+					if(countIncidence == null) {
+						countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+						.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+							.from(INCIDENCE_ENTRY)
+							.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(1,2,3,4,5)
+									.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge))))
+							.fetchAny();
+
+					}
+					defaultDatasetSupportsIncidenceForEndpoint = countIncidence == null ? false : true;
+					if(defaultDatasetSupportsIncidenceForEndpoint) {
+						defaultIncidencePrevalenceDataset = countIncidence.value1();
+					}
 				}
 				
 				if (defaultDatasetSupportsIncidenceForEndpoint) {
@@ -351,16 +414,33 @@ public class HIFUtil {
 					
 					//TODO: I think this logic will work with existing datasets, but we will need to expand this to pull multiple records and then allow the user to choose 
 					// since there could be more than one "best" id.
-
-					Record1<Integer> bestId = DSL.using(JooqUtil.getJooqConfiguration())
+					Record1<Integer> bestId = null;
+					if(!useEPADefault) {
+						bestId = DSL.using(JooqUtil.getJooqConfiguration())
 							.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 							.from(INCIDENCE_ENTRY)
 							.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
 									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.START_AGE.eq((short) startAge))
+									.and(INCIDENCE_ENTRY.END_AGE.eq((short) endAge)))
 							.fetchAny();
+						if(bestId == null || bestId.value1() == null) {
+							bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+										.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge))))
+								.fetchAny();
+						}
+					}
+					
 					//hard-code for 2020 dataset. When population dataset is 2020, use 2020 incidence
 					if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
 						bestId = DSL.using(JooqUtil.getJooqConfiguration())
@@ -370,9 +450,24 @@ public class HIFUtil {
 										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+										.and(INCIDENCE_ENTRY.START_AGE.eq((short) startAge))
+										.and(INCIDENCE_ENTRY.END_AGE.eq((short) endAge))
+										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9)))
 								.fetchAny();
+						if(bestId == null || bestId.value1() == null) {
+							bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+										.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge)))
+										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9)))
+								.fetchAny();
+						}
 					}
 					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
@@ -388,7 +483,8 @@ public class HIFUtil {
 										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
-										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3))
+										.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge))))
 								.fetchAny();
 						//hard-code for 2020 dataset. When population dataset is 2020, use 2020 incidence
 						if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
@@ -399,8 +495,9 @@ public class HIFUtil {
 											.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 											.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
 											.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
-											.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
-											.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+											.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3))
+											.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge)))
+											.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9)))
 									.fetchAny();
 						}
 						

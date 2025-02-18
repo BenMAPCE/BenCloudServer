@@ -175,7 +175,30 @@ public class IncidenceApi {
 				aqGridId)
 				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
 		
-		
+		//If there are no incidence records in the dataset for the given race/gender/ethnicity, get records for ALL/ALL/ALL
+		//The incidence selection logic will default to a dataset with ALL/ALL/ALL in this scenario
+		//Without this, the baseline incidence will = 0 and no result will be calculated
+		if(incRecords.entrySet().size() == 0) {
+			arrRaceId[0] = 6;
+			arrEthnicityId[0] = 4;
+			arrGenderId[0] = 4;
+			incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
+				incPrevId,
+				incPrevYear,
+				h.get("endpoint_id", Integer.class), 
+				arrRaceId, 
+				arrEthnicityId,
+				arrGenderId,
+				hifConfig.startAge.shortValue(), 
+				hifConfig.endAge.shortValue(), 
+				false,
+				false,
+				false, 
+				true, 
+				aqGridId)
+				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
+		}
+
 		// Get the age groups for the population dataset
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 
