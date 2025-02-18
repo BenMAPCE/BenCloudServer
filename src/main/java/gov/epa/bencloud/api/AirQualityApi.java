@@ -1013,12 +1013,12 @@ public class AirQualityApi {
 					double dbl = Double.parseDouble(str);
 					if (dbl<0) {
 						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid as it is less than 0."+ "\r\n";
-						countValueTypeError ++;
+						countValueError ++;
 					}
 				}
 				catch(NumberFormatException e){
 					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid double."+ "\r\n";
-					countValueError ++;
+					countValueTypeError ++;
 				}
 				
 				//metric-seasonal metric-annual statistics should be unique
@@ -1072,16 +1072,17 @@ public class AirQualityApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countValueTypeError == 1) {
-					strRecord = String.valueOf(countValueTypeError) + " record has air quality values that is not a valid number.";
+					strRecord = String.valueOf(countValueTypeError) + " record contains an unepected air quality value.";
 				}
 				else {
-					strRecord = String.valueOf(countValueTypeError) + " records have  air quality values that are not valid numbers.";
+					strRecord = String.valueOf(countValueTypeError) + " records contain unepected air quality values.";
 				}
-				msg.message = strRecord + "";
+				msg.message = strRecord + " Each record must contain a single, positive numeric value.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(countValueError > 0) {
+				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countValueError == 1) {
