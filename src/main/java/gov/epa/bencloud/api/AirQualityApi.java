@@ -1145,7 +1145,7 @@ public class AirQualityApi {
 			
 			if(!validationMsg.success) {
 				response.type("application/json");
-				//response.status(400);
+				response.status(400);
 				return CoreApi.transformValMsgToJSON(validationMsg); 
 			}
 							
@@ -1155,7 +1155,7 @@ public class AirQualityApi {
 		} catch (Exception e) {
 			log.error("Error validating AQ file", e);
 			response.type("application/json");
-			//response.status(400);
+			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
@@ -1288,7 +1288,7 @@ public class AirQualityApi {
 			log.error("Error importing AQ file", e);
 			
 			response.type("application/json");
-			//response.status(400);
+			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of air quality file."));
 			deleteAirQualityLayerDefinition(aqLayerId, userProfile);
