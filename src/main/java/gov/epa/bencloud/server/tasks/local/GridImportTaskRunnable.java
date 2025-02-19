@@ -238,15 +238,25 @@ public class GridImportTaskRunnable implements Runnable {
 	    String gridTableName = "g_" + UUID.randomUUID().toString().replace("-", "");
 	    
 	    SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-	    
-	    //Inspect the shapefile and make note of the names of the geom, col, and row fields
-	    // Sometimes the geom column might be named something else (e.g. the_geom or geometry) and col/row might be proper or upper case (e.g. Col or COL)
-	    // We currently use SQL alter table commands below to fix the key columns after the table is created
 	    String geomColumnName = null;
 	    String colColumnName = null;
 	    String rowColumnName = null;
 	    AttributeTypeBuilder attributeBuilder = new AttributeTypeBuilder();
-	    
+
+		// NAD83 PRJ from PostGIS
+		// TODO: Find more elegant way to handle this
+		String wkt = "GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]]";
+        CoordinateReferenceSystem crsNAD83 = null;
+		try {
+			crsNAD83 = CRS.parseWKT(wkt);
+		} catch (FactoryException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+	    //Inspect the shapefile and make note of the names of the geom, col, and row fields
+	    // Sometimes the geom column might be named something else (e.g. the_geom or geometry) and col/row might be proper or upper case (e.g. Col or COL)
+	    // We currently use SQL alter table commands below to fix the key columns after the table is created
 	    for (AttributeDescriptor att : inputType.getAttributeDescriptors()) {
 	    	String name = att.getLocalName();
 	    	AttributeType type = att.getType();
@@ -256,21 +266,10 @@ public class GridImportTaskRunnable implements Runnable {
 
 	    	    if (inputType.getCoordinateReferenceSystem() == null) {
 	    	        // The geometry column doesn't have a CRS so let's hope it's NAD83 and try it
-	    	        CoordinateReferenceSystem crs = null;
-
-						// NAD83 PRJ from PostGIS
-						// TODO: Find more elegant way to handle this
-						String wkt = "GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]]";
-						try {
-							crs = CRS.parseWKT(wkt);
-						} catch (FactoryException e) {
-							e.printStackTrace();
-						}
-
-	    	        builder.setCRS(crs);
+	    	        builder.setCRS(crsNAD83);
 	    	        GeometryDescriptor g = inputType.getGeometryDescriptor();
 	    	        attributeBuilder.init(g);
-	    	        attributeBuilder.setCRS(crs);
+	    	        attributeBuilder.setCRS(crsNAD83);
 	    	        GeometryDescriptor att2 = (GeometryDescriptor) attributeBuilder.buildDescriptor(g.getLocalName());
 	    	        builder.add(att2);
 	    	        builder.setDefaultGeometry(att2.getLocalName());
@@ -290,10 +289,16 @@ public class GridImportTaskRunnable implements Runnable {
 	    	}
 
 	    }
-	    
+	    //Convert to NAD83 if needed
+	    if(! inputType.getCoordinateReferenceSystem().getName().equals(crsNAD83.getName())) { 
+		    inputType = SimpleFeatureTypeBuilder.retype(inputType, crsNAD83);	 
+		    builder.setCRS(crsNAD83);
+	    }
+
 	    builder.setName(gridTableName);
 	    builder.setSuperType((SimpleFeatureType) inputType.getSuper());
 	    SimpleFeatureType dbSchema = builder.buildFeatureType();
+	    
 	    dbDataStore.createSchema(dbSchema);
 	    SimpleFeatureStore dbFeatureStore = (SimpleFeatureStore) dbDataStore.getFeatureSource(gridTableName);
 	    dbFeatureStore.addFeatures(inputFeatureCollection);
