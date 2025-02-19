@@ -287,12 +287,6 @@ public class GridImportTaskRunnable implements Runnable {
 	    		}
 	    		builder.add(att);
 	    	}
-
-	    }
-	    //Convert to NAD83 if needed
-	    if(! inputType.getCoordinateReferenceSystem().getName().equals(crsNAD83.getName())) { 
-		    inputType = SimpleFeatureTypeBuilder.retype(inputType, crsNAD83);	 
-		    builder.setCRS(crsNAD83);
 	    }
 
 	    builder.setName(gridTableName);
