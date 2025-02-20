@@ -1072,10 +1072,10 @@ public class AirQualityApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countValueTypeError == 1) {
-					strRecord = String.valueOf(countValueTypeError) + " record contains an unepected air quality value.";
+					strRecord = String.valueOf(countValueTypeError) + " record contains an unexpected air quality value.";
 				}
 				else {
-					strRecord = String.valueOf(countValueTypeError) + " records contain unepected air quality values.";
+					strRecord = String.valueOf(countValueTypeError) + " records contain unexpected air quality values.";
 				}
 				msg.message = strRecord + " Each record must contain a single, positive numeric value.";
 				msg.type = "error";
