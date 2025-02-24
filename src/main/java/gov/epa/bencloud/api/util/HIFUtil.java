@@ -290,7 +290,7 @@ public class HIFUtil {
 
 			//get list of EPA datasets for the given population year
 			List<Integer> incidenceOptions = (populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) ? 
-				new ArrayList<Integer>(Arrays.asList(3,66,67,68,69)) : 
+				new ArrayList<Integer>(Arrays.asList(3,6,7,8,9)) : 
 				new ArrayList<Integer>(Arrays.asList(1,2,3,4,5));
 			
 			//if a user-uploaded dataset was selected, add user-uploaded datasets to the list of incidence options
