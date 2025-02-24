@@ -668,6 +668,19 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/files/:id", (request, response) -> {
 			return FilestoreApi.getFile(request, response, getUserProfile(request, response));
 		});
+		/*
+		 * GET a file ID for a export task
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.get(apiPrefix + "/task-complete/:id", (request, response) -> {
+			return TaskApi.getExportFileID(request, response, getUserProfile(request, response));
+		});
+		
+		
+		
+
+	}
 
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
@@ -713,6 +726,7 @@ public class ApiRoutes extends RoutesBase {
 
 		// });
 		
-	}
+	
+	
 
 }
