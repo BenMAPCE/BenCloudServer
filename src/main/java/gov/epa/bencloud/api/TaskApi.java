@@ -1531,8 +1531,8 @@ public class TaskApi {
 				valuationResultDatasetIds = create.select()
 						.from(VALUATION_RESULT_DATASET)
 						.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-						.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
-						.where(HIF_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+						.join(HIF_RESULT_FUNCTION_CONFIG).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID))
+						.where(HIF_RESULT_FUNCTION_CONFIG.TASK_UUID.eq(taskUuid))
 						.fetch(VALUATION_RESULT_DATASET.ID);
 			}
 			else if(uuidType.equals("V")) {
@@ -1822,7 +1822,7 @@ public class TaskApi {
 			return CoreApi.getSuccessResponse(request, response, 200, "Export request submitted for processing.");
 		}
 
-		public static Object getCompletedTaskParameters(Request request, Response response, Optional<UserProfile> userProfile) {
+		public static Object getExportFileID(Request request, Response response, Optional<UserProfile> userProfile) {
 			Integer batchTaskId;
 			try {
 				batchTaskId = Integer.valueOf(request.params("id"));
@@ -1847,10 +1847,8 @@ public class TaskApi {
 				ObjectMapper objectMapper = new ObjectMapper();
 				JsonNode jsonNode = objectMapper.readTree(parameters);
 				int filestoreId = jsonNode.get("filestoreId").asInt();
-				ObjectNode result = objectMapper.createObjectNode();
-				result.put("filestoreId", filestoreId);
 				response.type("application/json");
-				return result;
+				return objectMapper.createObjectNode().put("filestoreId", filestoreId);
 			} catch (JsonProcessingException e) {
 				e.printStackTrace();
 				return CoreApi.getErrorResponse(request, response, 400, "Unable to parse task parameters");
