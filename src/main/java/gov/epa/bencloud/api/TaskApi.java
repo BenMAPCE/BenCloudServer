@@ -1830,25 +1830,27 @@ public class TaskApi {
 				e.printStackTrace();
 				return CoreApi.getErrorResponseInvalidId(request, response);
 			}
-	
+
 			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 			Record record = create
 					.select(TASK_COMPLETE.TASK_PARAMETERS)
 					.from(TASK_COMPLETE)
 					.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchTaskId))
 					.fetchOne();
-	
+
 			if (record == null) {
 				return CoreApi.getErrorResponseNotFound(request, response);
 			}
-	
+
 			String parameters = record.get(TASK_COMPLETE.TASK_PARAMETERS);
 			try {
 				ObjectMapper objectMapper = new ObjectMapper();
 				JsonNode jsonNode = objectMapper.readTree(parameters);
 				int filestoreId = jsonNode.get("filestoreId").asInt();
+				ObjectNode result = objectMapper.createObjectNode();
+				result.put("filestoreId", filestoreId);
 				response.type("application/json");
-				return objectMapper.createObjectNode().put("filestoreId", filestoreId);
+				return result;
 			} catch (JsonProcessingException e) {
 				e.printStackTrace();
 				return CoreApi.getErrorResponse(request, response, 400, "Unable to parse task parameters");
