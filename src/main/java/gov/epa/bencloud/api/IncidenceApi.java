@@ -147,17 +147,27 @@ public class IncidenceApi {
 		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revisited.
 				
 		//Convert race, ethnicity, gender to single element arrays
-		Integer[] arrRaceId = new Integer[1];
+		Integer[] arrRaceId = new Integer[2];
 		arrRaceId[0] = raceId;
-		Integer[] arrEthnicityId = new Integer[1];
+		if(raceId == 6) {
+			arrRaceId[1] = 5;
+		}
+		Integer[] arrEthnicityId = new Integer[2];
 		arrEthnicityId[0] = ethnicityId;
-		Integer[] arrGenderId = new Integer[1];
+		if(ethnicityId == 4) {
+			arrEthnicityId[1] = 3;
+		}
+		Integer[] arrGenderId = new Integer[2];
 		arrGenderId[0] = genderId;
+		if(genderId == 4) {
+			arrGenderId[1] = 3;
+		}
 
 		Integer aqGridId = AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId);
 		
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(getIncidenceGridDefinitionId(incPrevId),aqGridId);
+		
 
 		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
