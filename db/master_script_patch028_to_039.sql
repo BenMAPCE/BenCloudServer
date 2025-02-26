@@ -21,8 +21,6 @@
 \i patch-033.sql
 \i patch-034.sql
 \i patch-035.sql
-\i patch-036.sql
-\i patch-037.sql
 
 --2020 datasets. 
 \i grid_definition_2020.sql
@@ -51,6 +49,8 @@
 \i population_growth_weight_2020_County.sql
 \i post_adding_2020_County_data.sql
 
+\i patch-036.sql
+\i patch-037.sql
 \i patch-038.sql
 \i patch-039.sql
 
