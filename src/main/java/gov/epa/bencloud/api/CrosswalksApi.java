@@ -121,6 +121,10 @@ public class CrosswalksApi {
 			log.debug("No need for crosswalk as source and target are the same: " + sourceId);
 			return true;
 		}
+		if (targetId==0) {
+			log.debug("No need to create crosswalk for targetId 0.");
+			return true;
+		}
 
 		List<Integer> gridSourceIds2010 = Arrays.asList(18, 19, 20);
 		List<Integer> gridTargetIds2010 = Arrays.asList(18, 19);
@@ -129,6 +133,7 @@ public class CrosswalksApi {
 			log.error("Do not create crosswalks for certain grid definitions");
 			return false;
 		}
+		
 
 		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
 		// Check and create source to target
