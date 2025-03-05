@@ -9,6 +9,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.GENDER;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.GET_EXPOSURE_RESULTS;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.GET_HIF_RESULTS;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.GET_VALUATION_RESULTS;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.HEALTH_IMPACT_FUNCTION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.HIF_RESULT_DATASET;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.HIF_RESULT_FUNCTION_CONFIG;
@@ -29,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -169,6 +171,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				// Stream .ZIP file to the temp file
 				zipStream = new ZipOutputStream(fos);
 			} catch (java.io.IOException e1) {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
 				log.error("Error getting output stream", e1);
 				return;
 			}
@@ -209,7 +212,19 @@ public class ResultExportTaskRunnable implements Runnable {
 						Result<?> efRecordsClean = null;
 						try {
 							//If the crosswalk isn't there, create it now
-							CrosswalksApi.ensureCrosswalkExists(batchTaskConfig.gridDefinitionId, gridIds[i]);
+							if(!CrosswalksApi.ensureCrosswalkExists(batchTaskConfig.gridDefinitionId, gridIds[i])) {
+								List<Integer> gridDefinitionIds = Arrays.asList(batchTaskConfig.gridDefinitionId, gridIds[i]);
+								List<String> gridDefinitionNames = create
+										.select(GRID_DEFINITION.NAME)
+										.from(GRID_DEFINITION)
+										.where(GRID_DEFINITION.ID.in(gridDefinitionIds))
+										.orderBy(GRID_DEFINITION.ID.sortAsc(gridDefinitionIds))
+										.fetch(GRID_DEFINITION.NAME);
+								String errorMessage = "Could not convert from grid \"" + gridDefinitionNames.get(0) + "\" to \"" + gridDefinitionNames.get(1) + "\"";
+								TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
+								log.error("Task failed");
+								return;
+							}
 							
 							Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 									GET_EXPOSURE_RESULTS(
@@ -262,8 +277,8 @@ public class ResultExportTaskRunnable implements Runnable {
 							
 							efRecordsClean = efRecords;
 						} catch(DataAccessException e) {
-							e.printStackTrace();
-							//TODO: capture the error and cancel the task
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+							log.error("Task failed", e);
 							return;
 						}	
 						try {						
@@ -324,7 +339,19 @@ public class ResultExportTaskRunnable implements Runnable {
 						//hifRecordsClean = HIFApi.getHifResultRecordsClean(gridIds[i], hifResultDatasetId) //use this instead?
 						
 						//If the crosswalk isn't there, create it now
-						CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
+						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
+							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
+							List<String> gridDefinitionNames = create
+									.select(GRID_DEFINITION.NAME)
+									.from(GRID_DEFINITION)
+									.where(GRID_DEFINITION.ID.in(gridDefinitionIds))
+									.orderBy(GRID_DEFINITION.ID.sortAsc(gridDefinitionIds))
+									.fetch(GRID_DEFINITION.NAME);
+							String errorMessage = "Could not convert from grid \"" + gridDefinitionNames.get(0) + "\" to \"" + gridDefinitionNames.get(1) + "\"";
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
+							log.error("Task failed");
+							return;
+						}
 						try {
 							Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 								GET_HIF_RESULTS(
@@ -401,8 +428,8 @@ public class ResultExportTaskRunnable implements Runnable {
 							//Remove percentiles by keeping all other fields
 							hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
 						} catch(DataAccessException e) {
-							e.printStackTrace();
-							//TODO: capture the error and cancel the task
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+							log.error("Task failed", e);
 							return;
 						}	
 						try {						
@@ -463,7 +490,19 @@ public class ResultExportTaskRunnable implements Runnable {
 						//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
 						
 						//If the crosswalk isn't there, create it now
-						CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
+						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
+							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
+							List<String> gridDefinitionNames = create
+									.select(GRID_DEFINITION.NAME)
+									.from(GRID_DEFINITION)
+									.where(GRID_DEFINITION.ID.in(gridDefinitionIds))
+									.orderBy(GRID_DEFINITION.ID.sortAsc(gridDefinitionIds))
+									.fetch(GRID_DEFINITION.NAME);
+							String errorMessage = "Could not convert from grid \"" + gridDefinitionNames.get(0) + "\" to \"" + gridDefinitionNames.get(1) + "\"";
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
+							log.error("Task failed");
+							return;
+						}
 						try {
 							Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 									GET_VALUATION_RESULTS(
@@ -556,8 +595,8 @@ public class ResultExportTaskRunnable implements Runnable {
 							//Remove percentiles by keeping all other fields
 							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
 						} catch(DataAccessException e) {
-							e.printStackTrace();
-							//TODO: capture the error and cancel the task
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+							log.error("Task failed", e);
 							return;
 						}	
 						try {						
