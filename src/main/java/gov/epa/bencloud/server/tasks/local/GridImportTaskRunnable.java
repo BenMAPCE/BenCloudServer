@@ -1,5 +1,8 @@
 package gov.epa.bencloud.server.tasks.local;
 
+
+
+
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.io.File;
@@ -85,6 +88,7 @@ import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 import gov.epa.bencloud.server.util.ApplicationUtil;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 
 /*
  * Import a user uploaded shapefile as a grid definition.
@@ -95,6 +99,7 @@ public class GridImportTaskRunnable implements Runnable {
     
 	private String taskUuid;
 	private String taskWorkerUuid;
+	private ValidationMessage validationMsg = new ValidationMessage();
 
 
 	/**
@@ -159,6 +164,9 @@ public class GridImportTaskRunnable implements Runnable {
 			
 			Record gridStats = create.fetchOne("select count(distinct col) as col_count, count(distinct row) as row_count from grids." + gridTableName);
 			
+			 // Calculate native bounds
+            ReferencedEnvelope bounds = calculateNativeBounds(shapefilePath);
+            
 			// TODO: Make sure and update the messages object with meaningful progress along the way and also increment the task percentage to show progress
 
 			// Create record in grid_definition table with grid name, table name, and user info
@@ -182,59 +190,60 @@ public class GridImportTaskRunnable implements Runnable {
 			
 			gridImportTaskLog.getGridImportTaskConfig().gridDefinitionId = gridRecord.getId();
 
-		// Publish the new grid to GeoServer
-// try {
-//     String geoserverUrl = "http://colo-wtest-1:8080/geoserver/rest/workspaces/benmap/datastores/benmap_grids/featuretypes";
-//     String auth = "Basic " + Base64.getEncoder().encodeToString("admin:geoserver".getBytes());
-// 	String jsonPayload = "{ \"featureType\": {"
-//     + " \"name\": \"" + this.taskUuid + "\","
-//     + " \"nativeName\": \"" + this.taskUuid + "\","
-//     + " \"title\": \"" + this.taskUuid + "\","
-//     + " \"srs\": \"EPSG:4326\","
-//     + " \"nativeBoundingBox\": {"
-//     + "   \"minx\": -180.0,"
-//     + "   \"maxx\": 180.0,"
-//     + "   \"miny\": -90.0,"
-//     + "   \"maxy\": 90.0,"
-//     + "   \"crs\": \"EPSG:4326\""
-//     + " },"
-//     + " \"store\": { \"name\": \"benmap_grids\" },"
-//     + " \"attributes\": {"
-//     + "   \"attribute\": ["
-//     + "     { \"name\": \"col\", \"binding\": \"java.lang.Integer\" },"
-//     + "     { \"name\": \"row\", \"binding\": \"java.lang.Integer\" },"
-//     + "     { \"name\": \"geom\", \"binding\": \"org.locationtech.jts.geom.Geometry\" }"
-//     + "   ]"
-//     + " }"
-//     + "} }";
-//     URL url = new URL(geoserverUrl);
-//     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//     connection.setRequestMethod("POST");
-//     connection.setRequestProperty("Authorization", auth);
-//     connection.setRequestProperty("Content-Type", "application/json");
-//     connection.setDoOutput(true);
+		//Publish the new grid to GeoServer
+try {
+    String geoserverUrl = "http://colo-wtest-1:8080/geoserver/rest/workspaces/benmap/datastores/benmap_grids/featuretypes";
+	// String geoserverUrl = "http://localhost:8080/geoserver/rest/workspaces/benmap_bw/datastores/benmap/featuretypes";
+	log.info(gridTableName);
+    String auth = "Basic " + Base64.getEncoder().encodeToString("admin:geoserver".getBytes());
+	String jsonPayload = "{ \"featureType\": {"
+    + " \"name\": \"" + gridTableName + "\","
+    + " \"nativeName\": \"" + gridTableName + "\","
+    + " \"title\": \"" + gridTableName + "\","
+    + " \"srs\": \"EPSG:4326\","
+    + " \"nativeBoundingBox\": {"
+    + "   \"minx\": " + bounds.getMinX() + ","
+    + "   \"maxx\": " + bounds.getMaxX() + ","
+    + "   \"miny\": " + bounds.getMinY() + ","
+    + "   \"maxy\": " + bounds.getMaxY() + ","
+    + "   \"crs\": \"EPSG:4326\""
+    + " },"
+	//change this store name if testing on local geoserver vs. colo
+    + " \"store\": { \"name\": \"benmap_grids\" },"
+    + " \"attributes\": {"
+    + "   \"attribute\": ["
+    + "     { \"name\": \"col\", \"binding\": \"java.lang.Integer\" },"
+    + "     { \"name\": \"row\", \"binding\": \"java.lang.Integer\" },"
+    + "     { \"name\": \"geom\", \"binding\": \"org.locationtech.jts.geom.Geometry\" }"
+    + "   ]"
+    + " }"
+    + "} }";
+    URL url = new URL(geoserverUrl);
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    connection.setRequestMethod("POST");
+    connection.setRequestProperty("Authorization", auth);
+    connection.setRequestProperty("Content-Type", "application/json");
+    connection.setDoOutput(true);
 
-//     try (OutputStream os = connection.getOutputStream()) {
-//         byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
-//         os.write(input, 0, input.length);
-//     }
+    try (OutputStream os = connection.getOutputStream()) {
+        byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+        os.write(input, 0, input.length);
+    }
 
-//     int responseCode = connection.getResponseCode();
-//     if (responseCode != 201) {
-//         try (InputStream errorStream = connection.getErrorStream()) {
-//             String errorMessage = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
-//             log.error("Failed to publish grid to GeoServer. Response code: " + responseCode + ". Error message: " + errorMessage);
-//         }
-//         validationMsg.success = false;
-//         validationMsg.messages.add(new ValidationMessage.Message("error", "Failed to publish grid to GeoServer."));
-//         return CoreApi.transformValMsgToJSON(validationMsg);
-//     }
-// } catch (Exception e) {
-//     log.error("Error publishing grid to GeoServer", e);
-//     validationMsg.success = false;
-//     validationMsg.messages.add(new ValidationMessage.Message("error", "Error publishing grid to GeoServer."));
-//     return CoreApi.transformValMsgToJSON(validationMsg);
-// }
+    int responseCode = connection.getResponseCode();
+    if (responseCode != 201) {
+        try (InputStream errorStream = connection.getErrorStream()) {
+            String errorMessage = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+            log.error("Failed to publish grid to GeoServer. Response code: " + responseCode + ". Error message: " + errorMessage);
+        }
+        validationMsg.success = false;
+        validationMsg.messages.add(new ValidationMessage.Message("error", "Failed to publish grid to GeoServer."));
+	}
+} catch (Exception e) {
+    log.error("Error publishing grid to GeoServer", e);
+    validationMsg.success = false;
+    validationMsg.messages.add(new ValidationMessage.Message("error", "Error publishing grid to GeoServer."));
+}
 			
 			// Remove temp files
 			FileUtils.deleteDirectory(new File(tempFolder));
@@ -264,6 +273,16 @@ public class GridImportTaskRunnable implements Runnable {
 			log.error("Task failed", e);
 		}
 		log.info("Grid Import Task Complete: " + taskUuid);
+	}
+
+	private ReferencedEnvelope calculateNativeBounds(Path shapefilePath) throws IOException {
+		File inFile = shapefilePath.toFile();
+		DataStore inputDataStore = DataStoreFinder.getDataStore(Collections.singletonMap("url", URLs.fileToUrl(inFile)));
+		String inputTypeName = inputDataStore.getTypeNames()[0];
+		FeatureSource<SimpleFeatureType, SimpleFeature> source = inputDataStore.getFeatureSource(inputTypeName);
+		ReferencedEnvelope bounds = source.getBounds();
+		inputDataStore.dispose();
+		return bounds;
 	}
 
 	public static String importShapefile(Path filePath) throws IOException {
