@@ -409,60 +409,7 @@ public class GridDefinitionApi {
 		String gridImportTaskUUID = UUID.randomUUID().toString();
 		gridImportTask.setUuid(gridImportTaskUUID);
 		TaskQueue.writeTaskToQueue(gridImportTask);
-
-		// Publish the new grid to GeoServer
-try {
-    String geoserverUrl = "http://colo-wtest-1:8080/geoserver/rest/workspaces/benmap/datastores/benmap_grids/featuretypes";
-    String auth = "Basic " + Base64.getEncoder().encodeToString("admin:geoserver".getBytes());
-	String jsonPayload = "{ \"featureType\": {"
-    + " \"name\": \"" + gridImportTaskUUID + "\","
-    + " \"nativeName\": \"" + gridImportTaskUUID + "\","
-    + " \"title\": \"" + gridImportTaskUUID + "\","
-    + " \"srs\": \"EPSG:4326\","
-    + " \"nativeBoundingBox\": {"
-    + "   \"minx\": -180.0,"
-    + "   \"maxx\": 180.0,"
-    + "   \"miny\": -90.0,"
-    + "   \"maxy\": 90.0,"
-    + "   \"crs\": \"EPSG:4326\""
-    + " },"
-    + " \"store\": { \"name\": \"benmap_grids\" },"
-    + " \"attributes\": {"
-    + "   \"attribute\": ["
-    + "     { \"name\": \"col\", \"binding\": \"java.lang.Integer\" },"
-    + "     { \"name\": \"row\", \"binding\": \"java.lang.Integer\" },"
-    + "     { \"name\": \"geom\", \"binding\": \"org.locationtech.jts.geom.Geometry\" }"
-    + "   ]"
-    + " }"
-    + "} }";
-    URL url = new URL(geoserverUrl);
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    connection.setRequestMethod("POST");
-    connection.setRequestProperty("Authorization", auth);
-    connection.setRequestProperty("Content-Type", "application/json");
-    connection.setDoOutput(true);
-
-    try (OutputStream os = connection.getOutputStream()) {
-        byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
-        os.write(input, 0, input.length);
-    }
-
-    int responseCode = connection.getResponseCode();
-    if (responseCode != 201) {
-        try (InputStream errorStream = connection.getErrorStream()) {
-            String errorMessage = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
-            log.error("Failed to publish grid to GeoServer. Response code: " + responseCode + ". Error message: " + errorMessage);
-        }
-        validationMsg.success = false;
-        validationMsg.messages.add(new ValidationMessage.Message("error", "Failed to publish grid to GeoServer."));
-        return CoreApi.transformValMsgToJSON(validationMsg);
-    }
-} catch (Exception e) {
-    log.error("Error publishing grid to GeoServer", e);
-    validationMsg.success = false;
-    validationMsg.messages.add(new ValidationMessage.Message("error", "Error publishing grid to GeoServer."));
-    return CoreApi.transformValMsgToJSON(validationMsg);
-}
+		
 		// Return success
 		return CoreApi.getSuccessResponse(request, response, 200, "Shapefile saved for processing: " + filestoreId);
 	}
