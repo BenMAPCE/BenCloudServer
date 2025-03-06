@@ -113,15 +113,15 @@ public class ValuationApi {
 		List<Integer> hifIds = (hifIdsParam == null || hifIdsParam.equals("")) ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		List<Integer> vfIds = (vfIdsParam == null || vfIdsParam.equals(""))? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		
-		try {
-			if(gridId == 0) {
-				gridId = ValuationApi.getBaselineGridForValuationResults(id).intValue();
-			}
-		} catch (NullPointerException e) {
-			e.printStackTrace();
-			response.status(400);
-			return;
-		}
+//		try {
+//			if(gridId == 0) {
+//				gridId = ValuationApi.getBaselineGridForValuationResults(id).intValue();
+//			}
+//		} catch (NullPointerException e) {
+//			e.printStackTrace();
+//			response.status(400);
+//			return;
+//		}
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
@@ -185,8 +185,8 @@ public class ValuationApi {
 				.leftJoin(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.leftJoin(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-				.offset((page * rowsPerPage) - rowsPerPage)
-				.limit(rowsPerPage)
+				//.offset((page * rowsPerPage) - rowsPerPage)
+				//.limit(rowsPerPage)
 				.fetch();
 			
 				//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
