@@ -18,6 +18,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.RACE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.SEASONAL_METRIC;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.STATISTIC_TYPE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_COMPLETE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_FUNCTION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_RESULT_DATASET;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_RESULT_FUNCTION_CONFIG;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VARIABLE_ENTRY;
@@ -528,6 +529,8 @@ public class ResultExportTaskRunnable implements Runnable {
 									STATISTIC_TYPE.NAME.as("metric_statistic"),
 									HEALTH_IMPACT_FUNCTION.START_AGE,
 									HEALTH_IMPACT_FUNCTION.END_AGE,
+									VALUATION_FUNCTION.START_AGE.as("valuation_start_age"),
+									VALUATION_FUNCTION.END_AGE.as("valuation_end_age"),
 									vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
 									vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
 									vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
@@ -547,6 +550,7 @@ public class ResultExportTaskRunnable implements Runnable {
 									.join(HIF_RESULT_FUNCTION_CONFIG)
 										.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
 											.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
+									.join(VALUATION_FUNCTION).on((VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
 									.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
 									.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 									.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
@@ -593,7 +597,7 @@ public class ResultExportTaskRunnable implements Runnable {
 								}
 							}
 							//Remove percentiles by keeping all other fields
-							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20));
+							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22));
 						} catch(DataAccessException e) {
 							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
 							log.error("Task failed", e);
