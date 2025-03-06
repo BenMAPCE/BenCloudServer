@@ -5,6 +5,7 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 
 
 import gov.epa.bencloud.server.database.jooq.data.Data;
+import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationValueRecord;
 
 import org.jooq.Field;
@@ -16,6 +17,7 @@ import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
+import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
@@ -45,12 +47,12 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
     /**
      * The column <code>data.population_value.pop_entry_id</code>.
      */
-    public final TableField<PopulationValueRecord, Integer> POP_ENTRY_ID = createField(DSL.name("pop_entry_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<PopulationValueRecord, Integer> POP_ENTRY_ID = createField(DSL.name("pop_entry_id"), SQLDataType.INTEGER.nullable(false), this, "");
 
     /**
      * The column <code>data.population_value.grid_cell_id</code>.
      */
-    public final TableField<PopulationValueRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT, this, "");
+    public final TableField<PopulationValueRecord, Long> GRID_CELL_ID = createField(DSL.name("grid_cell_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>data.population_value.pop_value</code>.
@@ -93,6 +95,11 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
+    }
+
+    @Override
+    public UniqueKey<PopulationValueRecord> getPrimaryKey() {
+        return Keys.POPULATION_VALUE_PK;
     }
 
     @Override

@@ -121,6 +121,8 @@ public class HIFApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), gridId);
 
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
@@ -140,6 +142,7 @@ public class HIFApi {
 				HEALTH_IMPACT_FUNCTION.QUALIFIER,
 				HIF_RESULT_FUNCTION_CONFIG.START_AGE,
 				HIF_RESULT_FUNCTION_CONFIG.END_AGE,
+				INCIDENCE_DATASET.NAME.as("incidence_prevalence"),
 				RACE.NAME.as("race"),
 				ETHNICITY.NAME.as("ethnicity"),
 				GENDER.NAME.as("gender"),
@@ -174,6 +177,7 @@ public class HIFApi {
 				.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
 				.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+				.leftJoin(INCIDENCE_DATASET).on(HIF_RESULT_FUNCTION_CONFIG.INCIDENCE_DATASET_ID.eq(INCIDENCE_DATASET.ID))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
@@ -299,9 +303,14 @@ public class HIFApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		Integer baselineGridId = HIFApi.getBaselineGridForHifResults(id);
+
 		for(int i=0; i < gridIds.length; i++) {
 			Result<?> hifRecordsClean = null;
 			try {
+				//If the crosswalk isn't there, create it now
+				CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
+
 				Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 					GET_HIF_RESULTS(
 							id, 
@@ -438,6 +447,9 @@ public class HIFApi {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), incidenceAggregationGrid);
+
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
 						id, 
@@ -816,6 +828,9 @@ public class HIFApi {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(hifResultDatasetId), incidenceAggregationGrid);
+
 		Record1<Integer> hifResultCount = create
 				.select(DSL.count())
 				.from(GET_HIF_RESULTS(

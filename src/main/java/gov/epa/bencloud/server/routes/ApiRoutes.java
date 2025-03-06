@@ -76,6 +76,25 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		/*
+		 * DELETE a single grid definition
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/grid-definitions/:id", (request, response) -> {
+			return GridDefinitionApi.deleteGridDefinition(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * Rename a single grid definition
+		 * PARAMETERS:
+		 *  :id
+		 *  newName=
+		 */
+		service.put(apiPrefix + "/grid-definitions/:id", (request, response) -> {
+			return GridDefinitionApi.renameGridDefinition(request, response, getUserProfile(request, response));
+		});
+
+		/*
 		 * GET array of all pollutant definitions
 		 */
 		service.get(apiPrefix + "/pollutants", (request, response) -> {
@@ -557,6 +576,20 @@ public class ApiRoutes extends RoutesBase {
 			return null;
 		});
 		
+		/*
+		 * POST request to export results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (batch task id)
+		 *  includeHealthImpact (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeValuation (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeExposure (boolean accepts values true/false and 1/0, default to 0)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.post(apiPrefix + "/batch-tasks/:id/export", (request, response) -> {
+			return TaskApi.postResultExportTask(request, response, getUserProfile(request, response));
+		});
+		
 		service.get(apiPrefix + "/task-configs", (request, response) -> {
 			Object data = TaskApi.getTaskConfigs(request, response, getUserProfile(request, response));
 			response.type("application/json");
@@ -626,6 +659,29 @@ public class ApiRoutes extends RoutesBase {
 			return FilestoreApi.deleteFile(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * GET a single file from the file store
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.get(apiPrefix + "/files/:id", (request, response) -> {
+			return FilestoreApi.getFile(request, response, getUserProfile(request, response));
+		});
+		/*
+		 * GET a file ID for a export task
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.get(apiPrefix + "/task-complete/:id", (request, response) -> {
+			return TaskApi.getExportFileID(request, response, getUserProfile(request, response));
+		});
+		
+		
+		
+
+	}
+
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */
@@ -670,6 +726,7 @@ public class ApiRoutes extends RoutesBase {
 
 		// });
 		
-	}
+	
+	
 
 }

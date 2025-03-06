@@ -89,7 +89,10 @@ public class BenCloudServer {
 			response.header("Access-Control-Allow-Origin", "*");
 			response.header("Content-Security-Policy", "default-src 'self';");
 			
-			logAccess.info("{} REQUEST {} {}, uid: {}, ismemberof: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
+			String p = request.pathInfo().toLowerCase();
+			if(p != null && !p.contains("/completed") && !p.contains("/pending")) {
+				logAccess.info("{} REQUEST {} {}, uid: {}, ismemberof: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
+			}
 
 			//Exclude OPTIONS calls from security filter
 			if(!request.requestMethod().equalsIgnoreCase(HttpConstants.HTTP_METHOD.OPTIONS.name())) {
@@ -98,8 +101,10 @@ public class BenCloudServer {
 		});
 		
 		benCloudService.after((request, response) -> {
-			
-			logAccess.info("{} RESPONSE {} {}, uid: {}, ismemberof: {}, status: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"), response.status());
+			String p = request.pathInfo().toLowerCase();
+			if(p != null && !p.contains("/completed") && !p.contains("/pending")) {
+				logAccess.info("{} RESPONSE {} {}, uid: {}, ismemberof: {}, status: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"), response.status());
+			}
 		});
 
 		Spark.exception(Exception.class, (exception, request, response) -> {

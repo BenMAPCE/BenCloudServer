@@ -79,6 +79,9 @@ public class PopulationApi {
         		break;
         	}
         }
+
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(hifTaskConfig.popId),aqGrid);
         
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
@@ -146,6 +149,9 @@ public class PopulationApi {
         		break;
         	}
         }
+
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(exposureTaskConfig.popId),aqGrid);
         
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				exposureTaskConfig.popId, 
@@ -354,6 +360,7 @@ public class PopulationApi {
 							DSL.arrayAggDistinct(T_POP_DATASET_YEAR.POP_YEAR).orderBy(T_POP_DATASET_YEAR.POP_YEAR).as("years"))
 					.from(POPULATION_DATASET)
 					.join(T_POP_DATASET_YEAR).on(POPULATION_DATASET.ID.eq(T_POP_DATASET_YEAR.POP_DATASET_ID))
+					//.where(POPULATION_DATASET.ID.notEqual(52))  //TEMP TO SUPPRESS TRACT-LEVEL POP FOR NOW 2025-01-16 JHA
 					.groupBy(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID)
@@ -383,6 +390,22 @@ public class PopulationApi {
 				.fetchOne();
 		
 		return record;
-		}
+	}
+
+	/**
+	 * 
+	 * @param id 
+	 * @return the population dataset's grid definition id
+	 */
+	public static Integer getPopulationGridDefinitionId(Integer id) {
+
+		Record1<Integer> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(POPULATION_DATASET.GRID_DEFINITION_ID)
+				.from(POPULATION_DATASET)
+				.where(POPULATION_DATASET.ID.eq(id))
+				.fetchOne();
+		
+		return record.value1();
+	}
 	
 }
