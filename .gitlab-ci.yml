@@ -61,7 +61,7 @@ build_stage_jars:
   stage: code_build
   only:
     - tags
-  image: gradle:alpine
+  image: gradle:jdk17-corretto
   tags:
     - benmapstagegitlab
   script:
