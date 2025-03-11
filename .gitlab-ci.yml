@@ -146,20 +146,20 @@ build_stage_runner_image:
   dependencies:
     - build_stage_jars
 
-Add Defender:
-  stage: defender
-  image:
-    name: registry.epa.gov/dso/kaniko-plus:89b76f7b
-    entrypoint: [""]
-  variables:
-    IMAGE: $CI_REGISTRY_IMAGE/app
-    IMAGE_TAG: $CI_COMMIT_SHORT_SHA
-    ENTRYPOINT_COMMAND: "/www/app"
-  script:
-    - mkdir -p /kaniko/.docker
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
-    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
+# Add Defender:
+#   stage: defender
+#   image:
+#     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
+#     entrypoint: [""]
+#   variables:
+#     IMAGE: $CI_REGISTRY_IMAGE/app
+#     IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+#     ENTRYPOINT_COMMAND: "/www/app"
+#   script:
+#     - mkdir -p /kaniko/.docker
+#     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+#     - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
+#     - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
 
 
 prisma_cloud_compute_scan_nonprod:
