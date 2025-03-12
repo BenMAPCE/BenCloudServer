@@ -50,6 +50,7 @@ public class ResultExportTaskConfig {
 	public String taskUuid;
 	public String uuidType;
 	public Integer[] gridIds;
+	public Boolean isAdmin;
 	
 	/*
 	 * Default constructor

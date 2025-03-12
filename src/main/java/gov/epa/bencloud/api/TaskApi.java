@@ -1798,6 +1798,7 @@ public class TaskApi {
 			taskParamsNode.put("includeExposure", includeExposure);
 			taskParamsNode.put("taskUuid", taskUuid);
 			taskParamsNode.put("uuidType", uuidType);			
+			taskParamsNode.put("isAdmin", CoreApi.isAdmin(userProfile));			
 
 			ArrayNode gridsNode = taskParamsNode.putArray("gridIds");
 			for (int g : gridIds) {

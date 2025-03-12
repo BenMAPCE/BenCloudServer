@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -51,6 +52,8 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
+import org.pac4j.core.profile.CommonProfile;
+import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,6 +155,13 @@ public class ResultExportTaskRunnable implements Runnable {
 			Boolean includeExposure = resultExportTaskConfig.includeExposure;
 			String taskUuid = resultExportTaskConfig.taskUuid;
 			String uuidType = resultExportTaskConfig.uuidType;
+
+			CommonProfile profile = new CommonProfile();
+			profile.setId(resultExportTaskConfig.userId);
+			if (resultExportTaskConfig.isAdmin) {
+				profile.addRole(Constants.ROLE_ADMIN);
+			}
+			Optional<UserProfile> userProfile = Optional.of(profile);
 			
 			BatchTaskConfig batchTaskConfig = TaskApi.getTaskBatchConfigFromDb(batchId);
 			
@@ -296,7 +306,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							}
 						ExposureTaskLog efTaskLog = ExposureUtil.getTaskLog(exposureResultDatasetId);
 						batchTaskLog.append(System.getProperty("line.separator"));
-						//batchTaskLog.append(efTaskLog.toString(userProfile));
+						batchTaskLog.append(efTaskLog.toString(userProfile));
 					}				
 				}					
 			}
@@ -447,7 +457,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							}
 						HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(hifResultDatasetId);
 						batchTaskLog.append(System.getProperty("line.separator"));
-						//batchTaskLog.append(hifTaskLog.toString(userProfile));
+						batchTaskLog.append(hifTaskLog.toString(userProfile));
 					}				
 				}					
 			}
