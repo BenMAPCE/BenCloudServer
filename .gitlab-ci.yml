@@ -1,26 +1,14 @@
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Gradle.gitlab-ci.yml
-
-# This is the Gradle build system for JVM applications
-# https://gradle.org/
-# https://github.com/gradle/gradle
-
 stages:
   - test
   - code_build
   - image_build
+  - defender
   - image_scan
-#  - defender
   - application_scan
   - deploy_nonprod
 
 include:
   - remote: 'https://gitlab.com/prismacloud-public/shift-left/extension/-/raw/master/.pcs.gitlab-ci.yml'
-#  - template: Security/SAST.gitlab-ci.yml
-#  - template: Security/Dependency-Scanning.gitlab-ci.yml
-#  - template: Security/License-Scanning.gitlab-ci.yml
 
 # Disable the Gradle daemon for Continuous Integration servers as correctness
 # is usually a priority over speed in CI environments. Using a fresh
@@ -146,21 +134,22 @@ build_stage_runner_image:
   dependencies:
     - build_stage_jars
 
-# Add Defender:
-#   stage: defender
-#   image:
-#     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
-#     entrypoint: [""]
-#   variables:
-#     IMAGE: $CI_REGISTRY_IMAGE/app
-#     IMAGE_TAG: $CI_COMMIT_SHORT_SHA
-#     ENTRYPOINT_COMMAND: "/www/app"
-#   script:
-#     - mkdir -p /kaniko/.docker
-#     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-#     - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
-#     - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
-
+add_dev_server_defender:
+  stage: defender
+  only: 
+    - develop
+  image:
+    name: registry.epa.gov/dso/kaniko-plus:89b76f7b
+    entrypoint: [""]
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE
+    IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
+    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/docker/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
 
 prisma_cloud_compute_scan_nonprod:
   stage: image_scan
