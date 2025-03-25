@@ -70,8 +70,8 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "0.5.3";
-	public static final int minimumDbVersion = 21;
+	public static final String appVersion = "0.6.0";
+	public static final int minimumDbVersion = 40;
 	
 	/**
 	 * @param columnIdx
