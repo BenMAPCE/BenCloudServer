@@ -4,7 +4,6 @@ stages:
   - image_build
   - defender
   - image_scan
-  - application_scan
   - deploy_nonprod
 
 include:
@@ -20,6 +19,7 @@ variables:
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
 
+# Build the server and taskrunner jar files for the current environment
 build_dev_jars:
   stage: code_build
   only: 
@@ -69,6 +69,8 @@ build_stage_jars:
       - BenCloudServer.jar
       - BenCloudTaskRunner.jar
       - bencloud-server.properties
+
+# Build docker images for the current environment (one each for server and task runner)
 
 build_dev_server_image:
   stage: image_build
@@ -134,6 +136,7 @@ build_stage_runner_image:
   dependencies:
     - build_stage_jars
 
+# Add prisma defender to each docker image build for current environment
 add_dev_server_defender:
   stage: defender
   only: 
@@ -153,6 +156,65 @@ add_dev_server_defender:
     - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
     - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/docker/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
 
+add_stage_server_defender:
+  stage: defender
+  only: 
+    - tags
+  tags:
+    - benmapdevgitlab
+  image:
+    name: registry.epa.gov/dso/kaniko-plus:89b76f7b
+    entrypoint: [""]
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE/bencloudserver
+    IMAGE_TAG: $CI_COMMIT_TAG
+    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
+    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/docker/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
+
+add_dev_taskrunner_defender:
+  stage: defender
+  only: 
+    - develop
+  tags:
+    - benmapdevgitlab
+  image:
+    name: registry.epa.gov/dso/kaniko-plus:89b76f7b
+    entrypoint: [""]
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE/bencloudtaskrunner
+    IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudTaskRunner.jar"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
+    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/docker/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
+
+add_stage_taskrunner_defender:
+  stage: defender
+  only: 
+    - tags
+  tags:
+    - benmapdevgitlab
+  image:
+    name: registry.epa.gov/dso/kaniko-plus:89b76f7b
+    entrypoint: [""]
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE/bencloudtaskrunner
+    IMAGE_TAG: $CI_COMMIT_TAG
+    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudTaskRunner.jar"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
+    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/docker/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner/app-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
+
+
+# Run prisma scan against newly created server and task runner images for current environment
 prisma_cloud_compute_scan_nonprod:
   stage: image_scan
   only: 
@@ -165,10 +227,10 @@ prisma_cloud_compute_scan_nonprod:
     - 'export PRISMA_CI_TOKEN=$(curl -kH "Content-Type: application/json" -d "{\"username\":\"$PRISMA_CI_USERNAME\", \"password\":\"$PRISMA_CI_PASSWORD\"}" https://prismacloud.epa.gov/api/v32.01/authenticate | jq -r .token)'
     - 'curl --progress-bar -L -k --header "Authorization: Bearer $PRISMA_CI_TOKEN" https://prismacloud.epa.gov/api/v1/util/twistcli > twistcli; chmod a+x twistcli;'
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
-    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_SHORT_SHA
-    - docker pull $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
-    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_SHORT_SHA
+    - docker pull $CI_REGISTRY_IMAGE/bencloudserver/app-defender:$CI_COMMIT_SHORT_SHA
+    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudserver/app-defender:$CI_COMMIT_SHORT_SHA
+    - docker pull $CI_REGISTRY_IMAGE/bencloudtaskrunner/app-defender:$CI_COMMIT_SHORT_SHA
+    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudtaskrunner/app-defender:$CI_COMMIT_SHORT_SHA
   after_script:
     # Cleanup the above space use on Runner.
     - rm -rf $CI_PROJECT_DIR 
@@ -185,27 +247,15 @@ prisma_cloud_compute_scan_prod:
     - 'export PRISMA_CI_TOKEN=$(curl -kH "Content-Type: application/json" -d "{\"username\":\"$PRISMA_CI_USERNAME\", \"password\":\"$PRISMA_CI_PASSWORD\"}" https://prismacloud.epa.gov/api/v32.01/authenticate | jq -r .token)'
     - 'curl --progress-bar -L -k --header "Authorization: Bearer $PRISMA_CI_TOKEN" https://prismacloud.epa.gov/api/v1/util/twistcli > twistcli; chmod a+x twistcli;'
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_TAG
-    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudserver:$CI_COMMIT_TAG
-    - docker pull $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_TAG
-    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudtaskrunner:$CI_COMMIT_TAG
+    - docker pull $CI_REGISTRY_IMAGE/bencloudserver/app-defender:$CI_COMMIT_TAG
+    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudserver/app-defender:$CI_COMMIT_TAG
+    - docker pull $CI_REGISTRY_IMAGE/bencloudtaskrunner/app-defender:$CI_COMMIT_TAG
+    - ./twistcli images scan --address=https://prismacloud.epa.gov --details --token=$PRISMA_CI_TOKEN $CI_REGISTRY_IMAGE/bencloudtaskrunner/app-defender:$CI_COMMIT_TAG
   after_script:
     # Cleanup the above space use on Runner.
     - rm -rf $CI_PROJECT_DIR 
 
-net_sparker:
-  stage: application_scan
-  only: 
-    - develop
-    - tags
-  tags:
-    - devsecops-instance
-  when: manual
-  image: docker:20.10
-  # This needs a NetSparker image to invoke the scan.
-  script:
-    - echo "Simulate a NetSparker scan."
-
+# Deploy server image for current environment. (Task runner image is used to create k8s jobs on demand.)
 deploy_testdev:
   stage: deploy_nonprod
   only: 
@@ -218,7 +268,6 @@ deploy_testdev:
     - apk add gettext
     - kubectl config use-context "$KUBE_CONTEXT"
     - envsubst < k8s/bencloud-dev-server.yml | kubectl apply --validate=false -f -
-    # - kubectl apply -f k8s/bencloud-dev-server.yml -n benmap-dev
   environment:
     name: testdev
     url: https://dev.bencloud-dev.aws.epa.gov/api
@@ -237,7 +286,6 @@ deploy_staging:
     - apk add gettext
     - kubectl config use-context "$KUBE_CONTEXT"
     - envsubst < k8s/bencloud-stage-server.yml | kubectl apply --validate=false -f -
-    # - kubectl apply -f k8s/bencloud-stage-server.yml -n benmap-stg
   environment:
     name: staging
     url: https://stg.bencloud-stage.aws.epa.gov/api
