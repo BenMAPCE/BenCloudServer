@@ -144,7 +144,7 @@ add_dev_server_defender:
     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
     entrypoint: [""]
   variables:
-    IMAGE: $CI_REGISTRY_IMAGE
+    IMAGE: $CI_REGISTRY_IMAGE/bencloudserver
     IMAGE_TAG: $CI_COMMIT_SHORT_SHA
     ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
   script:
