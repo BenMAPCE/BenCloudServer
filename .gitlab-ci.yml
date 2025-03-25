@@ -138,6 +138,8 @@ add_dev_server_defender:
   stage: defender
   only: 
     - develop
+  tags:
+    - benmapdevgitlab
   image:
     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
     entrypoint: [""]
