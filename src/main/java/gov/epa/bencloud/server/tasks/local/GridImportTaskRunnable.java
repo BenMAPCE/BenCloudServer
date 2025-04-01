@@ -164,8 +164,15 @@ public class GridImportTaskRunnable implements Runnable {
 			
 			Record gridStats = create.fetchOne("select count(distinct col) as col_count, count(distinct row) as row_count from grids." + gridTableName);
 			
-			 // Calculate native bounds
+			 // Calculate native bounds and determine CRS
             ReferencedEnvelope bounds = calculateNativeBounds(shapefilePath);
+
+			// Retrieve CRS from the database
+			String srs = "EPSG:4269"; // Default to EPSG:4269
+			Record crsRecord = create.fetchOne("SELECT Find_SRID('grids', ?, 'geom') AS srid", gridTableName);
+			if (crsRecord != null && crsRecord.get("srid") != null) {
+				srs = "EPSG:" + crsRecord.get("srid");
+			}
             
 			// TODO: Make sure and update the messages object with meaningful progress along the way and also increment the task percentage to show progress
 
@@ -204,13 +211,13 @@ public class GridImportTaskRunnable implements Runnable {
 				+ " \"name\": \"" + gridTableName + "\","
 				+ " \"nativeName\": \"" + gridTableName + "\","
 				+ " \"title\": \"" + gridTableName + "\","
-				+ " \"srs\": \"EPSG:4326\","
+				+ " \"srs\": \"" + srs + "\","
 				+ " \"nativeBoundingBox\": {"
 				+ "   \"minx\": " + bounds.getMinX() + ","
 				+ "   \"maxx\": " + bounds.getMaxX() + ","
 				+ "   \"miny\": " + bounds.getMinY() + ","
 				+ "   \"maxy\": " + bounds.getMaxY() + ","
-				+ "   \"crs\": \"EPSG:4326\""
+				+ "   \"crs\": \"" + srs + "\""
 				+ " },"
 				//change this store name if testing on local geoserver vs. colo
 				+ " \"store\": { \"name\": \"" + geoserverStoreName + "\" },"
