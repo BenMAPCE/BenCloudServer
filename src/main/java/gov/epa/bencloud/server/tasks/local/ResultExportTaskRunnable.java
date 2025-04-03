@@ -182,7 +182,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				// Stream .ZIP file to the temp file
 				zipStream = new ZipOutputStream(fos);
 			} catch (java.io.IOException e1) {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 				log.error("Error getting output stream", e1);
 				return;
 			}
@@ -288,7 +288,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							
 							efRecordsClean = efRecords;
 						} catch(DataAccessException e) {
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
 							return;
 						}	
@@ -439,7 +439,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							//Remove percentiles by keeping all other fields
 							hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
 						} catch(DataAccessException e) {
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
 							return;
 						}	
@@ -609,7 +609,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							//Remove percentiles by keeping all other fields
 							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22));
 						} catch(DataAccessException e) {
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
 							return;
 						}	
@@ -668,7 +668,7 @@ public class ResultExportTaskRunnable implements Runnable {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task Failed");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 			log.error("Task failed", e);
 		}
 		log.info("Result Export Task Complete: " + taskUuid);

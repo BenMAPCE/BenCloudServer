@@ -118,7 +118,7 @@ public class BenCloudTaskRunner {
 				et.run();
 			} else {
 				log.error("Unknown task type: " + task.getType());
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskRunnerUuid, false, "Task Failed");
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskRunnerUuid, false, "Task failed");
 			}
 		} catch (Exception e) {
 			log.error("Error running task", e);
