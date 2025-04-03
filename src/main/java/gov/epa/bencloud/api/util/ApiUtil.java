@@ -237,7 +237,7 @@ public class ApiUtil {
 			String childUuid = record.getValue(TASK_QUEUE.TASK_UUID);
 			
 			//remove from worker and update in_process = false
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(childUuid, null, false, "Parent task canceled.");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(childUuid, null, false, "Parent task canceled");
 			
 			//remove hif and valuation results
 			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
@@ -248,7 +248,7 @@ public class ApiUtil {
 		}						
 		
 		//remove (parent) task from worker and update in_process = false
-		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
 
 		//remove hif and valuation results
 		if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
@@ -300,7 +300,7 @@ public class ApiUtil {
 			String uuid = record.getValue(TASK_QUEUE.TASK_UUID);
 			
 			//remove from worker and update in_process = false
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
 			//remove hif and valuation results
 			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
 				TaskUtil.deleteHifResults(uuid, false);
