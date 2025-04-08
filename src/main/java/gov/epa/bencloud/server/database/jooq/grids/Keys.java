@@ -4,14 +4,20 @@
 package gov.epa.bencloud.server.database.jooq.grids;
 
 
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCensusTracts_2020;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipped;
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationStraightclip;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty_2020;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsState;
+import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCensusTracts_2020Record;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCmaq_12kmNationClippedRecord;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCmaq_12kmNationRecord;
+import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCmaq_12kmNationStraightclipRecord;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCountyRecord;
+import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsCounty_2020Record;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsNationRecord;
 import gov.epa.bencloud.server.database.jooq.grids.tables.records.UsStateRecord;
 
@@ -32,9 +38,12 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<UsCensusTracts_2020Record> US_CENSUS_TRACTS_2020_PKEY = Internal.createUniqueKey(UsCensusTracts_2020.US_CENSUS_TRACTS_2020, DSL.name("us_census_tracts_2020_pkey"), new TableField[] { UsCensusTracts_2020.US_CENSUS_TRACTS_2020.GID }, true);
     public static final UniqueKey<UsCmaq_12kmNationRecord> US_CMAQ_12KM_NATION_PKEY = Internal.createUniqueKey(UsCmaq_12kmNation.US_CMAQ_12KM_NATION, DSL.name("us_cmaq_12km_nation_pkey"), new TableField[] { UsCmaq_12kmNation.US_CMAQ_12KM_NATION.GID }, true);
     public static final UniqueKey<UsCmaq_12kmNationClippedRecord> US_CMAQ_12KM_NATION_CLIPPED_PKEY = Internal.createUniqueKey(UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED, DSL.name("us_cmaq_12km_nation_clipped_pkey"), new TableField[] { UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED.GID }, true);
+    public static final UniqueKey<UsCmaq_12kmNationStraightclipRecord> US_CMAQ_12KM_NATION_STRAIGHTCLIP_PKEY = Internal.createUniqueKey(UsCmaq_12kmNationStraightclip.US_CMAQ_12KM_NATION_STRAIGHTCLIP, DSL.name("us_cmaq_12km_nation_straightclip_pkey"), new TableField[] { UsCmaq_12kmNationStraightclip.US_CMAQ_12KM_NATION_STRAIGHTCLIP.GID }, true);
     public static final UniqueKey<UsCountyRecord> US_COUNTY_PKEY = Internal.createUniqueKey(UsCounty.US_COUNTY, DSL.name("us_county_pkey"), new TableField[] { UsCounty.US_COUNTY.GID }, true);
+    public static final UniqueKey<UsCounty_2020Record> US_COUNTY_2020_PKEY = Internal.createUniqueKey(UsCounty_2020.US_COUNTY_2020, DSL.name("us_county_2020_pkey"), new TableField[] { UsCounty_2020.US_COUNTY_2020.GID }, true);
     public static final UniqueKey<UsNationRecord> US_NATION_PKEY = Internal.createUniqueKey(UsNation.US_NATION, DSL.name("us_nation_pkey"), new TableField[] { UsNation.US_NATION.GID }, true);
     public static final UniqueKey<UsStateRecord> US_STATE_PKEY = Internal.createUniqueKey(UsState.US_STATE, DSL.name("us_state_pkey"), new TableField[] { UsState.US_STATE.GID }, true);
 }

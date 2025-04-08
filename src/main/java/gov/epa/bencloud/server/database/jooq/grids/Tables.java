@@ -4,9 +4,12 @@
 package gov.epa.bencloud.server.database.jooq.grids;
 
 
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCensusTracts_2020;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipped;
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationStraightclip;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty_2020;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsState;
 
@@ -16,6 +19,11 @@ import gov.epa.bencloud.server.database.jooq.grids.tables.UsState;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>grids.us_census_tracts_2020</code>.
+     */
+    public static final UsCensusTracts_2020 US_CENSUS_TRACTS_2020 = UsCensusTracts_2020.US_CENSUS_TRACTS_2020;
 
     /**
      * The table <code>grids.us_cmaq_12km_nation</code>.
@@ -28,9 +36,19 @@ public class Tables {
     public static final UsCmaq_12kmNationClipped US_CMAQ_12KM_NATION_CLIPPED = UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED;
 
     /**
+     * The table <code>grids.us_cmaq_12km_nation_straightclip</code>.
+     */
+    public static final UsCmaq_12kmNationStraightclip US_CMAQ_12KM_NATION_STRAIGHTCLIP = UsCmaq_12kmNationStraightclip.US_CMAQ_12KM_NATION_STRAIGHTCLIP;
+
+    /**
      * The table <code>grids.us_county</code>.
      */
     public static final UsCounty US_COUNTY = UsCounty.US_COUNTY;
+
+    /**
+     * The table <code>grids.us_county_2020</code>.
+     */
+    public static final UsCounty_2020 US_COUNTY_2020 = UsCounty_2020.US_COUNTY_2020;
 
     /**
      * The table <code>grids.us_nation</code>.
