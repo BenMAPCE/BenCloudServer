@@ -1,6 +1,6 @@
 /**** Add variable average_cost_daily ****/
 
-UPDATE "data".settings SET value_int=45 WHERE "key"='version';
+UPDATE "data".settings SET value_int=46 WHERE "key"='version';
 
 INSERT INTO "data".variable_entry (id, variable_dataset_id,"name",grid_definition_id) VALUES (236, 2,'average_cost_daily',68);
 
