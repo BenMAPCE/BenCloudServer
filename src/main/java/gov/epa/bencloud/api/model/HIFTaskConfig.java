@@ -261,7 +261,8 @@ public class HIFTaskConfig {
 		Set<String> variables = new HashSet<String>();
 
 		for (HIFConfig hifConfig : this.hifs) {
-			HIFunction[] funcs = HIFUtil.getFunctionsForHIF(hifConfig.hifId);
+			//HIFunction[] funcs = HIFUtil.getFunctionsForHIF(hifConfig.hifId);
+			HIFunction[] funcs = HIFUtil.getFunctionsForHIF(hifConfig); //instead of reading from hif_health_impact_function by hif_id, read from hif_task_config
 			for (HIFunction func : funcs) {
 				variables.addAll(func.getRequiredVariables());
 			}

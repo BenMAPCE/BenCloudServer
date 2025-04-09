@@ -34,6 +34,7 @@ import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.Scenario;
 import gov.epa.bencloud.api.model.ScenarioHIFConfig;
 import gov.epa.bencloud.api.model.ScenarioPopConfig;
+import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.function.HIFArguments;
 import gov.epa.bencloud.api.function.HIFNativeFactory;
 import gov.epa.bencloud.api.function.HIFunction;
@@ -122,6 +123,78 @@ public class HIFUtil {
 			Argument population = new Argument("POPULATION", 0.0);
 
 			functions[1].createInterpretedFunctionFromExpression(new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
+		}
+
+		return functions;
+	}
+
+	/**
+	 * 
+	 * @param id
+	 * @return an array of functions (function, baseline function) for a given health impact function.
+	 */
+	public static HIFunction[] getFunctionsForHIF(HIFConfig hifConfig) {
+
+		// Load the function by hifConfig
+
+		HIFunction[] functions = new HIFunction[2];
+
+		functions[0] = new HIFunction();
+		functions[1] = new HIFunction();
+
+		functions[0].nativeFunction = HIFNativeFactory.create(hifConfig.hifRecord.get("function_text").toString());//HIFNativeFactory.create(record.getFunctionText());
+		functions[1].nativeFunction = HIFNativeFactory.create(hifConfig.hifRecord.get("baseline_function_text").toString());//HIFNativeFactory.create(record.getBaselineFunctionText());
+
+		functions[0].hifArguments = new HIFArguments();
+		functions[1].hifArguments = new HIFArguments();
+
+		functions[0].hifArguments.a = ((Number)hifConfig.hifRecord.get("val_a")).doubleValue();
+		functions[0].hifArguments.b = ((Number) hifConfig.hifRecord.get("val_b")).doubleValue();
+		functions[0].hifArguments.c = ((Number) hifConfig.hifRecord.get("val_c")).doubleValue();
+		functions[0].hifArguments.beta = ((Number) hifConfig.hifRecord.get("beta")).doubleValue();
+
+		functions[1].hifArguments.a = ((Number) hifConfig.hifRecord.get("val_a")).doubleValue();
+		functions[1].hifArguments.b = ((Number) hifConfig.hifRecord.get("val_b")).doubleValue();
+		functions[1].hifArguments.c = ((Number) hifConfig.hifRecord.get("val_c")).doubleValue();
+		functions[1].hifArguments.beta = ((Number) hifConfig.hifRecord.get("beta")).doubleValue();
+		//If we don't have a native function, we'll use the interpreted one instead
+		if(functions[0].nativeFunction == null) {
+			// Populate/create the necessary arguments and constants
+			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
+			Constant a = new Constant("A", functions[0].hifArguments.a);
+			Constant b = new Constant("B", functions[0].hifArguments.b);
+			Constant c = new Constant("C", functions[0].hifArguments.c);
+			
+			//The following will be set while iterating cells
+			Argument beta = new Argument("BETA", functions[0].hifArguments.beta);
+			Argument deltaQ = new Argument("DELTAQ", 0.0);
+			Argument q0 = new Argument("Q0", 0.0);
+			Argument q1 = new Argument("Q1", 0.0);
+			Argument incidence = new Argument("INCIDENCE", 0.0);
+			Argument prevalence = new Argument("PREVALENCE", 0.0);
+			Argument population = new Argument("POPULATION", 0.0);
+
+			functions[0].createInterpretedFunctionFromExpression(new Expression(hifConfig.hifRecord.get("function_text").toString(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
+		}
+
+		//If we don't have a native baseline function, we'll use the interpreted one instead
+		if(functions[1].nativeFunction == null) {
+			// Populate/create the necessary arguments and constants
+			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
+			Constant a = new Constant("A", functions[1].hifArguments.a);
+			Constant b = new Constant("B", functions[1].hifArguments.b);
+			Constant c = new Constant("C", functions[1].hifArguments.c);
+			
+			//The following will be set while iterating cells
+			Argument beta = new Argument("BETA", functions[1].hifArguments.beta);
+			Argument deltaQ = new Argument("DELTAQ", 0.0);
+			Argument q0 = new Argument("Q0", 0.0);
+			Argument q1 = new Argument("Q1", 0.0);
+			Argument incidence = new Argument("INCIDENCE", 0.0);
+			Argument prevalence = new Argument("PREVALENCE", 0.0);
+			Argument population = new Argument("POPULATION", 0.0);
+
+			functions[1].createInterpretedFunctionFromExpression(new Expression(hifConfig.hifRecord.get("baseline_function_text").toString(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
 		}
 
 		return functions;
@@ -1094,7 +1167,7 @@ public class HIFUtil {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
 		Record record = create
-				.select(HEALTH_IMPACT_FUNCTION.asterisk()
+						.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
 						,ENDPOINT.NAME.as("endpoint_name")
 						,POLLUTANT.NAME.as("pollutant_name")
@@ -1112,9 +1185,15 @@ public class HIFUtil {
 				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))			
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(hifId))
 				.fetchOne();
-				
-		return record.get(HEALTH_IMPACT_FUNCTION.AUTHOR) + " (Unique ID: " + record.get(HEALTH_IMPACT_FUNCTION.ID) + ")";
+		String msg = "";		
+		if(record!= null){
+			msg = record.get(HEALTH_IMPACT_FUNCTION.AUTHOR) + " (Unique ID: " + record.get(HEALTH_IMPACT_FUNCTION.ID) + ")";
+		}
+		else{
+			msg = " (Unique ID: " + hifId.toString() + ")"; //skip printing author name if hif doesn't exist in the DB. 
+			//TODO: need better ways to pull authoer from task config file. 
+		}
+		return msg;
 	}
-	
-	
+
 }
