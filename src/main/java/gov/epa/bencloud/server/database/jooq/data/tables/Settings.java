@@ -7,11 +7,13 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.SettingsRecord;
 
+import java.time.LocalDateTime;
+
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -56,6 +58,21 @@ public class Settings extends TableImpl<SettingsRecord> {
      * The column <code>data.settings.value_int</code>.
      */
     public final TableField<SettingsRecord, Integer> VALUE_INT = createField(DSL.name("value_int"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.settings.status</code>.
+     */
+    public final TableField<SettingsRecord, Integer> STATUS = createField(DSL.name("status"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.settings.modified_by</code>.
+     */
+    public final TableField<SettingsRecord, String> MODIFIED_BY = createField(DSL.name("modified_by"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.settings.modified_date</code>.
+     */
+    public final TableField<SettingsRecord, LocalDateTime> MODIFIED_DATE = createField(DSL.name("modified_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
     private Settings(Name alias, Table<SettingsRecord> aliased) {
         this(alias, aliased, null);
@@ -122,11 +139,11 @@ public class Settings extends TableImpl<SettingsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<String, String, Integer> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row6<String, String, Integer, Integer, String, LocalDateTime> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

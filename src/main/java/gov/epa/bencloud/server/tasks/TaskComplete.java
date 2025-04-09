@@ -109,7 +109,18 @@ public class TaskComplete {
 				.where(TASK_QUEUE.TASK_UUID.eq(task.getUuid()))
 				.execute();
 
+				if(taskCompleteMessage.equalsIgnoreCase("task failed")) {
+					Result<Record> childTasks = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					.from(TASK_QUEUE)
+					.where(TASK_QUEUE.TASK_PARENT_UUID.equal(task.getUuid())) 
+					.fetch();
+
+					for (Record childTask : childTasks) {
+						addTaskToCompleteAndRemoveTaskFromQueue(childTask.getValue(TASK_QUEUE.TASK_UUID), null, false, "Parent task failed");
+					}	
+				}			
 			});
+
 
 		} catch (DataAccessException e1) {
 			log.error("Error moving task to completed queue", e1);

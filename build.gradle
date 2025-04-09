@@ -57,7 +57,7 @@ dependencies {
 
 	implementation 'io.vavr:vavr:0.10.0'
 	implementation 'org.slf4j:slf4j-api:2.0.6'
-	implementation 'ch.qos.logback:logback-classic:1.4.14'
+	implementation 'ch.qos.logback:logback-classic:1.5.18'
 	implementation 'commons-cli:commons-cli:1.4'
 	implementation 'com.opencsv:opencsv:5.8'
 	implementation 'org.apache.commons:commons-lang3:3.9'
