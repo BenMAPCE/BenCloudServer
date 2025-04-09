@@ -134,7 +134,7 @@ public class PopulationGrowth extends TableImpl<PopulationGrowthRecord> {
 
     @Override
     public UniqueKey<PopulationGrowthRecord> getPrimaryKey() {
-        return Keys.POPULATION_GROWTHP_PK;
+        return Keys.POPULATION_GROWTH_PK;
     }
 
     @Override

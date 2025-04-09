@@ -5,9 +5,10 @@ package gov.epa.bencloud.server.database.jooq.grids;
 
 
 import gov.epa.bencloud.server.database.jooq.DefaultCatalog;
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCensusTracts_2020;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNation;
-import gov.epa.bencloud.server.database.jooq.grids.tables.UsCmaq_12kmNationClipped;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty;
+import gov.epa.bencloud.server.database.jooq.grids.tables.UsCounty_2020;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsNation;
 import gov.epa.bencloud.server.database.jooq.grids.tables.UsState;
 
@@ -33,19 +34,24 @@ public class Grids extends SchemaImpl {
     public static final Grids GRIDS = new Grids();
 
     /**
+     * The table <code>grids.us_census_tracts_2020</code>.
+     */
+    public final UsCensusTracts_2020 US_CENSUS_TRACTS_2020 = UsCensusTracts_2020.US_CENSUS_TRACTS_2020;
+
+    /**
      * The table <code>grids.us_cmaq_12km_nation</code>.
      */
     public final UsCmaq_12kmNation US_CMAQ_12KM_NATION = UsCmaq_12kmNation.US_CMAQ_12KM_NATION;
 
     /**
-     * The table <code>grids.us_cmaq_12km_nation_clipped</code>.
-     */
-    public final UsCmaq_12kmNationClipped US_CMAQ_12KM_NATION_CLIPPED = UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED;
-
-    /**
      * The table <code>grids.us_county</code>.
      */
     public final UsCounty US_COUNTY = UsCounty.US_COUNTY;
+
+    /**
+     * The table <code>grids.us_county_2020</code>.
+     */
+    public final UsCounty_2020 US_COUNTY_2020 = UsCounty_2020.US_COUNTY_2020;
 
     /**
      * The table <code>grids.us_nation</code>.
@@ -73,9 +79,10 @@ public class Grids extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            UsCensusTracts_2020.US_CENSUS_TRACTS_2020,
             UsCmaq_12kmNation.US_CMAQ_12KM_NATION,
-            UsCmaq_12kmNationClipped.US_CMAQ_12KM_NATION_CLIPPED,
             UsCounty.US_COUNTY,
+            UsCounty_2020.US_COUNTY_2020,
             UsNation.US_NATION,
             UsState.US_STATE
         );
