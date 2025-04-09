@@ -57,20 +57,20 @@ public class CrosswalksApi {
 					.limit(1)
 					.fetchOne()
 					.value1();
-
+			
 			// create a table with the required fields and crosswalks for insertion into crosswalk entry table
 			SelectConditionStep<Record8<Integer, Integer, Integer, Long, Integer, Integer, Long, Double>> fwQuery = dslContext
 					.select(DSL.value(forwardCrosswalkID).as("crosswalk_id"),
 							DSL.field(g1Name + ".col", Integer.class).as("source_col"),
 							DSL.field(g1Name + ".row", Integer.class).as("source_row"),
-							DSL.field("((" + DSL.field(g1Name + ".col") + "+" + DSL.field(g1Name + ".row") + ")*("
-									+ DSL.field(g1Name + ".col") + "+" + DSL.field(g1Name + ".row") + "+1)*0.5)+"
-									+ DSL.field(g1Name + ".row"), Long.class).as("source_grid_cell_id"), // same algorithm as ApiUtil.getCellId
+							DSL.field("((" + DSL.field(g1Name + ".col").cast(Long.class) + "+" + DSL.field(g1Name + ".row").cast(Long.class) + ")*("
+									+ DSL.field(g1Name + ".col").cast(Long.class) + "+" + DSL.field(g1Name + ".row").cast(Long.class) + "+1)*0.5)+"
+									+ DSL.field(g1Name + ".row").cast(Long.class), Long.class).as("source_grid_cell_id"), // same algorithm as ApiUtil.getCellId
 							DSL.field("g2.col", Integer.class).as("target_col"),
 							DSL.field("g2.row", Integer.class).as("target_row"),
-							DSL.field("((" + DSL.field("g2.col") + "+" + DSL.field("g2.row") + ")*("
-									+ DSL.field("g2.col") + "+" + DSL.field("g2.row") + "+1)*0.5)+"
-									+ DSL.field("g2.row"), Long.class).as("target_grid_cell_id"), // same algorithm as ApiUtil.getCellId
+							DSL.field("((" + DSL.field("g2.col").cast(Long.class) + "+" + DSL.field("g2.row").cast(Long.class) + ")*("
+									+ DSL.field("g2.col").cast(Long.class) + "+" + DSL.field("g2.row").cast(Long.class) + "+1)*0.5)+"
+									+ DSL.field("g2.row").cast(Long.class), Long.class).as("target_grid_cell_id"), // same algorithm as ApiUtil.getCellId
 							DSL.field("st_area(st_intersection(" + g1Name + ".geom, " + "g2.geom)) / st_area("
 									+ g1Name + ".geom)", Double.class).as("percentage"))
 					.from(g1Name)
