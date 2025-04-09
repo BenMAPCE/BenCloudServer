@@ -3229,3 +3229,8 @@ INSERT INTO data.variable_value (variable_entry_id,grid_col,grid_row,value,grid_
 	 (236,72,149,151.960205078125,24680.0),
 	 (236,72,151,143.01629638671875,25127.0),
 	 (236,72,153,138.39190673828125,25578.0);
+
+VACUUM (VERBOSE, ANALYZE) data.variable_entry;
+VACUUM (VERBOSE, ANALYZE) data.variable_value;
+
+SELECT SETVAL('data.variable_entry_id_seq', COALESCE(MAX(id), 1) ) FROM data.variable_entry;
