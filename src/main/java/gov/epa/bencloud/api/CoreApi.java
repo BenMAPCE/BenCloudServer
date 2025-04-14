@@ -3,6 +3,8 @@ package gov.epa.bencloud.api;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,6 +34,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.SettingsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.ApiUtil;
@@ -197,7 +200,85 @@ public class CoreApi {
 		return responseNode;
 	}
 
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userOptionalProfile
+	 * @return an ObjectNode representation of the application and database version.
+	 */
+	public static Object getBanner(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
 
+		SettingsRecord bannerRecord = DSL.using(JooqUtil.getJooqConfiguration())
+			.selectFrom(SETTINGS)
+			.where(SETTINGS.KEY.equalIgnoreCase("banner"))
+			.fetchOne();
+
+
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode responseNode = mapper.createObjectNode();
+
+		responseNode.put("message", bannerRecord.getValueText());
+		responseNode.put("type", bannerRecord.getValueInt());
+		responseNode.put("enabled", bannerRecord.getStatus() != 0);
+		responseNode.put("modified_by", bannerRecord.getModifiedBy());
+
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		try {
+			responseNode.put("modified_date", bannerRecord.getModifiedDate().format(formatter));
+		} catch (Exception e) {
+			responseNode.put("modified_date", "");
+		}
+
+		return responseNode;
+	}
+
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param userOptionalProfile
+	 * @return update the banner notification
+	 */
+	public static Object postBanner(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
+
+		if (!isAdmin(userOptionalProfile)) {
+			return getErrorResponseForbidden(req,res);
+		}
+
+		String message;
+		Integer type;
+		Boolean enabled;
+		
+		try {
+			message = req.raw().getParameter("message");
+			type = Integer.parseInt(req.raw().getParameter("type"));
+			enabled = Boolean.valueOf(req.raw().getParameter("enabled"));		
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponse(req, res, 400, "Invalid type " + req.raw().getParameter("type") +". Expected 1, 2, or 3.");
+		}
+
+		if (message == null || message.trim().isEmpty()) {
+			return CoreApi.getErrorResponse(req, res, 400, "Invalid empty message.");
+		}
+
+		if (type < 1 || type > 3) {
+			return CoreApi.getErrorResponse(req, res, 400, "Invalid type " + type +". Expected 1, 2, or 3.");
+		}
+
+		DSL.using(JooqUtil.getJooqConfiguration())
+			.update(SETTINGS)
+			.set(SETTINGS.VALUE_TEXT,message.trim())
+			.set(SETTINGS.VALUE_INT,type)
+			.set(SETTINGS.STATUS,enabled ? 1 : 0)
+			.set(SETTINGS.MODIFIED_BY,userOptionalProfile.get().getId())
+			.set(SETTINGS.MODIFIED_DATE,LocalDateTime.now())
+			.where(SETTINGS.KEY.equalIgnoreCase("banner"))
+			.execute();
+
+		return getSuccessResponse(req,res,200,"Banner successfully updated");
+	}
 
 	/**
 	 * Transforms records into a JsonNode.

@@ -648,6 +648,23 @@ public class ApiRoutes extends RoutesBase {
 			return ret;
 
 		});
+
+		service.get(apiPrefix + "/banner", (request, response) -> {
+			response.type("application/json");
+
+			return CoreApi.getBanner(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST Updates the banner notification
+		 * PARAMETERS:
+		 *  message (string the message to be shown)
+		 *  type (integer notification type 1=Info, 2=Warning, 3=Error)
+		 *  enabled (boolean whether the banner is active)
+		 */	
+		service.post(apiPrefix + "/banner", (request, response) -> {
+			return CoreApi.postBanner(request, response, getUserProfile(request, response));
+		});
 		
 		/*
 		 * DELETE a single file from the file store
