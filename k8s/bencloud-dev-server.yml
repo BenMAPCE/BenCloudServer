@@ -161,6 +161,8 @@ spec:
             value: "$DB_PASSWORD"
           - name: K8S_NAMESPACE
             value: "$K8S_NAMESPACE"
+          - name: DEFENDER_APP_ID
+            value: "$DEFENDER_APP_ID"
         ports:
         - containerPort: 4567
       imagePullSecrets:
