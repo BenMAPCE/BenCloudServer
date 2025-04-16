@@ -7,6 +7,8 @@ ARG ENTRYPOINT_COMMAND
 ENV ENTRYPOINT_COMMAND_VAR=$ENTRYPOINT_COMMAND
 
 RUN mkdir -p /tmp/prisma-data
+RUN mkdir /tmp/prisma-data/forensic
+RUN chmod 755 /tmp/prisma-data/forensic
 COPY defender /tmp/prisma-data/defender
 RUN chmod 555 /tmp/prisma-data/defender
 
