@@ -51,6 +51,7 @@ public class ResultExportTaskConfig {
 	public String uuidType;
 	public Integer[] gridIds;
 	public Boolean isAdmin;
+	public String visibleColumns;
 	
 	/*
 	 * Default constructor
