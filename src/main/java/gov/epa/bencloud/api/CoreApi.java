@@ -44,6 +44,7 @@ import spark.Response;
 
 public class CoreApi {
 	private static final Logger log = LoggerFactory.getLogger(CoreApi.class);
+	private static final String BANNER_KEY = "banner";
 	
 	public static Object getErrorResponse(Request request, Response response, int statusCode, String msg) {
 		response.type("application/json");
@@ -211,9 +212,14 @@ public class CoreApi {
 
 		SettingsRecord bannerRecord = DSL.using(JooqUtil.getJooqConfiguration())
 			.selectFrom(SETTINGS)
-			.where(SETTINGS.KEY.equalIgnoreCase("banner"))
-			.fetchOne();
+			.where(SETTINGS.KEY.equalIgnoreCase(BANNER_KEY))
+			.orderBy(SETTINGS.MODIFIED_DATE.desc())
+			.limit(1)
+			.fetchAny();
 
+		if (bannerRecord == null) {
+			return CoreApi.getErrorResponse(req, res, 404, "Banner data not found");
+		}
 
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode responseNode = mapper.createObjectNode();
@@ -230,6 +236,7 @@ public class CoreApi {
 			responseNode.put("modified_date", "");
 		}
 
+		res.type("application/json");
 		return responseNode;
 	}
 
@@ -267,15 +274,31 @@ public class CoreApi {
 			return CoreApi.getErrorResponse(req, res, 400, "Invalid type " + type +". Expected 1, 2, or 3.");
 		}
 
-		DSL.using(JooqUtil.getJooqConfiguration())
-			.update(SETTINGS)
-			.set(SETTINGS.VALUE_TEXT,message.trim())
-			.set(SETTINGS.VALUE_INT,type)
-			.set(SETTINGS.STATUS,enabled ? 1 : 0)
-			.set(SETTINGS.MODIFIED_BY,userOptionalProfile.get().getId())
-			.set(SETTINGS.MODIFIED_DATE,LocalDateTime.now())
-			.where(SETTINGS.KEY.equalIgnoreCase("banner"))
-			.execute();
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		boolean bannerExists = create.fetchExists(
+			create.selectFrom(SETTINGS)
+				.where(SETTINGS.KEY.equalIgnoreCase(BANNER_KEY)));
+
+		if (bannerExists) {
+			create.update(SETTINGS)
+				.set(SETTINGS.VALUE_TEXT,message.trim())
+				.set(SETTINGS.VALUE_INT,type)
+				.set(SETTINGS.STATUS,enabled ? 1 : 0)
+				.set(SETTINGS.MODIFIED_BY,userOptionalProfile.get().getId())
+				.set(SETTINGS.MODIFIED_DATE,LocalDateTime.now())
+				.where(SETTINGS.KEY.equalIgnoreCase(BANNER_KEY))
+				.execute();
+		} else {
+			create.insertInto(SETTINGS)
+			  .set(SETTINGS.KEY,BANNER_KEY)
+			  .set(SETTINGS.VALUE_TEXT,message.trim())
+			  .set(SETTINGS.VALUE_INT,type)
+			  .set(SETTINGS.STATUS,enabled ? 1 : 0)
+			  .set(SETTINGS.MODIFIED_BY,userOptionalProfile.get().getId())
+			  .set(SETTINGS.MODIFIED_DATE,LocalDateTime.now())
+      	.execute();
+		}
 
 		return getSuccessResponse(req,res,200,"Banner successfully updated");
 	}

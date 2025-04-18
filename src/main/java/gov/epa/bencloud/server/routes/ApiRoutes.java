@@ -650,8 +650,6 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		service.get(apiPrefix + "/banner", (request, response) -> {
-			response.type("application/json");
-
 			return CoreApi.getBanner(request, response, getUserProfile(request, response));
 		});
 
