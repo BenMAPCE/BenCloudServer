@@ -2682,3 +2682,57 @@ paths:
                   dbVersion:
                     type: integer
                     example: 123
+  /banner:
+    get:
+      summary: Get banner notification
+      responses:
+        '200':
+          description: A banner notification
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notification Message"
+                  type:
+                    type: integer
+                    example: 1
+                  enabled:
+                    type: boolean
+                    example: false
+                  modified_by:
+                    type: string
+                    example: example@example.com
+                  modified_date:
+                    type: string
+                    format: date-time
+                    example: "2023-09-28 09:30:00"
+    post:
+      summary: Update banner notification
+      parameters:
+        - name: message
+          in: query
+          required: true
+          description: The banner message to be shown
+          schema:
+            type: string
+            default: Notification Message
+        - name: type
+          in: query
+          required: true
+          description: Notification type (1=Info, 2=Warning, 3=Error)
+          schema:
+            type: integer
+            default: 1
+        - name: enabled
+          in: query
+          required: true
+          description: Whether the banner is active
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: Banner successfully updated
