@@ -122,7 +122,13 @@ public class GridDefinitionApi {
 				.where(GRID_DEFINITION.ID.eq(gridId))
 				.fetchOne();
 		
-		return gridRecord.value1();
+		if (gridRecord==null){
+			return "<grid removed>";
+		}
+		else{
+			return gridRecord.value1();
+		}
+				
 	}
 	
 	/**
