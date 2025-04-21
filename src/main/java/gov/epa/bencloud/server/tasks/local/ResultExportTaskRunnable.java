@@ -40,6 +40,7 @@ import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jooq.DSLContext;
@@ -155,6 +156,9 @@ public class ResultExportTaskRunnable implements Runnable {
 			Boolean includeExposure = resultExportTaskConfig.includeExposure;
 			String taskUuid = resultExportTaskConfig.taskUuid;
 			String uuidType = resultExportTaskConfig.uuidType;
+			String visibleColumnsString = resultExportTaskConfig.visibleColumns;
+			String[] visibleColumnsArray = visibleColumnsString == null ? new String[0] : visibleColumnsString.split(",");
+			List<String> visibleColumns = new ArrayList<>(Arrays.asList(visibleColumnsArray));
 
 			CommonProfile profile = new CommonProfile();
 			profile.setId(resultExportTaskConfig.userId);
@@ -311,6 +315,35 @@ public class ResultExportTaskRunnable implements Runnable {
 				}					
 			}
 			if(includeHealthImpact) {
+				Map<Integer, String> hifColumnsMap = new HashMap <Integer, String>();
+				hifColumnsMap.put(0, "column");
+				hifColumnsMap.put(1, "row");
+				hifColumnsMap.put(2, "endpoint");
+				hifColumnsMap.put(3, "study");
+				hifColumnsMap.put(4, "study");
+				hifColumnsMap.put(5, "location");
+				hifColumnsMap.put(6, "qualifier");
+				hifColumnsMap.put(7, "ages");
+				hifColumnsMap.put(8, "ages");
+				hifColumnsMap.put(9, "beta");
+				hifColumnsMap.put(10, "race");
+				hifColumnsMap.put(11, "ethnicity");
+				hifColumnsMap.put(12, "gender");
+				hifColumnsMap.put(13, "metric");
+				hifColumnsMap.put(14, "seasonal_metric");
+				hifColumnsMap.put(15, "metric_statistic");
+				hifColumnsMap.put(16, "point_estimate");
+				hifColumnsMap.put(17, "population");
+				hifColumnsMap.put(18, "delta_aq");
+				hifColumnsMap.put(19, "baseline_aq");
+				hifColumnsMap.put(20, "scenario_aq");
+				hifColumnsMap.put(21, "mean");
+				hifColumnsMap.put(22, "baseline");
+				hifColumnsMap.put(23, "percent_of_baseline");
+				hifColumnsMap.put(24, "standard_deviation");
+				hifColumnsMap.put(25, "variance");
+				hifColumnsMap.put(26, "pct_2_5");
+				hifColumnsMap.put(27, "pct_97_5");
 				DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 				//get hif task ids
 				List<Integer> hifResultDatasetIds;
@@ -436,8 +469,16 @@ public class ResultExportTaskRunnable implements Runnable {
 									res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 								}
 							}
-							//Remove percentiles by keeping all other fields
-							hifRecordsClean = hifRecords.into(hifRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27));
+
+							//Include columns that were visible in the UI results screen
+							List<Integer> includedColumns = hifColumnsMap.entrySet()
+								.stream()
+								.filter(entry -> visibleColumns.contains(entry.getValue()))
+								.map(Map.Entry::getKey)
+								.collect(Collectors.toList());
+
+							int[] includedColumnsArray = includedColumns.stream().mapToInt(f -> f).toArray();
+							hifRecordsClean = hifRecords.into(hifRecords.fields(includedColumnsArray));
 						} catch(DataAccessException e) {
 							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
