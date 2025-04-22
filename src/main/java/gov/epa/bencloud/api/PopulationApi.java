@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
 import org.jooq.Record1;
 import org.jooq.Record3;
@@ -82,7 +83,8 @@ public class PopulationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(hifTaskConfig.popId),aqGrid);
-        
+		DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
+		dsl.execute("SET work_mem = '1GB'");
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
@@ -96,7 +98,7 @@ public class PopulationApi {
 				true, //YY: groupbyAgeRange
 				aqGrid //YY: outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
-
+		dsl.execute("RESET work_mem"); 
 		return popRecords;
 	}
 
@@ -152,7 +154,8 @@ public class PopulationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(exposureTaskConfig.popId),aqGrid);
-        
+        DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
+		dsl.execute("SET work_mem = '1GB'");
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				exposureTaskConfig.popId, 
 				exposureTaskConfig.popYear,
@@ -166,7 +169,7 @@ public class PopulationApi {
 				true, //groupbyAgeRange
 				aqGrid //outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
-
+		dsl.execute("RESET work_mem"); 
 		return popRecords;
 	}
 
