@@ -50,6 +50,11 @@ public class KubernetesUtil {
 			envVar.setName("TASK_RUNNER_UUID");
 			envVar.setValue(taskRunnerUuid);
 			envVariables.add(envVar);
+			
+			envVar = new V1EnvVar();
+			envVar.setName("DEFENDER_APP_ID");
+			envVar.setValue("bencloud-taskrunner");
+			envVariables.add(envVar);
 
 			// Pass all the db variables through to the job
 			for (String varKey : envMap.keySet()) {
