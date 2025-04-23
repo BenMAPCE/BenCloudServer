@@ -47,7 +47,7 @@ public class BenCloudTaskRunner {
 			System.exit(-1);
 		}
 		try {
-			if (!ApplicationUtil.validateProperties()) {
+			if (!ApplicationUtil.validateProperties(false)) {
 				log.error("properties are not all valid, application exiting");
 				System.exit(-1);
 			}

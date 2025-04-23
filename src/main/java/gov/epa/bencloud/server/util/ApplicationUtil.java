@@ -115,7 +115,7 @@ public class ApplicationUtil {
 	 * @return true if the value of max.task.workers > 0, false if null or if <= 0.
 	 * @throws IOException
 	 */
-	public static boolean validateProperties() throws IOException {
+	public static boolean validateProperties(Boolean fileStoreRequired) throws IOException {
 
 		boolean propertiesOK = true;
 
@@ -129,7 +129,7 @@ public class ApplicationUtil {
 			propertiesOK = false;
 			return propertiesOK;
 		}
-		if(Files.notExists(Paths.get(fileStorePath))) {
+		if(fileStoreRequired && Files.notExists(Paths.get(fileStorePath))) {
 			log.info("file.store.path does not exist or is not accessible: " + fileStorePath);
 			propertiesOK = false;
 			return propertiesOK;			

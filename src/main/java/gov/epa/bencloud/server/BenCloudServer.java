@@ -39,7 +39,7 @@ public class BenCloudServer {
 		}
 
 		try {
-			if (!ApplicationUtil.validateProperties()) {
+			if (!ApplicationUtil.validateProperties(true)) {
 				log.error("properties are not all valid, application exiting");
 				System.exit(-1);
 			}
