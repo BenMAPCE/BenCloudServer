@@ -111,7 +111,7 @@ public class KubernetesUtil {
 					.endSpec()
 					.build();
 
-			V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body, "true", null, null, null);
+			V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body).execute();
 
 			//logger.debug("Job status: " + createdJob.getStatus());
 			logger.debug("Starting job for " + taskUuid);
