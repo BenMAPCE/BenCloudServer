@@ -98,6 +98,8 @@ task fatJar(type: Jar) {
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
 	archiveBaseName = "BenCloudServer"
+	zip64 true
+	
 	from { 
 		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
 		//configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -124,6 +126,7 @@ task taskRunnerFatJar(type: Jar) {
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
 	archiveBaseName = "BenCloudTaskRunner"
+	zip64 true
 	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
 }
