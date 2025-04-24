@@ -69,7 +69,7 @@ public class KubernetesUtil {
 				}
 			}
 			
-			V1VolumeMount volumeMount = new V1VolumeMount().mountPath("/app-data").name("bencloud-server");
+			//V1VolumeMount volumeMount = new V1VolumeMount().mountPath("/app-data").name("bencloud-server");
 
 			V1Job body = new V1JobBuilder()
 					.withNewMetadata()
@@ -97,7 +97,7 @@ public class KubernetesUtil {
 												Map.of("memory", new Quantity("24G"),
 														"cpu", new Quantity("8")))
 									.endResources()
-									.withVolumeMounts(volumeMount)
+									//.withVolumeMounts(volumeMount)
 									.withEnv(envVariables)
 								.endContainer()
 								.addNewImagePullSecret()
