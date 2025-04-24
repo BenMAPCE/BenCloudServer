@@ -72,7 +72,7 @@ dependencies {
 
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
-    implementation 'io.kubernetes:client-java-extended:19.0.1'
+    implementation 'io.kubernetes:client-java-extended:22.0.1'
 
 	implementation 'org.geotools:gt-main:32.1'
 	implementation 'org.geotools:gt-referencing:32.1'
