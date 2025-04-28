@@ -1740,6 +1740,7 @@ public class TaskApi {
 			Boolean includeExposure = false;
 			String taskUuid="";
 			String uuidType = "";
+			String visibleColumns = "";
 			try {
 				String idParam = String.valueOf(request.params("id"));
 				batchId = Integer.valueOf(idParam);
@@ -1747,7 +1748,8 @@ public class TaskApi {
 				includeValuation = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeValuation").equals("1")?"true":request.raw().getParameter("includeValuation"), false);
 				includeExposure = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("includeExposure").equals("1")?"true":request.raw().getParameter("includeExposure"), false);
 				taskUuid = ParameterUtil.getParameterValueAsString(request.raw().getParameter("taskUuid"),"");
-				uuidType = ParameterUtil.getParameterValueAsString(request.raw().getParameter("uuidType"),"");			
+				uuidType = ParameterUtil.getParameterValueAsString(request.raw().getParameter("uuidType"),"");	
+				visibleColumns = ParameterUtil.getParameterValueAsString(request.raw().getParameter("visibleColumns"),"");			
 				
 				String gridIdParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("gridId"), "");
 	
@@ -1799,7 +1801,8 @@ public class TaskApi {
 			taskParamsNode.put("includeExposure", includeExposure);
 			taskParamsNode.put("taskUuid", taskUuid);
 			taskParamsNode.put("uuidType", uuidType);			
-			taskParamsNode.put("isAdmin", CoreApi.isAdmin(userProfile));			
+			taskParamsNode.put("isAdmin", CoreApi.isAdmin(userProfile));	
+			taskParamsNode.put("visibleColumns", visibleColumns);		
 
 			ArrayNode gridsNode = taskParamsNode.putArray("gridIds");
 			for (int g : gridIds) {

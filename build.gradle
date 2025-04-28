@@ -72,7 +72,7 @@ dependencies {
 
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
-    implementation 'io.kubernetes:client-java-extended:19.0.1'
+    implementation 'io.kubernetes:client-java-extended:22.0.1'
 
 	implementation 'org.geotools:gt-main:32.1'
 	implementation 'org.geotools:gt-referencing:32.1'
@@ -98,6 +98,8 @@ task fatJar(type: Jar) {
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
 	archiveBaseName = "BenCloudServer"
+	zip64 true
+	
 	from { 
 		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
 		//configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -124,6 +126,7 @@ task taskRunnerFatJar(type: Jar) {
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
 	archiveBaseName = "BenCloudTaskRunner"
+	zip64 true
 	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
 }

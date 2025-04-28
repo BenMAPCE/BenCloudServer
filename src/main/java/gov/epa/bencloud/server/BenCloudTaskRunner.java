@@ -48,8 +48,9 @@ public class BenCloudTaskRunner {
 		}
 		try {
 			if (!ApplicationUtil.validateProperties()) {
-				log.error("properties are not all valid, application exiting");
-				System.exit(-1);
+				//TODO: Put this back once task runners can access EFS
+				log.error("properties are not all valid, application exiting [DISABLED FOR NOW]");
+				// System.exit(-1);
 			}
 		} catch (IOException e) {
 			log.error("Unable to validate application properties", e);

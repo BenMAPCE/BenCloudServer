@@ -2,6 +2,7 @@ package gov.epa.bencloud.server.jobs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -15,6 +16,8 @@ import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
+import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.openapi.models.V1VolumeMountBuilder;
 import io.kubernetes.client.util.ClientBuilder;
 
 /*
@@ -50,6 +53,11 @@ public class KubernetesUtil {
 			envVar.setName("TASK_RUNNER_UUID");
 			envVar.setValue(taskRunnerUuid);
 			envVariables.add(envVar);
+			
+			envVar = new V1EnvVar();
+			envVar.setName("DEFENDER_APP_ID");
+			envVar.setValue("bencloud-taskrunner");
+			envVariables.add(envVar);
 
 			// Pass all the db variables through to the job
 			for (String varKey : envMap.keySet()) {
@@ -60,6 +68,8 @@ public class KubernetesUtil {
 					envVariables.add(envVar);
 				}
 			}
+			
+			//V1VolumeMount volumeMount = new V1VolumeMount().mountPath("/app-data").name("bencloud-server");
 
 			V1Job body = new V1JobBuilder()
 					.withNewMetadata()
@@ -83,10 +93,11 @@ public class KubernetesUtil {
 									.withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner/app-defender:" + envMap.get("API_CI_COMMIT_SHORT_SHA"))
 									.withImagePullPolicy("Always")
 									.withNewResources()
-									.withRequests(
-										Map.of("memory", new Quantity("24G"),
-										"cpu", new Quantity("8")))
+										.withRequests(
+												Map.of("memory", new Quantity("24G"),
+														"cpu", new Quantity("8")))
 									.endResources()
+									//.withVolumeMounts(volumeMount)
 									.withEnv(envVariables)
 								.endContainer()
 								.addNewImagePullSecret()
@@ -96,10 +107,11 @@ public class KubernetesUtil {
 							.endSpec()
 						.endTemplate()
 						.withTtlSecondsAfterFinished(60*5) //Let the job hang around for 5 minutes so we can review the log. Can reduce this once we're capturing logs
+
 					.endSpec()
 					.build();
 
-			V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body, "true", null, null, null);
+			V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body).execute();
 
 			//logger.debug("Job status: " + createdJob.getStatus());
 			logger.debug("Starting job for " + taskUuid);
