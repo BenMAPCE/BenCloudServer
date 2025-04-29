@@ -252,8 +252,10 @@ public class TaskApi {
 
 	public static int getTotalTaskCountForUser(UserProfile profile) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		int pendingCount = create.fetchCount(TASK_QUEUE, TASK_QUEUE.USER_ID.eq(profile.getId()));
-		int completedCount = create.fetchCount(TASK_COMPLETE, TASK_COMPLETE.USER_ID.eq(profile.getId()));
+		int pendingCount = create.fetchCount(TASK_QUEUE
+		, TASK_QUEUE.USER_ID.eq(profile.getId()).and(TASK_QUEUE.TASK_TYPE.in("HIF", "Valuation","Exposure")));
+		int completedCount = create.fetchCount(TASK_COMPLETE
+		, TASK_COMPLETE.USER_ID.eq(profile.getId()).and(TASK_COMPLETE.TASK_TYPE.in("HIF", "Valuation","Exposure")));
 		return pendingCount + completedCount;
 	}
 	
