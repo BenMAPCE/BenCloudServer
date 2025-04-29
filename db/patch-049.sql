@@ -9,11 +9,11 @@ DELETE FROM "data".variable_entry WHERE id in (239, 240, 241, 242);
 -- Add new entries.
 INSERT INTO "data".variable_entry (id, variable_dataset_id,"name",grid_definition_id)
 	VALUES (239, 1,'disability_county',18);
-INSERT INTO "data".variable_entry (variable_dataset_id,"name",grid_definition_id)
+INSERT INTO "data".variable_entry (id,variable_dataset_id,"name",grid_definition_id)
 	VALUES (240, 1,'non_disability_county',18);
-INSERT INTO "data".variable_entry (variable_dataset_id,"name",grid_definition_id)
+INSERT INTO "data".variable_entry (id,variable_dataset_id,"name",grid_definition_id)
 	VALUES (241, 1,'average_cost_daily',18);
-INSERT INTO "data".variable_entry (variable_dataset_id,"name",grid_definition_id)
+INSERT INTO "data".variable_entry (id,variable_dataset_id,"name",grid_definition_id)
 	VALUES (242, 1,'labor_force_participation_rate',18);
 
 -- Add new values
