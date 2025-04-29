@@ -13,11 +13,16 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.apis.CoreV1Api.APIcreateNamespacedPersistentVolumeClaimRequest;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimBuilder;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.openapi.models.V1VolumeMountBuilder;
+import io.kubernetes.client.proto.V1.PersistentVolumeClaim;
 import io.kubernetes.client.util.ClientBuilder;
 
 /*
@@ -35,7 +40,8 @@ public class KubernetesUtil {
 			client.setDebugging(true);
 
 			BatchV1Api batchApi = new BatchV1Api(client);
-
+			CoreV1Api coreApi = new CoreV1Api();
+			
 			Map<String, String> envMap = System.getenv();
 
 			List<V1EnvVar> envVariables = new ArrayList<V1EnvVar>();
@@ -69,7 +75,21 @@ public class KubernetesUtil {
 				}
 			}
 			
-			//V1VolumeMount volumeMount = new V1VolumeMount().mountPath("/app-data").name("bencloud-server");
+
+			V1PersistentVolumeClaim persistentVolumeClaim = new V1PersistentVolumeClaimBuilder()
+					  .withNewMetadata()
+					  	.withName("bencloud-server-pv-claim")
+					  	.withNamespace(envMap.get("K8S_NAMESPACE"))
+					  .endMetadata()
+					  .withNewSpec()
+					  	.withAccessModes("ReadWriteOnce")
+					  	.withStorageClassName("efs-sc")
+					  	.withVolumeName("bencloud-server-pv")
+					  	.withNewResources()
+					  		.addToRequests("storage", new Quantity("5Gi"))
+				  		.endResources()
+					  .endSpec()
+					 .build();
 
 			V1Job body = new V1JobBuilder()
 					.withNewMetadata()
@@ -92,14 +112,23 @@ public class KubernetesUtil {
 									.withName("taskrunner")
 									.withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner/app-defender:" + envMap.get("API_CI_COMMIT_SHORT_SHA"))
 									.withImagePullPolicy("Always")
+									.addNewVolumeMount()
+										.withName("bencloud-server")
+										.withMountPath("/app-data")
+									.endVolumeMount()
 									.withNewResources()
 										.withRequests(
 												Map.of("memory", new Quantity("24G"),
 														"cpu", new Quantity("8")))
 									.endResources()
-									//.withVolumeMounts(volumeMount)
 									.withEnv(envVariables)
 								.endContainer()
+								.addNewVolume()
+									.withName("bencloud-server")
+									.withNewPersistentVolumeClaim()
+										.withClaimName("bencloud-server-pv-claim")
+									.endPersistentVolumeClaim()
+								.endVolume()
 								.addNewImagePullSecret()
 									.withName("glcr-auth")
 								.endImagePullSecret()
@@ -110,10 +139,14 @@ public class KubernetesUtil {
 
 					.endSpec()
 					.build();
+			
+			APIcreateNamespacedPersistentVolumeClaimRequest createdPvcRequest = coreApi.createNamespacedPersistentVolumeClaim( envMap.get("K8S_NAMESPACE"), persistentVolumeClaim);
+			V1PersistentVolumeClaim createdPvc = createdPvcRequest.execute();
+			logger.info("PVC created: " + createdPvc.getMetadata().getName());
 
 			V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body).execute();
-
-			//logger.debug("Job status: " + createdJob.getStatus());
+			System.out.println("Job created: " + createdJob.getMetadata().getName());
+			
 			logger.debug("Starting job for " + taskUuid);
 			
 			return true;
