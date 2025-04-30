@@ -12,17 +12,19 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 * The layout of the data center page has been revised to improve efficiency and allow for future enhancements. (BWD-29)
 * The US EPA standard valuation functions will now include results with 2%, 3%, and 7% discount applied where appropriate. (BWD-84)
 * With this release, we are beginning to implement mapping functionality in BenMAP. Currently, this is only visible when viewing grid definitions, but more functionality is planned for the next release. (BWD-18)
-* EPA banner is now set to scroll with the rest of the page instead of being locked at the top of the page (BWD-53)
-* Completed tasks will now display their time and date of completion in the user's timezone (BWD-44)
-* Result exports are now treated as separate tasks in the task manager (BWD-56, BWD-57)
-* Added warnings for when file size limits are exceeded for dataset uploads, specifically for air quality, grid definitions, and incidence uploads (BWD-99)
-* Plus, many, many other usability improvements...
-
+* EPA banner is now set to scroll with the rest of the page instead of being locked at the top of the page. (BWD-53)
+* Completed tasks will now display their time and date of completion in the user's timezone. (BWD-44)
+* Result exports are now treated as separate tasks in the task manager. (BWD-56, BWD-57)
+* Added warnings for when file size limits are exceeded for dataset uploads, specifically for air quality, grid definitions, and incidence uploads. (BWD-99)
+* Allow administrator to add a global notification banner that will show on all BenMAP web pages. (BWD-33, BWD-109, BWD-110, BWD-111)
+* Update task view table to sort by most recent (BWD-93)
+* Initiate a session timeout after 15 minutes of no user activity with a warning message one minute before (BWD-25)
 
 ### Bug Fixes
 * Large health impact and valuation analyses were crashing in certain scenarios. Memory configuration adjustments have been made to protect against this. (BWD-1)
-* Health impact functions are only shown when they match the air quality surface metrics. Previously, some functions were executed even though the required air quality metric was not present. (BWD-5, WD-8)
+* Health impact functions are only shown when they match the air quality surface metrics. Previously, some functions were executed even though the required air quality metric was not present. (BWD-5, BWD-8)
 * Valuation results were being duplicated when multiple hif groups are selected with overlapping functions (BWD-3)
+* When creating crosswalks, cast col/row to BIGINT first to avoid "integer out of range" error. (BWD-106)
 
 ## Production 2024-04-29 | [API v0.5.0 and DB v27](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
