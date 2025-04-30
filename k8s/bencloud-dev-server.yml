@@ -73,7 +73,7 @@ metadata:
   namespace: benmap-dev
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   storageClassName: efs-sc
   volumeName: bencloud-server-pv
   resources:

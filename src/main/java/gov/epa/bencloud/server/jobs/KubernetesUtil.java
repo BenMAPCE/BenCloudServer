@@ -76,20 +76,20 @@ public class KubernetesUtil {
 			}
 			
 
-//			V1PersistentVolumeClaim persistentVolumeClaim = new V1PersistentVolumeClaimBuilder()
-//					  .withNewMetadata()
-//					  	.withName("bencloud-api-pv-claim")
-//					  	.withNamespace(envMap.get("K8S_NAMESPACE"))
-//					  .endMetadata()
-//					  .withNewSpec()
-//					  	.withAccessModes("ReadWriteOnce")
-//					  	.withStorageClassName("efs-sc")
-//					  	.withVolumeName("bencloud-server-pv")
-//					  	.withNewResources()
-//					  		.addToRequests("storage", new Quantity("5Gi"))
-//				  		.endResources()
-//					  .endSpec()
-//					 .build();
+			V1PersistentVolumeClaim persistentVolumeClaim = new V1PersistentVolumeClaimBuilder()
+					  .withNewMetadata()
+					  	.withName("bencloud-server-pv-claim")
+					  	.withNamespace(envMap.get("K8S_NAMESPACE"))
+					  .endMetadata()
+					  .withNewSpec()
+					  	.withAccessModes("ReadWriteMany")
+					  	.withStorageClassName("efs-sc")
+					  	.withVolumeName("bencloud-server-pv")
+					  	.withNewResources()
+					  		.addToRequests("storage", new Quantity("5Gi"))
+				  		.endResources()
+					  .endSpec()
+					 .build();
 
 			V1Job body = new V1JobBuilder()
 					.withNewMetadata()
@@ -112,10 +112,10 @@ public class KubernetesUtil {
 									.withName("taskrunner")
 									.withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner/app-defender:" + envMap.get("API_CI_COMMIT_SHORT_SHA"))
 									.withImagePullPolicy("Always")
-//									.addNewVolumeMount()
-//										.withName("bencloud-server-pv")
-//										.withMountPath("/app-data")
-//									.endVolumeMount()
+									.addNewVolumeMount()
+										.withName("bencloud-server-pv")
+										.withMountPath("/app-data")
+									.endVolumeMount()
 									.withNewResources()
 										.withRequests(
 												Map.of("memory", new Quantity("24G"),
@@ -123,13 +123,12 @@ public class KubernetesUtil {
 									.endResources()
 									.withEnv(envVariables)
 								.endContainer()
-//								.addNewVolume()
-//									.withName("bencloud-server-pv")
-//									.withNewPersistentVolumeClaim()
-//										//.withClaimName("bencloud-server-pv-claim")
-//										.withClaimName("bencloud-api-pv-claim")
-//									.endPersistentVolumeClaim()
-//								.endVolume()
+								.addNewVolume()
+									.withName("bencloud-server-pv")
+									.withNewPersistentVolumeClaim()
+										.withClaimName("bencloud-server-pv-claim")
+									.endPersistentVolumeClaim()
+								.endVolume()
 								.addNewImagePullSecret()
 									.withName("glcr-auth")
 								.endImagePullSecret()
@@ -141,12 +140,12 @@ public class KubernetesUtil {
 					.endSpec()
 					.build();
 			
-//			APIcreateNamespacedPersistentVolumeClaimRequest createdPvcRequest = coreApi.createNamespacedPersistentVolumeClaim( envMap.get("K8S_NAMESPACE"), persistentVolumeClaim);
-//			V1PersistentVolumeClaim createdPvc = createdPvcRequest.execute();
-//			logger.info("PVC created: " + createdPvc.getMetadata().getName());
+			APIcreateNamespacedPersistentVolumeClaimRequest createdPvcRequest = coreApi.createNamespacedPersistentVolumeClaim( envMap.get("K8S_NAMESPACE"), persistentVolumeClaim);
+			V1PersistentVolumeClaim createdPvc = createdPvcRequest.execute();
+			logger.info("PVC created: " + createdPvc.getMetadata().getName());
 
 			V1Job createdJob = batchApi.createNamespacedJob(envMap.get("K8S_NAMESPACE"), body).execute();
-			System.out.println("Job created: " + createdJob.getMetadata().getName());
+			logger.info("Job created: " + createdJob.getMetadata().getName());
 			
 			logger.debug("Starting job for " + taskUuid);
 			
