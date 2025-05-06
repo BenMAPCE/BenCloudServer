@@ -57,6 +57,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionR
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
+import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
@@ -526,7 +527,35 @@ public class GridDefinitionApi {
 			return CoreApi.getErrorResponse(request, response, 400, "Error deleting grid definition");
 		}
 
-		// TODO: Delete all crosswalks related to this grid
+		// Load GeoServer URL and credentials from properties
+		String geoserverUrl = ApplicationUtil.getProperty("geoserver.url");
+		String geoserverUsername = ApplicationUtil.getProperty("geoserver.username");
+		String geoserverPassword = ApplicationUtil.getProperty("geoserver.password");
+
+		// Request grid layer deletion at GeoServer
+		try {
+			String gridTableName = gridDefinitionResult.getTableName().substring(6);
+			String auth = "Basic " + Base64.getEncoder().encodeToString((geoserverUsername + ":" + geoserverPassword).getBytes());
+			URL url = new URL(geoserverUrl + "/layers/" + gridTableName + "?recurse=true");
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("DELETE");
+			connection.setRequestProperty("Authorization", auth);
+			connection.setDoOutput(true);
+
+			int responseCode = connection.getResponseCode();
+			if (responseCode != HttpURLConnection.HTTP_OK) {
+				try (InputStream errorStream = connection.getErrorStream()) {
+					String message = connection.getResponseMessage();
+					if (errorStream != null) {
+						message = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+					}
+					log.error("Failed to delete grid from GeoServer. Response code: " + responseCode + ". Message: " + message);
+				}
+			}
+		} catch (Exception e) {
+			log.error("Error deleting grid from GeoServer", e);
+		}
+		
 		// We should add validation to prevent deletion if the grid is tied to any result sets or other datasets
 		// TODO: Add list of places to check for previous usage of grid before deleting
 		
