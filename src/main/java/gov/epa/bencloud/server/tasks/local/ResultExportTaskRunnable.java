@@ -158,7 +158,12 @@ public class ResultExportTaskRunnable implements Runnable {
 			String uuidType = resultExportTaskConfig.uuidType;
 			String visibleColumnsString = resultExportTaskConfig.visibleColumns;
 			String[] visibleColumnsArray = visibleColumnsString == null ? new String[0] : visibleColumnsString.split(",");
-			List<String> visibleColumns = new ArrayList<>(Arrays.asList(visibleColumnsArray));
+			List<String> visibleColumns = new ArrayList<>();
+			visibleColumns.add("column");
+			visibleColumns.add("row");
+			for(String str : visibleColumnsArray) {
+				visibleColumns.add(str);
+			}
 
 			CommonProfile profile = new CommonProfile();
 			profile.setId(resultExportTaskConfig.userId);
