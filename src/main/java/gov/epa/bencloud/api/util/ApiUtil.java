@@ -338,7 +338,8 @@ public class ApiUtil {
 		for (String variableName : requiredVariableNames) {
 
 			//If the crosswalk isn't there, create it now
-			CrosswalksApi.ensureCrosswalkExists(getVariableGridDefinitionId(variableDatasetId,variableName),gridId);
+			//To calcualte population/area weighted average of variables, we use crosswalk with source= analysis scale, target = variable scale. 
+			CrosswalksApi.ensureCrosswalkExists(gridId, getVariableGridDefinitionId(variableDatasetId,variableName));
 
 			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 					variableDatasetId, 
