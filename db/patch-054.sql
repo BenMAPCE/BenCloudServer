@@ -1,6 +1,6 @@
 /**** Update get_variable function ****/
 
-UPDATE "data".settings SET value_int=52 WHERE "key"='version';
+UPDATE "data".settings SET value_int=54 WHERE "key"='version';
 
 -- DROP FUNCTION "data".get_variable(int4, text, int4);
 
