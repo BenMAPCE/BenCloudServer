@@ -24,6 +24,7 @@ import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
+import gov.epa.bencloud.server.tasks.local.ResultExportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
@@ -116,6 +117,9 @@ public class BenCloudTaskRunner {
 				et.run();
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_GRID_IMPORT)) {				
 				GridImportTaskRunnable et = new GridImportTaskRunnable(taskUuid, taskRunnerUuid);
+				et.run();
+			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_RESULT_EXPORT)) {				
+				ResultExportTaskRunnable et = new ResultExportTaskRunnable(taskUuid, taskRunnerUuid);
 				et.run();
 			} else {
 				log.error("Unknown task type: " + task.getType());
