@@ -198,7 +198,8 @@ public class GridImportTaskRunnable implements Runnable {
 			gridImportTaskLog.getGridImportTaskConfig().gridDefinitionId = gridRecord.getId();
 
 			// Load GeoServer URL and credentials from properties
-			String geoserverStoreName = ApplicationUtil.getProperty("geoserver.store.name");
+			String geoserverWorkspace = ApplicationUtil.getProperty("geoserver.workspace");
+			String geoserverStore = ApplicationUtil.getProperty("geoserver.store");
 			String geoserverUrl = ApplicationUtil.getProperty("geoserver.url");
 			String geoserverUsername = ApplicationUtil.getProperty("geoserver.username");
 			String geoserverPassword = ApplicationUtil.getProperty("geoserver.password");
@@ -220,7 +221,7 @@ public class GridImportTaskRunnable implements Runnable {
 				+ "   \"crs\": \"" + srs + "\""
 				+ " },"
 				//change this store name if testing on local geoserver vs. colo
-				+ " \"store\": { \"name\": \"" + geoserverStoreName + "\" },"
+				+ " \"store\": { \"name\": \"" + geoserverStore + "\" },"
 				+ " \"attributes\": {"
 				+ "   \"attribute\": ["
 				+ "     { \"name\": \"col\", \"binding\": \"java.lang.Integer\" },"
@@ -229,7 +230,7 @@ public class GridImportTaskRunnable implements Runnable {
 				+ "   ]"
 				+ " }"
 				+ "} }";
-				URL url = new URL(geoserverUrl);
+				URL url = new URL(geoserverUrl + "/workspaces/" + geoserverWorkspace + "/datastores/" + geoserverStore + "/featuretypes");
 				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 				connection.setRequestMethod("POST");
 				connection.setRequestProperty("Authorization", auth);
@@ -242,10 +243,13 @@ public class GridImportTaskRunnable implements Runnable {
 				}
 
 				int responseCode = connection.getResponseCode();
-				if (responseCode != 201) {
+				if (responseCode != HttpURLConnection.HTTP_CREATED) {
 					try (InputStream errorStream = connection.getErrorStream()) {
-						String errorMessage = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
-						log.error("Failed to publish grid to GeoServer. Response code: " + responseCode + ". Error message: " + errorMessage);
+						String message = connection.getResponseMessage();
+						if (errorStream != null) {
+							message = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+						}
+						log.error("Failed to publish grid to GeoServer. Response code: " + responseCode + ". Message: " + message);
 					}
 					validationMsg.success = false;
 					validationMsg.messages.add(new ValidationMessage.Message("error", "Failed to publish grid to GeoServer."));
