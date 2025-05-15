@@ -149,7 +149,7 @@ public class ResultExportTaskRunnable implements Runnable {
 			 * mark task complete and clean up
 			 */
 			
-			Integer batchId = task.getBatchId();
+			Integer batchId = resultExportTaskConfig.batchId;
 			Integer[] gridIds = resultExportTaskConfig.gridIds;
 			Boolean includeHealthImpact = resultExportTaskConfig.includeHealthImpact;
 			Boolean includeValuation = resultExportTaskConfig.includeValuation;
