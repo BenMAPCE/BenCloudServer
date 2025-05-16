@@ -463,7 +463,7 @@ public class TaskApi {
 						ScenarioHIFConfig scenarioHIFConfig = new ScenarioHIFConfig();
 						scenarioHIFConfig.hifInstanceId = hifConfig.hifInstanceId;
 
-						HIFUtil.setIncidencePrevalence(hifConfig, scenario, popConfig, scenarioHIFConfig, defaultIncidencePrevalenceDataset, true, populationId);
+						HIFUtil.setIncidencePrevalence(hifConfig, scenario, popConfig, scenarioHIFConfig, defaultIncidencePrevalenceDataset, true, populationId, userProfile);
 						popConfig.scenarioHifConfigs.add(scenarioHIFConfig);
 					}
 				}

@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.Vector;
 
@@ -19,6 +20,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.exception.TooManyRowsException;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.*;
+import org.pac4j.core.profile.UserProfile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -344,7 +346,7 @@ public class HIFUtil {
 	 * @param functionIncidenceDataset
 	 * @param functionPrevalenceDataset
 	 */
-	public static void setIncidencePrevalence(HIFConfig hifConfig, Scenario scenario, ScenarioPopConfig scenarioPopConfig, ScenarioHIFConfig scenarioHIFConfig, int defaultIncidencePrevalenceDataset, Boolean userPrefered, int populationId) {
+	public static void setIncidencePrevalence(HIFConfig hifConfig, Scenario scenario, ScenarioPopConfig scenarioPopConfig, ScenarioHIFConfig scenarioHIFConfig, int defaultIncidencePrevalenceDataset, Boolean userPrefered, int populationId, Optional<UserProfile> userProfile) {
 
 		
 		try {
@@ -370,7 +372,8 @@ public class HIFUtil {
 			if(!useEPADefault) {
 				Result<Record1<Integer>> records =  DSL.using(JooqUtil.getJooqConfiguration()).select(INCIDENCE_DATASET.ID)
 					.from(INCIDENCE_DATASET)
-					.where(INCIDENCE_DATASET.SHARE_SCOPE.eq((short) 0))
+					.where(INCIDENCE_DATASET.SHARE_SCOPE.eq((short) 0)
+						.and(INCIDENCE_DATASET.USER_ID.eq(userProfile.get().getId())))
 					.fetch();
 				for(Record1<Integer> record : records) {
 					incidenceOptions.add(record.get(INCIDENCE_DATASET.ID));
