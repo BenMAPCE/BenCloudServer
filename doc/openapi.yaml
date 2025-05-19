@@ -2627,6 +2627,56 @@ paths:
           description: Successfully removed a grid definition.
         '204':
           description: Successfully removed a grid definition.
+  /admin/files:
+    get:
+      summary: Returns the files and directories in the filestore.
+      responses:
+        '200':
+          description: Successfully returned an array of files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "directoryname"
+                  size:
+                    type: integer
+                    example: 0
+                  created_date:
+                    type: string
+                    format: date-time
+                    example: "2023-09-28 09:30:00"
+                  modified_date:
+                    type: string
+                    format: date-time
+                    example: "2023-09-28 09:30:00"
+                  is_directory:
+                    type: boolean
+                    example: true
+                  contents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: "filename.ext"
+                        size:
+                          type: integer
+                          example: 256
+                        created_date:
+                          type: string
+                          format: date-time
+                          example: "2023-09-28 09:30:00"
+                        modified_date:
+                          type: string
+                          format: date-time
+                          example: "2023-09-28 09:30:00"
+                        is_directory:
+                          type: boolean
+                          example: false
   /files/{id}:
     get:
       summary: Retrieve a file by ID

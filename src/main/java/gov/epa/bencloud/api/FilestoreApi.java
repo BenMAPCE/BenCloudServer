@@ -10,6 +10,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.io.IOUtils;
@@ -19,6 +25,10 @@ import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -99,6 +109,64 @@ public class FilestoreApi {
 		}
 
 		return CoreApi.getSuccessResponse(request,response,200,"File Found");
+	}
+
+/*
+	 * Return information on all files in the filestore
+	 * Requires admin access
+	 */
+	public static Object getAllFiles(Request request, Response response, Optional<UserProfile> userProfile) { 
+
+		if(!CoreApi.isAdmin(userProfile)) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		ObjectMapper mapper = new ObjectMapper();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+		ObjectNode responseJSON = getPathJSON(FilestoreUtil.getFilestorePath(),mapper,formatter);
+
+		response.type("application/json");
+		response.status(200);
+		return responseJSON;
+	}
+
+	private static ObjectNode getPathJSON(Path path, ObjectMapper mapper, DateTimeFormatter formatter) {
+
+		ObjectNode pathData = mapper.createObjectNode();
+
+		BasicFileAttributes attrs;
+		try {
+			attrs = Files.readAttributes(path, BasicFileAttributes.class);
+		} catch(IOException e) {
+			log.error("Error getting attributes for path: "+path, e);
+			pathData.put("error","Error getting attributes");
+			return pathData;
+		}
+		
+		pathData.put("name",path.getFileName().toString());
+		pathData.put("size",attrs.size());
+		pathData.put("modified_date",attrs.lastModifiedTime().toInstant().atZone(ZoneId.systemDefault()).format(formatter));
+		pathData.put("created_date",attrs.creationTime().toInstant().atZone(ZoneId.systemDefault()).format(formatter));
+		pathData.put("is_directory",attrs.isDirectory());
+
+		if (attrs.isDirectory()) {
+			List<Path> paths;
+			try {
+				paths = FilestoreUtil.getPaths(path);
+			} catch(IOException e) {
+				log.error("Error getting paths in path: "+path, e);
+				pathData.put("error","Error getting paths");
+				return pathData;
+			}
+			ArrayNode contentsArray = pathData.putArray("contents");
+			for (Path subPath : paths) {
+				ObjectNode subData = getPathJSON(subPath,mapper,formatter);
+				contentsArray.add(subData);
+			}
+		}
+
+		return pathData;
 	}
 	
 	/*

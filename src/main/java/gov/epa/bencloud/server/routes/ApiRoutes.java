@@ -676,6 +676,13 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		/*
+		 * GET info on all files in the file store
+		 */
+		service.get(apiPrefix + "/admin/files", (request, response) -> {
+			return FilestoreApi.getAllFiles(request, response, getUserProfile(request, response));
+		});
+
+		/*
 		 * GET a single file from the file store
 		 * PARAMETERS:
 		 *  :id
