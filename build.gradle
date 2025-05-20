@@ -98,26 +98,24 @@ task fatJar(type: Jar) {
 	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
 	archiveBaseName = "BenCloudServer"
-	zip64 true
-	
+	zip64 true	
 	from { 
 		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-		//configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
 	}
 	with jar
 }
 
-shadowJar {
-	  mergeServiceFiles()
-    archiveBaseName.set("BenCloudServer")
-    archiveClassifier.set("") // Remove the default "all" classifier
-		manifest {
-			attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
-    }	
-}
+// shadowJar {
+//    mergeServiceFiles()
+//    archiveBaseName.set("BenCloudServer")
+//    archiveClassifier.set("") // Remove the default "all" classifier
+//		manifest {
+//			attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
+//    }	
+//}
 
 task taskRunnerFatJar(type: Jar) {
-    duplicatesStrategy = 'include'
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
 	manifest {
 		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudTaskRunner'

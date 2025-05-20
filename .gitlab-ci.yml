@@ -29,7 +29,7 @@ build_dev_jars:
     - benmapdevgitlab
   script:
     - gradle fatJar
-    - gradle taskRunnerFatJar
+    - gradle taskRunnerFatJar --debug
     - cp build/libs/BenCloudServer.jar BenCloudServer.jar
     - cp build/libs/BenCloudTaskRunner.jar BenCloudTaskRunner.jar
   cache:
