@@ -12,6 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -53,6 +56,23 @@ public class FilestoreUtil {
 	 */
 	public static File getFile(Integer id) {
 		return getFilePath(id).toFile();
+	}
+
+	/*
+	 * Returns all paths directly in a path
+	 * This method does not enforce user-level security. That is the responsibility of the caller.
+	 */
+	public static List<Path> getPaths(Path path) throws IOException {
+		try (Stream<Path> stream = Files.list(path)) {			
+			return stream.collect(Collectors.toList());
+    }
+	}
+
+	/*
+	 * Returns the path of the filestore
+	 */
+	public static Path getFilestorePath() {
+		return Paths.get(ApplicationUtil.getProperty("file.store.path"));
 	}
 
 	/*
