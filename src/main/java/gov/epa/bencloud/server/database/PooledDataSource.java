@@ -79,6 +79,10 @@ public class PooledDataSource {
 			} else {
 				log.info("using environment variables");
 				log.info("DB_HOST: " + databaseHost);
+				log.info("DB_PORT: " + databasePort);
+				log.info("DB_DATABASE: " + databaseName);
+				log.info("DB_USERNAME: " + databaseUser);
+				log.info("DB_PASSWORD: " + databasePassword);
 			}
 		}
 		

@@ -327,6 +327,13 @@ public class GridImportTaskRunnable implements Runnable {
 	    // Write to database
 	    DataStore dbDataStore = DataStoreFinder.getDataStore(dbParams);    
 	    
+	    Iterator it = DataStoreFinder.getAvailableDataStores();
+	    while(it.hasNext()){
+	      System.out.println("GeoTools available datastore: " + it.next());
+	    }
+	    
+	    
+	    
 	    // Prepend the "g_" on the unique table name to avoid the need to quote it in SQL if it starts with a number
 	    // Also, tables that begin with "g_" will be excluded during jOOQ code generation
 	    String gridTableName = "g_" + UUID.randomUUID().toString().replace("-", "");

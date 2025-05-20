@@ -66,20 +66,6 @@ roleRef:
   kind: ClusterRole
   name: api-cluster-role 
 ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#  name: bencloud-server-pv-claim
-#  namespace: benmap-dev
-#spec:
-#  accessModes:
-#    - ReadWriteMany
-#  storageClassName: efs-sc
-#  volumeName: bencloud-server-pv
-#  resources:
-#    requests:
-#      storage: 5Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
