@@ -7,7 +7,9 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Iterator;
 
+import org.geotools.api.data.DataStoreFinder;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.License;
 import org.slf4j.Logger;
@@ -77,6 +79,12 @@ public class BenCloudTaskRunner {
 			System.exit(-1);
 		}
 
+		// TESTING
+	    Iterator it = DataStoreFinder.getAvailableDataStores();
+	    while(it.hasNext()){
+	      System.out.println("GeoTools available datastore: " + it.next());
+	    }
+		
 		log.info("*** BenMAP Task Runner. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 	    
 	    try {

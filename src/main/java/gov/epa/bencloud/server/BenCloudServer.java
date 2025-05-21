@@ -2,8 +2,10 @@ package gov.epa.bencloud.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 
+import org.geotools.api.data.DataStoreFinder;
 import org.mariuszgromada.math.mxparser.License;
 import org.pac4j.core.config.Config;
 import org.pac4j.core.context.HttpConstants;
@@ -130,6 +132,11 @@ public class BenCloudServer {
 		
 		JobsUtil.startJobScheduler();
 	
+		// TESTING
+	    Iterator it = DataStoreFinder.getAvailableDataStores();
+	    while(it.hasNext()){
+	      System.out.println("GeoTools available datastore: " + it.next());
+	    }
 
 		log.info("*** BenMAP API Server. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 
