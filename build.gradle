@@ -1,22 +1,28 @@
-plugins {
-	  id 'com.gradleup.shadow' version '8.3.0'
-		id 'java'
-    id 'java-library'
-}
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-sourceCompatibility = 17
-targetCompatibility = 17
+plugins {
+	id 'java'
+    id 'java-library'
+	id 'com.gradleup.shadow' version '8.3.6'
+}
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
 repositories {
     maven {
-    	url "https://repo.osgeo.org/repository/release/"
+    	url = "https://repo.osgeo.org/repository/release/"
     }
-		gradlePluginPortal()
     mavenCentral()
+	gradlePluginPortal()
 }
 
 dependencies {
 
+	//Possible future upgrade for spark?
+	//implementation 'io.github.sparkjavateam:spark-core:2.9.4'
+	//implementation 'org.zoomba-lang:spark-core:3.0.1'
 	implementation ('com.sparkjava:spark-core:2.9.4') {
 		exclude group: 'org.eclipse.jetty', module: 'jetty-server'
 		exclude group: 'org.eclipse.jetty', module: 'jetty-webapp'
@@ -33,14 +39,8 @@ dependencies {
     implementation 'org.bitbucket.b_c:jose4j:0.9.4'
 	implementation 'org.pac4j:spark-pac4j:5.0.1'
 	implementation 'org.pac4j:pac4j-http:5.6.1'
-
-	//implementation 'io.github.sparkjavateam:spark-core:2.9.4'
-	//implementation 'org.zoomba-lang:spark-core:3.0.1'
 	
-	// database related
-	
-	implementation 'org.postgresql:postgresql:42.3.10'
-	
+	implementation 'org.postgresql:postgresql:42.3.10'	
 	implementation 'com.h2database:h2:1.4.200'
 	implementation 'org.jooq:jooq:3.15.12'
 	implementation 'p6spy:p6spy:3.9.1'
@@ -80,15 +80,52 @@ dependencies {
 	implementation 'org.geotools:gt-epsg-extension:33.1'
 	implementation 'org.geotools.jdbc:gt-jdbc:33.1'
 	implementation 'org.geotools.jdbc:gt-jdbc-postgis:33.1'
-	implementation 'org.geotools:gt-shapefile:33.1'
+    implementation 'org.geotools:gt-shapefile:33.1'
 		
 	testImplementation 'org.geotools.jdbc:gt-jdbc-postgis:33.1'
-	
 	testImplementation(platform('org.junit:junit-bom:5.9.3'))
 	testImplementation('org.junit.jupiter:junit-jupiter')
 }
 
-task fatJar(type: Jar) {
+ shadowJar {
+    mergeServiceFiles()
+    archiveBaseName.set("BenCloudServer")
+    archiveClassifier.set("") // Remove the default "all" classifier
+		manifest {
+			attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
+    }	
+}
+/*
+task fatJar(type: ShadowJar) {
+    mergeServiceFiles()
+    archiveBaseName.set("BenCloudServer")
+    from sourceSets.main.allSource
+    archiveClassifier.set("") // Remove the default "all" classifier
+	manifest {
+		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
+    }
+    zip64 true
+    //from { 
+	//	configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	//}
+	with jar	
+}
+
+task taskRunnerFatJar(type: ShadowJar) {
+    mergeServiceFiles()
+    archiveBaseName.set("BenCloudTaskRunner")
+    archiveClassifier.set("") // Remove the default "all" classifier
+	manifest {
+		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudTaskRunner'
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+   	from { 
+		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}	
+}
+*/
+/*
+task oldfatJar(type: Jar) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
 	manifest {
@@ -105,16 +142,7 @@ task fatJar(type: Jar) {
 	with jar
 }
 
-// shadowJar {
-//    mergeServiceFiles()
-//    archiveBaseName.set("BenCloudServer")
-//    archiveClassifier.set("") // Remove the default "all" classifier
-//		manifest {
-//			attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
-//    }	
-//}
-
-task taskRunnerFatJar(type: Jar) {
+task oldtaskRunnerFatJar(type: Jar) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
 	manifest {
@@ -128,7 +156,7 @@ task taskRunnerFatJar(type: Jar) {
 	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
 }
-
+*/
 test {
 	useJUnitPlatform()
 	testLogging {
