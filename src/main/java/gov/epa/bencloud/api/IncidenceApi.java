@@ -1,5 +1,6 @@
 package gov.epa.bencloud.api;
 
+import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT_GROUP;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ETHNICITY;
@@ -9,6 +10,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_DATASE
 import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_ENTRY;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_VALUE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.RACE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_CONFIG;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -432,6 +434,27 @@ public class IncidenceApi {
     return names;
 	}
 
+	/**
+	 *  @param userId
+	 *  @return the names of all the incidence or prevalence datasets by user, return all in lower cases.
+	 */
+	public static List<String> getAllIncidencePrevalenceDatasetNamesByUser(String userId) {
+		if(userId == null) {
+            return null;
+        }
+		Result<Record1<String>> datasetNames = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(DSL.lower(INCIDENCE_DATASET.NAME))
+				.from(INCIDENCE_DATASET)
+				.join(INCIDENCE_ENTRY).on(INCIDENCE_DATASET.ID.eq(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID))
+				.where(INCIDENCE_DATASET.USER_ID.equal(userId).or(INCIDENCE_DATASET.SHARE_SCOPE.equal((short) 1)))
+				.groupBy(INCIDENCE_DATASET.NAME)
+				.orderBy(INCIDENCE_DATASET.NAME)
+				.fetch();
+	
+		List<String> names = datasetNames.map(Record1::value1);
+		return names;
+		}
+
 /**
 	 * 
 	 * @param request
@@ -670,9 +693,11 @@ public class IncidenceApi {
 			return transformValMsgToJSON(validationMsg);
 		}
 
+		String userId = userProfile.get().getId();
+
 		// //step 0: make sure incidenceName is not the same as any existing ones
 		
-		List<String>incidenceNames = getAllIncidencePrevalenceDatasetNames();
+		List<String>incidenceNames = getAllIncidencePrevalenceDatasetNamesByUser(userId);
 		if (incidenceNames.contains(incidenceName.toLowerCase())) {
 			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","An incidence dataset " + incidenceName + " already exists. Please enter a different name."));
@@ -1193,7 +1218,7 @@ public class IncidenceApi {
 					, INCIDENCE_DATASET.FILENAME
 					, INCIDENCE_DATASET.UPLOAD_DATE
 					)
-			.values(incidenceName,  gridId, userProfile.get().getId(), Constants.SHARING_NONE, filename, uploadDate)
+			.values(incidenceName,  gridId, userId, Constants.SHARING_NONE, filename, uploadDate)
 			.returning(INCIDENCE_DATASET.ID, INCIDENCE_DATASET.NAME,INCIDENCE_DATASET.GRID_DEFINITION_ID)
 			.fetchOne();
 
