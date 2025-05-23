@@ -839,7 +839,7 @@ public class AirQualityApi {
 		
 		//step 0: make sure layerName is not the same as any existing ones
 		
-		List<String>layerNames = AirQualityUtil.getExistingLayerNames(pollutantId);
+		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
 		if (layerNames.contains(layerName.toLowerCase())) {
 			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please enter a different name."));
