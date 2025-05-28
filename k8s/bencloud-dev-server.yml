@@ -149,8 +149,8 @@ spec:
             value: "$K8S_NAMESPACE"
           - name: DEFENDER_APP_ID
             value: "$DEFENDER_APP_ID"
-          - name: GEOSERVER_REST_URL
-            value: "$GEOSERVER_REST_URL"
+          - name: GEOSERVER_URL
+            value: "$GEOSERVER_URL"
           - name: GEOSERVER_WORKSPACE
             value: "$GEOSERVER_WORKSPACE"
           - name: GEOSERVER_STORE
