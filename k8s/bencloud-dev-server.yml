@@ -149,6 +149,16 @@ spec:
             value: "$K8S_NAMESPACE"
           - name: DEFENDER_APP_ID
             value: "$DEFENDER_APP_ID"
+          - name: GEOSERVER_REST_URL
+            value: "$GEOSERVER_REST_URL"
+          - name: GEOSERVER_WORKSPACE
+            value: "$GEOSERVER_WORKSPACE"
+          - name: GEOSERVER_STORE
+            value: "$GEOSERVER_STORE"
+          - name: GEOSERVER_ADMIN_USER
+            value: "$GEOSERVER_ADMIN_USER"
+          - name: GEOSERVER_ADMIN_PASSWORD
+            value: "$GEOSERVER_ADMIN_PASSWORD"
         ports:
         - containerPort: 4567
       imagePullSecrets:

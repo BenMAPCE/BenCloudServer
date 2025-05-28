@@ -66,31 +66,15 @@ public class KubernetesUtil {
 			envVar.setValue("bencloud-taskrunner");
 			envVariables.add(envVar);
 
-			// Pass all the db variables through to the job
+			// Pass all the db and geoserver variables through to the job
 			for (String varKey : envMap.keySet()) {
-				if (varKey.startsWith("DB_")) {
+				if (varKey.startsWith("DB_") || varKey.startsWith("GEOSERVER_")) {
 					envVar = new V1EnvVar();
 					envVar.setName(varKey);
 					envVar.setValue(envMap.get(varKey));
 					envVariables.add(envVar);
 				}
 			}
-			
-
-//			V1PersistentVolumeClaim persistentVolumeClaim = new V1PersistentVolumeClaimBuilder()
-//					  .withNewMetadata()
-//					  	.withName("bencloud-server-pv-claim")
-//					  	.withNamespace(envMap.get("K8S_NAMESPACE"))
-//					  .endMetadata()
-//					  .withNewSpec()
-//					  	.withAccessModes("ReadWriteMany")
-//					  	.withStorageClassName("efs-sc")
-//					  	.withVolumeName("bencloud-server-pv")
-//					  	.withNewResources()
-//					  		.addToRequests("storage", new Quantity("5Gi"))
-//				  		.endResources()
-//					  .endSpec()
-//					 .build();
 
 			V1Job body = new V1JobBuilder()
 					.withNewMetadata()

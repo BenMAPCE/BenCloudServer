@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -527,16 +528,16 @@ public class GridDefinitionApi {
 			return CoreApi.getErrorResponse(request, response, 400, "Error deleting grid definition");
 		}
 
-		// Load GeoServer URL and credentials from properties
-		String geoserverUrl = ApplicationUtil.getProperty("geoserver.url");
-		String geoserverUsername = ApplicationUtil.getProperty("geoserver.username");
-		String geoserverPassword = ApplicationUtil.getProperty("geoserver.password");
+			// Load GeoServer URL and credentials from properties
+			Map<String, String> geoserverInfo = ApplicationUtil.getGeoserverInfo();
+			log.info(geoserverInfo.toString());
 
 		// Request grid layer deletion at GeoServer
 		try {
 			String gridTableName = gridDefinitionResult.getTableName().substring(6);
-			String auth = "Basic " + Base64.getEncoder().encodeToString((geoserverUsername + ":" + geoserverPassword).getBytes());
-			URL url = new URL(geoserverUrl + "/layers/" + gridTableName + "?recurse=true");
+			String auth = "Basic " + Base64.getEncoder().encodeToString((geoserverInfo.get("GEOSERVER_ADMIN_USER") + ":" + geoserverInfo.get("GEOSERVER_ADMIN_PASSWORD")).getBytes());
+
+			URL url = new URL(geoserverInfo.get("GEOSERVER_URL") + "/layers/" + gridTableName + "?recurse=true");
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 			connection.setRequestMethod("DELETE");
 			connection.setRequestProperty("Authorization", auth);

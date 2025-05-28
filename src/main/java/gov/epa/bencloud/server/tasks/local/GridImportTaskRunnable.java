@@ -198,16 +198,12 @@ public class GridImportTaskRunnable implements Runnable {
 			gridImportTaskLog.getGridImportTaskConfig().gridDefinitionId = gridRecord.getId();
 
 			// Load GeoServer URL and credentials from properties
-			String geoserverWorkspace = ApplicationUtil.getProperty("geoserver.workspace");
-			String geoserverStore = ApplicationUtil.getProperty("geoserver.store");
-			String geoserverUrl = ApplicationUtil.getProperty("geoserver.url");
-			String geoserverUsername = ApplicationUtil.getProperty("geoserver.username");
-			String geoserverPassword = ApplicationUtil.getProperty("geoserver.password");
+			Map<String, String> geoserverInfo = ApplicationUtil.getGeoserverInfo();
+			log.info(geoserverInfo.toString());
 
 			//Publish the new grid to GeoServer
 			try {
-				log.info(geoserverUrl);
-				String auth = "Basic " + Base64.getEncoder().encodeToString((geoserverUsername + ":" + geoserverPassword).getBytes());
+				String auth = "Basic " + Base64.getEncoder().encodeToString((geoserverInfo.get("GEOSERVER_ADMIN_USER") + ":" + geoserverInfo.get("GEOSERVER_ADMIN_PASSWORD")).getBytes());
 				String jsonPayload = "{ \"featureType\": {"
 				+ " \"name\": \"" + gridTableName + "\","
 				+ " \"nativeName\": \"" + gridTableName + "\","
@@ -221,7 +217,7 @@ public class GridImportTaskRunnable implements Runnable {
 				+ "   \"crs\": \"" + srs + "\""
 				+ " },"
 				//change this store name if testing on local geoserver vs. colo
-				+ " \"store\": { \"name\": \"" + geoserverStore + "\" },"
+				+ " \"store\": { \"name\": \"" + geoserverInfo.get("GEOSERVER_STORE") + "\" },"
 				+ " \"attributes\": {"
 				+ "   \"attribute\": ["
 				+ "     { \"name\": \"col\", \"binding\": \"java.lang.Integer\" },"
@@ -230,7 +226,7 @@ public class GridImportTaskRunnable implements Runnable {
 				+ "   ]"
 				+ " }"
 				+ "} }";
-				URL url = new URL(geoserverUrl + "/workspaces/" + geoserverWorkspace + "/datastores/" + geoserverStore + "/featuretypes");
+				URL url = new URL(geoserverInfo.get("GEOSERVER_URL") + "/workspaces/" + geoserverInfo.get("GEOSERVER_WORKSPACE") + "/datastores/" + geoserverInfo.get("GEOSERVER_STORE") + "/featuretypes");
 				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 				connection.setRequestMethod("POST");
 				connection.setRequestProperty("Authorization", auth);

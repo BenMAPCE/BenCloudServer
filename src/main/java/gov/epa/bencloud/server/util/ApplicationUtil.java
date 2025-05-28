@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -267,5 +269,25 @@ public class ApplicationUtil {
 	public static String getCurrentLocalDateTimeStamp() {
 	    return LocalDateTime.now()
 	       .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+	}
+
+	public static Map<String, String> getGeoserverInfo() {
+		Map<String, String> geoserverInfo = new HashMap<String, String>();
+		if (ApplicationUtil.usingLocalProperties()) {
+			geoserverInfo.put("GEOSERVER_URL", ApplicationUtil.getProperty("geoserver.url"));
+			geoserverInfo.put("GEOSERVER_WORKSPACE", ApplicationUtil.getProperty("geoserver.workspace"));
+			geoserverInfo.put("GEOSERVER_STORE", ApplicationUtil.getProperty("geoserver.store"));
+			geoserverInfo.put("GEOSERVER_ADMIN_USER", ApplicationUtil.getProperty("geoserver.username"));
+			geoserverInfo.put("GEOSERVER_ADMIN_PASSWORD", ApplicationUtil.getProperty("geoserver.password"));
+		} else {
+			// We must be running in a docker/cloud environment so we'll pull from environment variables
+			geoserverInfo.put("GEOSERVER_URL", System.getenv("GEOSERVER_URL"));
+			geoserverInfo.put("GEOSERVER_WORKSPACE", System.getenv("GEOSERVER_WORKSPACE"));
+			geoserverInfo.put("GEOSERVER_STORE", System.getenv("GEOSERVER_STORE"));
+			geoserverInfo.put("GEOSERVER_ADMIN_USER", System.getenv("GEOSERVER_ADMIN_USER"));
+			geoserverInfo.put("GEOSERVER_ADMIN_PASSWORD", System.getenv("GEOSERVER_ADMIN_PASSWORD"));
+
+		}
+		return geoserverInfo;
 	}
 }
