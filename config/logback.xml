@@ -11,54 +11,13 @@
             </Pattern>
         </layout>
   </appender>
-    
-<!--   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/api.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>logs/api.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-    </rollingPolicy>
-
-    <encoder>
-      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender>
- 
-  <appender name="DATABASE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/database.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>logs/database.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-    </rollingPolicy>
-
-    <encoder>
-      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender>
-  
-    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/access.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>logs/access.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-    </rollingPolicy>
-
-    <encoder>
-      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender> -->
 
   <logger name="ch.qos.logback.core.rolling" additivity="false" level="error">
   </logger>
   
-<!--   <root level="OFF">
-    <appender-ref ref="STDOUT" />
-  </root> -->
-  
   <root level="info">
     <appender-ref ref="STDOUT" />
   </root>
-  
-<!--   <root level="OFF">
-  	<appender-ref ref="FILE" />
-  </root> -->
   
   <logger name="com.zaxxer.hikari" additivity="false" level="info">
     <appender-ref ref="STDOUT" />
@@ -72,15 +31,15 @@
     <appender-ref ref="STDOUT" />
   </logger>
   
-   <logger name="org.geotools" additivity="false" level="DEBUG">
+   <logger name="org.geotools" additivity="false" level="info">
    	<appender-ref ref="STDOUT" />
    </logger>
   
-   <logger name="gov.epa.bencloud" additivity="false" level="debug">
+   <logger name="gov.epa.bencloud" additivity="false" level="info">
     <appender-ref ref="STDOUT" />
   </logger>
   
-     <logger name="access" additivity="false" level="debug">
+     <logger name="access" additivity="false" level="info">
     <appender-ref ref="STDOUT" />
   </logger>
   

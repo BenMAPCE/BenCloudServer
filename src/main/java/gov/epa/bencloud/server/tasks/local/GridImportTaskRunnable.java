@@ -9,32 +9,23 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
-
 import org.apache.commons.io.FileUtils;
 import org.geotools.api.data.DataStore;
 import org.geotools.api.data.DataStoreFinder;
 import org.geotools.api.data.FeatureSource;
-import org.geotools.api.data.FeatureStore;
 import org.geotools.api.data.SimpleFeatureStore;
 import org.geotools.api.feature.simple.SimpleFeature;
 import org.geotools.api.feature.simple.SimpleFeatureType;
@@ -43,36 +34,20 @@ import org.geotools.api.feature.type.AttributeType;
 import org.geotools.api.feature.type.GeometryDescriptor;
 import org.geotools.api.feature.type.GeometryType;
 import org.geotools.api.referencing.FactoryException;
-import org.geotools.api.referencing.NoSuchAuthorityCodeException;
-import org.geotools.api.referencing.ReferenceIdentifier;
-import org.geotools.api.referencing.crs.CRSAuthorityFactory;
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.data.postgis.PostgisNGDataStoreFactory;
 import org.geotools.feature.AttributeTypeBuilder;
 import org.geotools.feature.FeatureCollection;
-import org.geotools.feature.NameImpl;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.feature.type.AttributeDescriptorImpl;
-import org.geotools.feature.type.AttributeTypeImpl;
-import org.geotools.feature.type.GeometryDescriptorImpl;
-import org.geotools.jdbc.JDBCDataStore;
 import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.geotools.referencing.factory.OrderedAxisAuthorityFactory;
 import org.geotools.util.URLs;
-import org.geotools.util.Version;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
 import org.jooq.Record;
-import org.jooq.Result;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zaxxer.hikari.HikariDataSource;
-
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.GridImportTaskConfig;
 import gov.epa.bencloud.api.model.GridImportTaskLog;
@@ -138,7 +113,6 @@ public class GridImportTaskRunnable implements Runnable {
 
 			Path filestoreFilePath = FilestoreUtil.getFilePath(gridImportTaskConfig.filestoreId);
 
-			// TODO: Extract and validate shapefile. Add any errors to the task log and abort if file cannot be imported
 			String tempFolder = System.getProperty("java.io.tmpdir") + File.separator + gridImportTaskConfig.filestoreId;
 			
 			ApiUtil.unzip(filestoreFilePath.toString(), tempFolder);
@@ -199,7 +173,7 @@ public class GridImportTaskRunnable implements Runnable {
 
 			// Load GeoServer URL and credentials from properties
 			Map<String, String> geoserverInfo = ApplicationUtil.getGeoserverInfo();
-			log.info(geoserverInfo.toString());
+			//log.info(geoserverInfo.toString());
 
 			//Publish the new grid to GeoServer
 			try {
@@ -216,7 +190,6 @@ public class GridImportTaskRunnable implements Runnable {
 				+ "   \"maxy\": " + bounds.getMaxY() + ","
 				+ "   \"crs\": \"" + srs + "\""
 				+ " },"
-				//change this store name if testing on local geoserver vs. colo
 				+ " \"store\": { \"name\": \"" + geoserverInfo.get("GEOSERVER_STORE") + "\" },"
 				+ " \"attributes\": {"
 				+ "   \"attribute\": ["
@@ -227,6 +200,7 @@ public class GridImportTaskRunnable implements Runnable {
 				+ " }"
 				+ "} }";
 				URL url = new URL(geoserverInfo.get("GEOSERVER_URL") + "/workspaces/" + geoserverInfo.get("GEOSERVER_WORKSPACE") + "/datastores/" + geoserverInfo.get("GEOSERVER_STORE") + "/featuretypes");
+
 				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 				connection.setRequestMethod("POST");
 				connection.setRequestProperty("Authorization", auth);
@@ -245,7 +219,7 @@ public class GridImportTaskRunnable implements Runnable {
 						if (errorStream != null) {
 							message = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
 						}
-						log.error("Failed to publish grid to GeoServer. Response code: " + responseCode + ". Message: " + message);
+						log.error("Failed to publish layer to GeoServer. Response code: " + responseCode + ". Message: " + message);
 					}
 					validationMsg.success = false;
 					validationMsg.messages.add(new ValidationMessage.Message("error", "Failed to publish grid to GeoServer."));
@@ -265,8 +239,6 @@ public class GridImportTaskRunnable implements Runnable {
 			// Note: Do not generate crosswalks at this point. 
 			//  We will integrate that into our other processes to ensure the crosswalk exists before calling db functions that use it
 			//  This will avoid creating unnecessary crosswalks
-			
-			//TODO: Add TEST here to create a crosswalk for newly imported grid
 
 			messages.get(messages.size()-1).setStatus("complete");
 			
@@ -323,12 +295,10 @@ public class GridImportTaskRunnable implements Runnable {
 	    // Write to database
 	    DataStore dbDataStore = DataStoreFinder.getDataStore(dbParams);    
 	    
-	    Iterator it = DataStoreFinder.getAvailableDataStores();
-	    while(it.hasNext()){
-	      System.out.println("GeoTools available datastore: " + it.next());
-	    }
-	    
-	    
+	    // Iterator it = DataStoreFinder.getAvailableDataStores();
+	    // while(it.hasNext()){
+	    //   System.out.println("GeoTools available datastore: " + it.next());
+	    // }
 	    
 	    // Prepend the "g_" on the unique table name to avoid the need to quote it in SQL if it starts with a number
 	    // Also, tables that begin with "g_" will be excluded during jOOQ code generation
@@ -341,7 +311,7 @@ public class GridImportTaskRunnable implements Runnable {
 	    AttributeTypeBuilder attributeBuilder = new AttributeTypeBuilder();
 
 		// NAD83 PRJ from PostGIS
-		// TODO: Find more elegant way to handle this
+		// TODO: Find more elegant way to handle this issue with missing prj file?
 		String wkt = "GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]]";
         CoordinateReferenceSystem crsNAD83 = null;
 		try {
