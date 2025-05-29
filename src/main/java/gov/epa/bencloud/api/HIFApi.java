@@ -13,7 +13,6 @@ import java.util.zip.ZipOutputStream;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
@@ -39,6 +38,7 @@ import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRecord;
@@ -132,6 +132,9 @@ public class HIFApi {
 				.asTable("hif_result_records");
 
 		try{
+			var inc = IncidenceDataset.INCIDENCE_DATASET.as("inc");
+			var pre = IncidenceDataset.INCIDENCE_DATASET.as("pre");
+
 			Result<Record> hifRecords = create.select(
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
@@ -143,7 +146,7 @@ public class HIFApi {
 				HEALTH_IMPACT_FUNCTION.BETA,
 				HIF_RESULT_FUNCTION_CONFIG.START_AGE,
 				HIF_RESULT_FUNCTION_CONFIG.END_AGE,
-				INCIDENCE_DATASET.NAME.as("incidence_prevalence"),
+				DSL.coalesce(inc.NAME, pre.NAME, DSL.val("")).as("incidence_prevalence"),
 				RACE.NAME.as("race"),
 				ETHNICITY.NAME.as("ethnicity"),
 				GENDER.NAME.as("gender"),
@@ -178,7 +181,8 @@ public class HIFApi {
 				.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
 				.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-				.leftJoin(INCIDENCE_DATASET).on(HIF_RESULT_FUNCTION_CONFIG.INCIDENCE_DATASET_ID.eq(INCIDENCE_DATASET.ID))
+				.leftJoin(inc).on(HIF_RESULT_FUNCTION_CONFIG.INCIDENCE_DATASET_ID.eq(inc.ID))
+				.leftJoin(pre).on(HIF_RESULT_FUNCTION_CONFIG.PREVALENCE_DATASET_ID.eq((pre.ID)))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
