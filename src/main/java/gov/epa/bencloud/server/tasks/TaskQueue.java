@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_COMPLETE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_BATCH;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
@@ -289,7 +290,8 @@ public class TaskQueue {
 //		log.info("userIdentifier: " + userIdentifier);
 		String userId = userProfile.get().getId();
 		boolean showAll;
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
+		ZoneId zoneId = ZoneId.systemDefault();
 
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode data = mapper.createObjectNode();
@@ -348,7 +350,7 @@ public class TaskQueue {
 							task.put("task_name", record.getValue(TASK_QUEUE.TASK_NAME));
 							//task.put("task_description", record.getValue(TASK_QUEUE.TASK_DESCRIPTION));
 							task.put("task_uuid", record.getValue(TASK_QUEUE.TASK_UUID));
-							task.put("task_submitted_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
+							task.put("task_submitted_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).atZone(zoneId).format(formatter));
 							task.put("task_type", record.getValue(TASK_QUEUE.TASK_TYPE));
 							task.put("task_user_id", record.getValue(TASK_QUEUE.USER_ID));
 
@@ -356,7 +358,7 @@ public class TaskQueue {
 
 							if (record.getValue(TASK_QUEUE.TASK_IN_PROCESS)) {
 
-								task.put("task_status_message", "Started at " + record.getValue(TASK_QUEUE.TASK_STARTED_DATE).format(formatter) );
+								task.put("task_status_message", "Started at " + record.getValue(TASK_QUEUE.TASK_STARTED_DATE).atZone(zoneId).format(formatter) );
 								task.putRawValue("task_progress_message", new RawValue(record.getValue(TASK_QUEUE.TASK_MESSAGE)));
 
 								if(batchStartedDate == null || (record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)).isBefore(batchStartedDate)) {
@@ -371,7 +373,7 @@ public class TaskQueue {
 								//		record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE), 
 								//		now));
 
-								//task.put("task_started_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).format(formatter));
+								//task.put("task_started_date", record.getValue(TASK_QUEUE.TASK_SUBMITTED_DATE).atZone(zoneId).format(formatter));
 							} else {
 								
 								task.put("task_status_message", "Pending");
@@ -407,7 +409,7 @@ public class TaskQueue {
 								String taskStatusMessage = "";
 								String taskProgressMessage = "";
 								if(record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL)){
-									taskStatusMessage = "Completed at " + record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter);
+									taskStatusMessage = "Completed at " + record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).atZone(zoneId).format(formatter);
 									taskProgressMessage = "Complete";
 								}
 								else {
@@ -419,7 +421,7 @@ public class TaskQueue {
 								task.put("task_name", record.getValue(TASK_COMPLETE.TASK_NAME));
 								//task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
 								task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
-								task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
+								task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).atZone(zoneId).format(formatter));
 								task.put("task_type", record.getValue(TASK_COMPLETE.TASK_TYPE));
 								task.put("task_status_message", taskStatusMessage);
 								task.put("task_progress_message", taskProgressMessage);
@@ -440,7 +442,7 @@ public class TaskQueue {
 							if(batchStartedDate == null) {
 								batchTask.put("batch_started_date", "Pending");
 							} else {
-								batchTask.put("batch_started_date", "Started at " + batchStartedDate.format(formatter));
+								batchTask.put("batch_started_date", "Started at " + batchStartedDate.atZone(zoneId).format(formatter));
 							}
 							batchTask.set("tasks", tasks);
 							batchTasks.add(batchTask);
