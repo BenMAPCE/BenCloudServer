@@ -4,6 +4,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -229,9 +230,10 @@ public class CoreApi {
 		responseNode.put("enabled", bannerRecord.getStatus() != 0);
 		responseNode.put("modified_by", bannerRecord.getModifiedBy());
 
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
+		ZoneId zoneId = ZoneId.systemDefault();
 		try {
-			responseNode.put("modified_date", bannerRecord.getModifiedDate().format(formatter));
+			responseNode.put("modified_date", bannerRecord.getModifiedDate().atZone(zoneId).format(formatter));
 		} catch (Exception e) {
 			responseNode.put("modified_date", "");
 		}
