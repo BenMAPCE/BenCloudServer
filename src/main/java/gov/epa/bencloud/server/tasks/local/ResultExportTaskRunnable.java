@@ -178,6 +178,12 @@ public class ResultExportTaskRunnable implements Runnable {
 			String zipFileName = ApplicationUtil.replaceNonValidCharacters(batchTaskConfig.name);
 			StringBuilder batchTaskLog = new StringBuilder(); 
 			
+			// If using 2010 population data add warning
+			if(batchTaskConfig.popId==40) {
+				batchTaskLog.append("Some datasets used to generate these results may no longer be available.\n");
+				batchTaskLog.append("If you wish to re-run the analysis, please contact admin to access the archived version.\n");
+			}
+
 			// Get output stream
 			ZipOutputStream zipStream;
 			File tmpZipFile = null;
