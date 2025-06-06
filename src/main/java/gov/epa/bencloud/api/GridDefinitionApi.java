@@ -95,6 +95,7 @@ public class GridDefinitionApi {
 		Result<Record> gridRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(GRID_DEFINITION.asterisk(), GRID_DEFINITION.COL_COUNT, GRID_DEFINITION.ROW_COUNT)
 				.from(GRID_DEFINITION)
+				.where(GRID_DEFINITION.ARCHIVE.eq((short)0))
 				.orderBy(GRID_DEFINITION.NAME)
 				.fetch();
 		//log.debug("Requested all grid definitions: " + (userProfile.isPresent() ? userProfile.get().getId() : "Anonymous"));

@@ -14,7 +14,7 @@ import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row11;
+import org.jooq.Row12;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -101,6 +101,11 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
      */
     public final TableField<GridDefinitionRecord, JSON> TASK_LOG = createField(DSL.name("task_log"), SQLDataType.JSON, this, "");
 
+    /**
+     * The column <code>data.grid_definition.archive</code>.
+     */
+    public final TableField<GridDefinitionRecord, Short> ARCHIVE = createField(DSL.name("archive"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
     private GridDefinition(Name alias, Table<GridDefinitionRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -176,11 +181,11 @@ public class GridDefinition extends TableImpl<GridDefinitionRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row11 type methods
+    // Row12 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row11<Integer, String, Integer, Integer, String, Integer, String, String, String, Short, JSON> fieldsRow() {
-        return (Row11) super.fieldsRow();
+    public Row12<Integer, String, Integer, Integer, String, Integer, String, String, String, Short, JSON, Short> fieldsRow() {
+        return (Row12) super.fieldsRow();
     }
 }
