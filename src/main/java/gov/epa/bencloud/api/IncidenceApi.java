@@ -399,7 +399,22 @@ public class IncidenceApi {
 				.where(INCIDENCE_DATASET.ID.eq(id))
 				.fetchOne();
 		
-		return record==null ? "No name found for id: " + id : record.value1();
+		if (record == null) {
+			switch (id) {
+				case 1:
+					return "County (2010)";
+				case 2:
+					return "County, race-stratified (2010)";
+				case 4:
+					return "County, ethnicity-stratified (2010)";
+				case 5:
+					return "County, ethnicity-adjusted race-stratified (2010)";
+				default:
+					return "dataset removed";
+			}
+		}
+		
+		return record.value1();
 	}
 
 	/**

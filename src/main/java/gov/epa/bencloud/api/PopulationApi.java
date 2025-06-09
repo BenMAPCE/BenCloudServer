@@ -383,7 +383,9 @@ public class PopulationApi {
 	 */
 	public static Record3<String, Integer, String> getPopulationDatasetInfo(Integer id) {
 
-		Record3<String, Integer, String> record = DSL.using(JooqUtil.getJooqConfiguration())
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		Record3<String, Integer, String> record = create
 				.select(POPULATION_DATASET.NAME,
 						POPULATION_DATASET.GRID_DEFINITION_ID,
 						GRID_DEFINITION.NAME)
@@ -391,6 +393,22 @@ public class PopulationApi {
 				.join(GRID_DEFINITION).on(POPULATION_DATASET.GRID_DEFINITION_ID.eq(GRID_DEFINITION.ID))
 				.where(POPULATION_DATASET.ID.eq(id))
 				.fetchOne();
+		
+		if (record == null) {
+			record = create.newRecord(
+				POPULATION_DATASET.NAME,
+				POPULATION_DATASET.GRID_DEFINITION_ID,
+				GRID_DEFINITION.NAME);
+			if (id == 40) {
+				record.set(POPULATION_DATASET.NAME, "US CMAQ 12km Nation - 2010 census");
+				record.set(POPULATION_DATASET.GRID_DEFINITION_ID, 28);
+				record.set(GRID_DEFINITION.NAME,"CMAQ 12km Nation");
+			} else {
+				record.set(POPULATION_DATASET.NAME, "dataset removed");
+				record.set(POPULATION_DATASET.GRID_DEFINITION_ID, null);
+				record.set(GRID_DEFINITION.NAME,"dataset removed");
+			}
+		}
 		
 		return record;
 	}
