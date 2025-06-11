@@ -26,6 +26,7 @@ import org.geotools.api.data.DataStoreFinder;
 import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.api.feature.type.AttributeDescriptor;
 import org.geotools.util.URLs;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
@@ -70,11 +71,20 @@ public class GridDefinitionApi {
 	 * @return a JSON representation of all grid definitions, ordered by grid definition name.
 	 */
 	public static Object getAllGridDefinitions(Request request, Response response, Optional<UserProfile> userProfile) {
-		UserProfile u = userProfile.get();
+		String userId = userProfile.get().getId();
+		boolean showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+
+		Condition filterCondition = GRID_DEFINITION.ARCHIVE.eq((short)0);
+
+		// Skip the following for an admin user that wants to see all data
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(GRID_DEFINITION.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(GRID_DEFINITION.USER_ID.eq(userId)));
+		}
 
 		Result<Record> gridRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(GRID_DEFINITION.asterisk())
 				.from(GRID_DEFINITION)
+				.where(filterCondition)
 				.orderBy(GRID_DEFINITION.NAME)
 				.fetch();
 		//log.debug("Requested all grid definitions: " + (userProfile.isPresent() ? userProfile.get().getId() : "Anonymous"));
@@ -90,12 +100,20 @@ public class GridDefinitionApi {
 	 * @return a JSON representation of all grid definitions, ordered by grid definition name. includes row and col counts
 	 */
 	public static Object getAllGridDefinitionsInfo(Request request, Response response, Optional<UserProfile> userProfile) {
-		UserProfile u = userProfile.get();
+		String userId = userProfile.get().getId();
+		boolean showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+
+		Condition filterCondition = GRID_DEFINITION.ARCHIVE.eq((short)0);
+
+		// Skip the following for an admin user that wants to see all data
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(GRID_DEFINITION.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(GRID_DEFINITION.USER_ID.eq(userId)));
+		}
 
 		Result<Record> gridRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(GRID_DEFINITION.asterisk(), GRID_DEFINITION.COL_COUNT, GRID_DEFINITION.ROW_COUNT)
 				.from(GRID_DEFINITION)
-				.where(GRID_DEFINITION.ARCHIVE.eq((short)0))
+				.where(filterCondition)
 				.orderBy(GRID_DEFINITION.NAME)
 				.fetch();
 		//log.debug("Requested all grid definitions: " + (userProfile.isPresent() ? userProfile.get().getId() : "Anonymous"));
@@ -213,7 +231,7 @@ public class GridDefinitionApi {
 			.select(GRID_DEFINITION.NAME)
 			.from(GRID_DEFINITION)
 			.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
-			.or(GRID_DEFINITION.SHARE_SCOPE.eq((short)1))
+			.or(GRID_DEFINITION.SHARE_SCOPE.eq(Constants.SHARING_ALL))
 			.orderBy(GRID_DEFINITION.USER_ID)
 			.fetch(GRID_DEFINITION.NAME);
 		if (gridDefinitionNames.contains(gridName)) {
@@ -439,9 +457,9 @@ public class GridDefinitionApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 
-		//Nobody can delete shared layers
-		//All users can delete their own layers
-		//Admins can delete any non-shared layers
+		//Nobody can delete shared grid definitions
+		//All users can delete their own grid definitions
+		//Admins can delete any non-shared grid definitions
 		if(gridDefinitionResult.getShareScope() == Constants.SHARING_ALL || !(gridDefinitionResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
@@ -580,15 +598,17 @@ public class GridDefinitionApi {
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		} 
 		
-		// Users can only edit grid definitions created by themselves 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());	
-		Result<Record1<Integer>> res = create.select(GRID_DEFINITION.ID)
-				.from(GRID_DEFINITION)
-				.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
-				.and(GRID_DEFINITION.ID.eq(id))
-				.fetch();
-		if(res==null) {
-			return CoreApi.getErrorResponse(request, response, 400, "You can only rename grid definitions created by yourself.");
+		GridDefinitionRecord gridDefinitionResult = create.selectFrom(GRID_DEFINITION).where(GRID_DEFINITION.ID.eq(id)).fetchAny();
+		if(gridDefinitionResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Nobody can rename shared grid definitions
+		//All users can rename their own grid definitions
+		//Admins can rename any non-shared grid definitions
+		if(gridDefinitionResult.getShareScope() == Constants.SHARING_ALL || !(gridDefinitionResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 
 		// Make sure the new name is unique among this user's grid definitions and shared ones
@@ -596,7 +616,7 @@ public class GridDefinitionApi {
 			.select(GRID_DEFINITION.NAME)
 			.from(GRID_DEFINITION)
 			.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
-			.or(GRID_DEFINITION.SHARE_SCOPE.eq((short)1))
+			.or(GRID_DEFINITION.SHARE_SCOPE.eq(Constants.SHARING_ALL))
 			.orderBy(GRID_DEFINITION.USER_ID)
 			.fetch(GRID_DEFINITION.NAME);
 		if (gridDefinitionNames.contains(newName)) {
