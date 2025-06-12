@@ -1223,13 +1223,14 @@ public class AirQualityApi {
 							AirQualityUtil.createNewSeasonalMetric(pollutantMetricIdLookup.get(metricNameLowerCase), record[seasonalMetricIdx]));
 				}
 
-				String statisticLowerCase = record[seasonalMetricIdx].toLowerCase();
+				String statisticLowerCase = record[annualMetricIdx].toLowerCase();
 				Integer statisticId=0;
-				if(statisticIdLookup.containsKey(seasonalMetricLowerCase)) {
-					statisticId = statisticIdLookup.get(seasonalMetricLowerCase);
+				if(statisticIdLookup.containsKey(statisticLowerCase)) {
+					statisticId = statisticIdLookup.get(statisticLowerCase);
 				} else {
-					//TODO: Throw up an error message here. We can't allow this process to add statistics. We just need to ignore those we don't support
-					
+					if (statisticLowerCase != "") {
+						throw new Exception("Annual statistic contained an invalid value: " + statisticLowerCase);
+					}
 				}
 				
 				// Add a record to the batch
