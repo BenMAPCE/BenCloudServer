@@ -116,6 +116,28 @@ paths:
           description: Successfully removed a grid definition.
         '204':
           description: Successfully removed a grid definition.
+    put:
+      summary: Rename a single grid definition.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Filter by grid id
+          schema:
+            type: integer
+            default: 1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+               type: object
+               properties:
+                 newName:
+                   type: string
+                   example: "New Name"
+      responses:
+        '200':
+          description: Successfully renamed a grid definition.
   /pollutants:
     get:
       summary: Returns the list of pollutants.
