@@ -64,6 +64,36 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/grid-definitions/:id/contents", (request, response) -> {
 			return GridDefinitionApi.getGridGeometries(request, response, getUserProfile(request, response));
 		});
+		
+		/*
+		 * POST a single grid definition
+		 * PARAMETERS:
+		 *  zip file
+		 *  name=
+		 */
+		service.post(apiPrefix + "/grid-definitions", (request, response) -> {
+			return GridDefinitionApi.postGridDefinitionShapefile(request, response, getUserProfile(request, response));
+		});
+		
+		/*
+		 * DELETE a single grid definition
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/grid-definitions/:id", (request, response) -> {
+			return GridDefinitionApi.deleteGridDefinition(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * Rename a single grid definition
+		 * PARAMETERS:
+		 *  :id
+		 *  newName=
+		 */
+		service.put(apiPrefix + "/grid-definitions/:id", (request, response) -> {
+			return GridDefinitionApi.renameGridDefinition(request, response, getUserProfile(request, response));
+		});
+
 		/*
 		 * GET array of all pollutant definitions
 		 */
@@ -546,6 +576,20 @@ public class ApiRoutes extends RoutesBase {
 			return null;
 		});
 		
+		/*
+		 * POST request to export results as a zip file from an analysis
+		 * PARAMETERS:
+		 *  :id (batch task id)
+		 *  includeHealthImpact (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeValuation (boolean accepts values true/false and 1/0, default to 0)
+		 *  includeExposure (boolean accepts values true/false and 1/0, default to 0)
+		 *  gridId= (comma delimited list. aggregate the results to one or more grid definition)
+		 *  
+		 */	
+		service.post(apiPrefix + "/batch-tasks/:id/export", (request, response) -> {
+			return TaskApi.postResultExportTask(request, response, getUserProfile(request, response));
+		});
+		
 		service.get(apiPrefix + "/task-configs", (request, response) -> {
 			Object data = TaskApi.getTaskConfigs(request, response, getUserProfile(request, response));
 			response.type("application/json");
@@ -604,7 +648,62 @@ public class ApiRoutes extends RoutesBase {
 			return ret;
 
 		});
+
+		service.get(apiPrefix + "/banner", (request, response) -> {
+			return CoreApi.getBanner(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST Updates the banner notification
+		 * PARAMETERS:
+		 *  message (string the message to be shown)
+		 *  type (integer notification type 1=Info, 2=Warning, 3=Error)
+		 *  enabled (boolean whether the banner is active)
+		 */	
+		service.post(apiPrefix + "/banner", (request, response) -> {
+			return CoreApi.postBanner(request, response, getUserProfile(request, response));
+		});
 		
+		/*
+		 * DELETE a single file from the file store
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/admin/files/:id", (request, response) -> {
+
+			return FilestoreApi.deleteFile(request, response, getUserProfile(request, response));
+
+		});
+
+		/*
+		 * GET info on all files in the file store
+		 */
+		service.get(apiPrefix + "/admin/files", (request, response) -> {
+			return FilestoreApi.getAllFiles(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * GET a single file from the file store
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.get(apiPrefix + "/files/:id", (request, response) -> {
+			return FilestoreApi.getFile(request, response, getUserProfile(request, response));
+		});
+		/*
+		 * GET a file ID for a export task
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.get(apiPrefix + "/task-complete/:id", (request, response) -> {
+			return TaskApi.getExportFileID(request, response, getUserProfile(request, response));
+		});
+		
+		
+		
+
+	}
+
 		/*
 		 * The following are temporary calls the facilitate testing. They will be removed in the future.
 		 */
@@ -649,6 +748,7 @@ public class ApiRoutes extends RoutesBase {
 
 		// });
 		
-	}
+	
+	
 
 }

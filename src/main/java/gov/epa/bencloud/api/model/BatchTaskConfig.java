@@ -42,6 +42,7 @@ public class BatchTaskConfig {
 	public Integer popId = 0;
 	public String pollutantName;
 	public Integer pollutantId = 0;
+	public Integer incidenceId = 0;
 	public Boolean preserveLegacyBehavior = true;
 	public List<Scenario> aqScenarios = new ArrayList<Scenario>();
 	public List<BatchHIFGroup> batchHifGroups = new ArrayList<BatchHIFGroup>();
@@ -73,6 +74,7 @@ public class BatchTaskConfig {
 			this.gridDefinitionId = params.get("valuation_grid").asInt();
 			this.aqBaselineId = config.get("pre_policy_aq_id").asInt();
 			this.popId = config.get("population_id").asInt();
+			this.incidenceId = config.get("incidence_id").asInt();
 
 			JsonNode scenarios = config.get("scenarios");
 

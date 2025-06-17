@@ -6,6 +6,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_QUEUE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_WORKER;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.Duration;
@@ -109,7 +110,18 @@ public class TaskComplete {
 				.where(TASK_QUEUE.TASK_UUID.eq(task.getUuid()))
 				.execute();
 
+				if(taskCompleteMessage.equalsIgnoreCase("task failed")) {
+					Result<Record> childTasks = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					.from(TASK_QUEUE)
+					.where(TASK_QUEUE.TASK_PARENT_UUID.equal(task.getUuid())) 
+					.fetch();
+
+					for (Record childTask : childTasks) {
+						addTaskToCompleteAndRemoveTaskFromQueue(childTask.getValue(TASK_QUEUE.TASK_UUID), null, false, "Parent task failed");
+					}	
+				}			
 			});
+
 
 		} catch (DataAccessException e1) {
 			log.error("Error moving task to completed queue", e1);
@@ -138,7 +150,8 @@ public class TaskComplete {
 
 		String userId = userProfile.get().getId();
 		boolean showAll;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
+				ZoneId zoneId = ZoneId.systemDefault();
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode data = mapper.createObjectNode();
@@ -207,16 +220,16 @@ public class TaskComplete {
 					task.put("task_description", record.getValue(TASK_COMPLETE.TASK_DESCRIPTION));
 					task.put("task_uuid", record.getValue(TASK_COMPLETE.TASK_UUID));
 					try {
-						task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).format(formatter));
+						task.put("task_submitted_date", record.getValue(TASK_COMPLETE.TASK_SUBMITTED_DATE).atZone(zoneId).format(formatter));
 					} catch (Exception e) {
 						task.put("task_submitted_date", "");
-						e.printStackTrace();
+						//e.printStackTrace();
 					}
 					try {
-						task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).format(formatter));
+						task.put("task_started_date", record.getValue(TASK_COMPLETE.TASK_STARTED_DATE).atZone(zoneId).format(formatter));
 					} catch (Exception e) {
 						task.put("task_started_date", "");
-						e.printStackTrace();
+						//e.printStackTrace();
 					}
 
 
@@ -232,10 +245,10 @@ public class TaskComplete {
 
 
 					try {
-						task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).format(formatter));
+						task.put("task_completed_date", record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE).atZone(zoneId).format(formatter));
 					} catch (Exception e) {
 						task.put("task_completed_date", "");
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 
 					if((record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)).isAfter(batchCompletedDate)) {
@@ -254,7 +267,7 @@ public class TaskComplete {
 										record.getValue(TASK_COMPLETE.TASK_STARTED_DATE)));
 					} catch (Exception e) {
 						
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 					task.set("task_wait_time", wrappedObject);
 
@@ -267,7 +280,7 @@ public class TaskComplete {
 								ChronoUnit.SECONDS.between(record.getValue(TASK_COMPLETE.TASK_STARTED_DATE),
 										record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
 					} catch (Exception e) {
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 					task.set("task_execution_time", wrappedObject);
 
@@ -277,7 +290,7 @@ public class TaskComplete {
 								record.getValue(TASK_COMPLETE.TASK_COMPLETED_DATE)));
 					} catch (Exception e) {
 						task.put("task_elapsed_time", "");
-						e.printStackTrace();
+						// e.printStackTrace();
 					}
 					
 					task.put("task_successful", record.getValue(TASK_COMPLETE.TASK_SUCCESSFUL));
@@ -293,7 +306,7 @@ public class TaskComplete {
 				if(result.isNotEmpty()) {
 					batchTask.set("tasks", tasks);
 					batchTask.put("batch_task_successful", batchSuccessful);
-					batchTask.put("batch_completed_date", batchCompletedDate.format(formatter));
+					batchTask.put("batch_completed_date", batchCompletedDate.atZone(zoneId).format(formatter));
 					batchTask.put("batch_execution_time", DataUtil.getHumanReadableTime(
 								batchStartedDate, 
 								batchCompletedDate));

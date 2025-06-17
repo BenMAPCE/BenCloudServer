@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
 import org.jooq.Record1;
 import org.jooq.Record3;
@@ -79,7 +80,11 @@ public class PopulationApi {
         		break;
         	}
         }
-        
+
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(hifTaskConfig.popId),aqGrid);
+		DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
+		dsl.execute("SET work_mem = '1GB'");
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
@@ -93,7 +98,7 @@ public class PopulationApi {
 				true, //YY: groupbyAgeRange
 				aqGrid //YY: outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
-
+		dsl.execute("RESET work_mem"); 
 		return popRecords;
 	}
 
@@ -146,7 +151,11 @@ public class PopulationApi {
         		break;
         	}
         }
-        
+
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(exposureTaskConfig.popId),aqGrid);
+        DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
+		dsl.execute("SET work_mem = '1GB'");
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				exposureTaskConfig.popId, 
 				exposureTaskConfig.popYear,
@@ -160,7 +169,7 @@ public class PopulationApi {
 				true, //groupbyAgeRange
 				aqGrid //outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
-
+		dsl.execute("RESET work_mem"); 
 		return popRecords;
 	}
 
@@ -335,18 +344,32 @@ public class PopulationApi {
 	 */
 	public static Object getAllPopulationDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
 
+//			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
+//					.select(POPULATION_DATASET.NAME,
+//							POPULATION_DATASET.ID,
+//							POPULATION_DATASET.GRID_DEFINITION_ID,
+//							DSL.arrayAggDistinct(POPULATION_ENTRY.POP_YEAR).orderBy(POPULATION_ENTRY.POP_YEAR).as("years"))
+//					.from(POPULATION_DATASET)
+//					.join(POPULATION_ENTRY).on(POPULATION_DATASET.ID.eq(POPULATION_ENTRY.POP_DATASET_ID))
+//					.groupBy(POPULATION_DATASET.NAME,
+//							POPULATION_DATASET.ID,
+//							POPULATION_DATASET.GRID_DEFINITION_ID)
+//					.orderBy(POPULATION_DATASET.NAME)
+//					.fetch();
 			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID,
-							DSL.arrayAggDistinct(POPULATION_ENTRY.POP_YEAR).orderBy(POPULATION_ENTRY.POP_YEAR).as("years"))
+							DSL.arrayAggDistinct(T_POP_DATASET_YEAR.POP_YEAR).orderBy(T_POP_DATASET_YEAR.POP_YEAR).as("years"))
 					.from(POPULATION_DATASET)
-					.join(POPULATION_ENTRY).on(POPULATION_DATASET.ID.eq(POPULATION_ENTRY.POP_DATASET_ID))
+					.join(T_POP_DATASET_YEAR).on(POPULATION_DATASET.ID.eq(T_POP_DATASET_YEAR.POP_DATASET_ID))
+					//.where(POPULATION_DATASET.ID.notEqual(52))  //TEMP TO SUPPRESS TRACT-LEVEL POP FOR NOW 2025-01-16 JHA
 					.groupBy(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID)
 					.orderBy(POPULATION_DATASET.NAME)
 					.fetch();
+							
 			
 			response.type("application/json");
 			return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
@@ -360,7 +383,9 @@ public class PopulationApi {
 	 */
 	public static Record3<String, Integer, String> getPopulationDatasetInfo(Integer id) {
 
-		Record3<String, Integer, String> record = DSL.using(JooqUtil.getJooqConfiguration())
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		Record3<String, Integer, String> record = create
 				.select(POPULATION_DATASET.NAME,
 						POPULATION_DATASET.GRID_DEFINITION_ID,
 						GRID_DEFINITION.NAME)
@@ -369,7 +394,39 @@ public class PopulationApi {
 				.where(POPULATION_DATASET.ID.eq(id))
 				.fetchOne();
 		
-		return record;
+		if (record == null) {
+			record = create.newRecord(
+				POPULATION_DATASET.NAME,
+				POPULATION_DATASET.GRID_DEFINITION_ID,
+				GRID_DEFINITION.NAME);
+			if (id == 40) {
+				record.set(POPULATION_DATASET.NAME, "US CMAQ 12km Nation - 2010 census");
+				record.set(POPULATION_DATASET.GRID_DEFINITION_ID, 28);
+				record.set(GRID_DEFINITION.NAME,"CMAQ 12km Nation");
+			} else {
+				record.set(POPULATION_DATASET.NAME, "dataset removed");
+				record.set(POPULATION_DATASET.GRID_DEFINITION_ID, null);
+				record.set(GRID_DEFINITION.NAME,"dataset removed");
+			}
 		}
+		
+		return record;
+	}
+
+	/**
+	 * 
+	 * @param id 
+	 * @return the population dataset's grid definition id
+	 */
+	public static Integer getPopulationGridDefinitionId(Integer id) {
+
+		Record1<Integer> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(POPULATION_DATASET.GRID_DEFINITION_ID)
+				.from(POPULATION_DATASET)
+				.where(POPULATION_DATASET.ID.eq(id))
+				.fetchOne();
+		
+		return record.value1();
+	}
 	
 }

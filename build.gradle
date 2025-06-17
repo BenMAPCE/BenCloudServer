@@ -1,40 +1,46 @@
-plugins {
-    id 'java-library'
-}
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-sourceCompatibility = 17
-targetCompatibility = 17
+plugins {
+	id 'java'
+    id 'java-library'
+	id 'com.gradleup.shadow' version '8.3.6'
+}
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
 repositories {
     maven {
-    	url "https://repo.osgeo.org/repository/release/"
+    	url = "https://repo.osgeo.org/repository/release/"
     }
     mavenCentral()
+	gradlePluginPortal()
 }
 
 dependencies {
 
+	//Possible future upgrade for spark?
+	//implementation 'io.github.sparkjavateam:spark-core:2.9.4'
+	//implementation 'org.zoomba-lang:spark-core:3.0.1'
 	implementation ('com.sparkjava:spark-core:2.9.4') {
 		exclude group: 'org.eclipse.jetty', module: 'jetty-server'
 		exclude group: 'org.eclipse.jetty', module: 'jetty-webapp'
 		exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-server'
 		exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-servlet'
-    	exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-client'
+    exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-client'
 	}
     
-    implementation 'org.eclipse.jetty:jetty-server:9.4.53.v20231009'
-    implementation 'org.eclipse.jetty:jetty-webapp:9.4.53.v20231009'
-    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.53.v20231009'
-    implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.53.v20231009'
-    implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.53.v20231009'
-        
+	implementation 'org.eclipse.jetty:jetty-server:9.4.57.v20241219'
+	implementation 'org.eclipse.jetty:jetty-webapp:9.4.57.v20241219'
+	implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.57.v20241219'
+	implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.57.v20241219'
+	implementation 'org.eclipse.jetty.websocket:websocket-client:9.4.57.v20241219'
+	implementation 'org.bitbucket.b_c:jose4j:0.9.4'
 	implementation 'org.pac4j:spark-pac4j:5.0.1'
 	implementation 'org.pac4j:pac4j-http:5.6.1'
-
-	// database related
 	
-	implementation 'org.postgresql:postgresql:42.3.1'
-	
+	implementation 'org.postgresql:postgresql:42.3.10'	
 	implementation 'com.h2database:h2:1.4.200'
 	implementation 'org.jooq:jooq:3.15.12'
 	implementation 'p6spy:p6spy:3.9.1'
@@ -51,7 +57,7 @@ dependencies {
 
 	implementation 'io.vavr:vavr:0.10.0'
 	implementation 'org.slf4j:slf4j-api:2.0.6'
-	implementation 'ch.qos.logback:logback-classic:1.4.14'
+	implementation 'ch.qos.logback:logback-classic:1.5.18'
 	implementation 'commons-cli:commons-cli:1.4'
 	implementation 'com.opencsv:opencsv:5.8'
 	implementation 'org.apache.commons:commons-lang3:3.9'
@@ -64,42 +70,31 @@ dependencies {
 	implementation 'com.squareup.tape2:tape:2.0.0-beta1'
 	implementation 'org.quartz-scheduler:quartz:2.3.2'
 
-    implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
+  implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.2.1'
     
-    implementation 'io.kubernetes:client-java-extended:19.0.0'
+  implementation 'io.kubernetes:client-java-extended:22.0.1'
 
-	implementation 'org.geotools:gt-main:29.0'
-
+	implementation 'org.geotools:gt-main:33.1'
+	implementation 'org.geotools:gt-referencing:33.1'
+	implementation 'org.geotools:gt-epsg-hsql:33.1'
+	implementation 'org.geotools:gt-epsg-extension:33.1'
+	implementation 'org.geotools.jdbc:gt-jdbc:33.1'
+	implementation 'org.geotools.jdbc:gt-jdbc-postgis:33.1'
+  implementation 'org.geotools:gt-shapefile:33.1'
+		
+	testImplementation 'org.geotools.jdbc:gt-jdbc-postgis:33.1'
 	testImplementation(platform('org.junit:junit-bom:5.9.3'))
 	testImplementation('org.junit.jupiter:junit-jupiter')
 }
 
-task fatJar(type: Jar) {
-    duplicatesStrategy = 'include'
-
-	manifest {
-		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
-    }
-	
-	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
-
-	archiveBaseName = "BenCloudServer"
-	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-	with jar
-}
-
-task taskRunnerFatJar(type: Jar) {
-    duplicatesStrategy = 'include'
-
-	manifest {
-		attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudTaskRunner'
-    }
-	
-	exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
-
-	archiveBaseName = "BenCloudTaskRunner"
-	from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-	with jar
+// As of R0.6.0 the BenCloudServer.jar supports the API server itself and also the task runner
+shadowJar {
+    mergeServiceFiles()
+    archiveBaseName.set("BenCloudServer")
+    archiveClassifier.set("") // Remove the default "all" classifier
+		manifest {
+			attributes 'Main-Class': 'gov.epa.bencloud.server.BenCloudServer'
+    }	
 }
 
 test {

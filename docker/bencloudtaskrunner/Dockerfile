@@ -3,12 +3,12 @@ FROM amazoncorretto:17-al2023
 
 WORKDIR /bencloud
 
-COPY BenCloudTaskRunner.jar /bencloud/BenCloudTaskRunner.jar
+COPY BenCloudServer.jar /bencloud/BenCloudServer.jar
 COPY bencloud-server.properties /bencloud/bencloud-server.properties
 ADD config /bencloud/config
 RUN mkdir /bencloud/logs
 RUN chmod 777 /bencloud/logs
 
-ENTRYPOINT java -Xms14G -Xmx14G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudTaskRunner.jar
+ENTRYPOINT java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -cp /bencloud/BenCloudServer.jar gov.epa.bencloud.server.BenCloudTaskRunner
 
 EXPOSE 4567

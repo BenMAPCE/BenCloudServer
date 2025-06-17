@@ -1,5 +1,6 @@
 package gov.epa.bencloud.api;
 
+import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT_GROUP;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ETHNICITY;
@@ -9,6 +10,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_DATASE
 import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_ENTRY;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_VALUE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.RACE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_CONFIG;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -147,13 +149,28 @@ public class IncidenceApi {
 		// Right now, when we're using National Incidence/Prevalence, getIncidence is averaging, otherwise it's summing. This is to match desktop, but needs to be revisited.
 				
 		//Convert race, ethnicity, gender to single element arrays
-		Integer[] arrRaceId = new Integer[1];
+		Integer[] arrRaceId = new Integer[2];
 		arrRaceId[0] = raceId;
-		Integer[] arrEthnicityId = new Integer[1];
+		if(raceId == 6) {
+			arrRaceId[1] = 5;
+		}
+		Integer[] arrEthnicityId = new Integer[2];
 		arrEthnicityId[0] = ethnicityId;
-		Integer[] arrGenderId = new Integer[1];
+		if(ethnicityId == 4) {
+			arrEthnicityId[1] = 3;
+		}
+		Integer[] arrGenderId = new Integer[2];
 		arrGenderId[0] = genderId;
+		if(genderId == 4) {
+			arrGenderId[1] = 3;
+		}
+
+		Integer aqGridId = AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId);
 		
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(getIncidenceGridDefinitionId(incPrevId),aqGridId);
+		
+
 		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
@@ -167,10 +184,33 @@ public class IncidenceApi {
 				false,
 				false, 
 				true, 
-				AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId))
+				aqGridId)
 				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
 		
-		
+		//If there are no incidence records in the dataset for the given race/gender/ethnicity, get records for ALL/ALL/ALL
+		//The incidence selection logic will default to a dataset with ALL/ALL/ALL in this scenario
+		//Without this, the baseline incidence will = 0 and no result will be calculated
+		if(incRecords.entrySet().size() == 0) {
+			arrRaceId[0] = 6;
+			arrEthnicityId[0] = 4;
+			arrGenderId[0] = 4;
+			incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
+				incPrevId,
+				incPrevYear,
+				h.get("endpoint_id", Integer.class), 
+				arrRaceId, 
+				arrEthnicityId,
+				arrGenderId,
+				hifConfig.startAge.shortValue(), 
+				hifConfig.endAge.shortValue(), 
+				false,
+				false,
+				false, 
+				true, 
+				aqGridId)
+				.intoGroups(GET_INCIDENCE.GRID_CELL_ID);
+		}
+
 		// Get the age groups for the population dataset
 		Result<Record3<Integer, Short, Short>> popAgeRanges = PopulationApi.getPopAgeRanges(hifTaskConfig.popId);
 
@@ -359,8 +399,40 @@ public class IncidenceApi {
 				.where(INCIDENCE_DATASET.ID.eq(id))
 				.fetchOne();
 		
+		if (record == null) {
+			switch (id) {
+				case 1:
+					return "County (2010)";
+				case 2:
+					return "County, race-stratified (2010)";
+				case 4:
+					return "County, ethnicity-stratified (2010)";
+				case 5:
+					return "County, ethnicity-adjusted race-stratified (2010)";
+				default:
+					return "dataset removed";
+			}
+		}
+		
 		return record.value1();
 	}
+
+	/**
+	 * 
+	 * @param id incidence dataset id
+	 * @return the grid definition ID of a given incidence dataset.
+	 */
+	public static Integer getIncidenceGridDefinitionId(int id) {
+
+		Record1<Integer> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(INCIDENCE_DATASET.GRID_DEFINITION_ID)
+				.from(INCIDENCE_DATASET)
+				.where(INCIDENCE_DATASET.ID.eq(id))
+				.fetchOne();
+		
+		return record.value1();
+	}
+
 	/**
 	 *  @return the names of all the incidence or prevalence datasets
 	 */
@@ -376,6 +448,27 @@ public class IncidenceApi {
     List<String> names = datasetNames.map(Record1::value1);
     return names;
 	}
+
+	/**
+	 *  @param userId
+	 *  @return the names of all the incidence or prevalence datasets by user, return all in lower cases.
+	 */
+	public static List<String> getAllIncidencePrevalenceDatasetNamesByUser(String userId) {
+		if(userId == null) {
+            return null;
+        }
+		Result<Record1<String>> datasetNames = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(DSL.lower(INCIDENCE_DATASET.NAME))
+				.from(INCIDENCE_DATASET)
+				.join(INCIDENCE_ENTRY).on(INCIDENCE_DATASET.ID.eq(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID))
+				.where(INCIDENCE_DATASET.USER_ID.equal(userId).or(INCIDENCE_DATASET.SHARE_SCOPE.equal((short) 1)))
+				.groupBy(INCIDENCE_DATASET.NAME)
+				.orderBy(INCIDENCE_DATASET.NAME)
+				.fetch();
+	
+		List<String> names = datasetNames.map(Record1::value1);
+		return names;
+		}
 
 /**
 	 * 
@@ -615,9 +708,11 @@ public class IncidenceApi {
 			return transformValMsgToJSON(validationMsg);
 		}
 
+		String userId = userProfile.get().getId();
+
 		// //step 0: make sure incidenceName is not the same as any existing ones
 		
-		List<String>incidenceNames = getAllIncidencePrevalenceDatasetNames();
+		List<String>incidenceNames = getAllIncidencePrevalenceDatasetNamesByUser(userId);
 		if (incidenceNames.contains(incidenceName.toLowerCase())) {
 			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","An incidence dataset " + incidenceName + " already exists. Please enter a different name."));
@@ -1138,7 +1233,7 @@ public class IncidenceApi {
 					, INCIDENCE_DATASET.FILENAME
 					, INCIDENCE_DATASET.UPLOAD_DATE
 					)
-			.values(incidenceName,  gridId, userProfile.get().getId(), Constants.SHARING_NONE, filename, uploadDate)
+			.values(incidenceName,  gridId, userId, Constants.SHARING_NONE, filename, uploadDate)
 			.returning(INCIDENCE_DATASET.ID, INCIDENCE_DATASET.NAME,INCIDENCE_DATASET.GRID_DEFINITION_ID)
 			.fetchOne();
 

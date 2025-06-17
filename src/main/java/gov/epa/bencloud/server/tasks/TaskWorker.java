@@ -16,10 +16,13 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
 import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
+import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
+import gov.epa.bencloud.server.tasks.local.ResultExportTaskRunnable;
 import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
@@ -31,7 +34,7 @@ public class TaskWorker {
 
 	public static int maxTaskWorkers = 0;
 
-	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 20; 
+	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 120; 
 
 	static {
 		maxTaskWorkers = Integer.parseInt(ApplicationUtil.getProperty("max.task.workers"));
@@ -113,43 +116,51 @@ public class TaskWorker {
 		}
 
 		if (transactionSuccessful) {
-			//TODO: Refactor this code. The case should only handle the local tasks. Else, call runTaskAsJob.
-			// Although, we should validate the task type before starting the job to be sure it's valid.
 			Thread t = null;
 			
+			// If it's not a recognized task type, we have an error 
 			switch (task.getType()) {
-			case "HIF":
-				if(ApplicationUtil.usingLocalProperties()) {
-					t = new Thread(new HIFTaskRunnable(task.getUuid(), taskWorkerUuid));
-					t.start();	
-				} else {
-					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
-				}
+			case Constants.TASK_TYPE_HIF:
+			case Constants.TASK_TYPE_VALUATION:
+			case Constants.TASK_TYPE_EXPOSURE:
+			case Constants.TASK_TYPE_GRID_IMPORT:
+			case Constants.TASK_TYPE_RESULT_EXPORT:
 				break;
-				
-			case "Valuation":
-				if(ApplicationUtil.usingLocalProperties()) {
-					t = new Thread(new ValuationTaskRunnable(task.getUuid(), taskWorkerUuid));
-					t.start();	
-				} else {
-					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
-				}
-				break;
-
-			case "Exposure":
-				if(ApplicationUtil.usingLocalProperties()) {
-					t = new Thread(new ExposureTaskRunnable(task.getUuid(), taskWorkerUuid));
-					t.start();	
-				} else {
-					KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
-				}
-				break;
-				
 			default:
 				log.error("Unknown task type: " + task.getType());
 				 //TODO: Unknown task type. Add code to clean up task record.
-				break;
+				return;			
 			}
+			
+			// If running in the cloud, start task as k8s job
+			if(! ApplicationUtil.usingLocalProperties()) {
+				KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
+				return;
+			}
+
+			// This is a valid task type running in a non-k8s environment so we'll run the task directly
+			switch (task.getType()) {
+			case Constants.TASK_TYPE_HIF:
+				t = new Thread(new HIFTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			case Constants.TASK_TYPE_VALUATION:
+				t = new Thread(new ValuationTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();
+				break;
+			case Constants.TASK_TYPE_EXPOSURE:
+				t = new Thread(new ExposureTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			case Constants.TASK_TYPE_GRID_IMPORT:
+				t = new Thread(new GridImportTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			case Constants.TASK_TYPE_RESULT_EXPORT:
+				t = new Thread(new ResultExportTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			}	
 		} else {
 			TaskQueue.returnTaskToQueue(task.getUuid());
 		}

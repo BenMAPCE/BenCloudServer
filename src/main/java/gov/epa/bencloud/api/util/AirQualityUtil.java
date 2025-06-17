@@ -175,4 +175,21 @@ public class AirQualityUtil {
 		return layerNames;
 	}
 
+	/**
+	 * 
+	 * @param id pollutant id
+	 * @param userId
+	 * @return  a list of air quality layer names (converted to lower case) for a given pollutant and current user
+	 */
+	public static List<String> getExistingLayerNamesByUser(Integer id, String userId) {
+		List<String> layerNames = new ArrayList<String>();
+
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());		
+		layerNames = create.select(DSL.lower(AIR_QUALITY_LAYER.NAME)).from(AIR_QUALITY_LAYER)
+				.where(AIR_QUALITY_LAYER.SHARE_SCOPE.equal((short) 1).or(AIR_QUALITY_LAYER.POLLUTANT_ID.eq(id).and(AIR_QUALITY_LAYER.USER_ID.eq(userId))))
+				.fetch(DSL.lower(AIR_QUALITY_LAYER.NAME));
+
+		return layerNames;
+	}
+
 }

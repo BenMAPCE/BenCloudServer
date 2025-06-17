@@ -1,20 +1,32 @@
 package gov.epa.bencloud.api.util;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.InvalidParameterException;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
@@ -33,7 +45,9 @@ import org.pac4j.core.profile.UserProfile;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.CoreApi;
+import gov.epa.bencloud.api.CrosswalksApi;
 import gov.epa.bencloud.api.HIFApi;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.server.database.JooqUtil;
@@ -56,8 +70,8 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "0.5.0";
-	public static final int minimumDbVersion = 21;
+	public static final String appVersion = "0.6.0";
+	public static final int minimumDbVersion = 40;
 	
 	/**
 	 * @param columnIdx
@@ -223,7 +237,7 @@ public class ApiUtil {
 			String childUuid = record.getValue(TASK_QUEUE.TASK_UUID);
 			
 			//remove from worker and update in_process = false
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(childUuid, null, false, "Parent task canceled.");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(childUuid, null, false, "Parent task canceled");
 			
 			//remove hif and valuation results
 			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
@@ -234,7 +248,7 @@ public class ApiUtil {
 		}						
 		
 		//remove (parent) task from worker and update in_process = false
-		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
 
 		//remove hif and valuation results
 		if (queueTask.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
@@ -286,13 +300,15 @@ public class ApiUtil {
 			String uuid = record.getValue(TASK_QUEUE.TASK_UUID);
 			
 			//remove from worker and update in_process = false
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled.");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
 			//remove hif and valuation results
 			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
 				TaskUtil.deleteHifResults(uuid, false);
 			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Valuation")) {
 				TaskUtil.deleteValuationResults(uuid, false);
-			}			
+			} else if (record.get(TASK_QUEUE.TASK_TYPE).equals("Exposure")) {
+				TaskUtil.deleteExposureResults(uuid, false);
+			}		
 		}		
 				
 		res.status(204);
@@ -320,6 +336,11 @@ public class ApiUtil {
 
 		// FOR EACH VARIABLE
 		for (String variableName : requiredVariableNames) {
+
+			//If the crosswalk isn't there, create it now
+			//To calcualte population/area weighted average of variables, we use crosswalk with source= analysis scale, target = variable scale. 
+			CrosswalksApi.ensureCrosswalkExists(gridId, getVariableGridDefinitionId(variableDatasetId,variableName));
+
 			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 					variableDatasetId, 
 					variableName, 
@@ -366,6 +387,10 @@ public class ApiUtil {
 
 		// FOR EACH VARIABLE
 		for (Record3<Integer, Integer, String> result : results ) {
+
+			//If the crosswalk isn't there, create it now
+			CrosswalksApi.ensureCrosswalkExists(getVariableGridDefinitionId(result.value2(),result.value3()),gridId);
+
 			Result<GetVariableRecord> variableRecords = Routines.getVariable(JooqUtil.getJooqConfiguration(), 
 					result.value2(), 
 					result.value3(), 
@@ -403,6 +428,27 @@ public class ApiUtil {
 				.where(VARIABLE_ENTRY.ID.eq(variableId))
 				.fetchOne();
 		return variableName.value1();
+	}
+
+	/**
+	 * 
+	 * @param variableDatasetId
+	 * @param variableName
+	 * @return a grid definition id for a given variable entry.
+	 */
+	public static Integer getVariableGridDefinitionId(Integer variableDatasetId, String variableName) {
+		if(variableDatasetId == null) {
+			return null;
+		}
+
+		Record1<Integer> record = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(VARIABLE_ENTRY.GRID_DEFINITION_ID)
+				.from(VARIABLE_ENTRY)
+				.where(VARIABLE_ENTRY.VARIABLE_DATASET_ID.eq(variableDatasetId)
+					.and(VARIABLE_ENTRY.NAME.eq(variableName)))
+				.fetchOne();
+		
+		return record.value1();
 	}
 
 	/**
@@ -548,14 +594,15 @@ public class ApiUtil {
 			//TODO: Do we need to remove children task results before removing parent tasks? 
 			// Valuation results have hif tasks as their parents but both hif and valuation results have the same task_batch_id.
 			String uuid = record.getValue(TASK_COMPLETE.TASK_UUID);
-			if (record.get(TASK_COMPLETE.TASK_TYPE).equals("HIF")) {
+			if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_HIF)) {
 				TaskUtil.deleteHifResults(uuid, true);
-			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Valuation")) {
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_VALUATION)) {
 				TaskUtil.deleteValuationResults(uuid, true);
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_EXPOSURE)) {
+				TaskUtil.deleteExposureResults(uuid, true);
+			} else if (record.get(TASK_COMPLETE.TASK_TYPE).equals(Constants.TASK_TYPE_RESULT_EXPORT)) {
+				TaskUtil.deleteResultExportResults(uuid, true);
 			}
-			 else if (record.get(TASK_COMPLETE.TASK_TYPE).equals("Exposure")) {
-					TaskUtil.deleteExposureResults(uuid, true);
-				}
 		}
 		
 		//delete from batch_task table	
@@ -596,13 +643,51 @@ public class ApiUtil {
 	 */
 	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs) {
 		StringBuilder s = new StringBuilder();
+		s.append("$");
 		s.append(getValueSigFigs(pointEstimate, sigFigs));
-		s.append(" (");
+		s.append(" ($");
 		s.append(getValueSigFigs(p2_5, sigFigs));
-		s.append(" to ");
+		s.append(" to $");
 		s.append(getValueSigFigs(p97_5, sigFigs));
 		s.append(")");
 
 		return s.toString();
 	}
+	
+    public static void unzip(String zipFile, String destFolder) throws IOException {
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
+            ZipEntry entry;
+            byte[] buffer = new byte[1024];
+            while ((entry = zis.getNextEntry()) != null) {
+                File newFile = new File(destFolder + File.separator + entry.getName());
+                if (entry.isDirectory()) {
+                    newFile.mkdirs();
+                } else {
+                    new File(newFile.getParent()).mkdirs();
+                    try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                        int length;
+                        while ((length = zis.read(buffer)) > 0) {
+                            fos.write(buffer, 0, length);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    public static List<Path> findFilesByExtension(String directoryPath, String extension) throws IOException {
+        List<Path> matchingFiles = new ArrayList<>();
+
+        Files.walkFileTree(Paths.get(directoryPath), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (file.toString().endsWith(extension) && !file.toString().contains("__MACOSX")) {
+                    matchingFiles.add(file);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return matchingFiles;
+    }
 }

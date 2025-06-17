@@ -2,8 +2,10 @@ package gov.epa.bencloud.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 
+import org.geotools.api.data.DataStoreFinder;
 import org.mariuszgromada.math.mxparser.License;
 import org.pac4j.core.config.Config;
 import org.pac4j.core.context.HttpConstants;
@@ -89,7 +91,10 @@ public class BenCloudServer {
 			response.header("Access-Control-Allow-Origin", "*");
 			response.header("Content-Security-Policy", "default-src 'self';");
 			
-			logAccess.info("{} REQUEST {} {}, uid: {}, ismemberof: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
+			String p = request.pathInfo().toLowerCase();
+			if(p != null && !p.contains("/completed") && !p.contains("/pending")) {
+				logAccess.info("{} REQUEST {} {}, uid: {}, ismemberof: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"));
+			}
 
 			//Exclude OPTIONS calls from security filter
 			if(!request.requestMethod().equalsIgnoreCase(HttpConstants.HTTP_METHOD.OPTIONS.name())) {
@@ -98,8 +103,10 @@ public class BenCloudServer {
 		});
 		
 		benCloudService.after((request, response) -> {
-			
-			logAccess.info("{} RESPONSE {} {}, uid: {}, ismemberof: {}, status: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"), response.status());
+			String p = request.pathInfo().toLowerCase();
+			if(p != null && !p.contains("/completed") && !p.contains("/pending")) {
+				logAccess.info("{} RESPONSE {} {}, uid: {}, ismemberof: {}, status: {}", request.ip(),  request.requestMethod(), request.pathInfo(), request.headers("uid"), request.headers("ismemberof"), response.status());
+			}
 		});
 
 		Spark.exception(Exception.class, (exception, request, response) -> {
@@ -125,6 +132,11 @@ public class BenCloudServer {
 		
 		JobsUtil.startJobScheduler();
 	
+		// TESTING
+	    Iterator it = DataStoreFinder.getAvailableDataStores();
+	    while(it.hasNext()){
+	      System.out.println("GeoTools available datastore: " + it.next());
+	    }
 
 		log.info("*** BenMAP API Server. Code version " + ApiUtil.appVersion + ", database version " + dbVersion + " ***");
 

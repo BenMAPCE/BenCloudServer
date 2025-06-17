@@ -113,17 +113,20 @@ public class ValuationApi {
 		List<Integer> hifIds = (hifIdsParam == null || hifIdsParam.equals("")) ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		List<Integer> vfIds = (vfIdsParam == null || vfIdsParam.equals(""))? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
 		
-		try {
-			if(gridId == 0) {
-				gridId = ValuationApi.getBaselineGridForValuationResults(id).intValue();
-			}
-		} catch (NullPointerException e) {
-			e.printStackTrace();
-			response.status(400);
-			return;
-		}
+//		try {
+//			if(gridId == 0) {
+//				gridId = ValuationApi.getBaselineGridForValuationResults(id).intValue();
+//			}
+//		} catch (NullPointerException e) {
+//			e.printStackTrace();
+//			response.status(400);
+//			return;
+//		}
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(ValuationApi.getBaselineGridForValuationResults(id), gridId);
 
 		Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 				GET_VALUATION_RESULTS(
@@ -152,6 +155,8 @@ public class ValuationApi {
 				STATISTIC_TYPE.NAME.as("metric_statistic"),
 				HEALTH_IMPACT_FUNCTION.START_AGE,
 				HEALTH_IMPACT_FUNCTION.END_AGE,
+				VALUATION_FUNCTION.START_AGE.as("valuation_start_age"),
+				VALUATION_FUNCTION.END_AGE.as("valuation_end_age"),
 				vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
 				vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
 				vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
@@ -175,6 +180,7 @@ public class ValuationApi {
 				.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
 						.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID))
 						.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID)))
+				.join(VALUATION_FUNCTION).on((VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
 				.leftJoin(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
 				.leftJoin(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 				.leftJoin(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
@@ -182,8 +188,8 @@ public class ValuationApi {
 				.leftJoin(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.leftJoin(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-				.offset((page * rowsPerPage) - rowsPerPage)
-				.limit(rowsPerPage)
+				//.offset((page * rowsPerPage) - rowsPerPage)
+				//.limit(rowsPerPage)
 				.fetch();
 			
 				//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
@@ -597,17 +603,15 @@ public class ValuationApi {
 
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		
-		Record1<Integer> aqId = create
-				.select(AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
+		Record1<Integer> gridId = create
+				.select(VALUATION_RESULT_DATASET.GRID_DEFINITION_ID)
 				.from(VALUATION_RESULT_DATASET)
-				.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
-				.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_LAYER.ID.eq(HIF_RESULT_DATASET.BASELINE_AQ_LAYER_ID))
 				.where(VALUATION_RESULT_DATASET.ID.eq(valuationResultDatasetId))
 				.fetchOne();
 
-		if(aqId == null) {
+		if(gridId == null) {
 			return null;
 		}
-		return aqId.value1();
+		return gridId.value1();
 	}
 }

@@ -127,7 +127,7 @@ public class CrosswalkEntry extends TableImpl<CrosswalkEntryRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.CROSSWALK_ENTRY_CROSSWALK_ID_IDX);
+        return Arrays.asList(Indexes.CROSSWALK_ENTRY_CROSSWALK_ID_ID_IDX, Indexes.CROSSWALK_ENTRY_CROSSWALK_ID_IDX);
     }
 
     @Override

@@ -10,6 +10,12 @@ import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 
 public class TaskUtil {
@@ -174,6 +180,50 @@ public class TaskUtil {
 			});
 		} catch (Exception e) {
 			log.error("Error deleting exposure results", e);
+		} finally {
+
+		}
+
+	}
+
+	public static void deleteResultExportResults(String uuid, Boolean deleteTask) {
+		
+		try {
+			DSL.using(JooqUtil.getJooqConfiguration())
+					.transaction(ctx -> {
+
+				Record1<String> taskParameterRecord = DSL.using(ctx)
+						.select(TASK_COMPLETE.TASK_PARAMETERS)
+						.from(TASK_COMPLETE)
+						.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+						.fetchOne();
+
+				Integer filestoreId = null;
+				try {
+					ObjectMapper objectMapper = new ObjectMapper();
+					JsonNode json = objectMapper.readTree(taskParameterRecord.value1());
+					JsonNode filestoreIdJsonNode = json.get("filestoreId");
+					if (filestoreIdJsonNode != null) {
+						filestoreId = filestoreIdJsonNode.asInt();
+					}
+				} catch (JsonMappingException e) {
+					e.printStackTrace();
+				} catch (JsonProcessingException e) {
+					e.printStackTrace();
+				} 
+				
+				if (filestoreId != null) {
+					FilestoreUtil.deleteFile(filestoreId);
+				}
+
+				if(deleteTask) {
+					DSL.using(ctx).deleteFrom(TASK_COMPLETE)
+					.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+					.execute();
+				}
+			});
+		} catch (Exception e) {
+			log.error("Error deleting result export results", e);
 		} finally {
 
 		}

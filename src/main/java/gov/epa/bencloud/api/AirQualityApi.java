@@ -829,7 +829,7 @@ public class AirQualityApi {
 			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: name, pollutantId, gridId."));
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 
 		//TODO: REMOVE THIS. IT'S JUST A WORKAROUND FOR A TEMPORARY UI BUG
@@ -839,12 +839,12 @@ public class AirQualityApi {
 		
 		//step 0: make sure layerName is not the same as any existing ones
 		
-		List<String>layerNames = AirQualityUtil.getExistingLayerNames(pollutantId);
+		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
 		if (layerNames.contains(layerName.toLowerCase())) {
 			validationMsg.success = false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please enter a different name."));
 			response.type("application/json");
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
 		AirQualityLayerRecord aqRecord=null;
@@ -930,7 +930,7 @@ public class AirQualityApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 				response.type("application/json");
-				return transformValMsgToJSON(validationMsg);
+				return CoreApi.transformValMsgToJSON(validationMsg);
 			}
 			
 			pollutantMetricIdLookup = AirQualityUtil.getPollutantMetricIdLookup(pollutantId);
@@ -1013,12 +1013,12 @@ public class AirQualityApi {
 					double dbl = Double.parseDouble(str);
 					if (dbl<0) {
 						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid as it is less than 0."+ "\r\n";
-						countValueTypeError ++;
+						countValueError ++;
 					}
 				}
 				catch(NumberFormatException e){
 					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid double."+ "\r\n";
-					countValueError ++;
+					countValueTypeError ++;
 				}
 				
 				//metric-seasonal metric-annual statistics should be unique
@@ -1072,16 +1072,17 @@ public class AirQualityApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countValueTypeError == 1) {
-					strRecord = String.valueOf(countValueTypeError) + " record has air quality values that is not a valid number.";
+					strRecord = String.valueOf(countValueTypeError) + " record contains an unexpected air quality value.";
 				}
 				else {
-					strRecord = String.valueOf(countValueTypeError) + " records have  air quality values that are not valid numbers.";
+					strRecord = String.valueOf(countValueTypeError) + " records contain unexpected air quality values.";
 				}
-				msg.message = strRecord + "";
+				msg.message = strRecord + " Each record must contain a single, positive numeric value.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
 			if(countValueError > 0) {
+				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countValueError == 1) {
@@ -1145,8 +1146,8 @@ public class AirQualityApi {
 			
 			if(!validationMsg.success) {
 				response.type("application/json");
-				//response.status(400);
-				return transformValMsgToJSON(validationMsg); 
+				response.status(400);
+				return CoreApi.transformValMsgToJSON(validationMsg); 
 			}
 							
 			
@@ -1155,10 +1156,10 @@ public class AirQualityApi {
 		} catch (Exception e) {
 			log.error("Error validating AQ file", e);
 			response.type("application/json");
-			//response.status(400);
+			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
 		Integer aqLayerId = null;
@@ -1222,13 +1223,14 @@ public class AirQualityApi {
 							AirQualityUtil.createNewSeasonalMetric(pollutantMetricIdLookup.get(metricNameLowerCase), record[seasonalMetricIdx]));
 				}
 
-				String statisticLowerCase = record[seasonalMetricIdx].toLowerCase();
+				String statisticLowerCase = record[annualMetricIdx].toLowerCase();
 				Integer statisticId=0;
-				if(statisticIdLookup.containsKey(seasonalMetricLowerCase)) {
-					statisticId = statisticIdLookup.get(seasonalMetricLowerCase);
+				if(statisticIdLookup.containsKey(statisticLowerCase)) {
+					statisticId = statisticIdLookup.get(statisticLowerCase);
 				} else {
-					//TODO: Throw up an error message here. We can't allow this process to add statistics. We just need to ignore those we don't support
-					
+					if (statisticLowerCase != "") {
+						throw new Exception("Annual statistic contained an invalid value: " + statisticLowerCase);
+					}
 				}
 				
 				// Add a record to the batch
@@ -1288,16 +1290,16 @@ public class AirQualityApi {
 			log.error("Error importing AQ file", e);
 			
 			response.type("application/json");
-			//response.status(400);
+			response.status(400);
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of air quality file."));
 			deleteAirQualityLayerDefinition(aqLayerId, userProfile);
-			return transformValMsgToJSON(validationMsg);
+			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
 		response.type("application/json");
 		validationMsg.success = true;
-		return transformValMsgToJSON(validationMsg); 
+		return CoreApi.transformValMsgToJSON(validationMsg); 
 	}
 	
 	// This version of this method is used when an error occurs during AQ surface upload to clean up
@@ -1547,54 +1549,6 @@ public class AirQualityApi {
 			orderFields.add(DSL.field("grid_col", Integer.class.getName()).sort(SortOrder.ASC));	
 			orderFields.add(DSL.field("grid_row", Integer.class.getName()).sort(SortOrder.ASC));	
 		}
-	}
-
-	/**
-	 * Transforms records into a JsonNode.
-	 * @param records
-	 * @return the trasformed records as a JsonNode.
-	 */
-	private static JsonNode transformRecordsToJSON(Record records) {
-		
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode data = mapper.createObjectNode();
-
-        JsonNode recordsJSON = null;
-		try {
-			JsonFactory factory = mapper.getFactory();
-			JsonParser jp = factory.createParser(
-					records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
-			recordsJSON = mapper.readTree(jp);
-		} catch (JsonParseException e) {
-			log.error("Error parsing JSON",e);
-		} catch (JsonProcessingException e) {
-			log.error("Error processing JSON",e);
-		} catch (IOException e) {
-			log.error("IO Exception", e);
-		}
-		
-		return recordsJSON;
-		
-	}
-	
-	/**
-	 * Transforms a validation message into a JsonNode
-	 * @param validationMessage
-	 * @return the transformed validation message as a JsonNode.
-	 */
-	private static JsonNode transformValMsgToJSON(ValidationMessage validationMessage) {
-		
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode recordsJSON = null;
-		//ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-		try {
-			recordsJSON = mapper.valueToTree(validationMessage);
-		} catch (Exception e) {
-			log.error("Error converting validation message to JSON",e);
-		} 
-		
-		return recordsJSON;
-		
 	}
 
 }

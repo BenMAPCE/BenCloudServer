@@ -13,7 +13,6 @@ spec:
     targetPort: 4567
   selector:
     app: bencloud-server
-
 ---
 # Currently very permissive. Need to refine
 apiVersion: rbac.authorization.k8s.io/v1
@@ -53,9 +52,7 @@ rules:
       - serviceaccounts
       - services
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -68,9 +65,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: api-cluster-role 
-
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -106,12 +101,15 @@ spec:
         fsGroup: 555
       containers:
       - name: api
-        image:  registry.epa.gov/benmap/bencloudserver/bencloudserver:$CI_COMMIT_SHORT_SHA
+        image:  registry.epa.gov/benmap/bencloudserver/bencloudserver/app-defender:$CI_COMMIT_SHORT_SHA
         imagePullPolicy: Always
         resources:
          requests:
-          memory: 15G
-          cpu: 4
+          memory: 24G
+          cpu: 8
+        volumeMounts:
+          - name: bencloud-server
+            mountPath: /app-data
         livenessProbe:
          tcpSocket:
             port: 4567
@@ -149,13 +147,27 @@ spec:
             value: "$DB_PASSWORD"
           - name: K8S_NAMESPACE
             value: "$K8S_NAMESPACE"
+          - name: DEFENDER_APP_ID
+            value: "$DEFENDER_APP_ID"
+          - name: GEOSERVER_URL
+            value: "$GEOSERVER_URL"
+          - name: GEOSERVER_WORKSPACE
+            value: "$GEOSERVER_WORKSPACE"
+          - name: GEOSERVER_STORE
+            value: "$GEOSERVER_STORE"
+          - name: GEOSERVER_ADMIN_USER
+            value: "$GEOSERVER_ADMIN_USER"
+          - name: GEOSERVER_ADMIN_PASSWORD
+            value: "$GEOSERVER_ADMIN_PASSWORD"
         ports:
         - containerPort: 4567
       imagePullSecrets:
       - name: glcr-auth
-
+      volumes:
+        - name: bencloud-server
+          persistentVolumeClaim:
+            claimName: bencloud-server-pv-claim
 ---
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

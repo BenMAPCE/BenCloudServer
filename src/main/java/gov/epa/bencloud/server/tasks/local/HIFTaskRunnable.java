@@ -260,15 +260,52 @@ public class HIFTaskRunnable implements Runnable {
 					
 					Map<Integer, Map<Integer, AirQualityCellMetric>> baselineCellMetrics = baselineCell.getCellMetrics();
 					Map<Integer, Map<Integer, AirQualityCellMetric>> scenarioCellMetrics = scenarioCell.getCellMetrics();
-					
-					//TODO: This temporary code is always selecting the first metric we have for this cell
-					// Need to update to use metric, seasonal metric, and statistic
-					Map<Integer, AirQualityCellMetric> baselineCellFirstMetric = baselineCellMetrics.get(baselineCellMetrics.keySet().toArray()[0]);
-					Map<Integer, AirQualityCellMetric> scenarioCellFirstMetric = scenarioCellMetrics.get(scenarioCellMetrics.keySet().toArray()[0]);
-					
-					 
-					double baselineValue = baselineCellFirstMetric.get(baselineCellFirstMetric.keySet().toArray()[0]).getValue();
-					double scenarioValue = scenarioCellFirstMetric.get(scenarioCellFirstMetric.keySet().toArray()[0]).getValue();
+
+					double baselineValue = 0;
+					double scenarioValue = 0;
+
+					boolean baselineMetricFound = false;
+					boolean scenarioMetricFound = false;
+
+					//If aq cells have metrics that match the current hif metric, get the value and continue
+					//Else, skip this cell
+					//TODO: update to use seasonal metric and statistic
+
+					for(Map<Integer, AirQualityCellMetric> baselineCellMetric : baselineCellMetrics.values()) {
+						for(AirQualityCellMetric airQualityCellMetric : baselineCellMetric.values()) {
+							if(airQualityCellMetric.getMetric() == hifConfig.metric 
+								// && airQualityCellMetric.getSeasonalMetric() == hifConfig.seasonalMetric
+								// && airQualityCellMetric.getAnnualStatistic() == hifConfig.metricStatistic
+								) {
+									baselineValue = airQualityCellMetric.getValue();
+									baselineMetricFound = true;
+									continue;
+							}
+						}
+						if(baselineMetricFound) {
+							continue;
+						}
+					}
+
+					for(Map<Integer, AirQualityCellMetric> scenarioCellMetric : scenarioCellMetrics.values()) {
+						for(AirQualityCellMetric airQualityCellMetric : scenarioCellMetric.values()) {
+							if(airQualityCellMetric.getMetric() == hifConfig.metric 
+								// && airQualityCellMetric.getSeasonalMetric() == hifConfig.seasonalMetric
+								// && airQualityCellMetric.getAnnualStatistic() == hifConfig.metricStatistic
+								) {
+									scenarioValue = airQualityCellMetric.getValue();
+									scenarioMetricFound = true;
+									continue;
+							}
+						}
+						if(scenarioMetricFound) {
+							continue;
+						}
+					}
+
+					if(!(baselineMetricFound && scenarioMetricFound)) {
+						return;
+					}
 					
 					double seasonalScalar = 1.0;
 					if((int)hifRecord.get("metric_statistic") == 0) { // NONE
@@ -472,7 +509,7 @@ public class HIFTaskRunnable implements Runnable {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task failed");
 			log.error("Task failed", e);
 		}
 		log.info("HIF Task Complete: " + taskUuid);

@@ -2,10 +2,12 @@ package gov.epa.bencloud.api.util;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.Vector;
 
@@ -13,10 +15,12 @@ import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 import org.jooq.exception.TooManyRowsException;
 import org.jooq.impl.DSL;
 import org.mariuszgromada.math.mxparser.*;
+import org.pac4j.core.profile.UserProfile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -32,6 +36,7 @@ import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.Scenario;
 import gov.epa.bencloud.api.model.ScenarioHIFConfig;
 import gov.epa.bencloud.api.model.ScenarioPopConfig;
+import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.function.HIFArguments;
 import gov.epa.bencloud.api.function.HIFNativeFactory;
 import gov.epa.bencloud.api.function.HIFunction;
@@ -120,6 +125,78 @@ public class HIFUtil {
 			Argument population = new Argument("POPULATION", 0.0);
 
 			functions[1].createInterpretedFunctionFromExpression(new Expression(record.getBaselineFunctionText(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
+		}
+
+		return functions;
+	}
+
+	/**
+	 * 
+	 * @param id
+	 * @return an array of functions (function, baseline function) for a given health impact function.
+	 */
+	public static HIFunction[] getFunctionsForHIF(HIFConfig hifConfig) {
+
+		// Load the function by hifConfig
+
+		HIFunction[] functions = new HIFunction[2];
+
+		functions[0] = new HIFunction();
+		functions[1] = new HIFunction();
+
+		functions[0].nativeFunction = HIFNativeFactory.create(hifConfig.hifRecord.get("function_text").toString());//HIFNativeFactory.create(record.getFunctionText());
+		functions[1].nativeFunction = HIFNativeFactory.create(hifConfig.hifRecord.get("baseline_function_text").toString());//HIFNativeFactory.create(record.getBaselineFunctionText());
+
+		functions[0].hifArguments = new HIFArguments();
+		functions[1].hifArguments = new HIFArguments();
+
+		functions[0].hifArguments.a = ((Number)hifConfig.hifRecord.get("val_a")).doubleValue();
+		functions[0].hifArguments.b = ((Number) hifConfig.hifRecord.get("val_b")).doubleValue();
+		functions[0].hifArguments.c = ((Number) hifConfig.hifRecord.get("val_c")).doubleValue();
+		functions[0].hifArguments.beta = ((Number) hifConfig.hifRecord.get("beta")).doubleValue();
+
+		functions[1].hifArguments.a = ((Number) hifConfig.hifRecord.get("val_a")).doubleValue();
+		functions[1].hifArguments.b = ((Number) hifConfig.hifRecord.get("val_b")).doubleValue();
+		functions[1].hifArguments.c = ((Number) hifConfig.hifRecord.get("val_c")).doubleValue();
+		functions[1].hifArguments.beta = ((Number) hifConfig.hifRecord.get("beta")).doubleValue();
+		//If we don't have a native function, we'll use the interpreted one instead
+		if(functions[0].nativeFunction == null) {
+			// Populate/create the necessary arguments and constants
+			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
+			Constant a = new Constant("A", functions[0].hifArguments.a);
+			Constant b = new Constant("B", functions[0].hifArguments.b);
+			Constant c = new Constant("C", functions[0].hifArguments.c);
+			
+			//The following will be set while iterating cells
+			Argument beta = new Argument("BETA", functions[0].hifArguments.beta);
+			Argument deltaQ = new Argument("DELTAQ", 0.0);
+			Argument q0 = new Argument("Q0", 0.0);
+			Argument q1 = new Argument("Q1", 0.0);
+			Argument incidence = new Argument("INCIDENCE", 0.0);
+			Argument prevalence = new Argument("PREVALENCE", 0.0);
+			Argument population = new Argument("POPULATION", 0.0);
+
+			functions[0].createInterpretedFunctionFromExpression(new Expression(hifConfig.hifRecord.get("function_text").toString(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
+		}
+
+		//If we don't have a native baseline function, we'll use the interpreted one instead
+		if(functions[1].nativeFunction == null) {
+			// Populate/create the necessary arguments and constants
+			//{ a, b, c, beta, deltaq, q0, q1, incidence, pop, prevalence };
+			Constant a = new Constant("A", functions[1].hifArguments.a);
+			Constant b = new Constant("B", functions[1].hifArguments.b);
+			Constant c = new Constant("C", functions[1].hifArguments.c);
+			
+			//The following will be set while iterating cells
+			Argument beta = new Argument("BETA", functions[1].hifArguments.beta);
+			Argument deltaQ = new Argument("DELTAQ", 0.0);
+			Argument q0 = new Argument("Q0", 0.0);
+			Argument q1 = new Argument("Q1", 0.0);
+			Argument incidence = new Argument("INCIDENCE", 0.0);
+			Argument prevalence = new Argument("PREVALENCE", 0.0);
+			Argument population = new Argument("POPULATION", 0.0);
+
+			functions[1].createInterpretedFunctionFromExpression(new Expression(hifConfig.hifRecord.get("baseline_function_text").toString(), a, b, c, beta, deltaQ, q0, q1, incidence, prevalence, population));
 		}
 
 		return functions;
@@ -269,20 +346,40 @@ public class HIFUtil {
 	 * @param functionIncidenceDataset
 	 * @param functionPrevalenceDataset
 	 */
-	public static void setIncidencePrevalence(HIFConfig hifConfig, Scenario scenario, ScenarioPopConfig scenarioPopConfig, ScenarioHIFConfig scenarioHIFConfig, int defaultIncidencePrevalenceDataset, Boolean userPrefered) {
+	public static void setIncidencePrevalence(HIFConfig hifConfig, Scenario scenario, ScenarioPopConfig scenarioPopConfig, ScenarioHIFConfig scenarioHIFConfig, int defaultIncidencePrevalenceDataset, Boolean userPrefered, int populationId, Optional<UserProfile> userProfile) {
 
 		
 		try {
 			//int endpointGroupId = function.get("endpoint_group_id").asInt();
 			Map<String, Object> function = hifConfig.hifRecord;
-			
 			int endpointId = (Integer) function.get("endpoint_id");
 			int raceId = (Integer) function.get("race_id");
 			int genderId = (Integer) function.get("gender_id");
 			int ethnicityId = (Integer) function.get("ethnicity_id");
+			int startAge  = (Integer) function.get("start_age");
+			int endAge  = (Integer) function.get("end_age");
 			String functionText = function.get("function_text").toString().toLowerCase();
 			boolean isPrevalenceFunction = functionText.contains("prevalence");
 			boolean isIncidenceFunction = functionText.contains("incidence");
+			boolean useEPADefault = defaultIncidencePrevalenceDataset == -1 ? true : false;
+
+			//get list of EPA datasets for the given population year
+			List<Integer> incidenceOptions = (populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) ? 
+				new ArrayList<Integer>(Arrays.asList(3,6,7,8,9)) : 
+				new ArrayList<Integer>(Arrays.asList(1,2,3,4,5));
+			
+			//if a user-uploaded dataset was selected, add user-uploaded datasets to the list of incidence options
+			if(!useEPADefault) {
+				Result<Record1<Integer>> records =  DSL.using(JooqUtil.getJooqConfiguration()).select(INCIDENCE_DATASET.ID)
+					.from(INCIDENCE_DATASET)
+					.where(INCIDENCE_DATASET.SHARE_SCOPE.eq((short) 0)
+						.and(INCIDENCE_DATASET.USER_ID.eq(userProfile.get().getId())))
+					.fetch();
+				for(Record1<Integer> record : records) {
+					incidenceOptions.add(record.get(INCIDENCE_DATASET.ID));
+				}
+			}
+
 			boolean defaultDatasetSupportsIncidenceForEndpoint = false;
 			boolean defaultDatasetSupportsPrevalenceForEndpoint = false;
 			
@@ -295,8 +392,8 @@ public class HIFUtil {
 
 			if (isIncidenceFunction) {
 				
-				//step 1: check if the default dataset a perfect match	
-				if(defaultIncidencePrevalenceDataset != 0) {
+				//step 1: check if the default dataset a perfect match, non-EPA defaults
+				if(defaultIncidencePrevalenceDataset != 0 && !useEPADefault) {
 					incidenceRace = raceId;
 					incidenceEthnicity = ethnicityId;
 					incidenceGender = genderId;
@@ -308,8 +405,25 @@ public class HIFUtil {
 									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.START_AGE.eq((short) startAge))
+									.and(INCIDENCE_ENTRY.END_AGE.eq((short) endAge)))
 							.fetchOne();
+
+					//if there is no perfect match, check for partial age range matching
+					if(countIncidence.value1() == 0) {
+						countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+							.select(DSL.count())
+							.from(INCIDENCE_ENTRY)
+							.where((INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.eq(defaultIncidencePrevalenceDataset))
+									.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge))))
+							.fetchOne();
+					}
 					
 					//step 2: if the default dataset is not a perfect match, check if it's a partial match (dataset's group (e.g. ALL) includes hif group (e.g. White))
 //					if(countIncidence.value1() <= 0 && userPrefered) {
@@ -328,6 +442,43 @@ public class HIFUtil {
 //								.fetchAny();				
 //					}
 					defaultDatasetSupportsIncidenceForEndpoint = countIncidence.value1() > 0;
+				//step 1: check if the default dataset a perfect match within the EPA default functions
+				} else if(defaultIncidencePrevalenceDataset != 0 && useEPADefault) {
+					incidenceRace = raceId;
+					incidenceEthnicity = ethnicityId;
+					incidenceGender = genderId;
+					Record1<Integer> countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+					.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+							.from(INCIDENCE_ENTRY)
+							.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(incidenceOptions)
+									.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.START_AGE.eq((short) startAge))
+									.and(INCIDENCE_ENTRY.END_AGE.eq((short) endAge)))
+							.fetchAny();
+
+					//if there is no perfect match, check for partial age range matching
+					if(countIncidence == null) {
+						countIncidence = DSL.using(JooqUtil.getJooqConfiguration())
+						.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+							.from(INCIDENCE_ENTRY)
+							.where(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(incidenceOptions)
+									.and(INCIDENCE_ENTRY.PREVALENCE.ne(true))
+									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge))))
+							.fetchAny();
+
+					}
+					defaultDatasetSupportsIncidenceForEndpoint = countIncidence == null ? false : true;
+					if(defaultDatasetSupportsIncidenceForEndpoint) {
+						defaultIncidencePrevalenceDataset = countIncidence.value1();
+					}
 				}
 				
 				if (defaultDatasetSupportsIncidenceForEndpoint) {
@@ -351,22 +502,44 @@ public class HIFUtil {
 					
 					//TODO: I think this logic will work with existing datasets, but we will need to expand this to pull multiple records and then allow the user to choose 
 					// since there could be more than one "best" id.
-
-					Record1<Integer> bestId = DSL.using(JooqUtil.getJooqConfiguration())
+					Record1<Integer> bestId = null;
+					//for non-EPA default selections, search for a perfect match within the user uploaded and EPA default datasets
+					//this has already been done above for EPA defaults
+					if(!useEPADefault) {
+						bestId = DSL.using(JooqUtil.getJooqConfiguration())
 							.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
 							.from(INCIDENCE_ENTRY)
 							.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
 									.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
-									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+									.and(INCIDENCE_ENTRY.START_AGE.eq((short) startAge))
+									.and(INCIDENCE_ENTRY.END_AGE.eq((short) endAge))
+									.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(incidenceOptions)))
 							.fetchAny();
+						if(bestId == null || bestId.value1() == null) {
+							bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.ne(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId))
+										.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge)))
+										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(incidenceOptions)))
+								.fetchAny();
+						}
+					}
+					
 					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 						incidenceRace = raceId;
 						incidenceEthnicity = ethnicityId;
 						incidenceGender = genderId;
 					}
+					//if no perfect match has been found for the given RACE / GENDER / ETHNICITY, use ALL / ALL / ALL
 					else {
 						bestId = DSL.using(JooqUtil.getJooqConfiguration())
 								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
@@ -375,14 +548,19 @@ public class HIFUtil {
 										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
 										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
-										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3))
+										.and(INCIDENCE_ENTRY.END_AGE.ge((short) startAge).and(INCIDENCE_ENTRY.START_AGE.le((short) endAge)))
+										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(incidenceOptions)))
 								.fetchAny();
+						
+						
 						if(bestId != null && bestId.value1() !=null) {
 							dsId = bestId.value1();
 							incidenceRace = 5;
 							incidenceEthnicity = 3;
 							incidenceGender = 3;
 						}
+						
 					}
 					
 					if(dsId!=0) {
@@ -427,7 +605,7 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
-							.fetchOne();
+							.fetchOne();	
 					
 //					if(countPrevalence.value1() <= 0 && userPrefered) {
 //						countPrevalence = DSL.using(JooqUtil.getJooqConfiguration())
@@ -476,6 +654,19 @@ public class HIFUtil {
 									.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
 									.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
 							.fetchAny();
+					//hard-code for 2020 dataset. When population dataset is 2020, use 2020 prevalence
+					if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
+						bestId = DSL.using(JooqUtil.getJooqConfiguration())
+								.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+								.from(INCIDENCE_ENTRY)
+								.where(INCIDENCE_ENTRY.PREVALENCE.eq(true)
+										.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+										.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(raceId))
+										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(genderId))
+										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(ethnicityId)))
+										.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+								.fetchAny();
+						}
 					if(bestId != null && bestId.value1() !=null) {
 						dsId = bestId.value1();
 						prevalenceRace = raceId;
@@ -492,6 +683,19 @@ public class HIFUtil {
 										.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
 										.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
 								.fetchAny();
+						//hard-code for 2020 dataset. When population dataset is 2020, use 2020 prevalence
+						if(populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) {
+							bestId = DSL.using(JooqUtil.getJooqConfiguration())
+									.selectDistinct(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID)
+									.from(INCIDENCE_ENTRY)
+									.where(INCIDENCE_ENTRY.PREVALENCE.eq(true)
+											.and(INCIDENCE_ENTRY.ENDPOINT_ID.eq(endpointId))
+											.and(DSL.when(INCIDENCE_ENTRY.RACE_ID.eq(6), 5).otherwise(INCIDENCE_ENTRY.RACE_ID).eq(5))
+											.and(DSL.when(INCIDENCE_ENTRY.GENDER_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.GENDER_ID).eq(3))
+											.and(DSL.when(INCIDENCE_ENTRY.ETHNICITY_ID.eq(4), 3).otherwise(INCIDENCE_ENTRY.ETHNICITY_ID).eq(3)))
+											.and(INCIDENCE_ENTRY.INCIDENCE_DATASET_ID.in(3,6,7,8,9))
+									.fetchAny();
+							}
 						if(bestId != null && bestId.value1() !=null) {
 							dsId = bestId.value1();
 							prevalenceRace = 5;
@@ -966,7 +1170,7 @@ public class HIFUtil {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
 		Record record = create
-				.select(HEALTH_IMPACT_FUNCTION.asterisk()
+						.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
 						,ENDPOINT.NAME.as("endpoint_name")
 						,POLLUTANT.NAME.as("pollutant_name")
@@ -984,9 +1188,15 @@ public class HIFUtil {
 				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))			
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(hifId))
 				.fetchOne();
-				
-		return record.get(HEALTH_IMPACT_FUNCTION.AUTHOR) + " (Unique ID: " + record.get(HEALTH_IMPACT_FUNCTION.ID) + ")";
+		String msg = "";		
+		if(record!= null){
+			msg = record.get(HEALTH_IMPACT_FUNCTION.AUTHOR) + " (Unique ID: " + record.get(HEALTH_IMPACT_FUNCTION.ID) + ")";
+		}
+		else{
+			msg = " (Unique ID: " + hifId.toString() + ")"; //skip printing author name if hif doesn't exist in the DB. 
+			//TODO: need better ways to pull authoer from task config file. 
+		}
+		return msg;
 	}
-	
-	
+
 }

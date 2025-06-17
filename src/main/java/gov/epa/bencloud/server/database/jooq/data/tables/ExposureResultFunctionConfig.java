@@ -11,7 +11,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row12;
+import org.jooq.Row15;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -109,6 +109,24 @@ public class ExposureResultFunctionConfig extends TableImpl<ExposureResultFuncti
      */
     public final TableField<ExposureResultFunctionConfigRecord, Integer> EXPOSURE_FUNCTION_INSTANCE_ID = createField(DSL.name("exposure_function_instance_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column
+     * <code>data.exposure_result_function_config.population_group</code>.
+     */
+    public final TableField<ExposureResultFunctionConfigRecord, String> POPULATION_GROUP = createField(DSL.name("population_group"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column
+     * <code>data.exposure_result_function_config.hidden_sort_order</code>.
+     */
+    public final TableField<ExposureResultFunctionConfigRecord, String> HIDDEN_SORT_ORDER = createField(DSL.name("hidden_sort_order"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column
+     * <code>data.exposure_result_function_config.function_type</code>.
+     */
+    public final TableField<ExposureResultFunctionConfigRecord, String> FUNCTION_TYPE = createField(DSL.name("function_type"), SQLDataType.CLOB, this, "");
+
     private ExposureResultFunctionConfig(Name alias, Table<ExposureResultFunctionConfigRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -177,11 +195,11 @@ public class ExposureResultFunctionConfig extends TableImpl<ExposureResultFuncti
     }
 
     // -------------------------------------------------------------------------
-    // Row12 type methods
+    // Row15 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> fieldsRow() {
-        return (Row12) super.fieldsRow();
+    public Row15<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, String, String, String> fieldsRow() {
+        return (Row15) super.fieldsRow();
     }
 }

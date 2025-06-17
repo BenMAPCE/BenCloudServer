@@ -1,7 +1,32 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Production 2024-??-?? | [API v0.5.0 and DB v27](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## Work in progress | [API v0.6.0 and DB 43](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.6.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+
+### New Features and Improvements
+* Analysis exports will not be processed as a background task (similar to analysis tasks) and can be downloaded from the task queue when they are complete. This will prevent large exports from failing due to request timeouts and API memory issues.
+* Users can now upload custom grid definitions that can be associated with air quality surfaces and also used for aggregation during export of results. Please note that BenMAP uses crosswalk tables to translate from one grid to another. The grids provided by EPA use population-weighted crosswalks which are consider more accurate in some circumstances. However, please note that BenMAP generates crosswalks for grids  uploaded by users using area-weighted crosswalks. (BWD-10, et al)
+* The completed tasks queue has been sorted so recent tasks will now show at the top. Previously, the most recent tasks were found at the bottom of that list requiring a lot of scrolling for users with numerous tasks. (BWD-93)
+* The population dataset has been updated based on the 2020 US census and also restructure to reduce storage and improve performance.
+* When running exposure analysis, BenMAP will now supply values both for the requested population groups as well as for those that are outside of each group. These are referred to as complementary groups. (BWD-6)
+* The layout of the data center page has been revised to improve efficiency and allow for future enhancements. (BWD-29)
+* The US EPA standard valuation functions will now include results with 2%, 3%, and 7% discount applied where appropriate. (BWD-84)
+* With this release, we are beginning to implement mapping functionality in BenMAP. Currently, this is only visible when viewing grid definitions, but more functionality is planned for the next release. (BWD-18)
+* EPA banner is now set to scroll with the rest of the page instead of being locked at the top of the page. (BWD-53)
+* Completed tasks will now display their time and date of completion in the user's timezone. (BWD-44)
+* Result exports are now treated as separate tasks in the task manager. (BWD-56, BWD-57)
+* Added warnings for when file size limits are exceeded for dataset uploads, specifically for air quality, grid definitions, and incidence uploads. (BWD-99)
+* Allow administrator to add a global notification banner that will show on all BenMAP web pages. (BWD-33, BWD-109, BWD-110, BWD-111)
+* Update task view table to sort by most recent (BWD-93)
+* Initiate a session timeout after 15 minutes of no user activity with a warning message one minute before (BWD-25)
+
+### Bug Fixes
+* Large health impact and valuation analyses were crashing in certain scenarios. Memory configuration adjustments have been made to protect against this. (BWD-1)
+* Health impact functions are only shown when they match the air quality surface metrics. Previously, some functions were executed even though the required air quality metric was not present. (BWD-5, BWD-8)
+* Valuation results were being duplicated when multiple hif groups are selected with overlapping functions (BWD-3)
+* When creating crosswalks, cast col/row to BIGINT first to avoid "integer out of range" error. (BWD-106)
+
+## Production 2024-04-29 | [API v0.5.0 and DB v27](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.5.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
 * Added Incidence and Prevalence dataset review and management to Data Center / Manage Data. (Multiple stories)

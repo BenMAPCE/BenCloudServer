@@ -88,6 +88,8 @@ public class ExposureTaskRunnable implements Runnable {
 			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(exposureTaskConfig.aqScenarioId);
 			
 			ArrayList<EFunction> exposureFunctionList = new ArrayList<EFunction>();
+			ArrayList<EFunction> complementFunctionList = new ArrayList<EFunction>();
+			ArrayList<ExposureConfig> complementFunctionConfigs = new ArrayList<ExposureConfig>();
 												
 			exposureTaskLog.addMessage("Loaded air quality data");
 			messages.get(messages.size()-1).setStatus("complete");
@@ -96,11 +98,6 @@ public class ExposureTaskRunnable implements Runnable {
 			// HIF config records
 			messages.add(new TaskMessage("active", "Loading incidence and prevalence data"));
 			int idx=0;
-			for (ExposureConfig exposureConfig : exposureTaskConfig.exposureFunctions) {
-				exposureConfig.arrayIdx = idx++;	
-			}
-
-			idx=0;
 			
 			for (ExposureConfig exposureConfig : exposureTaskConfig.exposureFunctions) {	
 				messages.get(messages.size()-1).setMessage("Loading configuration for function " + ++idx + " of " + exposureTaskConfig.exposureFunctions.size());
@@ -110,19 +107,80 @@ public class ExposureTaskRunnable implements Runnable {
 
 				EFunction f = ExposureUtil.getFunctionForEF(exposureConfig.efId);
 				exposureFunctionList.add(f);
-				
+
 				Record e = ExposureUtil.getFunctionDefinition(exposureConfig.efId);
 				exposureConfig.efRecord = e.intoMap();
+				exposureConfig.efRecord.put("hidden_sort_order", exposureConfig.efRecord.get("population_group"));
+				if(exposureConfig.efRecord.get("population_group").equals("All: Reference (0-99)")) {
+					exposureConfig.efRecord.replace("hidden_sort_order", "00. All: Reference (0-99)");
+				}
 
 				// Override exposure config where user has not provided a value
 				updateExposureConfigValues(exposureConfig, e);
+
+				if(exposureConfig.efRecord.get("generate_complement").equals(true)) {
+					ExposureConfig complement = new ExposureConfig();
+					int complementId = (int) exposureConfig.efId + 10000;
+					complement.efInstanceId = (int) exposureConfig.efInstanceId + 10000;
+					complement.efId = complementId;
+					complement.efRecord = exposureConfig.efRecord;
+					
+					EFunction cf = ExposureUtil.getFunctionForEF(exposureConfig.efId);
+					complementFunctionList.add(cf);
+
+					Record ce = ExposureUtil.getFunctionDefinition(exposureConfig.efId);
+					complement.efRecord = ce.intoMap();
+					complement.efRecord.replace("id", complementId);
+					if(exposureConfig.efRecord.get("complement_name") != null) {
+						complement.efRecord.replace("population_group", exposureConfig.efRecord.get("complement_name"));
+					} else {
+						complement.efRecord.replace("population_group", ("Non-" + complement.efRecord.get("population_group")));
+					}
+
+					complement.efRecord.put("hidden_sort_order", exposureConfig.efRecord.get("population_group") + " - Complement");
+
+					complement.efRecord.put("is_complement", true);
+
+					if(exposureConfig.race != 5) {
+						complement.efRecord.put("complement_race", -1);
+					}
+
+					if(exposureConfig.ethnicity == 2) {
+						complement.efRecord.put("complement_ethnicity", 1);
+					} else if(exposureConfig.ethnicity == 1) {
+						complement.efRecord.put("complement_ethnicity", 2);
+					}
+
+					if(exposureConfig.gender == 2) {
+						complement.efRecord.put("complement_gender", 1);
+					} else if(exposureConfig.gender == 1) {
+						complement.efRecord.put("complement_gender", 2);
+					}
+
+					// Override exposure config where user has not provided a value
+					updateExposureConfigValues(complement, ce);
+
+					complementFunctionConfigs.add(complement);
+				}
 				
+			}
+
+			for	(EFunction exposureFunction : complementFunctionList) {
+				exposureFunctionList.add(exposureFunction);
+			}
+
+			for	(ExposureConfig exposureConfig : complementFunctionConfigs) {
+				exposureTaskConfig.exposureFunctions.add(exposureConfig);
+			}
+
+			idx = 0;
+			for (ExposureConfig exposureConfig : exposureTaskConfig.exposureFunctions) {
+				exposureConfig.arrayIdx = idx++;	
 			}
 			
 			// For each exposure function, keep track of which age groups (and what percentage) apply
 			// Hashmap key is the population age range and the value is what percent of that range's population applies to the exposure function
-			ArrayList<HashMap<Integer, Double>> exposurePopAgeRangeMapping = getPopAgeRangeMapping(exposureTaskConfig);
-			
+			ArrayList<HashMap<Integer, Double>> exposurePopAgeRangeMapping = getPopAgeRangeMapping(exposureTaskConfig);	
 			
 			// Sort the exposure functions by population_group
 			exposureTaskConfig.exposureFunctions.sort(ExposureConfig.ExposureConfigPopulationGroupComparator);
@@ -228,10 +286,13 @@ public class ExposureTaskRunnable implements Runnable {
 										
 					double deltaQ = baselineValue - scenarioValue;	
 					double v1 = 1.0;
+					boolean isVariableFunction = false;
+					boolean isComplementFunction = efRecord.get("is_complement") != null ? (boolean)efRecord.get("is_complement") : false;
+					
 					if (variables.containsKey(exposureConfig.variable)) {
+						isVariableFunction = true;
 						v1 = variables.get(exposureConfig.variable).getOrDefault(baselineEntry.getKey(), 0.0);
 					}
-					
 					
 					Expression functionExpression = null;
 					
@@ -241,16 +302,24 @@ public class ExposureTaskRunnable implements Runnable {
 						functionExpression.setArgumentValue("Q1", baselineValue);
 						functionExpression.setArgumentValue("Q0", scenarioValue);
 						// Currently, the replacement of VARIABLE with the corresponding id is hard-coded, since it's the only one.
-						if (variables.containsKey(exposureConfig.variable)) {
-							functionExpression.setArgumentValue("VARIABLE", v1);
+						if (isVariableFunction) {
+							if(isComplementFunction) {
+								functionExpression.setArgumentValue("VARIABLE", (1 - v1));
+							} else {
+								functionExpression.setArgumentValue("VARIABLE", v1);
+							}
 						}
 					} else {
 						exposureFunction.efArguments.deltaQ = deltaQ;
 						exposureFunction.efArguments.q1 = baselineValue;
 						exposureFunction.efArguments.q0 = scenarioValue;
-						if (variables.containsKey(exposureConfig.variable)) {
+						if (isVariableFunction) {
 							// Currently, the replacement of VARIABLE with the corresponding id is hard-coded, since it's the only one.
-							exposureFunction.efArguments.v1 = v1;
+							if(isComplementFunction) {
+								exposureFunction.efArguments.v1 = (1 - v1);
+							} else {
+								exposureFunction.efArguments.v1 = v1;
+							}
 						}
 					}
 
@@ -273,25 +342,44 @@ public class ExposureTaskRunnable implements Runnable {
 						
 						PopulationCategoryKey popCatKey = new PopulationCategoryKey(popAgeRange, null, null, null); //popRace, popEthnicity, popGender);						
 						
-						if (popAgeRangeExposureMap.containsKey(popAgeRange) 
-								&& (exposureConfig.race == 5 || exposureConfig.race == popRace)
-								&& (exposureConfig.ethnicity == 3 || exposureConfig.ethnicity == popEthnicity)
-								&& (exposureConfig.gender == 3 || exposureConfig.gender == popGender)) {
+						if (isComplementFunction && !isVariableFunction) {
+							if (popAgeRangeExposureMap.containsKey(popAgeRange) 
+									&& (exposureConfig.race == 5 || exposureConfig.race != popRace)
+									&& (exposureConfig.ethnicity == 3 || exposureConfig.ethnicity != popEthnicity)
+									&& (exposureConfig.gender == 3 || exposureConfig.gender != popGender)) {
 
-							double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeExposureMap.get(popAgeRange);
+								double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeExposureMap.get(popAgeRange);
 
-							totalSubgroupPop += rangePop;
+								totalSubgroupPop += rangePop;
 
-							if(exposureFunction.nativeFunction == null) {
-								functionExpression.setArgumentValue("POPULATION", rangePop);							
-								functionEstimate += functionExpression.calculate() * seasonalScalar;
-
-							} else {
-								exposureFunction.efArguments.population = rangePop;
-								functionEstimate += exposureFunction.nativeFunction.calculate(exposureFunction.efArguments) * seasonalScalar;
+								if(exposureFunction.nativeFunction == null) {
+									functionExpression.setArgumentValue("POPULATION", rangePop);							
+									functionEstimate += functionExpression.calculate() * seasonalScalar;
+								} else {
+									exposureFunction.efArguments.population = rangePop;
+									functionEstimate += exposureFunction.nativeFunction.calculate(exposureFunction.efArguments) * seasonalScalar;
+								}
 							}
+						} else {
+							if (popAgeRangeExposureMap.containsKey(popAgeRange) 
+									&& (exposureConfig.race == 5 || exposureConfig.race == popRace)
+									&& (exposureConfig.ethnicity == 3 || exposureConfig.ethnicity == popEthnicity)
+									&& (exposureConfig.gender == 3 || exposureConfig.gender == popGender)) {
 
+								double rangePop = popCategory.getPopValue().doubleValue() * popAgeRangeExposureMap.get(popAgeRange);
+
+								totalSubgroupPop += rangePop;
+
+								if(exposureFunction.nativeFunction == null) {
+									functionExpression.setArgumentValue("POPULATION", rangePop);							
+									functionEstimate += functionExpression.calculate() * seasonalScalar;
+								} else {
+									exposureFunction.efArguments.population = rangePop;
+									functionEstimate += exposureFunction.nativeFunction.calculate(exposureFunction.efArguments) * seasonalScalar;
+								}
+							}
 						}
+
 						totalAllPop += popCategory.getPopValue().doubleValue();
 					}
 					// This can happen if we're running multiple functions but we don't have any
@@ -305,7 +393,11 @@ public class ExposureTaskRunnable implements Runnable {
 						rec.setExposureFunctionInstanceId(exposureConfig.efInstanceId);
 						
 						//Use the variable to adjust the population if it's present. Else, v1 = 1.0 and will have no effect 
-						rec.setSubgroupPopulation(totalSubgroupPop * v1);
+						if(isVariableFunction && isComplementFunction) {
+							rec.setSubgroupPopulation(totalSubgroupPop * (1-v1));
+						} else {
+							rec.setSubgroupPopulation(totalSubgroupPop * v1);
+						}
 						
 						rec.setAllPopulation(totalAllPop);
 						rec.setDeltaAq(deltaQ);
@@ -349,7 +441,7 @@ public class ExposureTaskRunnable implements Runnable {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task Failed");
+			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, false, "Task failed");
 			log.error("Task failed", e);
 		}
 		log.info("Exposure Task Complete: " + taskUuid);

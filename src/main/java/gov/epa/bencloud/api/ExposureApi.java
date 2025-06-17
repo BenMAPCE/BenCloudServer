@@ -22,7 +22,8 @@ import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.exception.DataAccessException;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record19;
+import org.jooq.Record17;
+import org.jooq.Record18;
 import org.jooq.Record4;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
@@ -166,6 +167,7 @@ public class ExposureApi {
 			function.put("race_id",r.getValue(EXPOSURE_FUNCTION.RACE_ID));
 			function.put("gender_id",r.getValue(EXPOSURE_FUNCTION.GENDER_ID));
 			function.put("ethnicity_id",r.getValue(EXPOSURE_FUNCTION.ETHNICITY_ID));
+			function.put("generate_complement",r.getValue(EXPOSURE_FUNCTION.GENERATE_COMPLEMENT));
 			function.put("variable_name",r.getValue("variable_name", String.class));
 			function.put("race_name",r.getValue("race_name", String.class));
 			function.put("gender_name",r.getValue("gender_name", String.class));
@@ -246,6 +248,9 @@ public class ExposureApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		//If the crosswalk isn't there, create it now
+		CrosswalksApi.ensureCrosswalkExists(ExposureApi.getBaselineGridForExposureResults(id), gridId);
+
 		Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 				GET_EXPOSURE_RESULTS(
 						id, 
@@ -254,12 +259,14 @@ public class ExposureApi {
 				.asTable("ef_result_records");
 
 		try{
-			Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+			Result<Record18<Integer, Integer, String, String, Integer, Integer, String, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> efRecords = create.select(
 				efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
-				EXPOSURE_FUNCTION.POPULATION_GROUP,
-				EXPOSURE_FUNCTION.START_AGE,
-				EXPOSURE_FUNCTION.END_AGE,
+				EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
+				EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER,
+				EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
+				EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+				EXPOSURE_RESULT_FUNCTION_CONFIG.FUNCTION_TYPE,
 				RACE.NAME.as("race"),
 				ETHNICITY.NAME.as("ethnicity"),
 				GENDER.NAME.as("gender"),
@@ -269,20 +276,17 @@ public class ExposureApi {
 				efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
 				DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
 					.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-				efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT).as("result"),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 				efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
 				DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
-					.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
-				DSL.val(null, String.class).as("formatted_results_2sf"),
-				DSL.val(null, String.class).as("formatted_results_3sf")
+					.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population")
 				)
 				.from(efResultRecords)
-				.join(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
+				.leftJoin(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
 				.join(EXPOSURE_RESULT_FUNCTION_CONFIG).on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(id)
 						.and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID)))
 						.and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_INSTANCE_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_INSTANCE_ID))))
-				.join(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+				.leftJoin(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
 				.join(ETHNICITY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
 				.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
@@ -294,13 +298,6 @@ public class ExposureApi {
 			if(efRecords.isEmpty()) {
 				CoreApi.getErrorResponseNotFound(request, response);
 				return;
-			}
-
-			for (Record res : efRecords) {
-				res.setValue(DSL.field("formatted_results_2sf", String.class), 
-								ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
-				res.setValue(DSL.field("formatted_results_3sf", String.class), 
-								ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
 			}
 		
 			response.type("application/json");
@@ -390,9 +387,14 @@ public class ExposureApi {
 		
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 
+		Integer baselineGridId = ExposureApi.getBaselineGridForExposureResults(id);
+
 		for(int i=0; i < gridIds.length; i++) {
 			Result<?> efRecordsClean = null;
 			try {
+				//If the crosswalk isn't there, create it now
+				CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
+
 				Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 					GET_EXPOSURE_RESULTS(
 							id, 
@@ -400,12 +402,13 @@ public class ExposureApi {
 							gridIds[i]))
 					.asTable("ef_result_records");
 				
-				Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+				Result<Record17<Integer, Integer, String, Integer, Integer, String, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> efRecords = create.select(
 						efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 						EXPOSURE_FUNCTION.POPULATION_GROUP,
 						EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
 						EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+						EXPOSURE_RESULT_FUNCTION_CONFIG.FUNCTION_TYPE,
 						RACE.NAME.as("race"),
 						ETHNICITY.NAME.as("ethnicity"),
 						GENDER.NAME.as("gender"),
@@ -415,13 +418,10 @@ public class ExposureApi {
 						efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
 						DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
 							.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-						efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT).as("result"),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 						efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
 						DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
-							.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
-						DSL.val(null, String.class).as("formatted_results_2sf"),
-						DSL.val(null, String.class).as("formatted_results_3sf")
+							.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population")
 						)
 						.from(efResultRecords)
 						.join(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
@@ -435,12 +435,6 @@ public class ExposureApi {
 
 						.fetch();
 
-				for (Record res : efRecords) {
-					res.setValue(DSL.field("formatted_results_2sf", String.class), 
-									ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
-					res.setValue(DSL.field("formatted_results_3sf", String.class), 
-									ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
-				}
 
 				efRecordsClean = efRecords; 
 			} catch(DataAccessException e) {
