@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: bencloud-server-pv-claim
-  namespace: benmap-dev
+  namespace: benmap-stg
 spec:
   accessModes:
     - ReadWriteMany
