@@ -8,12 +8,14 @@ import gov.epa.bencloud.server.database.jooq.data.Data;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.CrosswalkDatasetRecord;
 
+import java.time.LocalDateTime;
+
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row4;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -59,6 +61,11 @@ public class CrosswalkDataset extends TableImpl<CrosswalkDatasetRecord> {
      * The column <code>data.crosswalk_dataset.target_grid_id</code>.
      */
     public final TableField<CrosswalkDatasetRecord, Integer> TARGET_GRID_ID = createField(DSL.name("target_grid_id"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>data.crosswalk_dataset.created_date</code>.
+     */
+    public final TableField<CrosswalkDatasetRecord, LocalDateTime> CREATED_DATE = createField(DSL.name("created_date"), SQLDataType.LOCALDATETIME(6), this, "");
 
     private CrosswalkDataset(Name alias, Table<CrosswalkDatasetRecord> aliased) {
         this(alias, aliased, null);
@@ -135,11 +142,11 @@ public class CrosswalkDataset extends TableImpl<CrosswalkDatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row4 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Integer, Integer, Integer> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row4<Integer, Integer, Integer, LocalDateTime> fieldsRow() {
+        return (Row4) super.fieldsRow();
     }
 }
