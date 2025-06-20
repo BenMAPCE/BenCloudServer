@@ -2,6 +2,7 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
+import org.jooq.Record2;
 import org.jooq.Record8;
 import org.jooq.SelectConditionStep;
 
@@ -92,6 +94,11 @@ public class CrosswalksApi {
 							CROSSWALK_ENTRY.TARGET_GRID_CELL_ID, CROSSWALK_ENTRY.PERCENTAGE)
 					.select(fwQuery).execute();
 
+			dslContext.update(CROSSWALK_DATASET)
+					.set(CROSSWALK_DATASET.CREATED_DATE,LocalDateTime.now())
+					.where(CROSSWALK_DATASET.ID.eq(forwardCrosswalkID))
+					.execute();
+
 		} catch (Exception e) {
 			log.error("error calculating or inserting crosswalks");
 			e.printStackTrace();
@@ -108,12 +115,65 @@ public class CrosswalksApi {
 		return success;
 	}
 
+	private static boolean checkAndCreateCrosswalk(Integer sourceId, Integer targetId) {
+
+		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
+		Record2<Integer,LocalDateTime> cw = dslContext.select(CROSSWALK_DATASET.ID,CROSSWALK_DATASET.CREATED_DATE).from(CROSSWALK_DATASET)
+				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(sourceId).and(CROSSWALK_DATASET.TARGET_GRID_ID.eq(targetId)))
+				.fetchAny();
+
+		if (cw == null || cw.getValue(CROSSWALK_DATASET.ID) == null) {
+			log.debug("Creating crosswalk for " + sourceId + " to " + targetId);
+			boolean success = calculateAreaWeights(sourceId, targetId);
+			if (success) {
+				log.debug("Created crosswalk for " + sourceId + " to " + targetId);
+			} else {
+				log.error("Error creating crosswalk for " + sourceId + " to " + targetId);
+				return false;
+			}
+			
+		} else {
+			final Integer crosswalkId = cw.getValue(CROSSWALK_DATASET.ID);
+			if (cw.getValue(CROSSWALK_DATASET.CREATED_DATE) == null) {
+				log.debug("Found existing crosswalk, but it is not completed being created.");
+				final int sleepSeconds = 30;
+				final int sleepTries = 60;
+				LocalDateTime createdDate = null;
+				for (int tryCount = 1; tryCount <= sleepTries; tryCount++) {
+					log.debug("Sleeping for "+sleepSeconds+" seconds. Try #"+tryCount);
+					try {
+						Thread.sleep(sleepSeconds * 1000);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt(); // Re-interrupt the thread
+						log.debug("Thread was interrupted while sleeping.");
+						e.printStackTrace();
+					}
+					createdDate = dslContext.select(CROSSWALK_DATASET.CREATED_DATE)
+							.from(CROSSWALK_DATASET)
+							.where(CROSSWALK_DATASET.ID.eq(crosswalkId))
+							.fetchAny()
+							.value1();
+					if (createdDate != null) {
+						log.debug("Existing crosswalk (id:"+crosswalkId+") creation completed.");
+						break;
+					}
+				}
+				if (createdDate == null) {
+					log.error("Timeout waiting "+sleepSeconds*sleepTries+" seconds for existing crosswalk (id:"+crosswalkId+") to complete creation.");
+					return false;
+				}
+			}
+
+			log.debug("Crosswalk " + crosswalkId + " exists for " + sourceId + " to " + targetId);
+		}
+
+		return true;
+	}
+
 	public static boolean ensureCrosswalkExists(Integer sourceId, Integer targetId) {
 		// Look for a crosswalk that will convert from sourceId to targetId
 		// If it doesn't already exist, create it now
 
-		// TODO: When checking, need to think about the possiblity that the crosswalk is being created in another thread
-		// If so, we might have the crosswalk_dataset but not the crosswalk_entry records in the db
 		// TODO Pass the messages object in here so the crosswalk generator can update when a background task is running
 		// and keep the runner alive
 
@@ -134,44 +194,18 @@ public class CrosswalksApi {
 			return false;
 		}
 		
-
-		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
 		// Check and create source to target
-		Record1<Integer> cw = dslContext.select(CROSSWALK_DATASET.ID).from(CROSSWALK_DATASET)
-				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(sourceId).and(CROSSWALK_DATASET.TARGET_GRID_ID.eq(targetId)))
-				.fetchAny();
-
-		if (cw == null || cw.getValue(CROSSWALK_DATASET.ID) == null) {
-			log.debug("Creating crosswalk for " + sourceId + " to " + targetId);
-			boolean success = calculateAreaWeights(sourceId, targetId);
-			if (success) {
-				log.debug("Created crosswalk for " + sourceId + " to " + targetId);
-			} else {
-				log.error("Error creating crosswalk for " + sourceId + " to " + targetId);
-				return false;
-			}
-		} else {
-			log.debug("Crosswalk " + cw.getValue(CROSSWALK_DATASET.ID) + " exists for " + sourceId + " to " + targetId);
+		boolean success = checkAndCreateCrosswalk(sourceId, targetId);
+		if (!success) {
+			return false;
 		}
-		
+
 		// Check and create target to source
-		cw = dslContext.select(CROSSWALK_DATASET.ID).from(CROSSWALK_DATASET)
-				.where(CROSSWALK_DATASET.SOURCE_GRID_ID.eq(targetId).and(CROSSWALK_DATASET.TARGET_GRID_ID.eq(sourceId)))
-				.fetchAny();
-
-		if (cw == null || cw.getValue(CROSSWALK_DATASET.ID) == null) {
-			log.debug("Creating crosswalk for " + targetId + " to " + sourceId);
-			boolean success = calculateAreaWeights(targetId, sourceId);
-			if (success) {
-				log.debug("Created crosswalk for " + targetId + " to " + sourceId);
-			} else {
-				log.error("Error creating crosswalk for " + targetId + " to " + sourceId);
-				return false;
-			}
-		} else {
-			log.debug("Crosswalk " + cw.getValue(CROSSWALK_DATASET.ID) + " exists for " + targetId + " to " + sourceId);
+		success = checkAndCreateCrosswalk(targetId, sourceId);
+		if (!success) {
+			return false;
 		}
-		// TODO: Update this to return false if an error occurs
+
 		return true;
 	}
 }
