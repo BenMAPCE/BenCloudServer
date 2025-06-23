@@ -74,7 +74,7 @@ public class GridDefinitionApi {
 		String userId = userProfile.get().getId();
 		boolean showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
 
-		Condition filterCondition = GRID_DEFINITION.ARCHIVE.eq((short)0);
+		Condition filterCondition = DSL.trueCondition();
 
 		// Skip the following for an admin user that wants to see all data
 		if(!showAll || !CoreApi.isAdmin(userProfile)) {
