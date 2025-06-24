@@ -200,7 +200,7 @@ add_stage_taskrunner_defender:
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/bencloudtaskrunner
     IMAGE_TAG: $CI_COMMIT_TAG
-    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudTaskRunner.jar"
+    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -cp /bencloud/BenCloudServer.jar gov.epa.bencloud.server.BenCloudTaskRunner"
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
