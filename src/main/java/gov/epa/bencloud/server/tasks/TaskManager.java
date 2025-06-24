@@ -19,7 +19,7 @@ public class TaskManager {
 //		log.info("current Task Workers: " + currentTaskWorkers);
 		
 		if (currentTaskWorkers + 1 > maxTaskWorkers) {
-			log.info("Already have max TaskWorkers");
+			log.info("Already have max TaskWorkers " + maxTaskWorkers +".");
 			TaskQueue.returnTaskToQueue(uuid);
 		} else {
 			

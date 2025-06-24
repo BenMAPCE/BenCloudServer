@@ -343,36 +343,25 @@ public class PopulationApi {
 	 * @return a JSON represenation of all population datasets
 	 */
 	public static Object getAllPopulationDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
-
-//			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
-//					.select(POPULATION_DATASET.NAME,
-//							POPULATION_DATASET.ID,
-//							POPULATION_DATASET.GRID_DEFINITION_ID,
-//							DSL.arrayAggDistinct(POPULATION_ENTRY.POP_YEAR).orderBy(POPULATION_ENTRY.POP_YEAR).as("years"))
-//					.from(POPULATION_DATASET)
-//					.join(POPULATION_ENTRY).on(POPULATION_DATASET.ID.eq(POPULATION_ENTRY.POP_DATASET_ID))
-//					.groupBy(POPULATION_DATASET.NAME,
-//							POPULATION_DATASET.ID,
-//							POPULATION_DATASET.GRID_DEFINITION_ID)
-//					.orderBy(POPULATION_DATASET.NAME)
-//					.fetch();
-			Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
+		try {
+						Result<Record4<String, Integer, Integer, Short[]>> records = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID,
 							DSL.arrayAggDistinct(T_POP_DATASET_YEAR.POP_YEAR).orderBy(T_POP_DATASET_YEAR.POP_YEAR).as("years"))
 					.from(POPULATION_DATASET)
 					.join(T_POP_DATASET_YEAR).on(POPULATION_DATASET.ID.eq(T_POP_DATASET_YEAR.POP_DATASET_ID))
-					//.where(POPULATION_DATASET.ID.notEqual(52))  //TEMP TO SUPPRESS TRACT-LEVEL POP FOR NOW 2025-01-16 JHA
 					.groupBy(POPULATION_DATASET.NAME,
 							POPULATION_DATASET.ID,
 							POPULATION_DATASET.GRID_DEFINITION_ID)
 					.orderBy(POPULATION_DATASET.NAME)
-					.fetch();
-							
+					.fetch();		
 			
 			response.type("application/json");
 			return records.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+		} catch (Exception e) {
+			return CoreApi.getErrorResponse(request, response, 500, e.getMessage() + ": " + e.getStackTrace());
+		}
 
 	}
 	

@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Date;
 
 import org.jooq.Condition;
+import org.jooq.JSON;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -23,6 +24,7 @@ import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -186,6 +188,14 @@ public class TaskComplete {
 				batchTask.put("batch_task_name", batchRecord.getValue(TASK_BATCH.NAME));
 				batchTask.put("batch_task_id", batchRecord.getValue(TASK_BATCH.ID));
 				batchTask.put("batch_task_user_id", batchRecord.getValue(TASK_BATCH.USER_ID));
+
+				JSON batchParams = batchRecord.getValue(TASK_BATCH.PARAMETERS, JSON.class);
+				ObjectMapper batchMapper = new ObjectMapper();
+				JsonNode batchParamsNode = batchMapper.readTree(batchParams.data());
+				JsonNode popId = batchParamsNode.get("popId");
+				if(popId != null) {
+					batchTask.put("pop_id", batchParamsNode.get("popId").asText());
+				}
 
 				int id = batchRecord.getValue(TASK_BATCH.ID);
 
