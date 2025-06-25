@@ -1,6 +1,6 @@
 /**** Separate lung cancer HIF into multiple HIFs to align with valuation function age groups ****/
 
-UPDATE "data".settings SET value_int=60 WHERE "key"='version';
+UPDATE "data".settings SET value_int=61 WHERE "key"='version';
 
 --delete functions incase already EXISTS
 delete from data.health_impact_function where id in (1045, 1046, 1047, 1048, 1049, 1050, 1051);
