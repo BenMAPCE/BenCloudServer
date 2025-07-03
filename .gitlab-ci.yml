@@ -152,6 +152,8 @@ add_dev_server_defender:
     - git clone --depth 1 --branch 0.4.0 https://gitlab.epa.gov/dso/defender.git
     - chown -R 1001:1001 defender
     - chmod -R 755 defender
+    - chown 1001:1001 /.config 
+    - chmod 755 /.config
     - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}" --build-arg "FILESYSTEM_MONITORING=${FILESYSTEM_MONITORING}" --build-arg "FIPS_ENABLED=${FIPS_ENABLED}"
 
 add_stage_server_defender:
@@ -198,6 +200,8 @@ add_dev_taskrunner_defender:
     - git clone --depth 1 --branch 0.4.0 https://gitlab.epa.gov/dso/defender.git
     - chown -R 1001:1001 defender
     - chmod -R 755 defender
+    - chown 1001:1001 /.config 
+    - chmod 755 /.config
     - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}" --build-arg "FILESYSTEM_MONITORING=${FILESYSTEM_MONITORING}" --build-arg "FIPS_ENABLED=${FIPS_ENABLED}"
 
 add_stage_taskrunner_defender:
