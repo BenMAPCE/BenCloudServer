@@ -149,7 +149,7 @@ add_dev_server_defender:
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - git clone --depth 1 --branch 0.4.0 https://gitlab.epa.gov/dso/defender.git
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
 #    - chown -R 1001:1001 defender
 #    - chmod -R 755 defender
 #    - chown 1001:1001 /.config 
@@ -197,7 +197,7 @@ add_dev_taskrunner_defender:
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - git clone --depth 1 --branch 0.4.0 https://gitlab.epa.gov/dso/defender.git
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
 #    - chown -R 1001:1001 defender
 #    - chmod -R 755 defender
 #    - chown 1001:1001 /.config 
