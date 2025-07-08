@@ -143,8 +143,8 @@ add_dev_server_defender:
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/bencloudserver
     IMAGE_TAG: $CI_COMMIT_SHORT_SHA
-    FILESYSTEM_MONITORING: false
-    FIPS_ENABLED: false
+    FILESYSTEM_MONITORING: "false"
+    FIPS_ENABLED: "false"
     ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
   script:
     - mkdir -p /kaniko/.docker
@@ -168,8 +168,8 @@ add_stage_server_defender:
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/bencloudserver
     IMAGE_TAG: $CI_COMMIT_TAG
-    FILESYSTEM_MONITORING: false
-    FIPS_ENABLED: false
+    FILESYSTEM_MONITORING: "false"
+    FIPS_ENABLED: "false"
     ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
   script:
     - mkdir -p /kaniko/.docker
@@ -191,8 +191,8 @@ add_dev_taskrunner_defender:
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/bencloudtaskrunner
     IMAGE_TAG: $CI_COMMIT_SHORT_SHA
-    FILESYSTEM_MONITORING: false
-    FIPS_ENABLED: false
+    FILESYSTEM_MONITORING: "false"
+    FIPS_ENABLED: "false"
     ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -cp /bencloud/BenCloudServer.jar gov.epa.bencloud.server.BenCloudTaskRunner"
   script:
     - mkdir -p /kaniko/.docker
@@ -216,8 +216,8 @@ add_stage_taskrunner_defender:
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/bencloudtaskrunner
     IMAGE_TAG: $CI_COMMIT_TAG
-    FILESYSTEM_MONITORING: false
-    FIPS_ENABLED: false
+    FILESYSTEM_MONITORING: "false"
+    FIPS_ENABLED: "false"
     ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -cp /bencloud/BenCloudServer.jar gov.epa.bencloud.server.BenCloudTaskRunner"
   script:
     - mkdir -p /kaniko/.docker
