@@ -1,4 +1,3 @@
-#FROM amazoncorretto:17-alpine
 FROM amazoncorretto:17-al2023
 
 WORKDIR /bencloud

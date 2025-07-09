@@ -95,7 +95,7 @@ public class KubernetesUtil {
 							.editOrNewSpec()
 								.addNewContainer()
 									.withName("taskrunner")
-									.withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner/app-defender:" + envMap.get("API_CI_COMMIT_SHORT_SHA"))
+									.withImage("registry.epa.gov/benmap/bencloudserver/bencloudtaskrunner-defender:" + envMap.get("API_CI_COMMIT_SHORT_SHA"))
 									.withImagePullPolicy("Always")
 									.addNewVolumeMount()
 										.withName("bencloud-server-pv")

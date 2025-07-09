@@ -101,7 +101,7 @@ spec:
         fsGroup: 555
       containers:
       - name: api
-        image:  registry.epa.gov/benmap/bencloudserver/bencloudserver/app-defender:$CI_COMMIT_SHORT_SHA
+        image:  registry.epa.gov/benmap/bencloudserver/bencloudserver-defender:$CI_COMMIT_SHORT_SHA
         imagePullPolicy: Always
         resources:
          requests:

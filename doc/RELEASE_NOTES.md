@@ -1,7 +1,7 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Work in progress | [API v0.6.0 and DB 43](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v0.6.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## Work in progress | [API v1.0.0 and DB 61](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.0.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
 * Analysis exports will not be processed as a background task (similar to analysis tasks) and can be downloaded from the task queue when they are complete. This will prevent large exports from failing due to request timeouts and API memory issues.

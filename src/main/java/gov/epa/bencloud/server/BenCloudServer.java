@@ -31,6 +31,7 @@ public class BenCloudServer {
 	private static String applicationPath;
 	
 	public static void main(String[] args) {
+		log.info("*** STARTING BenMAP API Server");
 
 		try {
 			ApplicationUtil.loadProperties("bencloud-server.properties");

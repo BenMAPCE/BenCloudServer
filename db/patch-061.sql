@@ -1,0 +1,28 @@
+/**** Separate lung cancer HIF into multiple HIFs to align with valuation function age groups ****/
+
+UPDATE "data".settings SET value_int=61 WHERE "key"='version';
+
+--delete functions incase already EXISTS
+delete from data.health_impact_function where id in (1045, 1046, 1047, 1048, 1049, 1050, 1051);
+
+--add functions
+INSERT INTO data.health_impact_function (id,health_impact_function_dataset_id,endpoint_group_id,endpoint_id,pollutant_id,metric_id,seasonal_metric_id,metric_statistic,author,function_year,"location",other_pollutants,qualifier,reference,start_age,end_age,function_text,incidence_dataset_id,prevalence_dataset_id,variable_dataset_id,beta,dist_beta,p1_beta,p2_beta,val_a,name_a,val_b,name_b,val_c,name_c,baseline_function_text,race_id,gender_id,ethnicity_id,start_day,end_day) VALUES
+	 (1045,15,28,148,6,11,3,1,'Gharibvand et al.',2016,'Nationwide U.S. and 5 Canadian provinces','Ozone','Model 2, Two pollutant ab model (Table 3)','Gharibvand, L., Shavlik, D., Ghamsary, M., Beeson, W.L., Soret, S., Knutsen, R., & Knutsen, S.F. (2016). The association between ambient fine particulate air pollution and lung cancer incidence: results from the AHSMOG-2 study. Environ Health Perspect 125 (3): 378?384',30,34,'(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION',NULL,NULL,NULL,0.037843644,'Normal',0.013121408,0.0,0.0,NULL,0.0,NULL,0.0,NULL,'INCIDENCE*POPULATION',5,3,3,NULL,NULL),
+	 (1046,15,28,148,6,11,3,1,'Gharibvand et al.',2016,'Nationwide U.S. and 5 Canadian provinces','Ozone','Model 2, Two pollutant ab model (Table 3)','Gharibvand, L., Shavlik, D., Ghamsary, M., Beeson, W.L., Soret, S., Knutsen, R., & Knutsen, S.F. (2016). The association between ambient fine particulate air pollution and lung cancer incidence: results from the AHSMOG-2 study. Environ Health Perspect 125 (3): 378?384',35,44,'(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION',NULL,NULL,NULL,0.037843644,'Normal',0.013121408,0.0,0.0,NULL,0.0,NULL,0.0,NULL,'INCIDENCE*POPULATION',5,3,3,NULL,NULL),
+	 (1047,15,28,148,6,11,3,1,'Gharibvand et al.',2016,'Nationwide U.S. and 5 Canadian provinces','Ozone','Model 2, Two pollutant ab model (Table 3)','Gharibvand, L., Shavlik, D., Ghamsary, M., Beeson, W.L., Soret, S., Knutsen, R., & Knutsen, S.F. (2016). The association between ambient fine particulate air pollution and lung cancer incidence: results from the AHSMOG-2 study. Environ Health Perspect 125 (3): 378?384',45,54,'(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION',NULL,NULL,NULL,0.037843644,'Normal',0.013121408,0.0,0.0,NULL,0.0,NULL,0.0,NULL,'INCIDENCE*POPULATION',5,3,3,NULL,NULL),
+	 (1048,15,28,148,6,11,3,1,'Gharibvand et al.',2016,'Nationwide U.S. and 5 Canadian provinces','Ozone','Model 2, Two pollutant ab model (Table 3)','Gharibvand, L., Shavlik, D., Ghamsary, M., Beeson, W.L., Soret, S., Knutsen, R., & Knutsen, S.F. (2016). The association between ambient fine particulate air pollution and lung cancer incidence: results from the AHSMOG-2 study. Environ Health Perspect 125 (3): 378?384',55,64,'(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION',NULL,NULL,NULL,0.037843644,'Normal',0.013121408,0.0,0.0,NULL,0.0,NULL,0.0,NULL,'INCIDENCE*POPULATION',5,3,3,NULL,NULL),
+	 (1049,15,28,148,6,11,3,1,'Gharibvand et al.',2016,'Nationwide U.S. and 5 Canadian provinces','Ozone','Model 2, Two pollutant ab model (Table 3)','Gharibvand, L., Shavlik, D., Ghamsary, M., Beeson, W.L., Soret, S., Knutsen, R., & Knutsen, S.F. (2016). The association between ambient fine particulate air pollution and lung cancer incidence: results from the AHSMOG-2 study. Environ Health Perspect 125 (3): 378?384',65,74,'(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION',NULL,NULL,NULL,0.037843644,'Normal',0.013121408,0.0,0.0,NULL,0.0,NULL,0.0,NULL,'INCIDENCE*POPULATION',5,3,3,NULL,NULL),
+	 (1050,15,28,148,6,11,3,1,'Gharibvand et al.',2016,'Nationwide U.S. and 5 Canadian provinces','Ozone','Model 2, Two pollutant ab model (Table 3)','Gharibvand, L., Shavlik, D., Ghamsary, M., Beeson, W.L., Soret, S., Knutsen, R., & Knutsen, S.F. (2016). The association between ambient fine particulate air pollution and lung cancer incidence: results from the AHSMOG-2 study. Environ Health Perspect 125 (3): 378?384',75,84,'(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION',NULL,NULL,NULL,0.037843644,'Normal',0.013121408,0.0,0.0,NULL,0.0,NULL,0.0,NULL,'INCIDENCE*POPULATION',5,3,3,NULL,NULL),
+	 (1051,15,28,148,6,11,3,1,'Gharibvand et al.',2016,'Nationwide U.S. and 5 Canadian provinces','Ozone','Model 2, Two pollutant ab model (Table 3)','Gharibvand, L., Shavlik, D., Ghamsary, M., Beeson, W.L., Soret, S., Knutsen, R., & Knutsen, S.F. (2016). The association between ambient fine particulate air pollution and lung cancer incidence: results from the AHSMOG-2 study. Environ Health Perspect 125 (3): 378?384',85,99,'(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION',NULL,NULL,NULL,0.037843644,'Normal',0.013121408,0.0,0.0,NULL,0.0,NULL,0.0,NULL,'INCIDENCE*POPULATION',5,3,3,NULL,NULL);
+
+--change function group memebers
+insert into data.health_impact_function_group_member (health_impact_function_group_id, health_impact_function_id)
+select 2 as health_impact_function_group_id, id as health_impact_function_id from data.health_impact_function where id in (1045, 1046,1047,1048,1049,1050,1051);
+
+delete from data.health_impact_function_group_member hifgm where hifgm.health_impact_function_id = 965;
+
+--reset sequence number
+SELECT SETVAL('data.health_impact_function_id_seq', COALESCE(MAX(id), 1) ) FROM data.health_impact_function;
+
+VACUUM (VERBOSE, ANALYZE) "data".health_impact_function;
+VACUUM (VERBOSE, ANALYZE) "data".health_impact_function_group_member;
