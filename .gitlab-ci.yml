@@ -143,16 +143,14 @@ add_dev_server_defender:
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/bencloudserver
     IMAGE_TAG: $CI_COMMIT_SHORT_SHA
-    FILESYSTEM_MONITORING: "false"
-    FIPS_ENABLED: "false"
     ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - git clone --depth 1 --branch benmap-0.4.0 https://gitlab.epa.gov/dso/defender.git
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
     - chown -R 1001:1001 defender
     - chmod -R 755 defender
-    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}" --build-arg "FILESYSTEM_MONITORING=${FILESYSTEM_MONITORING}" --build-arg "FIPS_ENABLED=${FIPS_ENABLED}"
+    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/docker/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
 
 add_stage_server_defender:
   stage: defender
@@ -195,10 +193,8 @@ add_dev_taskrunner_defender:
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - git clone --depth 1 --branch benmap-0.4.0 https://gitlab.epa.gov/dso/defender.git
-    - chown -R 1001:1001 defender
-    - chmod -R 755 defender
-    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}" --build-arg "FILESYSTEM_MONITORING=${FILESYSTEM_MONITORING}" --build-arg "FIPS_ENABLED=${FIPS_ENABLED}"
+    - git clone --depth 1 --branch 0.2.0 https://gitlab.epa.gov/dso/defender.git
+    - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/docker/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}"
 
 add_stage_taskrunner_defender:
   stage: defender
