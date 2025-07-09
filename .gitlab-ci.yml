@@ -150,6 +150,8 @@ add_dev_server_defender:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - git clone --depth 1 --branch benmap-0.4.0 https://gitlab.epa.gov/dso/defender.git
+    - chown -R 555:555 /bencloud
+    - chmod -R 777 /bencloud
     - chown -R 1001:1001 defender
     - chmod -R 755 defender
     - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudserver-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}" --build-arg "FILESYSTEM_MONITORING=${FILESYSTEM_MONITORING}" --build-arg "FIPS_ENABLED=${FIPS_ENABLED}"
@@ -196,6 +198,8 @@ add_dev_taskrunner_defender:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - git clone --depth 1 --branch benmap-0.4.0 https://gitlab.epa.gov/dso/defender.git
+    - chown -R 555:555 /bencloud
+    - chmod -R 777 /bencloud
     - chown -R 1001:1001 defender
     - chmod -R 755 defender
     - /kaniko/executor --context $CI_PROJECT_DIR/defender --dockerfile $CI_PROJECT_DIR/defender/Dockerfile --destination $CI_REGISTRY_IMAGE/bencloudtaskrunner-defender:$CI_COMMIT_SHORT_SHA --build-arg "IMAGE=${IMAGE}" --build-arg "IMAGE_TAG=${IMAGE_TAG}" --build-arg "ENTRYPOINT_COMMAND=${ENTRYPOINT_COMMAND}" --build-arg "FILESYSTEM_MONITORING=${FILESYSTEM_MONITORING}" --build-arg "FIPS_ENABLED=${FIPS_ENABLED}"
