@@ -1,13 +1,13 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Work in progress | [API v1.0.0 and DB 61](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.0.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## Production 2025-07-??  | [API v1.0.0 and DB 61](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.0.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
-* Analysis exports will not be processed as a background task (similar to analysis tasks) and can be downloaded from the task queue when they are complete. This will prevent large exports from failing due to request timeouts and API memory issues.
-* Users can now upload custom grid definitions that can be associated with air quality surfaces and also used for aggregation during export of results. Please note that BenMAP uses crosswalk tables to translate from one grid to another. The grids provided by EPA use population-weighted crosswalks which are consider more accurate in some circumstances. However, please note that BenMAP generates crosswalks for grids  uploaded by users using area-weighted crosswalks. (BWD-10, et al)
+* Analysis exports will now be processed as a background task (similar to analysis tasks) and can be downloaded from the task queue when they are complete. This will prevent large exports from failing due to request timeouts and API memory issues.
+* Users can now upload shapefiles to create custom grid definitions that can be associated with air quality surfaces and also used for aggregation during export of results. Please note that BenMAP uses crosswalk tables to translate from one grid to another. The grids provided by EPA use population-weighted crosswalks which are considered more accurate in some circumstances. However, please note that BenMAP generates crosswalks for grids  uploaded by users using area-weighted crosswalks. (BWD-10, et al)
 * The completed tasks queue has been sorted so recent tasks will now show at the top. Previously, the most recent tasks were found at the bottom of that list requiring a lot of scrolling for users with numerous tasks. (BWD-93)
-* The population dataset has been updated based on the 2020 US census and also restructure to reduce storage and improve performance.
+* The population dataset has been updated based on the 2020 US census and also restructured to reduce space and increase performance.
 * When running exposure analysis, BenMAP will now supply values both for the requested population groups as well as for those that are outside of each group. These are referred to as complementary groups. (BWD-6)
 * The layout of the data center page has been revised to improve efficiency and allow for future enhancements. (BWD-29)
 * The US EPA standard valuation functions will now include results with 2%, 3%, and 7% discount applied where appropriate. (BWD-84)
@@ -17,8 +17,8 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 * Result exports are now treated as separate tasks in the task manager. (BWD-56, BWD-57)
 * Added warnings for when file size limits are exceeded for dataset uploads, specifically for air quality, grid definitions, and incidence uploads. (BWD-99)
 * Allow administrator to add a global notification banner that will show on all BenMAP web pages. (BWD-33, BWD-109, BWD-110, BWD-111)
-* Update task view table to sort by most recent (BWD-93)
-* Initiate a session timeout after 15 minutes of no user activity with a warning message one minute before (BWD-25)
+* If you are inactive for several minutes, BenMAP will display a warning when your login session is about to expire. Once expired, BenMAP presents an option to help the user log back in. (BWD-25)
+* Many more small enhancements...
 
 ### Bug Fixes
 * Large health impact and valuation analyses were crashing in certain scenarios. Memory configuration adjustments have been made to protect against this. (BWD-1)
