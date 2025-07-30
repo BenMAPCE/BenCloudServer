@@ -451,6 +451,9 @@ public class TaskApi {
 				hifConfig.hifRecord = r.intoMap();
 				hifConfig.startAge = r.getValue(HEALTH_IMPACT_FUNCTION.START_AGE);
 				hifConfig.endAge = r.getValue(HEALTH_IMPACT_FUNCTION.END_AGE);
+				hifConfig.heroId = r.getValue(HEALTH_IMPACT_FUNCTION.HERO_ID);
+				hifConfig.epaHeroUrl = r.getValue(HEALTH_IMPACT_FUNCTION.EPA_HERO_URL);
+				hifConfig.accessUrl = r.getValue(HEALTH_IMPACT_FUNCTION.ACCESS_URL);
 				
 				//If the user has specified a default valuation list, add it for this HIF here
 				if(valuationSelection != null && !valuationSelection.isBlank()) {
