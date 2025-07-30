@@ -53,6 +53,10 @@ public class TaskUtil {
 					DSL.using(ctx).deleteFrom(HIF_RESULT)
 					.where(HIF_RESULT.HIF_RESULT_DATASET_ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))
 					.execute();
+
+					DSL.using(ctx).deleteFrom(HIF_RESULT_AGG)
+					.where(HIF_RESULT_AGG.HIF_RESULT_DATASET_ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))
+					.execute();
 					
 					DSL.using(ctx).deleteFrom(HIF_RESULT_DATASET)
 					.where(HIF_RESULT_DATASET.ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))

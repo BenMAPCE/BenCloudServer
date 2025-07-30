@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.Vector;
 
+import org.hsqldb.Routine;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 import org.jooq.Record;
@@ -44,6 +45,8 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultRecord;
+import gov.epa.bencloud.server.database.jooq.data.Routines;
+import gov.epa.bencloud.server.database.jooq.data.routines.AddHifResultsAgg;
 import gov.epa.bencloud.server.tasks.model.Task;
 
 /*
@@ -331,8 +334,20 @@ public class HIFUtil {
 		
 		create
 		.batchInsert(hifResults)
-		.execute();	
+		.execute();					
 	}
+
+	public static void storeAggResults(Task task, Integer grid_id) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		Integer hifResultDatasetId = create
+				.selectFrom(HIF_RESULT_DATASET)
+				.where(HIF_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))
+				.fetchOne(HIF_RESULT_DATASET.ID);		
+
+		//store aggregated results for faster preview and others
+		Routines.addHifResultsAgg(create.configuration(), hifResultDatasetId, grid_id);		
+	}
+
 
 	/**
 	 * Selects the most appropriate incidence and prevalence dataset and year for a given function.
