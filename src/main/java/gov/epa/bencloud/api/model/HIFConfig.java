@@ -56,6 +56,10 @@ public class HIFConfig {
 	public Integer endDay = null;
 	public Integer totalDays = null;
 	public int arrayIdx = 0;
+
+	public Integer heroId = null;
+	public String epaHeroUrl = null;
+	public String accessUrl = null;
 	
 	public Map<String, Object> hifRecord = new HashMap<String, Object> (); //This map will contain the full HIF record from the db
 	
@@ -85,6 +89,7 @@ public class HIFConfig {
 		this.prevalenceGender = JSONUtil.getInteger(function, "prevalence_gender");
 		
 		this.variable = JSONUtil.getInteger(function, "variable");
+		
 		//TODO: Add code to allow user to specify metric, seasonal metric, and metric statistic?
 	}
 	
@@ -167,6 +172,11 @@ public class HIFConfig {
 				b.append("Name C: ").append(hifRecord.get("name_c")).append("\n")
 				.append("Value C: ").append(hifRecord.getOrDefault("val_c", "")).append("\n");
 			}
+		}
+
+		if(hifRecord.get("hero_id") != null) {
+			b.append("HERO ID: ").append(hifRecord.get("hero_id")).append("\n")
+			.append("Access Url: ").append(hifRecord.getOrDefault("access_url", "")).append("\n");
 		}
 		
 		return b.toString();
