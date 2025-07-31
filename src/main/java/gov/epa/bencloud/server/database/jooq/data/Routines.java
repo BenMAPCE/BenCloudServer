@@ -4,7 +4,9 @@
 package gov.epa.bencloud.server.database.jooq.data;
 
 
+import gov.epa.bencloud.server.database.jooq.data.routines.AddExposureResultsAgg;
 import gov.epa.bencloud.server.database.jooq.data.routines.AddHifResultsAgg;
+import gov.epa.bencloud.server.database.jooq.data.routines.AddValuationResultsAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence;
@@ -30,6 +32,21 @@ import org.jooq.Result;
 public class Routines {
 
     /**
+     * Call <code>data.add_exposure_results_agg</code>
+     */
+    public static void addExposureResultsAgg(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer _OutputGridDefinitionId
+    ) {
+        AddExposureResultsAgg p = new AddExposureResultsAgg();
+        p.set_DatasetId(_DatasetId);
+        p.set_OutputGridDefinitionId(_OutputGridDefinitionId);
+
+        p.execute(configuration);
+    }
+
+    /**
      * Call <code>data.add_hif_results_agg</code>
      */
     public static void addHifResultsAgg(
@@ -38,6 +55,21 @@ public class Routines {
         , Integer _OutputGridDefinitionId
     ) {
         AddHifResultsAgg p = new AddHifResultsAgg();
+        p.set_DatasetId(_DatasetId);
+        p.set_OutputGridDefinitionId(_OutputGridDefinitionId);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>data.add_valuation_results_agg</code>
+     */
+    public static void addValuationResultsAgg(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer _OutputGridDefinitionId
+    ) {
+        AddValuationResultsAgg p = new AddValuationResultsAgg();
         p.set_DatasetId(_DatasetId);
         p.set_OutputGridDefinitionId(_OutputGridDefinitionId);
 

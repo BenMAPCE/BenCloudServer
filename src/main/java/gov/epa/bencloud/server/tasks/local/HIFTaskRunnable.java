@@ -498,7 +498,7 @@ public class HIFTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			HIFUtil.storeResults(task, hifTaskConfig, hifResults);
-			HIFUtil.storeAggResults(task,0); //store aggregate all for faster previewing results in UI. 
+			HIFUtil.storeAggResults(task,0); //aggregate to the whole study area and store.
 			messages.get(messages.size()-1).setStatus("complete");
 			
 			String completeMessage = String.format("Saved %,d results", rowsSaved);

@@ -337,6 +337,11 @@ public class HIFUtil {
 		.execute();					
 	}
 
+	/**
+	 * Stores aggregated hif results to result_agg table.
+	 * @param task
+	 * @param grid_id
+	 */
 	public static void storeAggResults(Task task, Integer grid_id) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		Integer hifResultDatasetId = create
@@ -344,7 +349,6 @@ public class HIFUtil {
 				.where(HIF_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))
 				.fetchOne(HIF_RESULT_DATASET.ID);		
 
-		//store aggregated results for faster preview and others
 		Routines.addHifResultsAgg(create.configuration(), hifResultDatasetId, grid_id);		
 	}
 

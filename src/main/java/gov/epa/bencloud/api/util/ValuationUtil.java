@@ -28,6 +28,7 @@ import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultRecord;
@@ -182,6 +183,21 @@ public class ValuationUtil {
 		.batchInsert(valuationResults)
 		.execute();	
 	}
+
+	/**
+	 * Stores aggregated valuation results to result_agg table.
+	 * @param task
+	 * @param grid_id
+	 */
+	public static void storeAggResults(Task task, int grid_id) {
+        // aggregate task's results to a grid and store in result_agg table
+        DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		Integer vfResultDatasetId = create
+				.selectFrom(VALUATION_RESULT_DATASET)
+				.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))
+				.fetchOne(VALUATION_RESULT_DATASET.ID);
+		Routines.addValuationResultsAgg(create.configuration(), vfResultDatasetId, grid_id);
+    }
 	
 	/**
 	 * Stores a given valuation function task log in the database.
@@ -305,4 +321,6 @@ public class ValuationUtil {
 		}
 		
 	}
+
+    
 }
