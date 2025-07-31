@@ -18,6 +18,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionDataset
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroupMember;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.File;
@@ -34,6 +35,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionDat
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionGroupMember;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.HifResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceDataset;
@@ -175,6 +177,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunctionDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
@@ -267,6 +270,11 @@ public class Tables {
      * The table <code>data.exposure_result</code>.
      */
     public static final ExposureResult EXPOSURE_RESULT = ExposureResult.EXPOSURE_RESULT;
+
+    /**
+     * The table <code>data.exposure_result_agg</code>.
+     */
+    public static final ExposureResultAgg EXPOSURE_RESULT_AGG = ExposureResultAgg.EXPOSURE_RESULT_AGG;
 
     /**
      * The table <code>data.exposure_result_dataset</code>.
@@ -737,6 +745,11 @@ public class Tables {
      * The table <code>data.hif_result</code>.
      */
     public static final HifResult HIF_RESULT = HifResult.HIF_RESULT;
+
+    /**
+     * The table <code>data.hif_result_agg</code>.
+     */
+    public static final HifResultAgg HIF_RESULT_AGG = HifResultAgg.HIF_RESULT_AGG;
 
     /**
      * The table <code>data.hif_result_dataset</code>.
@@ -1442,6 +1455,11 @@ public class Tables {
      * The table <code>data.valuation_result</code>.
      */
     public static final ValuationResult VALUATION_RESULT = ValuationResult.VALUATION_RESULT;
+
+    /**
+     * The table <code>data.valuation_result_agg</code>.
+     */
+    public static final ValuationResultAgg VALUATION_RESULT_AGG = ValuationResultAgg.VALUATION_RESULT_AGG;
 
     /**
      * The table <code>data.valuation_result_dataset</code>.

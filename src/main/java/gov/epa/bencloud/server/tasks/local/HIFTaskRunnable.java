@@ -498,6 +498,7 @@ public class HIFTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			HIFUtil.storeResults(task, hifTaskConfig, hifResults);
+			HIFUtil.storeAggResults(task,0); //aggregate to the whole study area and store.
 			messages.get(messages.size()-1).setStatus("complete");
 			
 			String completeMessage = String.format("Saved %,d results", rowsSaved);
@@ -505,7 +506,7 @@ public class HIFTaskRunnable implements Runnable {
 			hifTaskLog.setSuccess(true);
 			hifTaskLog.setDtEnd(LocalDateTime.now());
 			HIFUtil.storeTaskLog(hifTaskLog);
-			
+	
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {

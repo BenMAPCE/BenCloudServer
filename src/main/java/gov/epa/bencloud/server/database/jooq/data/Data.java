@@ -19,6 +19,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionDataset
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroupMember;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.File;
@@ -35,6 +36,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionDat
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionGroupMember;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.HifResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceDataset;
@@ -176,6 +178,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunctionDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
@@ -281,6 +284,11 @@ public class Data extends SchemaImpl {
      * The table <code>data.exposure_result</code>.
      */
     public final ExposureResult EXPOSURE_RESULT = ExposureResult.EXPOSURE_RESULT;
+
+    /**
+     * The table <code>data.exposure_result_agg</code>.
+     */
+    public final ExposureResultAgg EXPOSURE_RESULT_AGG = ExposureResultAgg.EXPOSURE_RESULT_AGG;
 
     /**
      * The table <code>data.exposure_result_dataset</code>.
@@ -751,6 +759,11 @@ public class Data extends SchemaImpl {
      * The table <code>data.hif_result</code>.
      */
     public final HifResult HIF_RESULT = HifResult.HIF_RESULT;
+
+    /**
+     * The table <code>data.hif_result_agg</code>.
+     */
+    public final HifResultAgg HIF_RESULT_AGG = HifResultAgg.HIF_RESULT_AGG;
 
     /**
      * The table <code>data.hif_result_dataset</code>.
@@ -1458,6 +1471,11 @@ public class Data extends SchemaImpl {
     public final ValuationResult VALUATION_RESULT = ValuationResult.VALUATION_RESULT;
 
     /**
+     * The table <code>data.valuation_result_agg</code>.
+     */
+    public final ValuationResultAgg VALUATION_RESULT_AGG = ValuationResultAgg.VALUATION_RESULT_AGG;
+
+    /**
      * The table <code>data.valuation_result_dataset</code>.
      */
     public final ValuationResultDataset VALUATION_RESULT_DATASET = ValuationResultDataset.VALUATION_RESULT_DATASET;
@@ -1512,6 +1530,7 @@ public class Data extends SchemaImpl {
             ExposureFunctionGroup.EXPOSURE_FUNCTION_GROUP,
             ExposureFunctionGroupMember.EXPOSURE_FUNCTION_GROUP_MEMBER,
             ExposureResult.EXPOSURE_RESULT,
+            ExposureResultAgg.EXPOSURE_RESULT_AGG,
             ExposureResultDataset.EXPOSURE_RESULT_DATASET,
             ExposureResultFunctionConfig.EXPOSURE_RESULT_FUNCTION_CONFIG,
             File.FILE,
@@ -1528,6 +1547,7 @@ public class Data extends SchemaImpl {
             HealthImpactFunctionGroup.HEALTH_IMPACT_FUNCTION_GROUP,
             HealthImpactFunctionGroupMember.HEALTH_IMPACT_FUNCTION_GROUP_MEMBER,
             HifResult.HIF_RESULT,
+            HifResultAgg.HIF_RESULT_AGG,
             HifResultDataset.HIF_RESULT_DATASET,
             HifResultFunctionConfig.HIF_RESULT_FUNCTION_CONFIG,
             IncidenceDataset.INCIDENCE_DATASET,
@@ -1669,6 +1689,7 @@ public class Data extends SchemaImpl {
             ValuationFunction.VALUATION_FUNCTION,
             ValuationFunctionDataset.VALUATION_FUNCTION_DATASET,
             ValuationResult.VALUATION_RESULT,
+            ValuationResultAgg.VALUATION_RESULT_AGG,
             ValuationResultDataset.VALUATION_RESULT_DATASET,
             ValuationResultFunctionConfig.VALUATION_RESULT_FUNCTION_CONFIG,
             VariableDataset.VARIABLE_DATASET,

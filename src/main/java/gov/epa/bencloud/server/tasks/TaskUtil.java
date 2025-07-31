@@ -53,6 +53,10 @@ public class TaskUtil {
 					DSL.using(ctx).deleteFrom(HIF_RESULT)
 					.where(HIF_RESULT.HIF_RESULT_DATASET_ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))
 					.execute();
+
+					DSL.using(ctx).deleteFrom(HIF_RESULT_AGG)
+					.where(HIF_RESULT_AGG.HIF_RESULT_DATASET_ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))
+					.execute();
 					
 					DSL.using(ctx).deleteFrom(HIF_RESULT_DATASET)
 					.where(HIF_RESULT_DATASET.ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))
@@ -109,6 +113,10 @@ public class TaskUtil {
 					DSL.using(ctx).deleteFrom(VALUATION_RESULT)
 					.where(VALUATION_RESULT.VALUATION_RESULT_DATASET_ID.eq(valuationResultDataset.get(VALUATION_RESULT_DATASET.ID)))
 					.execute();
+
+					DSL.using(ctx).deleteFrom(VALUATION_RESULT_AGG)
+					.where(VALUATION_RESULT_AGG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDataset.get(VALUATION_RESULT_DATASET.ID)))
+					.execute();
 					
 					DSL.using(ctx).deleteFrom(VALUATION_RESULT_DATASET)
 					.where(VALUATION_RESULT_DATASET.ID.eq(valuationResultDataset.get(VALUATION_RESULT_DATASET.ID)))
@@ -159,6 +167,10 @@ public class TaskUtil {
 
 					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT)
 					.where(EXPOSURE_RESULT.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDataset.get(EXPOSURE_RESULT_DATASET.ID)))
+					.execute();
+
+					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT_AGG)
+					.where(EXPOSURE_RESULT_AGG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDataset.get(EXPOSURE_RESULT_DATASET.ID)))
 					.execute();
 					
 					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT_DATASET)

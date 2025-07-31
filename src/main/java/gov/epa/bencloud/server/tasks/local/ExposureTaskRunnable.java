@@ -430,6 +430,7 @@ public class ExposureTaskRunnable implements Runnable {
 			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
 			TaskWorker.updateTaskWorkerHeartbeat(taskWorkerUuid);
 			ExposureUtil.storeResults(task, exposureTaskConfig, exposureResults);
+			ExposureUtil.storeAggResults(task, 0); //aggregate to the whole study area and store.
 			messages.get(messages.size()-1).setStatus("complete");
 			
 			String completeMessage = String.format("Saved %,d results", rowsSaved);
