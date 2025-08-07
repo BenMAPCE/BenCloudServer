@@ -1,7 +1,18 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Production 2025-07-??  | [API v1.0.0 and DB 61](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.0.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+
+## Production 2025-??-?? (in progress)  | [API v1.1.0 and DB ??](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.1.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+
+### New Features and Improvements
+* Air quality uploads can now receive multiple files in one submission. These uploaded files will then be processed in the background. Progress can be monitored in the task manager. (BWD-14)
+* Analysis results will now display more quickly when viewing them in the user interface. (BWD-141)
+
+### Bug Fixes
+* Handling of long-running tasks and task cancelation has been improved for performance and stability. (BWD-168)
+
+
+## Production 2025-07-22  | [API v1.0.0 and DB 62](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.0.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
 * Analysis exports will now be processed as a background task (similar to analysis tasks) and can be downloaded from the task queue when they are complete. This will prevent large exports from failing due to request timeouts and API memory issues.
