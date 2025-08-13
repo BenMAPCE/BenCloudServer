@@ -26,7 +26,8 @@ build_dev_jars:
     - develop
   image: gradle:jdk17-corretto
   tags:
-    - benmapdevgitlab
+#    - benmapdevgitlab
+    - devsecops-instance
   script:
     - gradle shadowJar
     - cp build/libs/BenCloudServer.jar BenCloudServer.jar
@@ -71,7 +72,8 @@ build_dev_server_image:
   only: 
     - develop
   tags:
-    - benmapdevgitlab
+#    - benmapdevgitlab
+    - devsecops-instance
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -103,7 +105,8 @@ build_dev_runner_image:
   only: 
     - develop
   tags:
-    - benmapdevgitlab
+#    - benmapdevgitlab
+    - devsecops-instance
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -136,7 +139,8 @@ add_dev_server_defender:
   only: 
     - develop
   tags:
-    - benmapdevgitlab
+#    - benmapdevgitlab
+    - devsecops-instance
   image:
     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
     entrypoint: [""]
@@ -155,7 +159,7 @@ add_stage_server_defender:
   only: 
     - tags
   tags:
-    - benmapdevgitlab
+    - benmapstagegitlab
   image:
     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
     entrypoint: [""]
@@ -174,7 +178,8 @@ add_dev_taskrunner_defender:
   only: 
     - develop
   tags:
-    - benmapdevgitlab
+#    - benmapdevgitlab
+    - devsecops-instance
   image:
     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
     entrypoint: [""]
@@ -193,7 +198,7 @@ add_stage_taskrunner_defender:
   only: 
     - tags
   tags:
-    - benmapdevgitlab
+    - benmapstagegitlab
   image:
     name: registry.epa.gov/dso/kaniko-plus:89b76f7b
     entrypoint: [""]
@@ -276,7 +281,8 @@ deploy_testdev:
   only: 
     - develop
   tags:
-    - benmapdevgitlab
+#    - benmapdevgitlab
+    - devsecops-instance
   when: manual
   image: dtzar/helm-kubectl
   script:
