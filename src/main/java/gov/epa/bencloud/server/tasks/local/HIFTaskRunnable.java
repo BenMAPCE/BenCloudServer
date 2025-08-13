@@ -177,7 +177,7 @@ public class HIFTaskRunnable implements Runnable {
 			
 			
 			// Load the population dataset
-			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig);
+			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(hifTaskConfig, taskUuid);
 
 			// Load data for the selected HIFs
 			// Determine the race/gender/ethnicity groups and age ranges needed for the

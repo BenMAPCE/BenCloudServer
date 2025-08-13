@@ -191,7 +191,7 @@ public class ValuationUtil {
 	 */
 	public static void storeAggResults(Task task, int grid_id) {
         // aggregate task's results to a grid and store in result_agg table
-        DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+        DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
 		Integer vfResultDatasetId = create
 				.selectFrom(VALUATION_RESULT_DATASET)
 				.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))

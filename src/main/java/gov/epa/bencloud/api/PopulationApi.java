@@ -37,7 +37,7 @@ public class PopulationApi {
 	 * @return a map of population entry groups, with key = grid cell id,
 	 * 			value = population records
 	 */
-	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
+	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig, String taskUuid) {
 
 		Integer aqGrid = AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId);
 		
@@ -83,8 +83,11 @@ public class PopulationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(hifTaskConfig.popId),aqGrid);
-		DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
+		//DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
+		DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration(taskUuid));	
 		dsl.execute("SET work_mem = '1GB'");
+		//String taskUuid = "testUuid"; //temp value for testing. Will change to the real task uuid.
+		//dsl.execute("SET application_name = '" + taskUuid + "'");
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
@@ -98,6 +101,7 @@ public class PopulationApi {
 				true, //YY: groupbyAgeRange
 				aqGrid //YY: outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
+		//dsl.execute("SET application_name = ''");
 		dsl.execute("RESET work_mem"); 
 		return popRecords;
 	}
@@ -108,7 +112,7 @@ public class PopulationApi {
 	 * @return a map of population entry groups, with key = grid cell id,
 	 * 			value = population records
 	 */
-	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(ExposureTaskConfig exposureTaskConfig) {
+	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(ExposureTaskConfig exposureTaskConfig, String taskUuid) {
 
 		Integer aqGrid = AirQualityApi.getAirQualityLayerGridId(exposureTaskConfig.aqBaselineId);
 		
@@ -154,8 +158,9 @@ public class PopulationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(exposureTaskConfig.popId),aqGrid);
-        DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
+        DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration(taskUuid));	
 		dsl.execute("SET work_mem = '1GB'");
+		//dsl.execute("SET application_name = '" + taskUuid + "'");
 		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
 				exposureTaskConfig.popId, 
 				exposureTaskConfig.popYear,
@@ -169,6 +174,7 @@ public class PopulationApi {
 				true, //groupbyAgeRange
 				aqGrid //outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
+		//dsl.execute("SET application_name = ''");
 		dsl.execute("RESET work_mem"); 
 		return popRecords;
 	}

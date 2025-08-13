@@ -21,6 +21,14 @@ public class JooqUtil {
 		return configuration;
 	}
 
+	public static Configuration getJooqConfiguration(String uuidString) {
+
+		Configuration configuration = new DefaultConfiguration()
+			    .set(new AppNameConnectionProvider(PooledDataSource.getDataSource(), uuidString))
+			    .set(SQLDialect.POSTGRES);
+		return configuration;
+	}
+
 	public static Configuration getJooqConfigurationUnquoted() {
 		
 		Settings settings = new Settings();

@@ -114,8 +114,7 @@ public class ExposureUtil {
 	 * @param hifResults
 	 */
 	public static void storeResults(Task task, ExposureTaskConfig exposureTaskConfig, Vector<ExposureResultRecord> exposureResults) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
 		Integer exposureResultDatasetId = create
 				.selectFrom(EXPOSURE_RESULT_DATASET)
 				.where(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))
@@ -202,7 +201,7 @@ public class ExposureUtil {
 	 * @param grid_id
 	 */
 	public static void storeAggResults(Task task, Integer grid_id) {
-        DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+        DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
 		Integer exposureResultDatasetId = create
 				.selectFrom(EXPOSURE_RESULT_DATASET)
 				.where(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))

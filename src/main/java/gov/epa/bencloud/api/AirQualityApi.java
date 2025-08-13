@@ -85,7 +85,7 @@ public class AirQualityApi {
 	 * @param userProfile
 	 * @return a JSON representation of the air quality layer definitions for the given request.
 	 */
-	public static Object getAirQualityLayerDefinitions(Request request, Response response, Optional<UserProfile> userProfile) {
+	public static Object getAirQualityLayerDefinitions(Request request, Response response, Optional<UserProfile> userProfile, String taskUuid) {
 		
 		int pollutantId;
 		int page;
@@ -164,8 +164,7 @@ public class AirQualityApi {
 		
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
 	
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(taskUuid));
 		Table<Record13<Integer, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double>> metricStatistics = create.select(
 				AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID,
 				AIR_QUALITY_LAYER_METRICS.METRIC_ID,
@@ -185,7 +184,7 @@ public class AirQualityApi {
 				.join(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID))
 				.join(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID))
 				.asTable("metric_statistics");
-		
+
 		@SuppressWarnings("unchecked")
 		@NotNull Result<Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, String, String, String, LocalDateTime,JSON>> aqRecords = 
 			create.select(
@@ -280,7 +279,7 @@ public class AirQualityApi {
 	 * @param userProfile
 	 * @return a JSON representation of the air quality layer definitions by metric for the given request.
 	 */
-	public static Object getAirQualityLayerDefinitionsByMetric(Request request, Response response, Optional<UserProfile> userProfile) {
+	public static Object getAirQualityLayerDefinitionsByMetric(Request request, Response response, Optional<UserProfile> userProfile, String taskUuid) {
 		
 		String userId = userProfile.get().getId();		
 		int pollutantId;
@@ -351,10 +350,9 @@ public class AirQualityApi {
 				.fetchOne(DSL.count());
 		
 		//System.out.println("filteredRecordsCount: " + filteredRecordsCount);
-		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(taskUuid));
 		Result<Record21<Integer, String, Integer, String, Integer, String, Integer, String, Integer, Double, Double, Double, Double, Double, String, Short, Integer, String, Integer, String, String>> aqRecords = 
-			DSL.using(JooqUtil.getJooqConfiguration())
-				.select(
+			create.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
 						AIR_QUALITY_LAYER_METRICS.METRIC_ID,
@@ -389,7 +387,6 @@ public class AirQualityApi {
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
 				.fetch();
-	
 		
 		//System.out.println("aqRecords: " + aqRecords.size());
 
