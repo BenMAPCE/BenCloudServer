@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -228,14 +229,33 @@ public class TaskWorker {
 							.minusMinutes(UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES))
 							.isAfter(lastHeartBeatDate)) {
 
-						log.info("*** Found unresponsive task worker");
+						//Check pg_stat_activity table to confirm no active queries assoicated with this task are running
+						//create a new connection so that the query doesn't idle in transection.
+						DSLContext monitoringDsl = DSL.using(JooqUtil.getJooqConfiguration());
+						boolean isQueryRunning = monitoringDsl.fetchExists(
+							DSL.using(ctx).selectOne()
+							.from("pg_stat_activity")
+							.where("application_name = ?", record.getValue(TASK_WORKER.TASK_UUID))
+							.and("state='active'")
+						);
+						if(isQueryRunning){
+							//do not cancel task since a query is still running
+							log.info("*** Found query running for extensive period of time. Send heartbeat and continue. ");
+							//updateTaskWorkerHeartbeat(record.getValue(TASK_WORKER.TASK_WORKER_UUID)); //add heartbeat for this task worker
+							DSL.using(ctx).update(TASK_WORKER)
+							.set(TASK_WORKER.LAST_HEARTBEAT_DATE, LocalDateTime.now())
+							.where(TASK_WORKER.TASK_WORKER_UUID.eq(record.getValue(TASK_WORKER.TASK_WORKER_UUID)))
+							.execute();
+						}
+						else{
+							log.info("*** Found unresponsive task worker");
 
-						TaskQueue.returnTaskToQueue(record.getValue(TASK_WORKER.TASK_UUID));
+							TaskQueue.returnTaskToQueue(record.getValue(TASK_WORKER.TASK_UUID));
 						
-						DSL.using(ctx).delete(TASK_WORKER)
-						.where(TASK_WORKER.TASK_WORKER_UUID.eq(record.getValue(TASK_WORKER.TASK_WORKER_UUID)))
-						.execute();						
-						
+							DSL.using(ctx).delete(TASK_WORKER)
+							.where(TASK_WORKER.TASK_WORKER_UUID.eq(record.getValue(TASK_WORKER.TASK_WORKER_UUID)))
+							.execute();	
+						}						
 					}
 				}
 			});

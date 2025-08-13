@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.epa.bencloud.api.CoreApi;
+import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.DataUtil;
@@ -59,75 +60,80 @@ public class TaskComplete {
 			return;
 		}
 
+		ApiUtil.cancelQueriesByUuid(taskUuid);
+
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 
-		try {
+		if(task != null){
+			try {
 
-			DSL.using(JooqUtil.getJooqConfiguration()).transaction(ctx -> {
+				DSL.using(JooqUtil.getJooqConfiguration()).transaction(ctx -> {
 
-				//taskWorkerUuid might be null if a child task is failed because the parent task failed
-				if(taskWorkerUuid != null) {
-					DSL.using(ctx).delete(TASK_WORKER)
-					.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskWorkerUuid))
+					//taskWorkerUuid might be null if a child task is failed because the parent task failed
+					if(taskWorkerUuid != null) {	
+						DSL.using(ctx).delete(TASK_WORKER)
+						.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskWorkerUuid))
+						.execute();
+					}
+
+					DSL.using(ctx).insertInto(TASK_COMPLETE,
+							TASK_COMPLETE.USER_ID,
+							TASK_COMPLETE.TASK_PRIORITY,
+							TASK_COMPLETE.TASK_UUID,
+							TASK_COMPLETE.TASK_PARENT_UUID,
+							TASK_COMPLETE.TASK_NAME,
+							TASK_COMPLETE.TASK_DESCRIPTION,
+							TASK_COMPLETE.TASK_TYPE,
+							TASK_COMPLETE.TASK_PARAMETERS,
+							TASK_COMPLETE.TASK_RESULTS,
+							TASK_COMPLETE.TASK_SUCCESSFUL,
+							TASK_COMPLETE.TASK_COMPLETE_MESSAGE,
+							TASK_COMPLETE.TASK_SUBMITTED_DATE,
+							TASK_COMPLETE.TASK_STARTED_DATE,
+							TASK_COMPLETE.TASK_COMPLETED_DATE,
+							TASK_COMPLETE.USER_ID,
+							TASK_COMPLETE.TASK_BATCH_ID)
+					.values(
+							task.getUserIdentifier(),
+							task.getPriority(),
+							task.getUuid(),
+							task.getParentUuid(),
+							task.getName(),
+							task.getDescription(),
+							task.getType(),
+							task.getParameters(),
+							"{}",
+							taskSuccessful,
+							taskCompleteMessage,
+							task.getSubmittedDate(),
+							task.getStartedDate(),
+							LocalDateTime.now(),
+							task.getUserIdentifier(),
+							task.getBatchId())
 					.execute();
-				}
 
-				DSL.using(ctx).insertInto(TASK_COMPLETE,
-						TASK_COMPLETE.USER_ID,
-						TASK_COMPLETE.TASK_PRIORITY,
-						TASK_COMPLETE.TASK_UUID,
-						TASK_COMPLETE.TASK_PARENT_UUID,
-						TASK_COMPLETE.TASK_NAME,
-						TASK_COMPLETE.TASK_DESCRIPTION,
-						TASK_COMPLETE.TASK_TYPE,
-						TASK_COMPLETE.TASK_PARAMETERS,
-						TASK_COMPLETE.TASK_RESULTS,
-						TASK_COMPLETE.TASK_SUCCESSFUL,
-						TASK_COMPLETE.TASK_COMPLETE_MESSAGE,
-						TASK_COMPLETE.TASK_SUBMITTED_DATE,
-						TASK_COMPLETE.TASK_STARTED_DATE,
-						TASK_COMPLETE.TASK_COMPLETED_DATE,
-						TASK_COMPLETE.USER_ID,
-						TASK_COMPLETE.TASK_BATCH_ID)
-				.values(
-						task.getUserIdentifier(),
-						task.getPriority(),
-						task.getUuid(),
-						task.getParentUuid(),
-						task.getName(),
-						task.getDescription(),
-						task.getType(),
-						task.getParameters(),
-						"{}",
-						taskSuccessful,
-						taskCompleteMessage,
-						task.getSubmittedDate(),
-						task.getStartedDate(),
-						LocalDateTime.now(),
-						task.getUserIdentifier(),
-						task.getBatchId())
-				.execute();
+					DSL.using(ctx).delete(TASK_QUEUE)
+					.where(TASK_QUEUE.TASK_UUID.eq(task.getUuid()))
+					.execute();
 
-				DSL.using(ctx).delete(TASK_QUEUE)
-				.where(TASK_QUEUE.TASK_UUID.eq(task.getUuid()))
-				.execute();
+					if(taskCompleteMessage.equalsIgnoreCase("task failed")) {
+						Result<Record> childTasks = DSL.using(JooqUtil.getJooqConfiguration()).select()
+						.from(TASK_QUEUE)
+						.where(TASK_QUEUE.TASK_PARENT_UUID.equal(task.getUuid())) 
+						.fetch();
 
-				if(taskCompleteMessage.equalsIgnoreCase("task failed")) {
-					Result<Record> childTasks = DSL.using(JooqUtil.getJooqConfiguration()).select()
-					.from(TASK_QUEUE)
-					.where(TASK_QUEUE.TASK_PARENT_UUID.equal(task.getUuid())) 
-					.fetch();
+						for (Record childTask : childTasks) {
+							addTaskToCompleteAndRemoveTaskFromQueue(childTask.getValue(TASK_QUEUE.TASK_UUID), null, false, "Parent task failed");
+						}	
+					}			
+				});
+			} catch (DataAccessException e1) {
+				log.error("Error moving task to completed queue", e1);
+			}
 
-					for (Record childTask : childTasks) {
-						addTaskToCompleteAndRemoveTaskFromQueue(childTask.getValue(TASK_QUEUE.TASK_UUID), null, false, "Parent task failed");
-					}	
-				}			
-			});
-
-
-		} catch (DataAccessException e1) {
-			log.error("Error moving task to completed queue", e1);
 		}
+
+		
 
 	}
 	

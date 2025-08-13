@@ -194,7 +194,7 @@ public class ExposureTaskRunnable implements Runnable {
 			
 			
 			// Load the population dataset
-			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(exposureTaskConfig);
+			Map<Long, Result<GetPopulationRecord>> populationMap = PopulationApi.getPopulationEntryGroups(exposureTaskConfig, taskUuid);
 
 			// Load data for the selected exposure functions
 			// Determine the race/gender/ethnicity groups and age ranges needed for the

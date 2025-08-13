@@ -255,7 +255,7 @@ public class HIFUtil {
 	 * @param hifResults
 	 */
 	public static void storeResults(Task task, HIFTaskConfig hifTaskConfig, Vector<HifResultRecord> hifResults) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
 		
 		Integer hifResultDatasetId = create
 				.selectFrom(HIF_RESULT_DATASET)
@@ -343,7 +343,7 @@ public class HIFUtil {
 	 * @param grid_id
 	 */
 	public static void storeAggResults(Task task, Integer grid_id) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
 		Integer hifResultDatasetId = create
 				.selectFrom(HIF_RESULT_DATASET)
 				.where(HIF_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))

@@ -41,7 +41,7 @@ public class TaskUtil {
 					.execute();
 				} else if (hifResultDatasets.size() > 1) {
 					log.info("recieved more than 1 HIF Result Dataset record");
-				} else {
+				} else if (hifResultDatasets.size() == 1) {
 
 					Record hifResultDataset = hifResultDatasets.get(0);
 
@@ -70,9 +70,14 @@ public class TaskUtil {
 						DSL.using(ctx).deleteFrom(TASK_COMPLETE)
 						.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
 						.execute();
+					}					
+				}
+				else{
+					if(deleteTask) {
+						DSL.using(ctx).deleteFrom(TASK_COMPLETE)
+						.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+						.execute();
 					}
-
-					
 				}
 			});
 		} catch (Exception e) {

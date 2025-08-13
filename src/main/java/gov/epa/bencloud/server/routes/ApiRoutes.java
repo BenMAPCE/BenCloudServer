@@ -112,7 +112,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  filter=
 		 */
 		service.get(apiPrefix + "/air-quality-data", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDefinitions(request, response, getUserProfile(request, response));
+			return AirQualityApi.getAirQualityLayerDefinitions(request, response, getUserProfile(request, response),"");
 		});
 		
 		/*
@@ -126,7 +126,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  filter=
 		 */
 		service.get(apiPrefix + "/air-quality-data-by-metric", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDefinitionsByMetric(request, response, getUserProfile(request, response));
+			return AirQualityApi.getAirQualityLayerDefinitionsByMetric(request, response, getUserProfile(request, response),"");
 		});
 
 		/*
