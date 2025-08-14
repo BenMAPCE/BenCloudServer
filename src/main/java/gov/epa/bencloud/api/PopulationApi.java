@@ -88,7 +88,7 @@ public class PopulationApi {
 		dsl.execute("SET work_mem = '1GB'");
 		//String taskUuid = "testUuid"; //temp value for testing. Will change to the real task uuid.
 		//dsl.execute("SET application_name = '" + taskUuid + "'");
-		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
+		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(dsl.configuration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
 				null, //arrRaceIds, 
@@ -161,7 +161,7 @@ public class PopulationApi {
         DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration(taskUuid));	
 		dsl.execute("SET work_mem = '1GB'");
 		//dsl.execute("SET application_name = '" + taskUuid + "'");
-		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
+		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(dsl.configuration(), 
 				exposureTaskConfig.popId, 
 				exposureTaskConfig.popYear,
 				null, //arrRaceIds, 
