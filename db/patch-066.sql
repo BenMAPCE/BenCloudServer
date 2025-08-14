@@ -1,16 +1,21 @@
 /**** Add new columns and access_url values to valuation_function ****/
 
 
-UPDATE "data".settings SET value_int=66 WHERE "key"='version';
+UPDATE data.settings SET value_int=66 WHERE "key"='version';
 
+ALTER TABLE data.valuation_function DROP COLUMN IF EXISTS access_url;
+ALTER TABLE data.valuation_function DROP COLUMN IF EXISTS valuation_type;
+ALTER TABLE data.valuation_function DROP COLUMN IF EXISTS multiyear;
+ALTER TABLE data.valuation_function DROP COLUMN IF EXISTS multiyear_dr;
+ALTER TABLE data.valuation_function DROP COLUMN IF EXISTS multiyear_costs;
 
-ALTER TABLE "data".valuation_function ADD access_url text NULL;
-ALTER TABLE "data".valuation_function ADD valuation_type text NULL;
-ALTER TABLE "data".valuation_function ADD mutltiyear boolean;
-ALTER TABLE "data".valuation_function ADD multiyear_dr float8 NULL;
-ALTER TABLE "data".valuation_function ADD multiyear_costs varchar(50) NULL;
+ALTER TABLE data.valuation_function ADD access_url text NULL;
+ALTER TABLE data.valuation_function ADD valuation_type text NULL;
+ALTER TABLE data.valuation_function ADD multiyear boolean DEFAULT false NOT NULL;
+ALTER TABLE data.valuation_function ADD multiyear_dr float8 NULL;
+ALTER TABLE data.valuation_function ADD multiyear_costs float8 [];
 
-VACUUM (VERBOSE, ANALYZE) "data".valuation_function;
+VACUUM (VERBOSE, ANALYZE) data.valuation_function;
 
 UPDATE data.valuation_function SET access_url = 'https://pubmed.ncbi.nlm.nih.gov/21585226/' WHERE id = 483;
 UPDATE data.valuation_function SET access_url = 'https://pubmed.ncbi.nlm.nih.gov/21585226/' WHERE id = 484;
