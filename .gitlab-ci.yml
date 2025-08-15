@@ -149,7 +149,8 @@ add_dev_server_defender:
     IMAGE_TAG: $CI_COMMIT_SHORT_SHA
     FILESYSTEM_MONITORING: "false"
     FIPS_ENABLED: "false"
-    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
+#    ENTRYPOINT_COMMAND: "java -Xms16G -Xmx20G -XX:+UseG1GC -XX:MaxMetaspaceSize=1G -jar /bencloud/BenCloudServer.jar"
+    ENTRYPOINT_COMMAND: "java -jar /bencloud/BenCloudServer.jar"
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
