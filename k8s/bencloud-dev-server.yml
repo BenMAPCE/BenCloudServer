@@ -95,10 +95,10 @@ spec:
         app.gitlab.com/app: ${CI_PROJECT_PATH_SLUG}
         app.gitlab.com/env: ${CI_ENVIRONMENT_SLUG}
     spec:
-      securityContext:
-        runAsUser: 555
-        runAsGroup: 555
-        fsGroup: 555
+#      securityContext:
+#        runAsUser: 555
+#        runAsGroup: 555
+#        fsGroup: 555
       containers:
       - name: api
         image:  registry.epa.gov/benmap/bencloudserver/bencloudserver-defender:$CI_COMMIT_SHORT_SHA
