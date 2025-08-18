@@ -174,6 +174,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
+import gov.epa.bencloud.server.database.jooq.data.tables.TimingType;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunctionDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResult;
@@ -1440,6 +1441,11 @@ public class Tables {
      * The table <code>data.task_worker</code>.
      */
     public static final TaskWorker TASK_WORKER = TaskWorker.TASK_WORKER;
+
+    /**
+     * The table <code>data.timing_type</code>.
+     */
+    public static final TimingType TIMING_TYPE = TimingType.TIMING_TYPE;
 
     /**
      * The table <code>data.valuation_function</code>.

@@ -242,6 +242,21 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
      */
     public final TableField<HealthImpactFunctionRecord, String> ACCESS_URL = createField(DSL.name("access_url"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>data.health_impact_function.user_id</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.health_impact_function.share_scope</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.health_impact_function.timing_id</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
+
     private HealthImpactFunction(Name alias, Table<HealthImpactFunctionRecord> aliased) {
         this(alias, aliased, null);
     }

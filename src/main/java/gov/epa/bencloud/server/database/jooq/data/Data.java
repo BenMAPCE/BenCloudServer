@@ -175,6 +175,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
+import gov.epa.bencloud.server.database.jooq.data.tables.TimingType;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunctionDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResult;
@@ -1456,6 +1457,11 @@ public class Data extends SchemaImpl {
     public final TaskWorker TASK_WORKER = TaskWorker.TASK_WORKER;
 
     /**
+     * The table <code>data.timing_type</code>.
+     */
+    public final TimingType TIMING_TYPE = TimingType.TIMING_TYPE;
+
+    /**
      * The table <code>data.valuation_function</code>.
      */
     public final ValuationFunction VALUATION_FUNCTION = ValuationFunction.VALUATION_FUNCTION;
@@ -1686,6 +1692,7 @@ public class Data extends SchemaImpl {
             TaskConfig.TASK_CONFIG,
             TaskQueue.TASK_QUEUE,
             TaskWorker.TASK_WORKER,
+            TimingType.TIMING_TYPE,
             ValuationFunction.VALUATION_FUNCTION,
             ValuationFunctionDataset.VALUATION_FUNCTION_DATASET,
             ValuationResult.VALUATION_RESULT,
