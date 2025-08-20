@@ -2,7 +2,7 @@
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
 
-## Production 2025-??-?? (in progress)  | [API v1.1.0 and DB ??](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.1.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## Production 2025-??-?? (in progress)  | [API v1.1.0 and DB 66](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.1.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
 * Air quality uploads can now receive multiple files in one submission. These uploaded files will then be processed in the background. Progress can be monitored in the task manager. (BWD-14)
