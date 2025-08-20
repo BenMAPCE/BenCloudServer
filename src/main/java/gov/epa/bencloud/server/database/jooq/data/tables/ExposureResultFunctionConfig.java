@@ -11,7 +11,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row15;
+import org.jooq.Row16;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -127,6 +127,11 @@ public class ExposureResultFunctionConfig extends TableImpl<ExposureResultFuncti
      */
     public final TableField<ExposureResultFunctionConfigRecord, String> FUNCTION_TYPE = createField(DSL.name("function_type"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>data.exposure_result_function_config.timing_id</code>.
+     */
+    public final TableField<ExposureResultFunctionConfigRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
+
     private ExposureResultFunctionConfig(Name alias, Table<ExposureResultFunctionConfigRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -195,11 +200,11 @@ public class ExposureResultFunctionConfig extends TableImpl<ExposureResultFuncti
     }
 
     // -------------------------------------------------------------------------
-    // Row15 type methods
+    // Row16 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row15<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, String, String, String> fieldsRow() {
-        return (Row15) super.fieldsRow();
+    public Row16<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, String, String, String, Integer> fieldsRow() {
+        return (Row16) super.fieldsRow();
     }
 }

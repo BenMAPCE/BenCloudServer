@@ -11,7 +11,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row14;
+import org.jooq.Row15;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -117,6 +117,11 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
      */
     public final TableField<HifResultFunctionConfigRecord, Integer> HIF_INSTANCE_ID = createField(DSL.name("hif_instance_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>data.hif_result_function_config.timing_id</code>.
+     */
+    public final TableField<HifResultFunctionConfigRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
+
     private HifResultFunctionConfig(Name alias, Table<HifResultFunctionConfigRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -184,11 +189,11 @@ public class HifResultFunctionConfig extends TableImpl<HifResultFunctionConfigRe
     }
 
     // -------------------------------------------------------------------------
-    // Row14 type methods
+    // Row15 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> fieldsRow() {
-        return (Row14) super.fieldsRow();
+    public Row15<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> fieldsRow() {
+        return (Row15) super.fieldsRow();
     }
 }
