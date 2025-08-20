@@ -791,7 +791,7 @@ public class AirQualityApi {
 	public static Object postAirQualityLayer(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String groupName = ""; 
-		String layerName= "";
+		String userLayerName= ""; //layer name entered by users
 		Integer pollutantId;
 		Integer gridId;
 		String aqYear; //We currently limit one year value per batch import.
@@ -799,12 +799,13 @@ public class AirQualityApi {
 		String source;
 		String dataType;		
 		Map<String, Integer> csvFilestoreIds = null; //layerName and fielstoreId
+		csvFilestoreIds = new HashMap<String, Integer>();
 		//boolean batchUpload = false;  
 		
 		try{
 			pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
 			groupName = ApiUtil.getMultipartFormParameterAsString(request, "group");
-			layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
+			userLayerName = ApiUtil.getMultipartFormParameterAsString(request, "userLayerName");
 			aqYear = ApiUtil.getMultipartFormParameterAsString(request, "aqYear");
 			source = ApiUtil.getMultipartFormParameterAsString(request, "source");
 			dataType = ApiUtil.getMultipartFormParameterAsString(request, "dataType");
@@ -821,9 +822,11 @@ public class AirQualityApi {
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
 
+		if(userLayerName == null) userLayerName = "";
+
 		ValidationMessage validationMsg = new ValidationMessage();
 
-		if(groupName == "" || pollutantId == null || gridId == null) {
+		if(groupName.isEmpty() || pollutantId == null || gridId == null) {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
@@ -836,26 +839,28 @@ public class AirQualityApi {
 		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
 		try {
 			for(Part part : request.raw().getParts()){
-				//check layer name
-				filename = part.getSubmittedFileName();
-				if(layerName == "")layerName = filename;								
-				if (layerNames.contains(layerName.toLowerCase())) {
-					validationMsg.success = false;
-					validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please use a different name."));
-					response.type("application/json");
-					return CoreApi.transformValMsgToJSON(validationMsg);
-				}	
-				//check file type
-				String contentType = part.getContentType();	
-				if (contentType != null && contentType.contains("/")) {
-					if(contentType.split("/")[1].toLowerCase() != "csv"){
+				if(part.getName().equals("files")){
+					//check layer name
+					String layerName = userLayerName;
+					filename = part.getSubmittedFileName();
+					if(layerName.isEmpty())layerName = filename;								
+					if (layerNames.contains(layerName.toLowerCase())) {
 						validationMsg.success = false;
-						validationMsg.messages.add(new ValidationMessage.Message("error","file " + filename + " is not a csv."));
+						validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please use a different name."));
 						response.type("application/json");
 						return CoreApi.transformValMsgToJSON(validationMsg);
-					};
-            	}
-
+					}	
+					//check file type
+					String contentType = part.getContentType();	
+					if (contentType != null && contentType.contains("/")) {
+						if(!contentType.split("/")[1].toLowerCase().equals("csv")){
+							validationMsg.success = false;
+							validationMsg.messages.add(new ValidationMessage.Message("error","file " + filename + " is not a csv."));
+							response.type("application/json");
+							return CoreApi.transformValMsgToJSON(validationMsg);
+						};
+					}
+				}		
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -869,19 +874,33 @@ public class AirQualityApi {
 		//store files in Filestore		
 		try {
 			for(Part part : request.raw().getParts()){
-				filename = part.getSubmittedFileName();
-				if(layerName == "")layerName = filename;				
-				InputStream is = part.getInputStream();
-				ObjectMapper mapper = new ObjectMapper();				
-				ObjectNode paramsNode = mapper.createObjectNode();
-				paramsNode.put("group name", groupName);
-				paramsNode.put("file name", filename);
-				paramsNode.put("layer name", layerName);
-				paramsNode.put("userId", userProfile.get().getId());
-				Integer filestoreId = 0;
-				filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_AQ, userProfile.get().getId(), paramsNode.toString());
-				if (csvFilestoreIds.containsKey(layerName)) layerName = layerName + "_2";
-				csvFilestoreIds.put(layerName, filestoreId);				
+				if(part.getName().equals("files")){
+					filename = part.getSubmittedFileName();
+					String layerName = userLayerName;
+					if(layerName.equals(""))layerName = filename;				
+					InputStream is = part.getInputStream();
+					ObjectMapper mapper = new ObjectMapper();				
+					ObjectNode paramsNode = mapper.createObjectNode();
+					paramsNode.put("group name", groupName);
+					paramsNode.put("file name", filename);
+					paramsNode.put("layer name", layerName);
+					paramsNode.put("userId", userProfile.get().getId());
+					Integer filestoreId = 0;
+					filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_AQ, userProfile.get().getId(), paramsNode.toString());
+					if (csvFilestoreIds !=null && csvFilestoreIds.containsKey(layerName)){
+						log.error("More than one selected AQ files have the same name " + layerName);
+						response.type("application/json");
+						validationMsg.success=false;
+						validationMsg.messages.add(new ValidationMessage.Message("error","More than one selected AQ files have the same name" + layerName));
+						// Delete files already stored in filestore
+						for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
+							FilestoreUtil.deleteFile(entry.getValue());
+						}
+						return CoreApi.transformValMsgToJSON(validationMsg);
+					};
+					csvFilestoreIds.put(layerName, filestoreId);
+				}
+								
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1021,20 +1040,20 @@ public class AirQualityApi {
 					String str = "";
 					//column is required and should be an integer
 					str = record[columnIdx];
-					if(str=="" || !str.matches("-?\\d+")) {
+					if(str.isEmpty() || !str.matches("-?\\d+")) {
 						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "column value " + str + " is not a valid integer." + "\r\n";
 						countColTypeError++;
 					}	
 					//row is required and should be an integer
 					str = record[rowIdx];
 					//question: or use Integer.parseInt(str)??
-					if(str=="" || !str.matches("-?\\d+")) {
+					if(str.isEmpty() || !str.matches("-?\\d+")) {
 						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "row value " + str + " is not a valid integer."+ "\r\n";
 						countRowTypeError++;
 					}	
 					//metric is required and should be defined.
 					str = record[metricIdx].toLowerCase();
-					if(str=="") {
+					if(str.isEmpty()) {
 						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Metric value is missing on line " + Integer.toString(rowCount)+ "\r\n";
 						countMissingMetric ++;
 					}
@@ -1061,7 +1080,7 @@ public class AirQualityApi {
 					*/
 					//annual metric aka annual statistic can be either blank or a valid value
 					str = record[annualMetricIdx].toLowerCase();
-					if(!statisticIdLookup.containsKey(str) && str !="") {
+					if(!statisticIdLookup.containsKey(str) && !str.equals("")) {
 						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Annual Metric value " + str + " is not a valid method."+ "\r\n";
 						if (!lstUndefinedStatistics.contains(String.valueOf(str))) {
 							lstUndefinedStatistics.add(String.valueOf(str));
