@@ -1902,7 +1902,6 @@ public class HIFApi {
 			function.put("start_age",r.getValue(HEALTH_IMPACT_FUNCTION.START_AGE));
 			function.put("end_age",r.getValue(HEALTH_IMPACT_FUNCTION.END_AGE));
 			function.put("function_text",r.getValue(HEALTH_IMPACT_FUNCTION.FUNCTION_TEXT));
-			function.put("variable_dataset_id",r.getValue(HEALTH_IMPACT_FUNCTION.VARIABLE_DATASET_ID));
 			function.put("beta",r.getValue(HEALTH_IMPACT_FUNCTION.BETA));
 			function.put("dist_beta",r.getValue(HEALTH_IMPACT_FUNCTION.DIST_BETA));
 			function.put("p1_beta",r.getValue(HEALTH_IMPACT_FUNCTION.P1_BETA));
@@ -1924,9 +1923,6 @@ public class HIFApi {
 			function.put("race_name",r.getValue("race_name", String.class));
 			function.put("gender_name",r.getValue("gender_name", String.class));
 			function.put("ethnicity_name",r.getValue("ethnicity_name", String.class));
-			
-			//This will select the most appropriate incidence/prevalence dataset and year based on user selection and function definition
-			HIFUtil.setIncidencePrevalenceV1(function, popYear, defaultIncidencePrevalenceDataset,r.getValue(HEALTH_IMPACT_FUNCTION.INCIDENCE_DATASET_ID), r.getValue(HEALTH_IMPACT_FUNCTION.PREVALENCE_DATASET_ID), userPrefered);
 			
 			functions.add(function);
 			

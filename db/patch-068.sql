@@ -5,7 +5,12 @@ UPDATE data.settings SET value_int=68 WHERE "key"='version';
 
 ALTER TABLE "data".health_impact_function ADD user_id text NULL;
 ALTER TABLE "data".health_impact_function ADD share_scope smallint NULL DEFAULT 0;
+ALTER TABLE "data".health_impact_function ADD archived smallint NULL DEFAULT 0;
 UPDATE "data".health_impact_function set share_scope = 1;
+
+ALTER TABLE "data".health_impact_function DROP COLUMN incidence_dataset_id;
+ALTER TABLE "data".health_impact_function DROP COLUMN prevalence_dataset_id;
+ALTER TABLE "data".health_impact_function DROP COLUMN variable_dataset_id;
 
 ALTER TABLE "data".health_impact_function_group ADD user_id text NULL;
 ALTER TABLE "data".health_impact_function_group ADD share_scope smallint NULL DEFAULT 0;
