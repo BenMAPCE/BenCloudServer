@@ -1,49 +1,50 @@
 package gov.epa.bencloud.api;
 
-import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_CELL;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER_METRICS;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.POLLUTANT;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.POLLUTANT_METRIC;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.SEASONAL_METRIC;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.STATISTIC_TYPE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_BATCH;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.http.Part;
 
-import org.apache.commons.io.input.BOMInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
-import org.jooq.InsertValuesStep8;
 import org.jooq.JSON;
 import org.jooq.JSONFormat;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.OrderField;
-import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.Record10;
 import org.jooq.Record13;
-import org.jooq.Record14;
-import org.jooq.Record15;
 import org.jooq.Record16;
-import org.jooq.Record18;
 import org.jooq.Record21;
-import org.jooq.Record22;
 import org.jooq.Record6;
 import org.jooq.Record7;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.Table;
-import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.opencsv.CSVReader;
 
@@ -64,9 +66,12 @@ import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
+import gov.epa.bencloud.server.tasks.TaskQueue;
+import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.util.DataConversionUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
@@ -785,26 +790,29 @@ public class AirQualityApi {
 	 */
 	public static Object postAirQualityLayer(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-		String layerName;
+		String groupName = ""; 
+		String layerName= "";
 		Integer pollutantId;
 		Integer gridId;
-		String aqYear;
+		String aqYear; //We currently limit one year value per batch import.
 		String description;
 		String source;
-		String dataType;
-		String filename;
-		LocalDateTime uploadDate;
+		String dataType;		
+		Map<String, Integer> csvFilestoreIds = null; //layerName and fielstoreId
+		//boolean batchUpload = false;  
 		
 		try{
-			layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
 			pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
-			gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
+			groupName = ApiUtil.getMultipartFormParameterAsString(request, "group");
+			layerName = ApiUtil.getMultipartFormParameterAsString(request, "name");
 			aqYear = ApiUtil.getMultipartFormParameterAsString(request, "aqYear");
-			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
 			source = ApiUtil.getMultipartFormParameterAsString(request, "source");
 			dataType = ApiUtil.getMultipartFormParameterAsString(request, "dataType");
-			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
-			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
+			gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
+
+			// Add this in later when we start supporting other air quality surface types such as monitor data
+			//String layerType = IOUtils.toString(request.raw().getPart("type").getInputStream(), StandardCharsets.UTF_8);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -812,491 +820,454 @@ public class AirQualityApi {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
-		
-		// Add this in later when we start supporting other air quality surface types such as monitor data
-		//String layerType = IOUtils.toString(request.raw().getPart("type").getInputStream(), StandardCharsets.UTF_8);
 
-		//Validate csv file
-		String errorMsg= ""; //stores more detailed info. Not used in report for now but may need in the future?
 		ValidationMessage validationMsg = new ValidationMessage();
 
-				
-		if(layerName == null || pollutantId == null || gridId == null) {
+		if(groupName == "" || pollutantId == null || gridId == null) {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: name, pollutantId, gridId."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: group name, pollutantId, gridId."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
+
+		//check file types are csv. Make sure layer names do not already exist in the database
+		String filename = "";
+		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
+		try {
+			for(Part part : request.raw().getParts()){
+				//check layer name
+				filename = part.getSubmittedFileName();
+				if(layerName == "")layerName = filename;								
+				if (layerNames.contains(layerName.toLowerCase())) {
+					validationMsg.success = false;
+					validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please use a different name."));
+					response.type("application/json");
+					return CoreApi.transformValMsgToJSON(validationMsg);
+				}	
+				//check file type
+				String contentType = part.getContentType();	
+				if (contentType != null && contentType.contains("/")) {
+					if(contentType.split("/")[1].toLowerCase() != "csv"){
+						validationMsg.success = false;
+						validationMsg.messages.add(new ValidationMessage.Message("error","file " + filename + " is not a csv."));
+						response.type("application/json");
+						return CoreApi.transformValMsgToJSON(validationMsg);
+					};
+            	}
+
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("Error uploading AQ file " + filename, e);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred uploading your AQ file(s)."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		} 
+
+		//store files in Filestore		
+		try {
+			for(Part part : request.raw().getParts()){
+				filename = part.getSubmittedFileName();
+				if(layerName == "")layerName = filename;				
+				InputStream is = part.getInputStream();
+				ObjectMapper mapper = new ObjectMapper();				
+				ObjectNode paramsNode = mapper.createObjectNode();
+				paramsNode.put("group name", groupName);
+				paramsNode.put("file name", filename);
+				paramsNode.put("layer name", layerName);
+				paramsNode.put("userId", userProfile.get().getId());
+				Integer filestoreId = 0;
+				filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_AQ, userProfile.get().getId(), paramsNode.toString());
+				if (csvFilestoreIds.containsKey(layerName)) layerName = layerName + "_2";
+				csvFilestoreIds.put(layerName, filestoreId);				
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("Error saving AQ file " + filename, e);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred saving your AQ file(s)."));
+			// Delete files already stored in filestore
+			for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
+				FilestoreUtil.deleteFile(entry.getValue());
+			}
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		} 
 
 		//TODO: REMOVE THIS. IT'S JUST A WORKAROUND FOR A TEMPORARY UI BUG
 		if(pollutantId.equals(0)) {
 			pollutantId = 6;
 		}
-		
-		//step 0: make sure layerName is not the same as any existing ones
-		
-		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
-		if (layerNames.contains(layerName.toLowerCase())) {
-			validationMsg.success = false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please enter a different name."));
-			response.type("application/json");
-			return CoreApi.transformValMsgToJSON(validationMsg);
-		}
-		
-		AirQualityLayerRecord aqRecord=null;
-		int columnIdx=-999;
-		int rowIdx=-999;
-		int metricIdx=-999;
-		int seasonalMetricIdx=-999;
-		int annualMetricIdx=-999;
-		int valuesIdx=-999;
-		
-		Map<String, Integer> pollutantMetricIdLookup = new HashMap<>();		
-		Map<String, Integer> seasonalMetricIdLookup = new HashMap<>();		
-		Map<String, Integer> statisticIdLookup = new HashMap<>();
-		
-		try (InputStream is = request.raw().getPart("file").getInputStream()) {
-			BOMInputStream bis = new BOMInputStream(is, false);
-			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
 
-			String[] record;
-			
-			//step 1: verify column names 
-			// Read the header
-			// allow either "column" or "col"; "values" or "value"
-			// todo: warn or abort when both "column" and "col" exist.
-			
-			record = csvReader.readNext();
-			for(int i=0; i < record.length; i++) {
-				switch(record[i].toLowerCase().replace(" ", "")) {
-				case "column":					
-					if(columnIdx==-999) {
-						columnIdx=i;
+		//Validate csv files
+		for(Map.Entry<String, Integer> myMap : csvFilestoreIds.entrySet()){
+			Integer filestoreId = myMap.getValue();
+			File csvFile = FilestoreUtil.getFile(filestoreId);
+			try {
+				CSVReader csvReader = new CSVReader (new FileReader(csvFile));
+				
+				AirQualityLayerRecord aqRecord=null;
+				int columnIdx=-999;
+				int rowIdx=-999;
+				int metricIdx=-999;
+				int seasonalMetricIdx=-999;
+				int annualMetricIdx=-999;
+				int valuesIdx=-999;
+				
+				Map<String, Integer> pollutantMetricIdLookup = new HashMap<>();		
+				Map<String, Integer> seasonalMetricIdLookup = new HashMap<>();		
+				Map<String, Integer> statisticIdLookup = new HashMap<>();
+
+				String[] record;
+				
+				//step 1: verify column names 
+				// Read the header
+				// allow either "column" or "col"; "values" or "value"
+				// todo: warn or abort when both "column" and "col" exist.
+				
+				record = csvReader.readNext();
+				for(int i=0; i < record.length; i++) {
+					switch(record[i].toLowerCase().replace(" ", "")) {
+					case "column":					
+						if(columnIdx==-999) {
+							columnIdx=i;
+						}
+						else {
+							validationMsg.success = false;
+							ValidationMessage.Message msg = new ValidationMessage.Message();
+							msg.message = "File has both 'col' and 'column' fields.";
+							msg.type = "error";
+							validationMsg.messages.add(msg);
+						}
+						break;
+					case "col":
+						if(columnIdx==-999) {
+							columnIdx=i;
+						}
+						else {
+							validationMsg.success = false;
+							ValidationMessage.Message msg = new ValidationMessage.Message();
+							msg.message = "File has both 'col' and 'column' fields";
+							msg.type = "error";
+							validationMsg.messages.add(msg);
+						}
+						break;
+					case "row":
+						rowIdx=i;
+						break;
+					case "metric":
+						metricIdx=i;
+						break;
+					case "seasonalmetric":
+						seasonalMetricIdx=i;
+						break;
+					case "annualmetric":
+						annualMetricIdx=i;
+						break;
+					case "statistic":
+						annualMetricIdx=i;
+						break;
+					case "values":
+						valuesIdx=i;
+						break;
+					case "value":
+						valuesIdx=i;
+						break;
+					}
+				}
+				String tmp = AirQualityUtil.validateModelColumnHeadings(columnIdx, rowIdx, metricIdx, seasonalMetricIdx, annualMetricIdx, valuesIdx);
+				if(tmp.length() > 0) {
+					
+					log.debug("AQ dataset posted - columns are missing: " + tmp);
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					msg.message = "The following columns are missing: " + tmp;
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+					response.type("application/json");
+					// Delete files already stored in filestore
+					for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
+						FilestoreUtil.deleteFile(entry.getValue());
+					}
+					return CoreApi.transformValMsgToJSON(validationMsg);
+				}
+				
+				pollutantMetricIdLookup = AirQualityUtil.getPollutantMetricIdLookup(pollutantId);
+				seasonalMetricIdLookup = AirQualityUtil.getSeasonalMetricIdLookup(pollutantId);
+				statisticIdLookup = ApiUtil.getStatisticIdLookup();
+				
+				//We might also need to clean up the header. Or, maybe we should make this a transaction?
+				
+				//step 2: make sure file has > 0 rows. Check rowCount after while loop.
+				int rowCount = 0;
+				int countColTypeError = 0;
+				int countRowTypeError = 0;
+				int countMissingMetric = 0;
+				int countValueTypeError = 0;
+				int countValueError = 0;
+				List<String> lstUndefinedMetric = new ArrayList<String>();
+				List<String> lstUndefinedSeasonalMetric = new ArrayList<String>();
+				List<String> lstUndefinedStatistics = new ArrayList<String>();
+				List<String> lstDupMetricCombo = new ArrayList<String>();
+				
+				Map<String, Integer> dicUniqueMetric = new HashMap<String,Integer>();	
+				
+				while ((record = csvReader.readNext()) != null) {				
+					rowCount ++;
+					
+					//step 3: Verify data types for each field
+					String str = "";
+					//column is required and should be an integer
+					str = record[columnIdx];
+					if(str=="" || !str.matches("-?\\d+")) {
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "column value " + str + " is not a valid integer." + "\r\n";
+						countColTypeError++;
+					}	
+					//row is required and should be an integer
+					str = record[rowIdx];
+					//question: or use Integer.parseInt(str)??
+					if(str=="" || !str.matches("-?\\d+")) {
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "row value " + str + " is not a valid integer."+ "\r\n";
+						countRowTypeError++;
+					}	
+					//metric is required and should be defined.
+					str = record[metricIdx].toLowerCase();
+					if(str=="") {
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Metric value is missing on line " + Integer.toString(rowCount)+ "\r\n";
+						countMissingMetric ++;
+					}
+					else if(!pollutantMetricIdLookup.containsKey(str) ) {
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Metric value " + str + " is not defined."+ "\r\n";
+						if (!lstUndefinedMetric.contains(String.valueOf(str))) {
+							lstUndefinedMetric.add(String.valueOf(str));
+						}
+					}
+					
+					//seasonal metric is not required and should be defined (seasonalMetricIdLookup = pollutant metric + "~" + seasonal metric).
+					//SKIP THIS VALIDATION FOR NOW SINCE WE'LL CREATE IT DYNAMICALLY BELOW
+					/*
+					str = record[metricIdx].toLowerCase() + "~" + record[seasonalMetricIdx].toLowerCase();
+					if("".equals(str)) {
+						//Seasonal metric is not required.
+					}
+					else if(!seasonalMetricIdLookup.containsKey(str) ) {
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Seasonal Metric value " + record[seasonalMetricIdx] + " is not defined."+ "\r\n";
+						if (!lstUndefinedSeasonalMetric.contains(String.valueOf(str))) {
+							lstUndefinedSeasonalMetric.add(String.valueOf(str));
+						}
+					}
+					*/
+					//annual metric aka annual statistic can be either blank or a valid value
+					str = record[annualMetricIdx].toLowerCase();
+					if(!statisticIdLookup.containsKey(str) && str !="") {
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Annual Metric value " + str + " is not a valid method."+ "\r\n";
+						if (!lstUndefinedStatistics.contains(String.valueOf(str))) {
+							lstUndefinedStatistics.add(String.valueOf(str));
+						}
+					}
+					
+					//value/values should be a double and >= 0
+					str = record[valuesIdx];
+					try {
+						double dbl = Double.parseDouble(str);
+						if (dbl<0) {
+							//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid as it is less than 0."+ "\r\n";
+							countValueError ++;
+						}
+					}
+					catch(NumberFormatException e){
+						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid double."+ "\r\n";
+						countValueTypeError ++;
+					}
+					
+					//metric-seasonal metric-annual statistics should be unique
+					str = record[columnIdx].toString() 
+							+ "~" + record[rowIdx].toLowerCase() 
+							+ "~" + record[metricIdx].toLowerCase() 
+							+ "~" + record[seasonalMetricIdx].toLowerCase() 
+							+ "~" + record[annualMetricIdx].toLowerCase();
+					if(!dicUniqueMetric.containsKey(str)) {
+						dicUniqueMetric.put(str,rowCount + 1);
 					}
 					else {
-						validationMsg.success = false;
-						ValidationMessage.Message msg = new ValidationMessage.Message();
-						msg.message = "File has both 'col' and 'column' fields.";
-						msg.type = "error";
-						validationMsg.messages.add(msg);
+						//errorMsg += "record #" + String.valueOf(rowCount + 1) + ": " + "Duplicate metric" +  "\r\n";
+						if(!lstDupMetricCombo.contains(str)) {
+							lstDupMetricCombo.add(str);
+						}
 					}
-					break;
-				case "col":
-					if(columnIdx==-999) {
-						columnIdx=i;
+				}	
+				
+				//summarize validation message
+				if(countColTypeError>0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "";
+					if(countColTypeError == 1) {
+						strRecord = String.valueOf(countColTypeError) + " record has Column values not a valid integer.";
 					}
 					else {
-						validationMsg.success = false;
-						ValidationMessage.Message msg = new ValidationMessage.Message();
-						msg.message = "File has both 'col' and 'column' fields";
-						msg.type = "error";
-						validationMsg.messages.add(msg);
+						strRecord = String.valueOf(countColTypeError) + " records have Column values that are not valid integers.";
 					}
-					break;
-				case "row":
-					rowIdx=i;
-					break;
-				case "metric":
-					metricIdx=i;
-					break;
-				case "seasonalmetric":
-					seasonalMetricIdx=i;
-					break;
-				case "annualmetric":
-					annualMetricIdx=i;
-					break;
-				case "statistic":
-					annualMetricIdx=i;
-					break;
-				case "values":
-					valuesIdx=i;
-					break;
-				case "value":
-					valuesIdx=i;
-					break;
+					msg.message = strRecord + "";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
 				}
-			}
-			String tmp = AirQualityUtil.validateModelColumnHeadings(columnIdx, rowIdx, metricIdx, seasonalMetricIdx, annualMetricIdx, valuesIdx);
-			if(tmp.length() > 0) {
-				
-				log.debug("AQ dataset posted - columns are missing: " + tmp);
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following columns are missing: " + tmp;
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-				response.type("application/json");
-				return CoreApi.transformValMsgToJSON(validationMsg);
-			}
-			
-			pollutantMetricIdLookup = AirQualityUtil.getPollutantMetricIdLookup(pollutantId);
-			seasonalMetricIdLookup = AirQualityUtil.getSeasonalMetricIdLookup(pollutantId);
-			statisticIdLookup = ApiUtil.getStatisticIdLookup();
-			
-			//We might also need to clean up the header. Or, maybe we should make this a transaction?
-			
-			//step 2: make sure file has > 0 rows. Check rowCount after while loop.
-			int rowCount = 0;
-			int countColTypeError = 0;
-			int countRowTypeError = 0;
-			int countMissingMetric = 0;
-			int countValueTypeError = 0;
-			int countValueError = 0;
-			List<String> lstUndefinedMetric = new ArrayList<String>();
-			List<String> lstUndefinedSeasonalMetric = new ArrayList<String>();
-			List<String> lstUndefinedStatistics = new ArrayList<String>();
-			List<String> lstDupMetricCombo = new ArrayList<String>();
-			
-			Map<String, Integer> dicUniqueMetric = new HashMap<String,Integer>();	
-			
-			while ((record = csvReader.readNext()) != null) {				
-				rowCount ++;
-				
-				//step 3: Verify data types for each field
-				String str = "";
-				//column is required and should be an integer
-				str = record[columnIdx];
-				if(str=="" || !str.matches("-?\\d+")) {
-					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "column value " + str + " is not a valid integer." + "\r\n";
-					countColTypeError++;
-				}	
-				//row is required and should be an integer
-				str = record[rowIdx];
-				//question: or use Integer.parseInt(str)??
-				if(str=="" || !str.matches("-?\\d+")) {
-					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "row value " + str + " is not a valid integer."+ "\r\n";
-					countRowTypeError++;
-				}	
-				//metric is required and should be defined.
-				str = record[metricIdx].toLowerCase();
-				if(str=="") {
-					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Metric value is missing on line " + Integer.toString(rowCount)+ "\r\n";
-					countMissingMetric ++;
-				}
-				else if(!pollutantMetricIdLookup.containsKey(str) ) {
-					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Metric value " + str + " is not defined."+ "\r\n";
-					if (!lstUndefinedMetric.contains(String.valueOf(str))) {
-						lstUndefinedMetric.add(String.valueOf(str));
+				if(countRowTypeError>0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "";
+					if(countRowTypeError == 1) {
+						strRecord = String.valueOf(countRowTypeError) + " record has Row values not a valid integer.";
 					}
-				}
-				
-				//seasonal metric is not required and should be defined (seasonalMetricIdLookup = pollutant metric + "~" + seasonal metric).
-				//SKIP THIS VALIDATION FOR NOW SINCE WE'LL CREATE IT DYNAMICALLY BELOW
-				/*
-				str = record[metricIdx].toLowerCase() + "~" + record[seasonalMetricIdx].toLowerCase();
-				if("".equals(str)) {
-					//Seasonal metric is not required.
-				}
-				else if(!seasonalMetricIdLookup.containsKey(str) ) {
-					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Seasonal Metric value " + record[seasonalMetricIdx] + " is not defined."+ "\r\n";
-					if (!lstUndefinedSeasonalMetric.contains(String.valueOf(str))) {
-						lstUndefinedSeasonalMetric.add(String.valueOf(str));
+					else {
+						strRecord = String.valueOf(countRowTypeError) + " records have Row values that are not valid integers.";
 					}
+					msg.message = strRecord + "";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
 				}
-				*/
-				//annual metric aka annual statistic can be either blank or a valid value
-				str = record[annualMetricIdx].toLowerCase();
-				if(!statisticIdLookup.containsKey(str) && str !="") {
-					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Annual Metric value " + str + " is not a valid method."+ "\r\n";
-					if (!lstUndefinedStatistics.contains(String.valueOf(str))) {
-						lstUndefinedStatistics.add(String.valueOf(str));
+				if(countValueTypeError > 0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "";
+					if(countValueTypeError == 1) {
+						strRecord = String.valueOf(countValueTypeError) + " record contains an unexpected air quality value.";
 					}
+					else {
+						strRecord = String.valueOf(countValueTypeError) + " records contain unexpected air quality values.";
+					}
+					msg.message = strRecord + " Each record must contain a single, positive numeric value.";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				if(countValueError > 0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "";
+					if(countValueError == 1) {
+						strRecord = String.valueOf(countValueError) + " record has";
+					}
+					else {
+						strRecord = String.valueOf(countValueError) + " records have";
+					}
+					msg.message = strRecord + " air quality values below zero.";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				if(countMissingMetric>0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "";
+					if(countMissingMetric == 1) {
+						strRecord = String.valueOf(countMissingMetric) + " record is missing a Metric value.";
+					}
+					else {
+						strRecord = String.valueOf(countMissingMetric) + " records are missing Metric values.";
+					}
+					msg.message = strRecord + "";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				if(lstUndefinedMetric.size()>0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					msg.message = "The following Metrics are not defined: " + String.join(",", lstUndefinedMetric) + ".";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				if(lstUndefinedSeasonalMetric.size()>0) {
+					//lstUndefinedSeasonalMetric currently contains Metric~SeasonalMetric. Extract Seasonal Metric
+					for (int i = 0; i < lstUndefinedSeasonalMetric.size();i++) {
+						String smold = lstUndefinedSeasonalMetric.get(i);					
+						lstUndefinedSeasonalMetric.set(i,smold.substring(smold.lastIndexOf('~') + 1));
+					}
+					
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					msg.message = "The following Seasonal Metrics are not defined: " + String.join(",", lstUndefinedSeasonalMetric)+ ".";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				if(lstUndefinedStatistics.size()>0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					msg.message = "The following Annual Statistics are not valid: " + String.join(",", lstUndefinedStatistics)+ ".";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				if(lstDupMetricCombo.size()>0) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					msg.message = "The following Metric combinations are not unique: " + String.join(",", lstDupMetricCombo)+ ".";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
 				}
 				
-				//value/values should be a double and >= 0
-				str = record[valuesIdx];
-				try {
-					double dbl = Double.parseDouble(str);
-					if (dbl<0) {
-						//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid as it is less than 0."+ "\r\n";
-						countValueError ++;
+				if(!validationMsg.success) {
+					response.type("application/json");
+					response.status(400);
+					// Delete files already stored in filestore
+					for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
+						FilestoreUtil.deleteFile(entry.getValue());
 					}
-				}
-				catch(NumberFormatException e){
-					//errorMsg +="record #" + String.valueOf(rowCount + 1) + ": " +  "Value " + str + " is not a valid double."+ "\r\n";
-					countValueTypeError ++;
+					return CoreApi.transformValMsgToJSON(validationMsg); 
 				}
 				
-				//metric-seasonal metric-annual statistics should be unique
-				str = record[columnIdx].toString() 
-						+ "~" + record[rowIdx].toLowerCase() 
-						+ "~" + record[metricIdx].toLowerCase() 
-						+ "~" + record[seasonalMetricIdx].toLowerCase() 
-						+ "~" + record[annualMetricIdx].toLowerCase();
-				if(!dicUniqueMetric.containsKey(str)) {
-					dicUniqueMetric.put(str,rowCount + 1);
-				}
-				else {
-					//errorMsg += "record #" + String.valueOf(rowCount + 1) + ": " + "Duplicate metric" +  "\r\n";
-					if(!lstDupMetricCombo.contains(str)) {
-						lstDupMetricCombo.add(str);
-					}
-				}
-			}	
-			
-			//summarize validation message
-			if(countColTypeError>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countColTypeError == 1) {
-					strRecord = String.valueOf(countColTypeError) + " record has Column values not a valid integer.";
-				}
-				else {
-					strRecord = String.valueOf(countColTypeError) + " records have Column values that are not valid integers.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(countRowTypeError>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countRowTypeError == 1) {
-					strRecord = String.valueOf(countRowTypeError) + " record has Row values not a valid integer.";
-				}
-				else {
-					strRecord = String.valueOf(countRowTypeError) + " records have Row values that are not valid integers.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(countValueTypeError > 0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countValueTypeError == 1) {
-					strRecord = String.valueOf(countValueTypeError) + " record contains an unexpected air quality value.";
-				}
-				else {
-					strRecord = String.valueOf(countValueTypeError) + " records contain unexpected air quality values.";
-				}
-				msg.message = strRecord + " Each record must contain a single, positive numeric value.";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(countValueError > 0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countValueError == 1) {
-					strRecord = String.valueOf(countValueError) + " record has";
-				}
-				else {
-					strRecord = String.valueOf(countValueError) + " records have";
-				}
-				msg.message = strRecord + " air quality values below zero.";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(countMissingMetric>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countMissingMetric == 1) {
-					strRecord = String.valueOf(countMissingMetric) + " record is missing a Metric value.";
-				}
-				else {
-					strRecord = String.valueOf(countMissingMetric) + " records are missing Metric values.";
-				}
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(lstUndefinedMetric.size()>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Metrics are not defined: " + String.join(",", lstUndefinedMetric) + ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(lstUndefinedSeasonalMetric.size()>0) {
-				//lstUndefinedSeasonalMetric currently contains Metric~SeasonalMetric. Extract Seasonal Metric
-				for (int i = 0; i < lstUndefinedSeasonalMetric.size();i++) {
-					String smold = lstUndefinedSeasonalMetric.get(i);					
-					lstUndefinedSeasonalMetric.set(i,smold.substring(smold.lastIndexOf('~') + 1));
-				}
-				
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Seasonal Metrics are not defined: " + String.join(",", lstUndefinedSeasonalMetric)+ ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(lstUndefinedStatistics.size()>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Annual Statistics are not valid: " + String.join(",", lstUndefinedStatistics)+ ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(lstDupMetricCombo.size()>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Metric combinations are not unique: " + String.join(",", lstDupMetricCombo)+ ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			
-			if(!validationMsg.success) {
+			} catch (Exception e) {
+				log.error("Error validating AQ file", e);
 				response.type("application/json");
 				response.status(400);
-				return CoreApi.transformValMsgToJSON(validationMsg); 
+				validationMsg.success=false;
+				validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
+				// Delete files already stored in filestore
+				for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
+					FilestoreUtil.deleteFile(entry.getValue());
+				}
+				return CoreApi.transformValMsgToJSON(validationMsg);
 			}
-							
-			
-			//---End of csv validation
-			
-		} catch (Exception e) {
-			log.error("Error validating AQ file", e);
-			response.type("application/json");
-			response.status(400);
-			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
-			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
-		Integer aqLayerId = null;
-		
-		//import data
-		try (InputStream is = request.raw().getPart("file").getInputStream()){
-			CSVReader csvReader = new CSVReader (new InputStreamReader(is));
-			String[] record;
-			record = csvReader.readNext();
-			
-			//Create the air_quality_layer record
-			aqRecord = DSL.using(JooqUtil.getJooqConfiguration())
-			.insertInto(AIR_QUALITY_LAYER
-					, AIR_QUALITY_LAYER.NAME
-					, AIR_QUALITY_LAYER.POLLUTANT_ID
-					, AIR_QUALITY_LAYER.GRID_DEFINITION_ID
-					, AIR_QUALITY_LAYER.USER_ID
-					, AIR_QUALITY_LAYER.SHARE_SCOPE
-					, AIR_QUALITY_LAYER.AQ_YEAR
-					, AIR_QUALITY_LAYER.DESCRIPTION
-					, AIR_QUALITY_LAYER.SOURCE
-					, AIR_QUALITY_LAYER.DATA_TYPE
-					, AIR_QUALITY_LAYER.FILENAME
-					, AIR_QUALITY_LAYER.UPLOAD_DATE)
-			.values(layerName, pollutantId, gridId, userProfile.get().getId(), Constants.SHARING_NONE
-					,aqYear, description, source, dataType, filename, uploadDate)
-			.returning(AIR_QUALITY_LAYER.ID, AIR_QUALITY_LAYER.NAME, AIR_QUALITY_LAYER.POLLUTANT_ID, AIR_QUALITY_LAYER.GRID_DEFINITION_ID)
-			.fetchOne();
-			
-			aqLayerId = aqRecord.value1();
-		
-			// Read the data rows and write to the db	
-			InsertValuesStep8<AirQualityCellRecord, Integer, Integer, Integer, Long, Integer, Integer, Integer, Double> batch = DSL.using(JooqUtil.getJooqConfiguration())
-					.insertInto(
-							AIR_QUALITY_CELL, 
-							AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID,
-							AIR_QUALITY_CELL.GRID_COL, 
-							AIR_QUALITY_CELL.GRID_ROW,
-							AIR_QUALITY_CELL.GRID_CELL_ID,
-							AIR_QUALITY_CELL.METRIC_ID,
-							AIR_QUALITY_CELL.SEASONAL_METRIC_ID,
-							AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID,
-							AIR_QUALITY_CELL.VALUE
-							);
-			
-			while ((record = csvReader.readNext()) != null) {
-				//Make sure this metric exists in the db. If not, add it and update pollutantMetricIdLookup now 
-				String metricNameLowerCase = record[metricIdx].toLowerCase();
-				
-				if(!pollutantMetricIdLookup.containsKey(metricNameLowerCase ) ) {
-					pollutantMetricIdLookup.put(
-							metricNameLowerCase, 
-							AirQualityUtil.createNewPollutantMetric(pollutantId, record[metricIdx]));
-				}
-				
-				String seasonalMetricLowerCase = metricNameLowerCase + "~" + record[seasonalMetricIdx].toLowerCase();
-				
-				if(!seasonalMetricIdLookup.containsKey(seasonalMetricLowerCase)) {
-					seasonalMetricIdLookup.put(
-							seasonalMetricLowerCase,
-							AirQualityUtil.createNewSeasonalMetric(pollutantMetricIdLookup.get(metricNameLowerCase), record[seasonalMetricIdx]));
-				}
+		// Add files to task processor
+		ObjectMapper mapper = new ObjectMapper();				
+		ObjectNode paramsNode = mapper.createObjectNode();				
 
-				String statisticLowerCase = record[annualMetricIdx].toLowerCase();
-				Integer statisticId=0;
-				if(statisticIdLookup.containsKey(statisticLowerCase)) {
-					statisticId = statisticIdLookup.get(statisticLowerCase);
-				} else {
-					if (statisticLowerCase != "") {
-						throw new Exception("Annual statistic contained an invalid value: " + statisticLowerCase);
-					}
-				}
-				
-				// Add a record to the batch
-				batch.values(
-						aqLayerId, 
-						Integer.valueOf(record[columnIdx]), 
-						Integer.valueOf(record[rowIdx]),
-						ApiUtil.getCellId(Integer.valueOf(record[columnIdx]), Integer.valueOf(record[rowIdx])),
-						pollutantMetricIdLookup.get(metricNameLowerCase), 
-						seasonalMetricIdLookup.get(seasonalMetricLowerCase), 
-						statisticId,
-						Double.valueOf(record[valuesIdx])
-					);
-			}
-			
-		    batch.execute();
-		    
-		    
-			//Now that the rows are in the database, let's get the cell count, mean, min, max and create the metric summary records
-			DSL.using(JooqUtil.getJooqConfiguration())
-			.insertInto(AIR_QUALITY_LAYER_METRICS
-					, AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID
-					, AIR_QUALITY_LAYER_METRICS.METRIC_ID
-					, AIR_QUALITY_LAYER_METRICS.SEASONAL_METRIC_ID
-					, AIR_QUALITY_LAYER_METRICS.ANNUAL_STATISTIC_ID
-					, AIR_QUALITY_LAYER_METRICS.CELL_COUNT
-					, AIR_QUALITY_LAYER_METRICS.MIN_VALUE
-					, AIR_QUALITY_LAYER_METRICS.MAX_VALUE
-					, AIR_QUALITY_LAYER_METRICS.MEAN_VALUE
-					, AIR_QUALITY_LAYER_METRICS.PCT_2_5
-					, AIR_QUALITY_LAYER_METRICS.PCT_97_5
-					)
-			.select(
-    		DSL.select(
-    				AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID
-    				, AIR_QUALITY_CELL.METRIC_ID
-    				, AIR_QUALITY_CELL.SEASONAL_METRIC_ID
-    				, AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID
-    				, DSL.count().as("cell_count")
-    				, DSL.min(AIR_QUALITY_CELL.VALUE).as("min_value")
-    				, DSL.max(AIR_QUALITY_CELL.VALUE).as("max_value")
-    				, DSL.avg(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("mean_value")
-    				, DSL.percentileCont(0.025).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_2_5")
-    				, DSL.percentileCont(0.975).withinGroupOrderBy(AIR_QUALITY_CELL.VALUE).cast(Double.class).as("pct_97_5")
-    				)
-    		.from(AIR_QUALITY_CELL)
-			.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(aqLayerId))
-			.groupBy(
-					AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID
-					, AIR_QUALITY_CELL.METRIC_ID
-					, AIR_QUALITY_CELL.SEASONAL_METRIC_ID
-					, AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID
-			))
-			.execute();
+		paramsNode.put("group name", groupName);
+		paramsNode.put("userId", userProfile.get().getId());
+		paramsNode.put("pollutantId", pollutantId);
+		paramsNode.put("aqYear", aqYear);
+		paramsNode.put("source", source);
+		paramsNode.put("dataType", dataType);
+		paramsNode.put("description", description);
+		paramsNode.put("gridId", gridId);
 		
-		} catch (Exception e) {
-			log.error("Error importing AQ file", e);
-			
-			response.type("application/json");
-			response.status(400);
-			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of air quality file."));
-			deleteAirQualityLayerDefinition(aqLayerId, userProfile);
-			return CoreApi.transformValMsgToJSON(validationMsg);
+		ArrayNode filesArray = mapper.createArrayNode();
+		for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
+			ObjectNode file = mapper.createObjectNode();
+			file.put("layerName", entry.getKey());
+			file.put("filestoreId", entry.getValue());
+			filesArray.add(file);
 		}
+		paramsNode.set("files",filesArray);
 		
-		response.type("application/json");
-		validationMsg.success = true;
-		return CoreApi.transformValMsgToJSON(validationMsg); 
+		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP Server"))
+		.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
+		.values("AQ import: " + groupName, paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
+		.returning(TASK_BATCH.ID).fetchOne();
+		Integer batchTaskId = rec.getId();
+
+		Task aqImportTask = new Task();
+		aqImportTask.setUserIdentifier(userProfile.get().getId());
+		aqImportTask.setType(Constants.TASK_TYPE_AQ_IMPORT);
+		aqImportTask.setBatchId(batchTaskId);
+		aqImportTask.setName("AQ import: " + groupName);
+		aqImportTask.setParameters(paramsNode.toString());
+		String aqImportTaskUUID = UUID.randomUUID().toString();
+		aqImportTask.setUuid(aqImportTaskUUID);
+		TaskQueue.writeTaskToQueue(aqImportTask);
+		// Return success
+		return CoreApi.getSuccessResponse(request, response, 200, csvFilestoreIds.entrySet().size() + " AQ files saved for processing.");
 	}
 	
 	// This version of this method is used when an error occurs during AQ surface upload to clean up
