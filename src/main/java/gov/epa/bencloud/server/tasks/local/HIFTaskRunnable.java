@@ -544,12 +544,12 @@ public class HIFTaskRunnable implements Runnable {
 		if(hif.ethnicity == null) {
 			hif.ethnicity = h.get("ethnicity_id", Integer.class);
 		}
-		if(hif.incidence == null) {
-			hif.incidence = h.get("incidence_dataset_id", Integer.class);
-		}
-		if(hif.prevalence == null) {
-			hif.prevalence = h.get("prevalence_dataset_id", Integer.class);
-		}
+		// if(hif.incidence == null) {
+		// 	hif.incidence = h.get("incidence_dataset_id", Integer.class);
+		// }
+		// if(hif.prevalence == null) {
+		// 	hif.prevalence = h.get("prevalence_dataset_id", Integer.class);
+		// }
 		if(hif.metric == null) {
 			hif.metric = h.get("metric_id", Integer.class);
 		}
@@ -592,9 +592,9 @@ public class HIFTaskRunnable implements Runnable {
 		// 	}				
 		// }
 
-		if(hif.variable == null) {
-			hif.variable = h.get("variable_dataset_id", Integer.class);
-		}
+		// if(hif.variable == null) {
+		// 	hif.variable = h.get("variable_dataset_id", Integer.class);
+		// }
 		if(hif.startDay == null) {
 			if(h.get("start_day") == null) {
 				hif.startDay = 1;
