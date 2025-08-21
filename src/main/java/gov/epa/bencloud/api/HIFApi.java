@@ -6,9 +6,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +74,7 @@ import gov.epa.bencloud.api.util.IncidenceUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionGroupRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
@@ -592,6 +597,8 @@ public class HIFApi {
 		if(!showAll || !CoreApi.isAdmin(userProfile)) {
 			filterCondition = filterCondition.and(HEALTH_IMPACT_FUNCTION.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(HEALTH_IMPACT_FUNCTION.USER_ID.eq(userId)));
 		}
+
+		filterCondition = filterCondition.and(HEALTH_IMPACT_FUNCTION.ARCHIVED.eq((short) 0));
 
 		Integer filteredRecordsCount = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
@@ -1802,6 +1809,41 @@ public class HIFApi {
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		
+		response.type("application/json");
+		validationMsg.success = true;
+		return CoreApi.transformValMsgToJSON(validationMsg); 
+	}
+
+
+	public static Object archiveHealthImpactFunction(Request request, Response response, Optional<UserProfile> userProfile) {
+	
+		ValidationMessage validationMsg = new ValidationMessage();
+		Integer id;
+
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		HealthImpactFunctionRecord hifResult = create.selectFrom(HEALTH_IMPACT_FUNCTION).where(HEALTH_IMPACT_FUNCTION.ID.eq(id)).fetchAny();
+		if(hifResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Nobody can archive shared HIFs
+		//All users can archive their own HIFs
+		//Admins can archive any non-shared HIFs
+		if(hifResult.getShareScope() == Constants.SHARING_ALL || !(hifResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		hifResult.setArchived((short) 1);
+
+		hifResult.store();
+
 		response.type("application/json");
 		validationMsg.success = true;
 		return CoreApi.transformValMsgToJSON(validationMsg); 

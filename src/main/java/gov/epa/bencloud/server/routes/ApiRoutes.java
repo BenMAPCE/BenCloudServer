@@ -200,6 +200,14 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getAllHealthImpactFunctions(request, response, getUserProfile(request, response));
 		});
 
+
+		/*
+		 * Archive a health impact function dataset
+		 */
+		service.post(apiPrefix + "/health-impact-function/:id", (request, response) -> {
+			return HIFApi.archiveHealthImpactFunction(request, response, getUserProfile(request, response));
+		});
+
 		/*
 		 * POST a health impact function dataset
 		 */
