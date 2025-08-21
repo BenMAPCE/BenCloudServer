@@ -851,10 +851,10 @@ public class HIFApi {
 			record = csvReader.readNext();
 			for(int i=0; i < record.length; i++) {
 				switch(record[i].toLowerCase().replace(" ", "")) {
-				case "endpoint":
+				case "healtheffect":
 					endpointIdx=i;
 					break;
-				case "endpointgroup":
+				case "healtheffectcategory":
 					endpointGroupIdx=i;
 					break;
 				case "pollutant":
@@ -890,7 +890,7 @@ public class HIFApi {
 				case "otherpollutants":
 					otherPollutantIdx=i;
 					break;
-				case "qualifier":
+				case "riskmodeldetails":
 					qualifierIdx=i;
 					break;
 				case "reference":
@@ -923,7 +923,7 @@ public class HIFApi {
 				case "distributionbeta":
 					distBetaIdx=i;
 					break;	
-				case "parameter1beta":
+				case "standarderror":
 					param1Idx=i;
 					break;
 				case "parameter2beta":
@@ -992,6 +992,7 @@ public class HIFApi {
 			int countStudyYearTypeError = 0;
 			int countStartAgeTypeError = 0;
 			int countEndAgeTypeError = 0;
+			int countAgeRangeError = 0;
 
 			int countMissingEndpoint = 0;
 			int countMissingEndpointGroup = 0;
@@ -1000,15 +1001,10 @@ public class HIFApi {
 
 			int countBetaError = 0;
 			int countDistBetaError = 0;
-			int countParam1TypeError = 0;
 			int countParam1Error = 0;
-			int countParam2TypeError = 0;
 			int countParam2Error = 0;
-			int countParamATypeError = 0;
 			int countParamAError = 0;
-			int countParamBTypeError = 0;
 			int countParamBError = 0;
-			int countParamCTypeError = 0;
 			int countParamCError = 0;
 
 			int countBaselineFunctionError = 0;
@@ -1130,6 +1126,10 @@ public class HIFApi {
 					countEndAgeTypeError++;
 				}	
 
+				if(Integer.parseInt(record[startAgeIdx]) > Integer.parseInt(record[endAgeIdx])) {
+					countAgeRangeError++;
+				}
+
 				//beta should be a double and >= 0
 				str = record[betaIdx];
 				try {
@@ -1148,9 +1148,6 @@ public class HIFApi {
 				str = record[param1Idx];
 				try {
 					double dbl = Double.parseDouble(str);
-					if (dbl<0) {
-						countParam1TypeError++;
-					}
 				} catch(NumberFormatException e){
 					countParam1Error ++;
 				}
@@ -1159,9 +1156,6 @@ public class HIFApi {
 				str = record[param2Idx];
 				try {
 					double dbl = Double.parseDouble(str);
-					if (dbl<0) {
-						countParam2TypeError++;
-					}
 				} catch(NumberFormatException e){
 					countParam2Error ++;
 				}
@@ -1170,9 +1164,6 @@ public class HIFApi {
 				str = record[paramAIdx];
 				try {
 					double dbl = Double.parseDouble(str);
-					if (dbl<0) {
-						countParamATypeError++;
-					}
 				} catch(NumberFormatException e){
 					countParamAError ++;
 				}
@@ -1181,9 +1172,6 @@ public class HIFApi {
 				str = record[paramBIdx];
 				try {
 					double dbl = Double.parseDouble(str);
-					if (dbl<0) {
-						countParamBTypeError++;
-					}
 				} catch(NumberFormatException e){
 					countParamBError ++;
 				}
@@ -1192,9 +1180,6 @@ public class HIFApi {
 				str = record[paramCIdx];
 				try {
 					double dbl = Double.parseDouble(str);
-					if (dbl<0) {
-						countParamCTypeError++;
-					}
 				} catch(NumberFormatException e){
 					countParamCError ++;
 				}
@@ -1300,6 +1285,22 @@ public class HIFApi {
 				validationMsg.messages.add(msg);
 			}
 
+			if(countAgeRangeError>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countAgeRangeError == 1) {
+					strRecord = String.valueOf(countAgeRangeError) + " record has an invalid age range.";
+				}
+				else {
+					strRecord = String.valueOf(countAgeRangeError) + " records have an invalid age range.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+			
+
 			if(countBetaError > 0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -1335,25 +1336,12 @@ public class HIFApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countParam1Error == 1) {
-					strRecord = String.valueOf(countParam1Error) + " record has a Parameter 1 Beta value that is not a valid number.";
+					strRecord = String.valueOf(countParam1Error) + " record has a Standard Error value that is not a valid number.";
 				}
 				else {
-					strRecord = String.valueOf(countParam1Error) + " records have Parameter 1 Beta values that are not valid numbers.";
+					strRecord = String.valueOf(countParam1Error) + " records have Standard Error values that are not valid numbers.";
 				}
 				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(countParam1TypeError > 0) {
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countParam1TypeError == 1) {
-					strRecord = String.valueOf(countParam1TypeError) + " record has";
-				}
-				else {
-					strRecord = String.valueOf(countParam1TypeError) + " records have";
-				}
-				msg.message = strRecord + " Parameter 1 Beta values below zero.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1372,19 +1360,6 @@ public class HIFApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
-			if(countParam2TypeError > 0) {
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countParam2Error == 1) {
-					strRecord = String.valueOf(countParam2TypeError) + " record has";
-				}
-				else {
-					strRecord = String.valueOf(countParam2TypeError) + " records have";
-				}
-				msg.message = strRecord + " Parameter 2 Beta values below zero.";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
 
 			if(countParamAError > 0) {
 				validationMsg.success = false;
@@ -1397,19 +1372,6 @@ public class HIFApi {
 					strRecord = String.valueOf(countParamAError) + " records have A values that are not valid numbers.";
 				}
 				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(countParamATypeError > 0) {
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countParamATypeError == 1) {
-					strRecord = String.valueOf(countParamATypeError) + " record has";
-				}
-				else {
-					strRecord = String.valueOf(countParamATypeError) + " records have";
-				}
-				msg.message = strRecord + " an A value below zero.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1428,19 +1390,7 @@ public class HIFApi {
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
-			if(countParamBTypeError > 0) {
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countParamBTypeError == 1) {
-					strRecord = String.valueOf(countParamBTypeError) + " record has";
-				}
-				else {
-					strRecord = String.valueOf(countParamBTypeError) + " records have";
-				}
-				msg.message = strRecord + " a B value below zero.";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
+
 
 			if(countParamCError > 0) {
 				validationMsg.success = false;
@@ -1453,19 +1403,6 @@ public class HIFApi {
 					strRecord = String.valueOf(countParamCError) + " records have C values that are not valid numbers.";
 				}
 				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-			if(countParamCTypeError > 0) {
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "";
-				if(countParamCTypeError == 1) {
-					strRecord = String.valueOf(countParamCTypeError) + " record has";
-				}
-				else {
-					strRecord = String.valueOf(countParamCTypeError) + " records have";
-				}
-				msg.message = strRecord + " a Cvalue below zero.";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1499,10 +1436,10 @@ public class HIFApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMissingEndpoint == 1) {
-					strRecord = String.valueOf(countMissingEndpoint) + " record is missing a Endpoint value.";
+					strRecord = String.valueOf(countMissingEndpoint) + " record is missing a Health Effect value.";
 				}
 				else {
-					strRecord = String.valueOf(countMissingEndpoint) + " records are missing Endpoint values.";
+					strRecord = String.valueOf(countMissingEndpoint) + " records are missing Health Effect values.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1512,7 +1449,7 @@ public class HIFApi {
 			if(lstUndefinedEndpoints.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Endpoint values are not defined: " + String.join(",", lstUndefinedEndpoints) + ".";
+				msg.message = "The following Health Effect values are not defined: " + String.join(",", lstUndefinedEndpoints) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1522,10 +1459,10 @@ public class HIFApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMissingEndpointGroup == 1) {
-					strRecord = String.valueOf(countMissingEndpointGroup) + " record is missing a Endpoint Group value.";
+					strRecord = String.valueOf(countMissingEndpointGroup) + " record is missing a Health Effect Category value.";
 				}
 				else {
-					strRecord = String.valueOf(countMissingEndpointGroup) + " records are missing Endpoint Group values.";
+					strRecord = String.valueOf(countMissingEndpointGroup) + " records are missing Health Effect Category values.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1565,7 +1502,7 @@ public class HIFApi {
 			if(lstUndefinedEndpointGroups.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Endpoint Group values are not defined: " + String.join(",", lstUndefinedEndpointGroups) + ".";
+				msg.message = "The following Health Effect Category values are not defined: " + String.join(",", lstUndefinedEndpointGroups) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1627,11 +1564,20 @@ public class HIFApi {
 			//---End of csv validation
 			
 		} catch (Exception e) {
-			log.error("Error validating incidence file", e);
+			log.error("Error validating health impact function upload", e);
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of incidence file."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of health impact functions."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
+		if(validationMsg.messages.size() > 0) {
+			log.error("Error validating health impact function upload");
+			response.type("application/json");
+			//response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of health impact functions."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 		

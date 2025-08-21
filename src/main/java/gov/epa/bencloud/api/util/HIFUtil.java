@@ -75,10 +75,10 @@ public class HIFUtil {
     public static String validateModelColumnHeadings(int endpointIdx, int endpointGroupIdx, int pollutantIdx, int metricIdx, int seasonalMetricIdx, int metricStatisticIdx, int timingIdx, int authorIdx, int studyYearIdx, int studyLocIdx, int otherPollutantIdx, int qualifierIdx, int referenceIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int baselineFunctionIdx, int betaIdx, int distBetaIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int paramCIdx, int paramCNameIdx, int distributionIdx) {
 		StringBuilder b = new StringBuilder();
 		if(endpointGroupIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "Endpoint Group");
+			b.append((b.length()==0 ? "" : ", ") + "Health Effect");
 		}
 		if(endpointIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "Endpoint");
+			b.append((b.length()==0 ? "" : ", ") + "Health Effect Category");
 		}
 		if(pollutantIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Pollutant");
@@ -108,7 +108,7 @@ public class HIFUtil {
 			b.append((b.length()==0 ? "" : ", ") + "Other Pollutants");
 		}
 		if(qualifierIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "Qualifier");
+			b.append((b.length()==0 ? "" : ", ") + "Risk Model Details");
 		}
 		if(referenceIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Reference");
@@ -141,7 +141,7 @@ public class HIFUtil {
 			b.append((b.length()==0 ? "" : ", ") + "Distribution Beta");
 		}
         if(param1Idx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "Parameter 1 Beta");
+			b.append((b.length()==0 ? "" : ", ") + "Standard Error");
 		}
         if(param2Idx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Parameter 2 Beta");
