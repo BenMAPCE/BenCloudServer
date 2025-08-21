@@ -32,8 +32,10 @@ public class ExposureConfig {
 	public Integer ethnicity = null;
 	public Integer gender = null;
 	public Integer metric = null;
-	public Integer seasonalMetric = null;
-	public Integer metricStatistic = null;
+	public Integer seasonalMetric = null; //TODO: remove once fully replaced by Timing
+	public Integer metricStatistic = null; //TODO: remove once fully replaced by Timing
+
+	public Integer timing = null;
 		
 	public Integer variable = null;
 	public Integer startDay = null;

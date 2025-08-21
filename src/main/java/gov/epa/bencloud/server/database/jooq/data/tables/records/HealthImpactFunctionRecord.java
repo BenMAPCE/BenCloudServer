@@ -570,6 +570,20 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         return (String) get(38);
     }
 
+    /**
+     * Setter for <code>data.health_impact_function.timing_id</code>.
+     */
+    public void setTimingId(Integer value) {
+        set(39, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.timing_id</code>.
+     */
+    public Integer getTimingId() {
+        return (Integer) get(39);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -593,7 +607,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Create a detached, initialised HealthImpactFunctionRecord
      */
-    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Integer incidenceDatasetId, Integer prevalenceDatasetId, Integer variableDatasetId, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl) {
+    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Integer incidenceDatasetId, Integer prevalenceDatasetId, Integer variableDatasetId, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl, Integer timingId) {
         super(HealthImpactFunction.HEALTH_IMPACT_FUNCTION);
 
         setId(id);
@@ -635,5 +649,6 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         setHeroId(heroId);
         setEpaHeroUrl(epaHeroUrl);
         setAccessUrl(accessUrl);
+        setTimingId(timingId);
     }
 }

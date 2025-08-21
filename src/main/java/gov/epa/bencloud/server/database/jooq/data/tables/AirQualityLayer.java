@@ -17,7 +17,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row12;
+import org.jooq.Row13;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -108,6 +108,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
      * The column <code>data.air_quality_layer.upload_date</code>.
      */
     public final TableField<AirQualityLayerRecord, LocalDateTime> UPLOAD_DATE = createField(DSL.name("upload_date"), SQLDataType.LOCALDATETIME(6), this, "");
+
+    /**
+     * The column <code>data.air_quality_layer.layer_group</code>.
+     */
+    public final TableField<AirQualityLayerRecord, String> LAYER_GROUP = createField(DSL.name("layer_group"), SQLDataType.CLOB, this, "");
 
     private AirQualityLayer(Name alias, Table<AirQualityLayerRecord> aliased) {
         this(alias, aliased, null);
@@ -206,11 +211,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row12 type methods
+    // Row13 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<Integer, String, Integer, Integer, String, Short, String, String, String, String, String, LocalDateTime> fieldsRow() {
-        return (Row12) super.fieldsRow();
+    public Row13<Integer, String, Integer, Integer, String, Short, String, String, String, String, String, LocalDateTime, String> fieldsRow() {
+        return (Row13) super.fieldsRow();
     }
 }

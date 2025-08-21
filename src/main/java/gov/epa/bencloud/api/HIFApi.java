@@ -153,6 +153,7 @@ public class HIFApi {
 				POLLUTANT_METRIC.NAME.as("metric"),
 				SEASONAL_METRIC.NAME.as("seasonal_metric"),
 				STATISTIC_TYPE.NAME.as("metric_statistic"),
+				TIMING_TYPE.NAME.as("timing"),
 				hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
 				hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
 				hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
@@ -185,6 +186,7 @@ public class HIFApi {
 				.leftJoin(pre).on(HIF_RESULT_FUNCTION_CONFIG.PREVALENCE_DATASET_ID.eq((pre.ID)))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+				.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
 				.offset((page * rowsPerPage) - rowsPerPage)
 				.limit(rowsPerPage)
 				//.fetchSize(100000) //JOOQ doesn't like this when Postgres is in autoCommmit mode
@@ -340,6 +342,7 @@ public class HIFApi {
 						POLLUTANT_METRIC.NAME.as("metric"),
 						SEASONAL_METRIC.NAME.as("seasonal_metric"),
 						STATISTIC_TYPE.NAME.as("metric_statistic"),
+						TIMING_TYPE.NAME.as("timing"),
 						hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
 						hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
 						hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
@@ -370,6 +373,7 @@ public class HIFApi {
 						.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 						.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 						.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+						.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
 						.fetch();
 				log.info("After fetch");
 				

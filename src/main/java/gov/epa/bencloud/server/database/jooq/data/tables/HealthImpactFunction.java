@@ -242,6 +242,11 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
      */
     public final TableField<HealthImpactFunctionRecord, String> ACCESS_URL = createField(DSL.name("access_url"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>data.health_impact_function.timing_id</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
+
     private HealthImpactFunction(Name alias, Table<HealthImpactFunctionRecord> aliased) {
         this(alias, aliased, null);
     }

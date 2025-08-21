@@ -103,6 +103,8 @@ public class HIFTaskRunnable implements Runnable {
 			
 			//TODO: This will need to change as we start supporting more metrics within a single AQ layer.
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
+			// Additionally, EPA wants to replace hif.SeasonalMetric and hif.MetricStatistics with one Timing column.
+			// Therefore SeasonalMetric will only be defined by pollutant or AQ data; MetricStatistics will always be "Mean" when Timing = "Annual"
 			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId);
 			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
 			
@@ -112,7 +114,7 @@ public class HIFTaskRunnable implements Runnable {
 			// incidenceLists contains an array of incidence maps for each HIF
 			//ArrayList<Map<Long, Map<Integer, Double>>> incidenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
 			//ArrayList<Map<Long, Map<Integer, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<Integer, Double>>>();
-			//YY:update incidence and prevalence key to include gender, race, ethnicity, and age range
+			//Update incidence and prevalence key to include gender, race, ethnicity, and age range
 			ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> incidenceLists = new ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>>();
 			ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>> prevalenceLists = new ArrayList<Map<Long, Map<PopulationCategoryKey, Double>>>();
 			
@@ -152,7 +154,7 @@ public class HIFTaskRunnable implements Runnable {
 				Record h = HIFUtil.getFunctionDefinition(hif.hifId);
 				hif.hifRecord = h.intoMap();
 
-				// Override hif config where user has not provided a value
+				// Override hif config where user (function in HEALTH_IMPACT_FUNCTION) has not provided
 				updateHifConfigValues(hif, h);
 				
 				//This will get the incidence and prevalence dataset for the year specified in the hif config
@@ -269,7 +271,8 @@ public class HIFTaskRunnable implements Runnable {
 
 					//If aq cells have metrics that match the current hif metric, get the value and continue
 					//Else, skip this cell
-					//TODO: update to use seasonal metric and statistic
+					// seasonal metric and statistic are replaced by timing 
+					//TODO: add code to handel daily AQ data.
 
 					for(Map<Integer, AirQualityCellMetric> baselineCellMetric : baselineCellMetrics.values()) {
 						for(AirQualityCellMetric airQualityCellMetric : baselineCellMetric.values()) {
@@ -308,7 +311,11 @@ public class HIFTaskRunnable implements Runnable {
 					}
 					
 					double seasonalScalar = 1.0;
-					if((int)hifRecord.get("metric_statistic") == 0) { // NONE
+					// if((int)hifRecord.get("metric_statistic") == 0) { // NONE
+					// 	seasonalScalar = hifConfig.totalDays.doubleValue();
+					// }
+					if((int)hifRecord.get("timing_id")==2){
+						//Daily
 						seasonalScalar = hifConfig.totalDays.doubleValue();
 					}
 										
@@ -547,32 +554,43 @@ public class HIFTaskRunnable implements Runnable {
 			hif.metric = h.get("metric_id", Integer.class);
 		}
 		if(hif.seasonalMetric == null) {
-			hif.seasonalMetric = h.get("seasonal_metric_id", Integer.class);
+		 	hif.seasonalMetric = h.get("seasonal_metric_id", Integer.class); //keep for backward compatibility. 
 		}
 		if(hif.metricStatistic == null) {
-			hif.metricStatistic = h.get("metric_statistic", Integer.class);
+		 	hif.metricStatistic = h.get("metric_statistic", Integer.class); //keep for backward compatibility. 
+		}
+		if(hif.timing == null){
+			hif.timing = h.get("timing_id", Integer.class);
+			//for backward compatibility, keep populating and showing metric statistic for now. Remove when confirm we do not need it. 
+			if(hif.timing.equals(1)){
+				hif.metricStatistic = 1;
+			}
+			else if(hif.timing.equals(2)){
+				hif.metricStatistic = 0;
+			}
 		}
 
 		//This is a temporary solution to the fact that user's can't select incidence and 
 		//the standard EPA functions don't have incidence assigned in the db
 		// If the UI passes the year and incidence hints to the methods that get health impact functions, these should already be set
-		// TODO: 8/25/2022 - This should be reviewed and, probably, removed at this point
-		if(h.get("function_text", String.class).toLowerCase().contains("incidence")) {
-			if(hif.incidence==null) {
-				if(h.get("endpoint_group_id").equals(12)) {
-					hif.incidence = 1; //Mortality Incidence
-					hif.incidenceYear = 2020;
-				} else {
-					hif.incidence = 12; //Other Incidence
-					hif.incidenceYear = 2014;
-				}
-			}			
-		} else if (h.get("function_text", String.class).toLowerCase().contains("prevalence")) {
-			if(hif.prevalence==null) {
-					hif.prevalence = 19; //Prevalence
-					hif.prevalenceYear = 2008;
-			}				
-		}
+		// These are commented out because we do not have incidence_id = 1 anymore
+		// Use better logic to setup default incidence/prevalence dataset when the tool is not able to automatically select one. 
+		// if(h.get("function_text", String.class).toLowerCase().contains("incidence")) {
+		// 	if(hif.incidence==null) {
+		// 		if(h.get("endpoint_group_id").equals(12)) {
+		// 			hif.incidence = 1; //Mortality Incidence
+		// 			hif.incidenceYear = 2020;
+		// 		} else {
+		// 			hif.incidence = 12; //Other Incidence
+		// 			hif.incidenceYear = 2014;
+		// 		}
+		// 	}			
+		// } else if (h.get("function_text", String.class).toLowerCase().contains("prevalence")) {
+		// 	if(hif.prevalence==null) {
+		// 			hif.prevalence = 19; //Prevalence
+		// 			hif.prevalenceYear = 2008;
+		// 	}				
+		// }
 
 		if(hif.variable == null) {
 			hif.variable = h.get("variable_dataset_id", Integer.class);
@@ -584,7 +602,7 @@ public class HIFTaskRunnable implements Runnable {
 				hif.startDay = h.get("start_day", Integer.class);
 			}
 			// TODO: TEMPORARY OVERRIDE - With 1.5.8.15, the desktop changed the ozone season to April - September. 
-			// The cloud db still has May - September. We are forcing the new season definition here for now
+			// The cloud hif in db still has May - September. We are forcing the new season definition here for now
 			// until we can revisit this topic
 			if(h.get("pollutant_id", Integer.class) == 4) {
 				hif.startDay = 90;
@@ -595,6 +613,9 @@ public class HIFTaskRunnable implements Runnable {
 				hif.endDay = 365;
 			} else {
 				hif.endDay = h.get("end_day", Integer.class);
+			}
+			if(h.get("pollutant_id", Integer.class) == 4) {
+				hif.endDay = 272;
 			}
 		}
 		

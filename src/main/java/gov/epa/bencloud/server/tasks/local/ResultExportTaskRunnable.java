@@ -18,6 +18,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.RACE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.SEASONAL_METRIC;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.STATISTIC_TYPE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.TASK_COMPLETE;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.TIMING_TYPE;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_FUNCTION;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_RESULT_DATASET;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_RESULT_FUNCTION_CONFIG;
@@ -431,6 +432,7 @@ public class ResultExportTaskRunnable implements Runnable {
 									POLLUTANT_METRIC.NAME.as("metric"),
 									SEASONAL_METRIC.NAME.as("seasonal_metric"),
 									STATISTIC_TYPE.NAME.as("metric_statistic"),
+									TIMING_TYPE.NAME.as("timing"),
 									hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
 									hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
 									hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
@@ -459,6 +461,7 @@ public class ResultExportTaskRunnable implements Runnable {
 									.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 									.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 									.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+									.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
 									.fetch();
 							
 							//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
@@ -589,6 +592,7 @@ public class ResultExportTaskRunnable implements Runnable {
 									POLLUTANT_METRIC.NAME.as("metric"),
 									SEASONAL_METRIC.NAME.as("seasonal_metric"),
 									STATISTIC_TYPE.NAME.as("metric_statistic"),
+									TIMING_TYPE.NAME.as("timing"),
 									HEALTH_IMPACT_FUNCTION.START_AGE,
 									HEALTH_IMPACT_FUNCTION.END_AGE,
 									VALUATION_FUNCTION.START_AGE.as("valuation_start_age"),
@@ -620,6 +624,7 @@ public class ResultExportTaskRunnable implements Runnable {
 									.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 									.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 									.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+									.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(TIMING_TYPE.ID))
 									.fetch();
 							
 							// Add in valuation function information

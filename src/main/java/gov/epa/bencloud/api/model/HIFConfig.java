@@ -34,6 +34,7 @@ public class HIFConfig {
 	public Integer metric = null;
 	public Integer seasonalMetric = null;
 	public Integer metricStatistic = null;
+	public Integer timing = null;
 	
 	//incidence and prevlance may use different race, ethnicity, and/or gender than 
 	//the functions configuration due to data availability
@@ -49,7 +50,7 @@ public class HIFConfig {
 	public Integer prevalenceYear = null;
 	public Integer prevalenceRace = null;
 	public Integer prevalenceEthnicity = null;
-	public Integer prevalenceGender = null;
+	public Integer prevalenceGender = null;	
 	
 	public Integer variable = null;
 	public Integer startDay = null;
@@ -88,9 +89,10 @@ public class HIFConfig {
 		this.prevalenceEthnicity = JSONUtil.getInteger(function, "prevalence_ethnicity");
 		this.prevalenceGender = JSONUtil.getInteger(function, "prevalence_gender");
 		
-		this.variable = JSONUtil.getInteger(function, "variable");
+		this.variable = JSONUtil.getInteger(function, "variable");		
 		
 		//TODO: Add code to allow user to specify metric, seasonal metric, and metric statistic?
+		//this.timing = JSONUtil.getInteger(function, "timing_id"); //not in use for now
 	}
 	
 	/**
@@ -123,7 +125,8 @@ public class HIFConfig {
 		b.append("Pollutant: ").append(hifRecord.getOrDefault("pollutant_friendly_name", hifRecord.getOrDefault("pollutant_name", "Null"))).append("\n");
 		b.append("Metric: ").append(hifRecord.getOrDefault("metric_name", "")).append("\n");
 		b.append("Seasonal Metric: ").append(hifRecord.get("seasonal_metric_name") == null ? "Null" : hifRecord.get("seasonal_metric_name")).append("\n"); 
-		b.append("Metric Statistic: ").append(hifRecord.getOrDefault("metric_statistic_name", "")).append("\n");
+		b.append("Metric Statistic: ").append(hifRecord.getOrDefault("metric_statistic_name", "")).append("\n");//keep for backward compatibility
+		b.append("Timing: ").append(hifRecord.getOrDefault("timing_name", "")).append("\n");
 		
 		if(hifRecord.get("other_pollutants") != null) {
 			b.append("Other Pollutants: ").append(hifRecord.get("other_pollutants")).append("\n");

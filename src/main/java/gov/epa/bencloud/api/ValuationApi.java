@@ -153,6 +153,7 @@ public class ValuationApi {
 				POLLUTANT_METRIC.NAME.as("metric"),
 				SEASONAL_METRIC.NAME.as("seasonal_metric"),
 				STATISTIC_TYPE.NAME.as("metric_statistic"),
+				TIMING_TYPE.NAME.as("timing"),
 				HEALTH_IMPACT_FUNCTION.START_AGE,
 				HEALTH_IMPACT_FUNCTION.END_AGE,
 				VALUATION_FUNCTION.START_AGE.as("valuation_start_age"),
@@ -188,6 +189,7 @@ public class ValuationApi {
 				.leftJoin(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 				.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 				.leftJoin(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+				.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
 				//.offset((page * rowsPerPage) - rowsPerPage)
 				//.limit(rowsPerPage)
 				.fetch();
