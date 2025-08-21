@@ -124,9 +124,14 @@ public class HIFConfig {
 		
 		b.append("Pollutant: ").append(hifRecord.getOrDefault("pollutant_friendly_name", hifRecord.getOrDefault("pollutant_name", "Null"))).append("\n");
 		b.append("Metric: ").append(hifRecord.getOrDefault("metric_name", "")).append("\n");
-		b.append("Seasonal Metric: ").append(hifRecord.get("seasonal_metric_name") == null ? "Null" : hifRecord.get("seasonal_metric_name")).append("\n"); 
-		b.append("Metric Statistic: ").append(hifRecord.getOrDefault("metric_statistic_name", "")).append("\n");//keep for backward compatibility
-		b.append("Timing: ").append(hifRecord.getOrDefault("timing_name", "")).append("\n");
+		String tmpTiming = hifRecord.getOrDefault("timing_name", "").toString();
+		if(tmpTiming.isEmpty()){
+			b.append("Seasonal Metric: ").append(hifRecord.get("seasonal_metric_name") == null ? "Null" : hifRecord.get("seasonal_metric_name")).append("\n"); 
+			b.append("Metric Statistic: ").append(hifRecord.getOrDefault("metric_statistic_name", "")).append("\n");//keep for backward compatibility
+		}
+		else{
+			b.append("Timing: ").append(hifRecord.getOrDefault("timing_name", "")).append("\n");
+		}		
 		
 		if(hifRecord.get("other_pollutants") != null) {
 			b.append("Other Pollutants: ").append(hifRecord.get("other_pollutants")).append("\n");

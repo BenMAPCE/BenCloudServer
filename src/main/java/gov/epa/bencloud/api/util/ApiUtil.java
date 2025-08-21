@@ -63,6 +63,7 @@ import gov.epa.bencloud.server.tasks.TaskUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import spark.Request;
 import spark.Response;
+import org.slf4j.Logger;
 
 /**
  * @author jimanderton
@@ -331,7 +332,7 @@ public class ApiUtil {
 	 */
 	public static void cancelQueriesByUuid(String uuid) { 
 		try {
-			Result<Record1<Integer>> pidRecords = DSL.using(JooqUtil.getJooqConfiguration())
+			Result<Record1<Integer>> pidRecords = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 			.select(DSL.field("pid", Integer.class))
 			.from("pg_stat_activity")
 			.where(DSL.field("application_name").eq(uuid))
@@ -345,6 +346,7 @@ public class ApiUtil {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.out.println("Error canceling queries for taskUuid: " + uuid);
 		}
 	}
 	
