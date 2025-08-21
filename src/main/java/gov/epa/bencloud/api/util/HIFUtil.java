@@ -55,6 +55,129 @@ import gov.epa.bencloud.server.tasks.model.Task;
 public class HIFUtil {
 
 	/**
+     * 
+     * @param columnIdx
+     * @param rowIdx
+     * @param endpointIdx
+     * @param endpointGroupIdx
+     * @param raceIdx
+     * @param genderIdx
+     * @param ethnicityIdx
+     * @param yearIdx
+     * @param startAgeIdx
+     * @param endAgeIdx
+     * @param typeIdx
+     * @param valueIdx
+     * @return a string representing the missing columns
+     */
+
+
+    public static String validateModelColumnHeadings(int endpointIdx, int endpointGroupIdx, int pollutantIdx, int metricIdx, int seasonalMetricIdx, int metricStatisticIdx, int timingIdx, int authorIdx, int studyYearIdx, int studyLocIdx, int otherPollutantIdx, int qualifierIdx, int referenceIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int baselineFunctionIdx, int betaIdx, int distBetaIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int paramCIdx, int paramCNameIdx, int distributionIdx) {
+		StringBuilder b = new StringBuilder();
+		if(endpointGroupIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Health Effect");
+		}
+		if(endpointIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Health Effect Category");
+		}
+		if(pollutantIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Pollutant");
+		}
+		if(metricIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Metric");
+		}
+		if(seasonalMetricIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Seasonal Metric");
+		}
+		if(metricStatisticIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Metric Statistic");
+		}
+		if(timingIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Timing");
+		}
+		if(authorIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Study Author");
+		}
+		if(studyYearIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Study Year");
+		}
+		if(studyLocIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Study Location");
+		}
+		if(otherPollutantIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Other Pollutants");
+		}
+		if(qualifierIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Risk Model Details");
+		}
+		if(referenceIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Reference");
+		}
+		if(ethnicityIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Ethnicity");
+		}
+		if(raceIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Race");
+		}
+		if(genderIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Gender");
+		}
+        if(startAgeIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Start Age");
+		}
+		if(endAgeIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "End Age");
+		}
+        if(functionIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Function");
+		}
+        if(baselineFunctionIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Baseline Function");
+		}
+        if(betaIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Beta");
+		}
+        if(distBetaIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Distribution Beta");
+		}
+        if(param1Idx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Standard Error");
+		}
+        if(param2Idx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Parameter 2 Beta");
+		}
+        if(paramAIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "A");
+		}
+        if(paramANameIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Name A");
+		}
+		if(paramBIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "B");
+		}
+        if(paramBNameIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Name B");
+		}
+		if(paramCIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "C");
+		}
+        if(paramCNameIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Name C");
+		}
+		// if(heroIdIdx == -999) {
+		// 	b.append((b.length()==0 ? "" : ", ") + "HERO ID");
+		// }
+		// if(heroUrlIdx == -999) {
+		// 	b.append((b.length()==0 ? "" : ", ") + "EPA HERO URL");
+		// }
+		// if(accessUrlIdx == -999) {
+		// 	b.append((b.length()==0 ? "" : ", ") + "Access URL");
+		// }
+
+		return b.toString();
+	}
+
+	/**
 	 * 
 	 * @param id
 	 * @return an array of functions (function, baseline function) for a given health impact function.
@@ -1218,4 +1341,86 @@ public class HIFUtil {
 		return msg;
 	}
 
+ /**
+     * 
+     * @return a mapping of race names to Ids
+     */
+    public static Map<String, Integer> getRaceIdLookup() {
+        Map<String, Integer> raceMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(RACE.NAME), RACE.ID)
+            .from(RACE)
+            .fetchMap(DSL.lower(RACE.NAME), RACE.ID);
+        return raceMetricMap;}
+    
+    /**
+     * 
+     * @return mapping of ethnicity names to Ids
+     */
+    public static Map<String, Integer> getEthnicityIdLookup() {
+        Map<String, Integer> ethnicityMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(ETHNICITY.NAME), ETHNICITY.ID)
+            .from(ETHNICITY)
+            .fetchMap(DSL.lower(ETHNICITY.NAME), ETHNICITY.ID);
+        return ethnicityMetricMap;}
+    
+    /**
+     * 
+     * @return a mapping of gender names to Ids
+     */
+    public static Map<String, Integer> getGenderIdLookup() {
+        Map<String, Integer> genderMetricMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(GENDER.NAME), GENDER.ID)
+            .from(GENDER)
+            .fetchMap(DSL.lower(GENDER.NAME), GENDER.ID);
+        return genderMetricMap;}
+
+
+    /**
+     * 
+     * @param endpointGroupId
+     * @return a mapping of endpoint names to endpoint ids for a given endpoint group Id
+     */
+    public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
+        Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
+            .from(ENDPOINT)
+            .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
+            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
+        return endpointMap;}    
+    
+    
+    /**
+     * 
+     * @return a mapping of endpoint group names to Ids
+     */
+    public static Map<String, Integer> getEndpointGroupIdLookup() {
+        Map<String, Integer> endpointGroupMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(ENDPOINT_GROUP.NAME), ENDPOINT_GROUP.ID)
+            .from(ENDPOINT_GROUP)
+            .fetchMap(DSL.lower(ENDPOINT_GROUP.NAME), ENDPOINT_GROUP.ID);
+        return endpointGroupMap;}
+
+
+	/**
+     * 
+     * @return a mapping of pollutant metric names to Ids
+     */
+    public static Map<String, Integer> getMetricIdLookup(int pollutantId) {
+        Map<String, Integer> metricMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(POLLUTANT_METRIC.NAME), POLLUTANT_METRIC.ID)
+            .from(POLLUTANT_METRIC)
+			.where(POLLUTANT_METRIC.POLLUTANT_ID.eq(pollutantId))
+            .fetchMap(DSL.lower(POLLUTANT_METRIC.NAME), POLLUTANT_METRIC.ID);
+        return metricMap;}
+
+	/**
+     * 
+     * @return a mapping of timing names to Ids
+     */
+    public static Map<String, Integer> getTimingIdLookup() {
+        Map<String, Integer> timingMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(TIMING_TYPE.NAME), TIMING_TYPE.ID)
+            .from(TIMING_TYPE)
+            .fetchMap(DSL.lower(TIMING_TYPE.NAME), TIMING_TYPE.ID);
+        return timingMap;}
 }

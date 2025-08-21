@@ -174,6 +174,16 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
      */
     public final TableField<ValuationFunctionRecord, Double[]> MULTIYEAR_COSTS = createField(DSL.name("multiyear_costs"), SQLDataType.FLOAT.getArrayDataType(), this, "");
 
+    /**
+     * The column <code>data.valuation_function.user_id</code>.
+     */
+    public final TableField<ValuationFunctionRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.valuation_function.share_scope</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
     private ValuationFunction(Name alias, Table<ValuationFunctionRecord> aliased) {
         this(alias, aliased, null);
     }
