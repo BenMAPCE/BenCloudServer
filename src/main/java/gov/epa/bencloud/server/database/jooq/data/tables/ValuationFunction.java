@@ -184,6 +184,11 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
      */
     public final TableField<ValuationFunctionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
+    /**
+     * The column <code>data.valuation_function.archived</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Short> ARCHIVED = createField(DSL.name("archived"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
     private ValuationFunction(Name alias, Table<ValuationFunctionRecord> aliased) {
         this(alias, aliased, null);
     }

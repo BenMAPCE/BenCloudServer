@@ -1347,7 +1347,18 @@ public class HIFUtil {
 		return msg;
 	}
 
- /**
+	/**
+     * 
+     * @return a mapping of pollutant names to Ids
+     */
+    public static Map<String, Integer> getPollutantIdLookup() {
+        Map<String, Integer> pollutantMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(POLLUTANT.NAME), POLLUTANT.ID)
+            .from(POLLUTANT)
+            .fetchMap(DSL.lower(POLLUTANT.NAME), POLLUTANT.ID);
+        return pollutantMap;}
+
+	 /**
      * 
      * @return a mapping of race names to Ids
      */

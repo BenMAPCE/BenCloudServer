@@ -410,6 +410,20 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
         return (Short) get(27);
     }
 
+    /**
+     * Setter for <code>data.valuation_function.archived</code>.
+     */
+    public void setArchived(Short value) {
+        set(28, value);
+    }
+
+    /**
+     * Getter for <code>data.valuation_function.archived</code>.
+     */
+    public Short getArchived() {
+        return (Short) get(28);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -433,7 +447,7 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
     /**
      * Create a detached, initialised ValuationFunctionRecord
      */
-    public ValuationFunctionRecord(Integer id, Integer valuationDatasetId, Integer endpointGroupId, Integer endpointId, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double valA, String nameA, String distA, Double p1a, Double p2a, Double valB, String nameB, Double valC, String nameC, Double valD, String nameD, Boolean epaStandard, String accessUrl, String valuationType, Boolean multiyear, Double multiyearDr, Double[] multiyearCosts, String userId, Short shareScope) {
+    public ValuationFunctionRecord(Integer id, Integer valuationDatasetId, Integer endpointGroupId, Integer endpointId, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double valA, String nameA, String distA, Double p1a, Double p2a, Double valB, String nameB, Double valC, String nameC, Double valD, String nameD, Boolean epaStandard, String accessUrl, String valuationType, Boolean multiyear, Double multiyearDr, Double[] multiyearCosts, String userId, Short shareScope, Short archived) {
         super(ValuationFunction.VALUATION_FUNCTION);
 
         setId(id);
@@ -464,5 +478,6 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
         setMultiyearCosts(multiyearCosts);
         setUserId(userId);
         setShareScope(shareScope);
+        setArchived(archived);
     }
 }
