@@ -347,6 +347,7 @@ public class HIFUtil {
 						,POLLUTANT_METRIC.NAME.as("metric_name")
 						,SEASONAL_METRIC.NAME.as("seasonal_metric_name")
 						,STATISTIC_TYPE.NAME.as("metric_statistic_name")
+						,TIMING_TYPE.NAME.as("timing_name")
 						,RACE.NAME.as("race_name")
 						,GENDER.NAME.as("gender_name")
 						,ETHNICITY.NAME.as("ethnicity_name")
@@ -360,7 +361,8 @@ public class HIFUtil {
 				.leftJoin(POLLUTANT).on(POLLUTANT.ID.eq(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID))
 				.leftJoin(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_ID))
 				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.SEASONAL_METRIC_ID))
-				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))			
+				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))	
+				.leftJoin(TIMING_TYPE).on(TIMING_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.TIMING_ID))			
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(id))
 				.fetchOne();
 				
@@ -427,6 +429,7 @@ public class HIFUtil {
 						, HIF_RESULT_FUNCTION_CONFIG.METRIC_ID
 						, HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID
 						, HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC
+						, HIF_RESULT_FUNCTION_CONFIG.TIMING_ID
 						, HIF_RESULT_FUNCTION_CONFIG.INCIDENCE_DATASET_ID
 						, HIF_RESULT_FUNCTION_CONFIG.PREVALENCE_DATASET_ID
 						, HIF_RESULT_FUNCTION_CONFIG.VARIABLE_DATASET_ID
@@ -441,6 +444,7 @@ public class HIFUtil {
 						, hif.metric
 						, hif.seasonalMetric
 						, hif.metricStatistic
+						, hif.timing
 						, hif.incidence
 						, hif.prevalence
 						, hif.variable
@@ -1320,6 +1324,7 @@ public class HIFUtil {
 						,POLLUTANT_METRIC.NAME.as("metric_name")
 						,SEASONAL_METRIC.NAME.as("seasonal_metric_name")
 						,STATISTIC_TYPE.NAME.as("metric_statistic_name")
+						,TIMING_TYPE.NAME.as("timing_name")
 						)
 				.from(HEALTH_IMPACT_FUNCTION)
 				.leftJoin(ENDPOINT_GROUP).on(ENDPOINT_GROUP.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_GROUP_ID))
@@ -1327,7 +1332,8 @@ public class HIFUtil {
 				.leftJoin(POLLUTANT).on(POLLUTANT.ID.eq(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID))
 				.leftJoin(POLLUTANT_METRIC).on(POLLUTANT_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_ID))
 				.leftJoin(SEASONAL_METRIC).on(SEASONAL_METRIC.ID.eq(HEALTH_IMPACT_FUNCTION.SEASONAL_METRIC_ID))
-				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))			
+				.leftJoin(STATISTIC_TYPE).on(STATISTIC_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC))	
+				.leftJoin(TIMING_TYPE).on(TIMING_TYPE.ID.eq(HEALTH_IMPACT_FUNCTION.TIMING_ID))			
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(hifId))
 				.fetchOne();
 		String msg = "";		
