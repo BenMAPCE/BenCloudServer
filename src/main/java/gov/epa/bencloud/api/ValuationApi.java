@@ -2,8 +2,11 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -16,20 +19,37 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.JSONFormat;
 import org.jooq.Result;
+import org.jooq.SortOrder;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.JSONFormat.RecordFormat;
+import org.jooq.OrderField;
+import org.jooq.Condition;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.Record2;
 import org.jooq.Record21;
 import org.jooq.Record22;
+import org.jooq.Record4;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.jooq.JSON;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
@@ -41,6 +61,7 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
 import gov.epa.bencloud.server.util.ApplicationUtil;
+import gov.epa.bencloud.server.util.DataConversionUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
 import spark.Request;
 import spark.Response;
@@ -524,6 +545,114 @@ public class ValuationApi {
 		response.type("application/json");
 		return valuationRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return a JSON representation of all valuation functions.
+	 */
+	public static Object getAllValuationFunctionsByHealthEffect(Request request, Response response, Optional<UserProfile> userProfile) {
+
+		String userId = userProfile.get().getId();	
+		int healthEffectGroupId;
+		int page;
+		int rowsPerPage;
+		String sortBy;
+		boolean descending;
+		String filter;
+		boolean showAll;
+		try {
+			healthEffectGroupId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("healthEffectGroupId"), 0);
+			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
+			
+			if(ParameterUtil.getParameterValueAsString(request.raw().getParameter("rowsPerPage"), "").equalsIgnoreCase("0")) {
+				rowsPerPage = 1000000; //Let's use one million as a reasonable approximation of "all"
+			} else {
+				rowsPerPage = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("rowsPerPage"), 10);	
+			}
+			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
+			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
+			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
+			
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+
+		List<OrderField<?>> orderFields = new ArrayList<>();
+		
+		setValuationFunctionSortOrder(sortBy, descending, orderFields);
+
+		Condition filterCondition = DSL.trueCondition();
+
+		Condition healthEffectGroupCondition = DSL.trueCondition();
+
+		if (healthEffectGroupId != 0) {
+			healthEffectGroupCondition = DSL.field(VALUATION_FUNCTION.ENDPOINT_GROUP_ID).eq(healthEffectGroupId);
+			filterCondition = filterCondition.and(healthEffectGroupCondition);
+		}
+
+		if (!"".equals(filter)) {
+			filterCondition = filterCondition.and(buildValuationFunctionFilterCondition(filter));
+		}
+
+		if(!showAll || !CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(VALUATION_FUNCTION.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(VALUATION_FUNCTION.USER_ID.eq(userId)));
+		}
+
+		Integer filteredRecordsCount = 
+				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
+				.from(VALUATION_FUNCTION)
+					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
+					.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
+					.where(filterCondition)
+				.fetchOne(DSL.count());
+
+		Result<Record> valuationRecords = null;
+		try {
+			valuationRecords = DSL.using(JooqUtil.getJooqConfiguration())
+					.select(VALUATION_FUNCTION.asterisk()
+							, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
+							, ENDPOINT.NAME.as("endpoint_name")
+							)
+					.from(VALUATION_FUNCTION)
+					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
+					.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
+					.where(filterCondition)
+					.orderBy(orderFields)
+					.offset((page * rowsPerPage) - rowsPerPage)
+					.fetch();
+		} catch (DataAccessException e) {
+			log.error("Error getAllValuationFunctions", e);
+		}
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode data = mapper.createObjectNode();
+
+		data.put("filteredRecordsCount", filteredRecordsCount);
+
+		try {
+			JsonFactory factory = mapper.getFactory();
+			JsonParser jp = factory.createParser(
+					valuationRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT)));
+			JsonNode actualObj = mapper.readTree(jp);
+			data.set("records", actualObj);
+		} catch (JsonParseException e) {
+			log.error("Error parsing JSON",e);
+		} catch (JsonProcessingException e) {
+			log.error("Error processing JSON",e);
+		} catch (IOException e) {
+			log.error("IO Exception", e);
+		}
+
+		response.type("application/json");
+		return data;
+	}
 	
 	/**
 	 * 
@@ -616,4 +745,136 @@ public class ValuationApi {
 		}
 		return gridId.value1();
 	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return JSON representation of all health effect groups
+	 */
+	public static Object getAllHealthEffectGroups(Request request, Response response, Optional<UserProfile> userProfile) {
+
+		Result<Record> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.select()
+				.from(ENDPOINT_GROUP)
+				.orderBy(ENDPOINT_GROUP.NAME.asc())
+				.fetch();
+		
+		response.type("application/json");
+		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+	}
+
+	/**
+	 * Sets the sort order of the valuation functions.
+	 * @param sortBy
+	 * @param descending
+	 * @param orderFields
+	 */
+	private static void setValuationFunctionSortOrder(
+			String sortBy, Boolean descending, List<OrderField<?>> orderFields) {
+		
+		if (!"".equals(sortBy)) {
+			
+			SortOrder sortDirection = SortOrder.ASC;
+			Field<?> sortField = null;
+			
+			sortDirection = descending ? SortOrder.DESC : SortOrder.ASC;
+			
+			switch (sortBy) {
+			case "name":
+				sortField = DSL.field(sortBy, String.class.getName());
+				break;
+
+			case "grid_definition_name":
+				sortField = DSL.field(sortBy, Integer.class.getName());
+				break;
+
+			case "cell_count":
+				sortField = DSL.field(sortBy, Integer.class.getName());
+				break;
+
+			case "mean_value":
+				sortField = DSL.field(sortBy, Double.class.getName());
+				break;
+
+			default:
+				sortField = DSL.field(sortBy, String.class.getName());
+				break;
+			}
+			
+			orderFields.add(sortField.sort(sortDirection));
+			
+		} else {
+			orderFields.add(DSL.field("name", String.class.getName()).sort(SortOrder.ASC));	
+		}
+	}
+
+	/**
+	 * 
+	 * @param filterValue
+	 * @return a condition object representing a valuation function filter condition.
+	 */
+	private static Condition buildValuationFunctionFilterCondition(String filterValue) {
+
+		Condition filterCondition = DSL.trueCondition();
+		Condition searchCondition = DSL.falseCondition();
+
+		Integer filterValueAsInteger = DataConversionUtil.getFilterValueAsInteger(filterValue);
+		Long filterValueAsLong = DataConversionUtil.getFilterValueAsLong(filterValue);
+		Double filterValueAsDouble = DataConversionUtil.getFilterValueAsDouble(filterValue);
+		Date filterValueAsDate = DataConversionUtil.getFilterValueAsDate(filterValue, "MM/dd/yyyy");
+		
+		searchCondition = 
+				searchCondition.or(ENDPOINT_GROUP.NAME
+						.containsIgnoreCase(filterValue));
+
+		searchCondition = 
+				searchCondition.or(ENDPOINT.NAME
+						.containsIgnoreCase(filterValue));
+		
+		searchCondition = 
+				searchCondition.or(VALUATION_FUNCTION.QUALIFIER
+						.containsIgnoreCase(filterValue));
+
+		searchCondition = 
+				searchCondition.or(VALUATION_FUNCTION.REFERENCE
+						.containsIgnoreCase(filterValue));
+		
+		searchCondition = 
+				searchCondition.or(VALUATION_FUNCTION.NAME_A
+						.containsIgnoreCase(filterValue));
+
+		searchCondition = 
+				searchCondition.or(VALUATION_FUNCTION.NAME_B
+						.containsIgnoreCase(filterValue));				
+
+		searchCondition = 
+				searchCondition.or(VALUATION_FUNCTION.DIST_A
+						.containsIgnoreCase(filterValue));		
+
+
+		if (null != filterValueAsInteger) {
+			searchCondition = 
+					searchCondition.or(VALUATION_FUNCTION.ID
+							.eq(filterValueAsInteger));
+		}
+
+		if (null != filterValueAsInteger) {
+			searchCondition = 
+					searchCondition.or(VALUATION_FUNCTION.START_AGE
+							.eq(filterValueAsInteger));
+		}
+
+		if (null != filterValueAsInteger) {
+			searchCondition = 
+					searchCondition.or(VALUATION_FUNCTION.END_AGE
+							.eq(filterValueAsInteger));		
+		}
+		
+		filterCondition = filterCondition.and(searchCondition);
+
+		return filterCondition;
+	}
+
 }
