@@ -790,10 +790,7 @@ public class HIFApi {
 		int paramBNameIdx=-999;
 		int paramCIdx=-999;
 		int paramCNameIdx=-999;
-		// int incidenceIdx=-999;
-		// int prevalenceIdx=-999;
 		int distributionIdx=-999;
-		// int variableIdx=-999;
 		int heroIdIdx=-999;
 		int heroUrlIdx=-999;
 		int accessUrlIdx=-999;
@@ -943,15 +940,6 @@ public class HIFApi {
 				case "namec":
 					paramCNameIdx=i;
 					break;	
-				// case "incidencedataset":
-				// 	incidenceIdx=i;
-				// 	break;
-				// case "prevalencedataset":
-				// 	prevalenceIdx=i;
-				// 	break;
-				// case "variabledataset":
-				// 	variableIdx=i;
-				// 	break;
 				case "heroid":
 					heroIdIdx=i;
 					break;
@@ -966,7 +954,9 @@ public class HIFApi {
 				}
 			}
 
-			String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, seasonalMetricIdx, metricStatisticIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx, heroIdIdx, heroUrlIdx, accessUrlIdx);
+			// String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, seasonalMetricIdx, metricStatisticIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx, heroIdIdx, heroUrlIdx, accessUrlIdx);
+			String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, seasonalMetricIdx, metricStatisticIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx);
+
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
 
@@ -1680,7 +1670,21 @@ public class HIFApi {
 				int functionYear = Integer.valueOf(record[studyYearIdx]);
 				short startAge = Short.valueOf(record[startAgeIdx]);
 				short endAge = Short.valueOf(record[endAgeIdx]);
-				int heroId = Integer.valueOf(record[heroIdIdx]);
+
+				int heroId = -1;
+				if(record[heroIdIdx] != null && !record[heroIdIdx].equals("")) {
+					heroId = Integer.valueOf(record[heroIdIdx]);
+				}
+
+				String heroUrl = null;
+				if(record[heroUrlIdx] != null) {
+					heroUrl = record[heroUrlIdx];
+				}
+
+				String accessUrl = null;
+				if(record[accessUrlIdx] != null) {
+					accessUrl = record[accessUrlIdx];
+				}
 
 				Double beta = 0.0;
 				if(!record[betaIdx].equals("")){
@@ -1711,6 +1715,16 @@ public class HIFApi {
 				if(!record[paramCIdx].equals("")){
 					valC = Double.valueOf(record[paramCIdx]);
 				}
+
+				// String geogArea = "";
+				// if(geogAreaIdx != -999) {
+				// 	geogArea = record[geogAreaIdx];
+				// }
+
+				// String geogAreaFeature = "";
+				// if(geogAreaFeatureIdx != -999) {
+				// 	geogAreaFeature = record[geogAreaFeatureIdx];
+				// }
 
 
 				// short startDay = Short.valueOf(record[startDayIdx]);
@@ -1763,7 +1777,7 @@ public class HIFApi {
 				record[studyLocIdx], record[otherPollutantIdx], record[qualifierIdx], record[referenceIdx], startAge, endAge, 
 				record[functionIdx], beta, record[distBetaIdx], p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx], raceId, genderId, ethnicityId, 
-				heroId, record[heroUrlIdx], record[accessUrlIdx], userId, Constants.SHARING_NONE)
+				(heroId != -1 ? heroId : null), heroUrl, accessUrl, userId, Constants.SHARING_NONE)
 				.returning(HEALTH_IMPACT_FUNCTION.ID)
 				.fetchOne();
 

@@ -72,7 +72,7 @@ public class HIFUtil {
      */
 
 
-    public static String validateModelColumnHeadings(int endpointIdx, int endpointGroupIdx, int pollutantIdx, int metricIdx, int seasonalMetricIdx, int metricStatisticIdx, int timingIdx, int authorIdx, int studyYearIdx, int studyLocIdx, int otherPollutantIdx, int qualifierIdx, int referenceIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int baselineFunctionIdx, int betaIdx, int distBetaIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int paramCIdx, int paramCNameIdx, int distributionIdx, int heroIdIdx, int heroUrlIdx, int accessUrlIdx) {
+    public static String validateModelColumnHeadings(int endpointIdx, int endpointGroupIdx, int pollutantIdx, int metricIdx, int seasonalMetricIdx, int metricStatisticIdx, int timingIdx, int authorIdx, int studyYearIdx, int studyLocIdx, int otherPollutantIdx, int qualifierIdx, int referenceIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int baselineFunctionIdx, int betaIdx, int distBetaIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int paramCIdx, int paramCNameIdx, int distributionIdx) {
 		StringBuilder b = new StringBuilder();
 		if(endpointGroupIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Endpoint Group");
@@ -164,15 +164,15 @@ public class HIFUtil {
         if(paramCNameIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Name C");
 		}
-		if(heroIdIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "HERO ID");
-		}
-		if(heroUrlIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "EPA HERO URL");
-		}
-		if(accessUrlIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "Access URL");
-		}
+		// if(heroIdIdx == -999) {
+		// 	b.append((b.length()==0 ? "" : ", ") + "HERO ID");
+		// }
+		// if(heroUrlIdx == -999) {
+		// 	b.append((b.length()==0 ? "" : ", ") + "EPA HERO URL");
+		// }
+		// if(accessUrlIdx == -999) {
+		// 	b.append((b.length()==0 ? "" : ", ") + "Access URL");
+		// }
 
 		return b.toString();
 	}
