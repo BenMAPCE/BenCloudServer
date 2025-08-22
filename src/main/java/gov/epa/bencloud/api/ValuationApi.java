@@ -1598,17 +1598,18 @@ public class ValuationApi {
 
 		Condition filterCondition = DSL.trueCondition();
 
-		filterCondition = filterCondition.and(ENDPOINT_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(ENDPOINT_GROUP.USER_ID.eq(userId)));
+		filterCondition = filterCondition.and(ENDPOINT_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(ENDPOINT_GROUP.USER_ID.eq(userId)));		
 
-		Result<Record> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
-				.select()
+		Result<Record> healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.selectDistinct(ENDPOINT_GROUP.fields())
 				.from(ENDPOINT_GROUP)
+				.join(VALUATION_FUNCTION).on(ENDPOINT_GROUP.ID.eq(VALUATION_FUNCTION.ENDPOINT_GROUP_ID))
 				.where(filterCondition)
 				.orderBy(ENDPOINT_GROUP.NAME.asc())
 				.fetch();
 		
 		response.type("application/json");
-		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+		return healthEffectGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
 	/**
