@@ -259,187 +259,143 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     }
 
     /**
-     * Setter for <code>data.health_impact_function.incidence_dataset_id</code>.
-     */
-    public void setIncidenceDatasetId(Integer value) {
-        set(17, value);
-    }
-
-    /**
-     * Getter for <code>data.health_impact_function.incidence_dataset_id</code>.
-     */
-    public Integer getIncidenceDatasetId() {
-        return (Integer) get(17);
-    }
-
-    /**
-     * Setter for
-     * <code>data.health_impact_function.prevalence_dataset_id</code>.
-     */
-    public void setPrevalenceDatasetId(Integer value) {
-        set(18, value);
-    }
-
-    /**
-     * Getter for
-     * <code>data.health_impact_function.prevalence_dataset_id</code>.
-     */
-    public Integer getPrevalenceDatasetId() {
-        return (Integer) get(18);
-    }
-
-    /**
-     * Setter for <code>data.health_impact_function.variable_dataset_id</code>.
-     */
-    public void setVariableDatasetId(Integer value) {
-        set(19, value);
-    }
-
-    /**
-     * Getter for <code>data.health_impact_function.variable_dataset_id</code>.
-     */
-    public Integer getVariableDatasetId() {
-        return (Integer) get(19);
-    }
-
-    /**
      * Setter for <code>data.health_impact_function.beta</code>.
      */
     public void setBeta(Double value) {
-        set(20, value);
+        set(17, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.beta</code>.
      */
     public Double getBeta() {
-        return (Double) get(20);
+        return (Double) get(17);
     }
 
     /**
      * Setter for <code>data.health_impact_function.dist_beta</code>.
      */
     public void setDistBeta(String value) {
-        set(21, value);
+        set(18, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.dist_beta</code>.
      */
     public String getDistBeta() {
-        return (String) get(21);
+        return (String) get(18);
     }
 
     /**
      * Setter for <code>data.health_impact_function.p1_beta</code>.
      */
     public void setP1Beta(Double value) {
-        set(22, value);
+        set(19, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.p1_beta</code>.
      */
     public Double getP1Beta() {
-        return (Double) get(22);
+        return (Double) get(19);
     }
 
     /**
      * Setter for <code>data.health_impact_function.p2_beta</code>.
      */
     public void setP2Beta(Double value) {
-        set(23, value);
+        set(20, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.p2_beta</code>.
      */
     public Double getP2Beta() {
-        return (Double) get(23);
+        return (Double) get(20);
     }
 
     /**
      * Setter for <code>data.health_impact_function.val_a</code>.
      */
     public void setValA(Double value) {
-        set(24, value);
+        set(21, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.val_a</code>.
      */
     public Double getValA() {
-        return (Double) get(24);
+        return (Double) get(21);
     }
 
     /**
      * Setter for <code>data.health_impact_function.name_a</code>.
      */
     public void setNameA(String value) {
-        set(25, value);
+        set(22, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.name_a</code>.
      */
     public String getNameA() {
-        return (String) get(25);
+        return (String) get(22);
     }
 
     /**
      * Setter for <code>data.health_impact_function.val_b</code>.
      */
     public void setValB(Double value) {
-        set(26, value);
+        set(23, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.val_b</code>.
      */
     public Double getValB() {
-        return (Double) get(26);
+        return (Double) get(23);
     }
 
     /**
      * Setter for <code>data.health_impact_function.name_b</code>.
      */
     public void setNameB(String value) {
-        set(27, value);
+        set(24, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.name_b</code>.
      */
     public String getNameB() {
-        return (String) get(27);
+        return (String) get(24);
     }
 
     /**
      * Setter for <code>data.health_impact_function.val_c</code>.
      */
     public void setValC(Double value) {
-        set(28, value);
+        set(25, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.val_c</code>.
      */
     public Double getValC() {
-        return (Double) get(28);
+        return (Double) get(25);
     }
 
     /**
      * Setter for <code>data.health_impact_function.name_c</code>.
      */
     public void setNameC(String value) {
-        set(29, value);
+        set(26, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.name_c</code>.
      */
     public String getNameC() {
-        return (String) get(29);
+        return (String) get(26);
     }
 
     /**
@@ -447,7 +403,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
      * <code>data.health_impact_function.baseline_function_text</code>.
      */
     public void setBaselineFunctionText(String value) {
-        set(30, value);
+        set(27, value);
     }
 
     /**
@@ -455,119 +411,175 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
      * <code>data.health_impact_function.baseline_function_text</code>.
      */
     public String getBaselineFunctionText() {
-        return (String) get(30);
+        return (String) get(27);
     }
 
     /**
      * Setter for <code>data.health_impact_function.race_id</code>.
      */
     public void setRaceId(Integer value) {
-        set(31, value);
+        set(28, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.race_id</code>.
      */
     public Integer getRaceId() {
-        return (Integer) get(31);
+        return (Integer) get(28);
     }
 
     /**
      * Setter for <code>data.health_impact_function.gender_id</code>.
      */
     public void setGenderId(Integer value) {
-        set(32, value);
+        set(29, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.gender_id</code>.
      */
     public Integer getGenderId() {
-        return (Integer) get(32);
+        return (Integer) get(29);
     }
 
     /**
      * Setter for <code>data.health_impact_function.ethnicity_id</code>.
      */
     public void setEthnicityId(Integer value) {
-        set(33, value);
+        set(30, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.ethnicity_id</code>.
      */
     public Integer getEthnicityId() {
-        return (Integer) get(33);
+        return (Integer) get(30);
     }
 
     /**
      * Setter for <code>data.health_impact_function.start_day</code>.
      */
     public void setStartDay(Integer value) {
-        set(34, value);
+        set(31, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.start_day</code>.
      */
     public Integer getStartDay() {
-        return (Integer) get(34);
+        return (Integer) get(31);
     }
 
     /**
      * Setter for <code>data.health_impact_function.end_day</code>.
      */
     public void setEndDay(Integer value) {
-        set(35, value);
+        set(32, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.end_day</code>.
      */
     public Integer getEndDay() {
-        return (Integer) get(35);
+        return (Integer) get(32);
     }
 
     /**
      * Setter for <code>data.health_impact_function.hero_id</code>.
      */
     public void setHeroId(Integer value) {
-        set(36, value);
+        set(33, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.hero_id</code>.
      */
     public Integer getHeroId() {
-        return (Integer) get(36);
+        return (Integer) get(33);
     }
 
     /**
      * Setter for <code>data.health_impact_function.epa_hero_url</code>.
      */
     public void setEpaHeroUrl(String value) {
-        set(37, value);
+        set(34, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.epa_hero_url</code>.
      */
     public String getEpaHeroUrl() {
-        return (String) get(37);
+        return (String) get(34);
     }
 
     /**
      * Setter for <code>data.health_impact_function.access_url</code>.
      */
     public void setAccessUrl(String value) {
-        set(38, value);
+        set(35, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.access_url</code>.
      */
     public String getAccessUrl() {
-        return (String) get(38);
+        return (String) get(35);
+    }
+
+    /**
+     * Setter for <code>data.health_impact_function.user_id</code>.
+     */
+    public void setUserId(String value) {
+        set(36, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.user_id</code>.
+     */
+    public String getUserId() {
+        return (String) get(36);
+    }
+
+    /**
+     * Setter for <code>data.health_impact_function.share_scope</code>.
+     */
+    public void setShareScope(Short value) {
+        set(37, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.share_scope</code>.
+     */
+    public Short getShareScope() {
+        return (Short) get(37);
+    }
+
+    /**
+     * Setter for <code>data.health_impact_function.archived</code>.
+     */
+    public void setArchived(Short value) {
+        set(38, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.archived</code>.
+     */
+    public Short getArchived() {
+        return (Short) get(38);
+    }
+
+    /**
+     * Setter for <code>data.health_impact_function.timing_id</code>.
+     */
+    public void setTimingId(Integer value) {
+        set(39, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.timing_id</code>.
+     */
+    public Integer getTimingId() {
+        return (Integer) get(39);
     }
 
     // -------------------------------------------------------------------------
@@ -593,7 +605,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Create a detached, initialised HealthImpactFunctionRecord
      */
-    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Integer incidenceDatasetId, Integer prevalenceDatasetId, Integer variableDatasetId, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl) {
+    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl, String userId, Short shareScope, Short archived, Integer timingId) {
         super(HealthImpactFunction.HEALTH_IMPACT_FUNCTION);
 
         setId(id);
@@ -613,9 +625,6 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         setStartAge(startAge);
         setEndAge(endAge);
         setFunctionText(functionText);
-        setIncidenceDatasetId(incidenceDatasetId);
-        setPrevalenceDatasetId(prevalenceDatasetId);
-        setVariableDatasetId(variableDatasetId);
         setBeta(beta);
         setDistBeta(distBeta);
         setP1Beta(p1Beta);
@@ -635,5 +644,9 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         setHeroId(heroId);
         setEpaHeroUrl(epaHeroUrl);
         setAccessUrl(accessUrl);
+        setUserId(userId);
+        setShareScope(shareScope);
+        setArchived(archived);
+        setTimingId(timingId);
     }
 }

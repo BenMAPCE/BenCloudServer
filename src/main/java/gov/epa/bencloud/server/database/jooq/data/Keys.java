@@ -155,6 +155,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
+import gov.epa.bencloud.server.database.jooq.data.tables.TimingType;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunctionDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultDataset;
@@ -311,6 +312,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskCompleteRec
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskQueueRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskWorkerRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.TimingTypeRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
@@ -481,6 +483,7 @@ public class Keys {
     public static final UniqueKey<TaskConfigRecord> TASK_CONFIG_DATASET_PKEY = Internal.createUniqueKey(TaskConfig.TASK_CONFIG, DSL.name("task_config_dataset_pkey"), new TableField[] { TaskConfig.TASK_CONFIG.ID }, true);
     public static final UniqueKey<TaskQueueRecord> TASK_QUEUE_PKEY = Internal.createUniqueKey(TaskQueue.TASK_QUEUE, DSL.name("task_queue_pkey"), new TableField[] { TaskQueue.TASK_QUEUE.TASK_ID }, true);
     public static final UniqueKey<TaskWorkerRecord> TASK_WORKER_PKEY = Internal.createUniqueKey(TaskWorker.TASK_WORKER, DSL.name("task_worker_pkey"), new TableField[] { TaskWorker.TASK_WORKER.TASK_ID }, true);
+    public static final UniqueKey<TimingTypeRecord> TIMING_TYPE_PKEY = Internal.createUniqueKey(TimingType.TIMING_TYPE, DSL.name("timing_type_pkey"), new TableField[] { TimingType.TIMING_TYPE.ID }, true);
     public static final UniqueKey<ValuationFunctionRecord> VALUATION_FUNCTION_PKEY = Internal.createUniqueKey(ValuationFunction.VALUATION_FUNCTION, DSL.name("valuation_function_pkey"), new TableField[] { ValuationFunction.VALUATION_FUNCTION.ID }, true);
     public static final UniqueKey<ValuationFunctionDatasetRecord> VALUATION_FUNCTION_DATASET_PKEY = Internal.createUniqueKey(ValuationFunctionDataset.VALUATION_FUNCTION_DATASET, DSL.name("valuation_function_dataset_pkey"), new TableField[] { ValuationFunctionDataset.VALUATION_FUNCTION_DATASET.ID }, true);
     public static final UniqueKey<ValuationResultDatasetRecord> VALUATION_RESULT_DATASET_PKEY = Internal.createUniqueKey(ValuationResultDataset.VALUATION_RESULT_DATASET, DSL.name("valuation_result_dataset_pkey"), new TableField[] { ValuationResultDataset.VALUATION_RESULT_DATASET.ID }, true);

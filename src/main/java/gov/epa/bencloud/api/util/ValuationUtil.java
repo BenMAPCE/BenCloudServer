@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
@@ -322,5 +323,62 @@ public class ValuationUtil {
 		
 	}
 
+	public static String validateModelColumnHeadings(int endpointIdx, int qualifierIdx, int referenceIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int distributionIdx) {
+		StringBuilder b = new StringBuilder();
+		if(endpointIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Health Effect Category");
+		}
+		if(qualifierIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Risk Model Details");
+		}
+		if(referenceIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Reference");
+		}
+        if(startAgeIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Start Age");
+		}
+		if(endAgeIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "End Age");
+		}
+        if(functionIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Function");
+		}
+        if(param1Idx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Standard Error");
+		}
+        if(param2Idx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Param 2 A");
+		}
+        if(paramAIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "A");
+		}
+        if(paramANameIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Name A");
+		}
+		if(paramBIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "B");
+		}
+        if(paramBNameIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Name B");
+		}
+		if(distributionIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Distribution");
+		}
+
+		return b.toString();
+	}
+
+	/**
+     * 
+     * @param endpointGroupId
+     * @return a mapping of endpoint names to endpoint ids for a given endpoint group Id
+     */
+    public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
+        Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
+            .from(ENDPOINT)
+            .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
+            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
+        return endpointMap;}
     
 }

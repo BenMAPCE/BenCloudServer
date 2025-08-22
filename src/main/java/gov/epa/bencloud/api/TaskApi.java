@@ -31,6 +31,7 @@ import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record17;
+import org.jooq.Record2;
 import org.jooq.Record21;
 import org.jooq.Result;
 import org.jooq.Table;
@@ -404,6 +405,7 @@ public class TaskApi {
 						, POLLUTANT_METRIC.NAME.as("metric_name")
 						, SEASONAL_METRIC.NAME.as("seasonal_metric_name")
 						, STATISTIC_TYPE.NAME.as("metric_statistic_name")
+						, TIMING_TYPE.NAME.as("timing_name")
 						)
 				.from(HEALTH_IMPACT_FUNCTION_GROUP)
 				.join(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER).on(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_GROUP_ID))
@@ -414,8 +416,9 @@ public class TaskApi {
 				.join(GENDER).on(HEALTH_IMPACT_FUNCTION.GENDER_ID.eq(GENDER.ID))
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.leftJoin(POLLUTANT_METRIC).on(HEALTH_IMPACT_FUNCTION.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-				.leftJoin(SEASONAL_METRIC).on(HEALTH_IMPACT_FUNCTION.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-				.leftJoin(STATISTIC_TYPE).on(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+				.leftJoin(SEASONAL_METRIC).on(HEALTH_IMPACT_FUNCTION.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID)) //TODO: remove when confirm not needed.
+				.leftJoin(STATISTIC_TYPE).on(HEALTH_IMPACT_FUNCTION.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID)) //TODO: remove when confirm not needed.
+				.leftJoin(TIMING_TYPE).on(HEALTH_IMPACT_FUNCTION.TIMING_ID.eq(TIMING_TYPE.ID))
 				.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(hifGroupList)
 						.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId))
 						.and(HEALTH_IMPACT_FUNCTION.METRIC_ID.contains(baselineMetricId))
@@ -822,18 +825,21 @@ public class TaskApi {
 						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
 						data.put("aq_baseline_name", aqBaselineName);
 
-						Record1<String> metricName = 
+						Record2<String, String> metricName = 
 						DSL.using(JooqUtil.getJooqConfiguration())
 							.select(
-									POLLUTANT_METRIC.NAME
+									POLLUTANT_METRIC.NAME.as("task_metric_name"),
+									GRID_DEFINITION.NAME.as("aq_grid_definition_name")
 									)
 							.from(POLLUTANT_METRIC)
 							.join(AIR_QUALITY_LAYER_METRICS).on(AIR_QUALITY_LAYER_METRICS.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 							.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_LAYER.ID.eq(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID))				
+							.join(GRID_DEFINITION).on(AIR_QUALITY_LAYER.GRID_DEFINITION_ID.eq(GRID_DEFINITION.ID))
 							.where(AIR_QUALITY_LAYER.ID.eq(batchParamsNode.get("aqBaselineId").asInt()))
 							.fetchOne();
 
-						data.put("task_metric_name", metricName.value1());
+						data.put("task_metric_name", metricName.get("task_metric_name").toString());
+						data.put("aq_grid_definition_name", metricName.get("aq_grid_definition_name").toString());
 						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
 						int valuationGridId = batchParamsNode.get("gridDefinitionId").asInt();
 						data.put("valuation_grid_id", valuationGridId);
@@ -1451,6 +1457,7 @@ public class TaskApi {
 								POLLUTANT_METRIC.NAME.as("metric"),
 								SEASONAL_METRIC.NAME.as("seasonal_metric"),
 								STATISTIC_TYPE.NAME.as("metric_statistic"),
+								TIMING_TYPE.NAME.as("timing"),
 								hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
 								hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
 								hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
@@ -1479,6 +1486,7 @@ public class TaskApi {
 								.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+								.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
 								.fetch();
 						
 						//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
@@ -1589,6 +1597,7 @@ public class TaskApi {
 								POLLUTANT_METRIC.NAME.as("metric"),
 								SEASONAL_METRIC.NAME.as("seasonal_metric"),
 								STATISTIC_TYPE.NAME.as("metric_statistic"),
+								TIMING_TYPE.NAME.as("timing"),
 								HEALTH_IMPACT_FUNCTION.START_AGE,
 								HEALTH_IMPACT_FUNCTION.END_AGE,
 								VALUATION_FUNCTION.START_AGE.as("valuation_start_age"),
@@ -1621,6 +1630,7 @@ public class TaskApi {
 								.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 								.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 								.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+								.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
 								.fetch();
 						
 						// Add in valuation function information

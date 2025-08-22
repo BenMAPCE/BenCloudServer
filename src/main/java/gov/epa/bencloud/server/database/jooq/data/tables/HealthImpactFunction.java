@@ -131,22 +131,6 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     public final TableField<HealthImpactFunctionRecord, String> FUNCTION_TEXT = createField(DSL.name("function_text"), SQLDataType.CLOB, this, "");
 
     /**
-     * The column <code>data.health_impact_function.incidence_dataset_id</code>.
-     */
-    public final TableField<HealthImpactFunctionRecord, Integer> INCIDENCE_DATASET_ID = createField(DSL.name("incidence_dataset_id"), SQLDataType.INTEGER, this, "");
-
-    /**
-     * The column
-     * <code>data.health_impact_function.prevalence_dataset_id</code>.
-     */
-    public final TableField<HealthImpactFunctionRecord, Integer> PREVALENCE_DATASET_ID = createField(DSL.name("prevalence_dataset_id"), SQLDataType.INTEGER, this, "");
-
-    /**
-     * The column <code>data.health_impact_function.variable_dataset_id</code>.
-     */
-    public final TableField<HealthImpactFunctionRecord, Integer> VARIABLE_DATASET_ID = createField(DSL.name("variable_dataset_id"), SQLDataType.INTEGER, this, "");
-
-    /**
      * The column <code>data.health_impact_function.beta</code>.
      */
     public final TableField<HealthImpactFunctionRecord, Double> BETA = createField(DSL.name("beta"), SQLDataType.DOUBLE, this, "");
@@ -241,6 +225,26 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
      * The column <code>data.health_impact_function.access_url</code>.
      */
     public final TableField<HealthImpactFunctionRecord, String> ACCESS_URL = createField(DSL.name("access_url"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.health_impact_function.user_id</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.health_impact_function.share_scope</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.health_impact_function.archived</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Short> ARCHIVED = createField(DSL.name("archived"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.health_impact_function.timing_id</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
 
     private HealthImpactFunction(Name alias, Table<HealthImpactFunctionRecord> aliased) {
         this(alias, aliased, null);

@@ -32,8 +32,10 @@ public class ExposureConfig {
 	public Integer ethnicity = null;
 	public Integer gender = null;
 	public Integer metric = null;
-	public Integer seasonalMetric = null;
-	public Integer metricStatistic = null;
+	public Integer seasonalMetric = null; //TODO: remove once fully replaced by Timing
+	public Integer metricStatistic = null; //TODO: remove once fully replaced by Timing
+
+	public Integer timing = null;
 		
 	public Integer variable = null;
 	public Integer startDay = null;
@@ -83,9 +85,10 @@ public class ExposureConfig {
 		b.append("Gender: ").append(ApiUtil.getGenderNameLookup().getOrDefault(gender, "")).append("\n");
 		
 		b.append("Pollutant: ").append(efRecord.getOrDefault("pollutant_friendly_name", efRecord.getOrDefault("pollutant_name", "Null"))).append("\n");
-		b.append("Metric: ").append(efRecord.getOrDefault("metric_name", "")).append("\n");
-		b.append("Seasonal Metric: ").append(efRecord.get("seasonal_metric_name") == null ? "Null" : efRecord.get("seasonal_metric_name")).append("\n"); 
-		b.append("Metric Statistic: ").append(efRecord.getOrDefault("metric_statistic_name", "")).append("\n");
+		//exposure functions do not have metric fields
+		//b.append("Metric: ").append(efRecord.getOrDefault("metric_name", "")).append("\n");
+		//b.append("Seasonal Metric: ").append(efRecord.get("seasonal_metric_name") == null ? "Null" : efRecord.get("seasonal_metric_name")).append("\n"); 
+		//b.append("Metric Statistic: ").append(efRecord.getOrDefault("metric_statistic_name", "")).append("\n");
 		
 		b.append("Function: ").append(efRecord.get("function_text")).append("\n");
 

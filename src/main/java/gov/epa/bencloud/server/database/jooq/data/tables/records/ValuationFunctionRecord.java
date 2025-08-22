@@ -382,6 +382,48 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
         return (Double[]) get(25);
     }
 
+    /**
+     * Setter for <code>data.valuation_function.user_id</code>.
+     */
+    public void setUserId(String value) {
+        set(26, value);
+    }
+
+    /**
+     * Getter for <code>data.valuation_function.user_id</code>.
+     */
+    public String getUserId() {
+        return (String) get(26);
+    }
+
+    /**
+     * Setter for <code>data.valuation_function.share_scope</code>.
+     */
+    public void setShareScope(Short value) {
+        set(27, value);
+    }
+
+    /**
+     * Getter for <code>data.valuation_function.share_scope</code>.
+     */
+    public Short getShareScope() {
+        return (Short) get(27);
+    }
+
+    /**
+     * Setter for <code>data.valuation_function.archived</code>.
+     */
+    public void setArchived(Short value) {
+        set(28, value);
+    }
+
+    /**
+     * Getter for <code>data.valuation_function.archived</code>.
+     */
+    public Short getArchived() {
+        return (Short) get(28);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -405,7 +447,7 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
     /**
      * Create a detached, initialised ValuationFunctionRecord
      */
-    public ValuationFunctionRecord(Integer id, Integer valuationDatasetId, Integer endpointGroupId, Integer endpointId, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double valA, String nameA, String distA, Double p1a, Double p2a, Double valB, String nameB, Double valC, String nameC, Double valD, String nameD, Boolean epaStandard, String accessUrl, String valuationType, Boolean multiyear, Double multiyearDr, Double[] multiyearCosts) {
+    public ValuationFunctionRecord(Integer id, Integer valuationDatasetId, Integer endpointGroupId, Integer endpointId, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double valA, String nameA, String distA, Double p1a, Double p2a, Double valB, String nameB, Double valC, String nameC, Double valD, String nameD, Boolean epaStandard, String accessUrl, String valuationType, Boolean multiyear, Double multiyearDr, Double[] multiyearCosts, String userId, Short shareScope, Short archived) {
         super(ValuationFunction.VALUATION_FUNCTION);
 
         setId(id);
@@ -434,5 +476,8 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
         setMultiyear(multiyear);
         setMultiyearDr(multiyearDr);
         setMultiyearCosts(multiyearCosts);
+        setUserId(userId);
+        setShareScope(shareScope);
+        setArchived(archived);
     }
 }

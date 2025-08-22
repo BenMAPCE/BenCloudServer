@@ -63,6 +63,7 @@ import gov.epa.bencloud.server.tasks.TaskUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import spark.Request;
 import spark.Response;
+import org.slf4j.Logger;
 
 /**
  * @author jimanderton
@@ -331,7 +332,7 @@ public class ApiUtil {
 	 */
 	public static void cancelQueriesByUuid(String uuid) { 
 		try {
-			Result<Record1<Integer>> pidRecords = DSL.using(JooqUtil.getJooqConfiguration())
+			Result<Record1<Integer>> pidRecords = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 			.select(DSL.field("pid", Integer.class))
 			.from("pg_stat_activity")
 			.where(DSL.field("application_name").eq(uuid))
@@ -345,6 +346,7 @@ public class ApiUtil {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.out.println("Error canceling queries for taskUuid: " + uuid);
 		}
 	}
 	
@@ -672,13 +674,15 @@ public class ApiUtil {
 	 * @param sigFigs
 	 * @return string containing formatted point estimate and 95% confidence interval
 	 */
-	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs) {
+	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs, boolean showDollarSign) {
 		StringBuilder s = new StringBuilder();
-		s.append("$");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(pointEstimate, sigFigs));
-		s.append(" ($");
+		s.append(" (");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(p2_5, sigFigs));
-		s.append(" to $");
+		s.append(" to ");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(p97_5, sigFigs));
 		s.append(")");
 
