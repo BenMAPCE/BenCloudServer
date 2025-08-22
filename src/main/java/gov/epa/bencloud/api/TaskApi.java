@@ -31,6 +31,7 @@ import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record17;
+import org.jooq.Record2;
 import org.jooq.Record21;
 import org.jooq.Result;
 import org.jooq.Table;
@@ -824,18 +825,21 @@ public class TaskApi {
 						String aqBaselineName = AirQualityApi.getAirQualityLayerName(Integer.valueOf(batchParamsNode.get("aqBaselineId").asText()));
 						data.put("aq_baseline_name", aqBaselineName);
 
-						Record1<String> metricName = 
+						Record2<String, String> metricName = 
 						DSL.using(JooqUtil.getJooqConfiguration())
 							.select(
-									POLLUTANT_METRIC.NAME
+									POLLUTANT_METRIC.NAME.as("task_metric_name"),
+									GRID_DEFINITION.NAME.as("aq_grid_definition_name")
 									)
 							.from(POLLUTANT_METRIC)
 							.join(AIR_QUALITY_LAYER_METRICS).on(AIR_QUALITY_LAYER_METRICS.METRIC_ID.eq(POLLUTANT_METRIC.ID))
 							.join(AIR_QUALITY_LAYER).on(AIR_QUALITY_LAYER.ID.eq(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID))				
+							.join(GRID_DEFINITION).on(AIR_QUALITY_LAYER.GRID_DEFINITION_ID.eq(GRID_DEFINITION.ID))
 							.where(AIR_QUALITY_LAYER.ID.eq(batchParamsNode.get("aqBaselineId").asInt()))
 							.fetchOne();
 
-						data.put("task_metric_name", metricName.value1());
+						data.put("task_metric_name", metricName.get("task_metric_name").toString());
+						data.put("aq_grid_definition_name", metricName.get("aq_grid_definition_name").toString());
 						data.put("pollutant_name", batchParamsNode.get("pollutantName").asText());
 						int valuationGridId = batchParamsNode.get("gridDefinitionId").asInt();
 						data.put("valuation_grid_id", valuationGridId);

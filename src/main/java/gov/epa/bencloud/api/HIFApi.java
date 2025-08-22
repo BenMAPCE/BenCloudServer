@@ -256,9 +256,9 @@ public class HIFApi {
 
 			for (Record res : hifRecords) {
 				res.setValue(DSL.field("formatted_results_2sf", String.class), 
-								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
+								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2, false));
 				res.setValue(DSL.field("formatted_results_3sf", String.class), 
-								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
+								ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3, false));
 			}
 		
 			//TODO: Can we remove percentiles?
@@ -438,9 +438,9 @@ public class HIFApi {
 
 				for (Record res : hifRecords) {
 					res.setValue(DSL.field("formatted_results_2sf", String.class), 
-									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2, false));
 					res.setValue(DSL.field("formatted_results_3sf", String.class), 
-									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3, false));
 				}
 
 				//Remove percentiles by keeping all other fields

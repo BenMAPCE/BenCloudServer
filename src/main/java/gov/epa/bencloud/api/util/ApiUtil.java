@@ -674,13 +674,15 @@ public class ApiUtil {
 	 * @param sigFigs
 	 * @return string containing formatted point estimate and 95% confidence interval
 	 */
-	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs) {
+	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs, boolean showDollarSign) {
 		StringBuilder s = new StringBuilder();
-		s.append("$");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(pointEstimate, sigFigs));
-		s.append(" ($");
+		s.append(" (");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(p2_5, sigFigs));
-		s.append(" to $");
+		s.append(" to ");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(p97_5, sigFigs));
 		s.append(")");
 
