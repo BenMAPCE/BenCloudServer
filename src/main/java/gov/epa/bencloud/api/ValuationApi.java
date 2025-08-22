@@ -255,14 +255,14 @@ public class ValuationApi {
 				// Add in the formatted results
 				for (Record res : vfRecords) {
 					res.setValue(DSL.field("formatted_results_2sf", String.class), 
-									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2));
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 2, true));
 					res.setValue(DSL.field("formatted_results_3sf", String.class), 
-									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3));
+									ApiUtil.createFormattedResultsString(res.get("point_estimate", Double.class), res.get("pct_2_5", Double.class), res.get("pct_97_5", Double.class), 3, true));
 				}
 				
 				//Remove percentiles by keeping all other fields
-				vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,23));
-			
+				vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,23,25,26));
+				//21 variance, 24percentiles, 25 formatted 2sf, 26 formatted 3sf, 27 vfid
 		} catch (DataAccessException e) {
 			e.printStackTrace();
 			response.status(400);
