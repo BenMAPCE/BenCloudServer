@@ -734,16 +734,11 @@ public class HIFApi {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String hifGroupName;
 		String description;
-		String filename;
-		LocalDateTime uploadDate;
-		int pollutantId;
+
 		
 		try{
-			pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
 			hifGroupName = ApiUtil.getMultipartFormParameterAsString(request, "hifGroupName");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
-			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
-			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -806,12 +801,14 @@ public class HIFApi {
 		int heroUrlIdx=-999;
 		int accessUrlIdx=-999;
 		
+		Map<String, Integer> pollutantIdLookup = new HashMap<>();	
 		Map<String, Integer> raceIdLookup = new HashMap<>();		
 		Map<String, Integer> ethnicityIdLookup = new HashMap<>();		
 		Map<String, Integer> genderIdLookup = new HashMap<>();
 		HashMap<String,Map<String,Integer>> endpointIdLookup = new HashMap<String,Map<String,Integer>>();
 		Map<String, Integer> endpointGroupIdLookup = new HashMap<>();
-		Map<String, Integer> metricIdLookup = new HashMap<>();
+		Map<String, Integer> ozoneMetricIdLookup = new HashMap<>();
+		Map<String, Integer> pmMetricIdLookup = new HashMap<>();
 		Map<String, Integer> timingIdLookup = new HashMap<>();
 
 		int hifGroupId = 0;
@@ -965,7 +962,6 @@ public class HIFApi {
 				}
 			}
 
-			// String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, seasonalMetricIdx, metricStatisticIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx, heroIdIdx, heroUrlIdx, accessUrlIdx);
 			String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, seasonalMetricIdx, metricStatisticIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx);
 
 			if(tmp.length() > 0) {
@@ -981,11 +977,13 @@ public class HIFApi {
 				return CoreApi.transformValMsgToJSON(validationMsg);
 			}
 			
+			pollutantIdLookup = HIFUtil.getPollutantIdLookup();
 			ethnicityIdLookup = HIFUtil.getEthnicityIdLookup();
 			raceIdLookup = HIFUtil.getRaceIdLookup();
 			genderIdLookup = HIFUtil.getGenderIdLookup();
 			endpointGroupIdLookup = HIFUtil.getEndpointGroupIdLookup();
-			metricIdLookup = HIFUtil.getMetricIdLookup(pollutantId);
+			ozoneMetricIdLookup = HIFUtil.getMetricIdLookup(4);
+			pmMetricIdLookup = HIFUtil.getMetricIdLookup(6);
 			timingIdLookup = HIFUtil.getTimingIdLookup();
 
 			
@@ -998,6 +996,7 @@ public class HIFApi {
 			int countEndAgeTypeError = 0;
 			int countAgeRangeError = 0;
 
+			int countMissingPollutant = 0;
 			int countMissingEndpoint = 0;
 			int countMissingEndpointGroup = 0;
 			int countMissingMetric = 0;
@@ -1014,6 +1013,7 @@ public class HIFApi {
 			int countBaselineFunctionError = 0;
 			int countFunctionError = 0;
 
+			List<String> lstUndefinedPollutants = new ArrayList<String>();
 			List<String> lstUndefinedEthnicities = new ArrayList<String>();
 			List<String> lstUndefinedRaces = new ArrayList<String>();
 			List<String> lstUndefinedGenders = new ArrayList<String>();
@@ -1043,12 +1043,21 @@ public class HIFApi {
 					Integer endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
 					//endpoint group id is a short in endpoint data but an Integer in endpoint group data
 					short shortEndpointGroupId = (short) (int) endpointGroupId;
-					endpointIdLookup.put(endpointGroupName, IncidenceUtil.getEndpointIdLookup(shortEndpointGroupId));
+					endpointIdLookup.put(endpointGroupName, HIFUtil.getEndpointIdLookup(shortEndpointGroupId));
 				}
 
 				//TODO: Update this validation code when we add lookup tables for timeframe, units, and/or distribution
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
 				String str = "";
+
+				str = record[pollutantIdx];
+				if(str == "") {
+					countMissingPollutant ++;
+				} else if(!pollutantIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
+					if (!lstUndefinedPollutants.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedPollutants.add(String.valueOf(str.toLowerCase()));
+					}
+				}
 
 				str = record[ethnicityIdx];
 				if(!ethnicityIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
@@ -1093,9 +1102,20 @@ public class HIFApi {
 				str= record[metricIdx];
 				if(str == "") {
 					countMissingMetric ++;
-				} else if(!metricIdLookup.containsKey(str.toLowerCase())) {
-					if (!lstUndefinedMetrics.contains(String.valueOf(str.toLowerCase()))) {
-						lstUndefinedMetrics.add(String.valueOf(str.toLowerCase()));
+				} else if(pollutantIdLookup.containsKey(record[pollutantIdx].toLowerCase())) {
+					int pollId = pollutantIdLookup.get(record[pollutantIdx].toLowerCase());
+					if(pollId == 4) {
+						if(!ozoneMetricIdLookup.containsKey(str.toLowerCase())) {
+							if (!lstUndefinedMetrics.contains(String.valueOf(str.toLowerCase()))) {
+								lstUndefinedMetrics.add(String.valueOf(str.toLowerCase()));
+							}
+						}	
+					} else if(pollId == 6) {
+						if(!pmMetricIdLookup.containsKey(str.toLowerCase())) {
+							if (!lstUndefinedMetrics.contains(String.valueOf(str.toLowerCase()))) {
+								lstUndefinedMetrics.add(String.valueOf(str.toLowerCase()));
+							}
+						}	
 					}
 				}
 
@@ -1134,7 +1154,7 @@ public class HIFApi {
 					countAgeRangeError++;
 				}
 
-				//beta should be a double and >= 0
+				//beta should be a double and 
 				str = record[betaIdx];
 				try {
 					double dbl = Double.parseDouble(str);
@@ -1148,7 +1168,7 @@ public class HIFApi {
 					countDistBetaError++;
 				}
 
-				//param 1 beta should be a double and >= 0
+				//param 1 beta should be a double
 				str = record[param1Idx];
 				try {
 					double dbl = Double.parseDouble(str);
@@ -1156,7 +1176,7 @@ public class HIFApi {
 					countParam1Error ++;
 				}
 
-				//param 2 beta should be a double and >= 0
+				//param 2 beta should be a double
 				str = record[param2Idx];
 				try {
 					double dbl = Double.parseDouble(str);
@@ -1164,7 +1184,7 @@ public class HIFApi {
 					countParam2Error ++;
 				}
 
-				//param a should be a double and >= 0
+				//param a should be a double
 				str = record[paramAIdx];
 				try {
 					double dbl = Double.parseDouble(str);
@@ -1172,7 +1192,7 @@ public class HIFApi {
 					countParamAError ++;
 				}
 
-				//param b should be a double and >= 0
+				//param b should be a double
 				str = record[paramBIdx];
 				try {
 					double dbl = Double.parseDouble(str);
@@ -1180,7 +1200,7 @@ public class HIFApi {
 					countParamBError ++;
 				}
 
-				//param c should be a double and >= 0
+				//param c should be a double
 				str = record[paramCIdx];
 				try {
 					double dbl = Double.parseDouble(str);
@@ -1422,7 +1442,7 @@ public class HIFApi {
 			if(lstUndefinedRaces.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Ethnicity values are not defined: " + String.join(",", lstUndefinedRaces) + ".";
+				msg.message = "The following Race values are not defined: " + String.join(",", lstUndefinedRaces) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1430,7 +1450,30 @@ public class HIFApi {
 			if(lstUndefinedGenders.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Ethnicity values are not defined: " + String.join(",", lstUndefinedGenders) + ".";
+				msg.message = "The following Gender values are not defined: " + String.join(",", lstUndefinedGenders) + ".";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countMissingPollutant>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMissingPollutant == 1) {
+					strRecord = String.valueOf(countMissingPollutant) + " record is missing a Pollutant value.";
+				}
+				else {
+					strRecord = String.valueOf(countMissingPollutant) + " records are missing Pollutant values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(lstUndefinedPollutants.size()>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				msg.message = "The following Pollutant values are not defined: " + String.join(",", lstUndefinedPollutants) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1600,8 +1643,18 @@ public class HIFApi {
 				
 				int endpointId = endpointIdLookup.get(endpointGroupName).get(endpointName);
 				
+				String pollutantName = record[pollutantIdx].toLowerCase();
+				int pollutantId = pollutantIdLookup.get(pollutantName);
+
 				String metricName = record[metricIdx].toLowerCase();
-				int metricId = metricIdLookup.get(metricName);
+				int metricId = 0;
+				
+				if(pollutantId == 4) {
+					metricId = ozoneMetricIdLookup.get(metricName);
+				} else if(pollutantId == 6) {
+					metricId = pmMetricIdLookup.get(metricName);
+				}
+
 
 				String timingName = record[timingIdx].toLowerCase();
 				int timingId = timingIdLookup.get(timingName);
