@@ -369,6 +369,20 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getHifResultDatasets(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * Archive a valuation function
+		 */
+		service.post(apiPrefix + "/valuation-function/:id", (request, response) -> {
+			return ValuationApi.archiveValuationFunction(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST a valuation function dataset
+		 */
+		service.post(apiPrefix + "/valuation-function-data", (request, response) -> {
+			return ValuationApi.postValuationFunctionData(request, response, getUserProfile(request, response));
+		});
 		
 		/*
 		 * GET array of all health impact function definitions that are part of a hif result dataset

@@ -3,18 +3,25 @@ package gov.epa.bencloud.api;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import javax.servlet.MultipartConfigElement;
+
+import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.Cursor;
@@ -48,17 +55,29 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.opencsv.CSVReader;
+
+import org.mariuszgromada.math.mxparser.Argument;
+import org.mariuszgromada.math.mxparser.Expression;
+import org.mariuszgromada.math.mxparser.mXparser;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.HIFTaskLog;
+import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
+import gov.epa.bencloud.api.util.IncidenceUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointGroupRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionGroupRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 import gov.epa.bencloud.server.util.DataConversionUtil;
@@ -606,6 +625,8 @@ public class ValuationApi {
 			filterCondition = filterCondition.and(VALUATION_FUNCTION.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(VALUATION_FUNCTION.USER_ID.eq(userId)));
 		}
 
+		filterCondition = filterCondition.and(VALUATION_FUNCTION.ARCHIVED.eq((short) 0));
+
 		Integer filteredRecordsCount = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
 				.from(VALUATION_FUNCTION)
@@ -653,7 +674,783 @@ public class ValuationApi {
 		response.type("application/json");
 		return data;
 	}
+
+
+	/*
+	 * @param userProfile
+	 * @return JSON representation of all health effect groups for a given user.
+	 */
+	public static Map<String, Integer> getAllHealthEffectGroupsByUser(String userId) {
+			
+		if(userId == null) {
+            return null;
+        }
+
+		Map<String, Integer> heGroupNameMap = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(DSL.lower(ENDPOINT_GROUP.NAME), ENDPOINT_GROUP.ID)
+				.from(ENDPOINT_GROUP)
+				.where(ENDPOINT_GROUP.USER_ID.equal(userId).or(ENDPOINT_GROUP.SHARE_SCOPE.equal((short) 1)))
+				.fetchMap(DSL.lower(ENDPOINT_GROUP.NAME), ENDPOINT_GROUP.ID);
+
+		return heGroupNameMap;
+	}
+
 	
+	public static Object postValuationFunctionData(Request request, Response response, Optional<UserProfile> userProfile) {
+		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+		String healthEffectGroupName;
+		String description;
+		String filename;
+		LocalDateTime uploadDate;
+		
+		try{
+			healthEffectGroupName = ApiUtil.getMultipartFormParameterAsString(request, "healthEffectGroupName");
+			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
+			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
+			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+		
+		//Validate csv file
+		String errorMsg= ""; //stores more detailed info. Not used in report for now but may need in the future?
+		ValidationMessage validationMsg = new ValidationMessage();
+
+				
+		if(healthEffectGroupName == null) {
+			response.type("application/json");
+			//response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Missing required parameter: name."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
+		String userId = userProfile.get().getId();
+		
+		EndpointGroupRecord heGroupRecord=null;
+		ValuationFunctionRecord vfRecord=null;
+		int endpointIdx=-999;
+		int qualifierIdx=-999;
+		int referenceIdx=-999;
+		int startAgeIdx=-999;
+		int endAgeIdx=-999;
+		int functionIdx=-999;
+		int distributionIdx=-999;
+		int param1Idx=-999;
+		int param2Idx=-999;
+		int paramAIdx=-999;
+		int paramANameIdx=-999;
+		int paramBIdx=-999;
+		int paramBNameIdx=-999;
+		int paramCIdx=-999;
+		int paramCNameIdx=-999;
+		int paramDIdx=-999;
+		int paramDNameIdx=-999;
+		int epaStandardIdx=-999;
+		int valuationTypeIdx=-999;
+		int multiyearIdx=-999;
+		int multiyearDrIdx=-999;
+		int multiyearCostsIdx=-999;
+		int accessUrlIdx=-999;
+
+		Map<String,Integer> endpointIdLookup = new HashMap<String,Integer>();
+
+		int heGroupId = 0;
+		Map<String, Integer> heGroupNameMap = getAllHealthEffectGroupsByUser(userId);
+
+		if(heGroupNameMap.containsKey(healthEffectGroupName.toLowerCase())) {
+			heGroupId = heGroupNameMap.get(healthEffectGroupName.toLowerCase());
+		} else {
+			heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+				.insertInto(ENDPOINT_GROUP
+						, ENDPOINT_GROUP.NAME
+						, ENDPOINT_GROUP.USER_ID
+						, ENDPOINT_GROUP.SHARE_SCOPE
+						)
+				.values(healthEffectGroupName, userId, Constants.SHARING_NONE)
+				.returning(ENDPOINT_GROUP.ID)
+				.fetchOne();
+
+			heGroupId = heGroupRecord.value1();
+		}
+		
+		//remove built in tokens (e, pi, sin, etc.)
+		//these were causing function arguments to get parsed incorrectly
+		//not working as expected, need to find a different way to validate functions
+		for(String s : mXparser.getBuiltinTokensToRemove()) {
+			mXparser.removeBuiltinTokens(s);
+		}
+
+		try (InputStream is = request.raw().getPart("file").getInputStream()) {
+			BOMInputStream bis = new BOMInputStream(is, false);
+			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
+
+			String[] record;
+			
+			//step 1: verify column names 
+			// Read the header
+			// allow either "column" or "col"; "values" or "value"
+			// todo: warn or abort when both "column" and "col" exist.
+			record = csvReader.readNext();
+			for(int i=0; i < record.length; i++) {
+				switch(record[i].toLowerCase().replace(" ", "")) {
+				case "healtheffect":
+					endpointIdx=i;
+					break;
+				case "riskmodeldetails":
+					qualifierIdx=i;
+					break;
+				case "reference":
+					referenceIdx=i;
+					break;
+				case "startage":
+					startAgeIdx=i;
+					break;
+				case "endage":
+					endAgeIdx=i;
+					break;
+				case "function":
+					functionIdx=i;
+					break;		
+				case "distribution":
+					distributionIdx=i;
+					break;	
+				case "standarderror":
+					param1Idx=i;
+					break;
+				case "param2a":
+					param2Idx=i;
+					break;
+				case "a":
+					paramAIdx=i;
+					break;
+				case "namea":
+					paramANameIdx=i;
+					break;
+				case "b":
+					paramBIdx=i;
+					break;
+				case "nameb":
+					paramBNameIdx=i;
+					break;
+				case "c":
+					paramCIdx=i;
+					break;
+				case "namec":
+					paramCNameIdx=i;
+					break;	
+				case "d":
+					paramDIdx=i;
+					break;
+				case "named":
+					paramDNameIdx=i;
+					break;
+				case "valuationtype":
+					valuationTypeIdx=i;
+					break;	
+				case "epastandard":
+					epaStandardIdx=i;
+					break;	
+				case "multiyear":
+					multiyearIdx=i;
+					break;	
+				case "multiyeardr":
+					multiyearDrIdx=i;
+					break;	
+				case "multiyearcosts":
+					multiyearCostsIdx=i;
+					break;	
+				case "accessurl":
+					accessUrlIdx=i;
+					break;			
+				default:
+					System.out.println(record[i].toLowerCase().replace(" ", ""));
+				}
+			}
+
+			String tmp = ValuationUtil.validateModelColumnHeadings(endpointIdx, qualifierIdx, referenceIdx, startAgeIdx, endAgeIdx, functionIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, distributionIdx);
+
+			if(tmp.length() > 0) {
+				log.debug("end age index is :" + endAgeIdx);
+
+				log.debug("valuation function dataset posted - columns are missing: " + tmp);
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				msg.message = "The following columns are missing: " + tmp;
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+				response.type("application/json");
+				return CoreApi.transformValMsgToJSON(validationMsg);
+			}
+			
+			endpointIdLookup = ValuationUtil.getEndpointIdLookup((short) heGroupId);
+			
+		// 	//We might also need to clean up the header. Or, maybe we should make this a transaction?
+			
+		// 	//step 2: make sure file has > 0 rows. Check rowCount after while loop.
+			int rowCount = 0;
+			int countStartAgeTypeError = 0;
+			int countEndAgeTypeError = 0;
+			int countAgeRangeError = 0;
+
+			int countEpaStandardTypeError = 0;
+			int countMultiyearTypeError = 0;
+
+			int countMissingEndpoint = 0;
+			int countMissingEndpointGroup = 0;
+
+			int countDistributionError = 0;
+			int countParam1Error = 0;
+			int countParam2Error = 0;
+			int countParamAError = 0;
+			int countParamBError = 0;
+			int countMultiyearCostsError = 0;
+			int countMultiyearCostsTypeError = 0;
+
+			int countFunctionError = 0;
+
+			List<String> lstUndefinedEndpoints = new ArrayList<String>();
+			List<String> lstUndefinedEndpointGroups = new ArrayList<String>();
+
+			Map<String, Integer> dicUniqueRecord = new HashMap<String,Integer>();	
+
+			List<String> distTypes = new ArrayList<String>();
+			distTypes.add("None");
+			distTypes.add("Triangular");
+			distTypes.add("Normal");
+			distTypes.add("Weibull");
+			distTypes.add("LogNormal");
+			distTypes.add("Custom");
+			distTypes.add("Uniform");
+
+
+			while ((record = csvReader.readNext()) != null) {				
+				rowCount ++;
+				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
+				if (!endpointIdLookup.containsKey(record[endpointIdx].toLowerCase())){
+					EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
+							.insertInto(ENDPOINT
+									, ENDPOINT.NAME
+									, ENDPOINT.ENDPOINT_GROUP_ID
+									)
+							.values(record[endpointIdx], (short) heGroupId)
+							.returning(ENDPOINT.ID)
+							.fetchOne();
+
+					int heId = heRecord.value1();
+					
+					endpointIdLookup.put(record[endpointIdx].toLowerCase(), heId);
+					
+				}
+
+				//TODO: Update this validation code when we add lookup tables for timeframe, units, and/or distribution
+				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
+				String str = "";
+
+				//start age is required and should be an integer
+				str = record[startAgeIdx];
+				//question: or use Integer.parseInt(str)??
+				if(str=="" || !str.matches("-?\\d+")) {
+					countStartAgeTypeError++;
+				}	
+
+				//end age is required and should be an integer
+				str = record[endAgeIdx];
+				//question: or use Integer.parseInt(str)??
+				if(str=="" || !str.matches("-?\\d+")) {
+					countEndAgeTypeError++;
+				}	
+
+				if(Integer.parseInt(record[startAgeIdx]) > Integer.parseInt(record[endAgeIdx])) {
+					countAgeRangeError++;
+				}
+
+				//EPA standard should be true or false
+				str = record[epaStandardIdx];
+				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+					countEpaStandardTypeError++;
+				}	
+
+				//Multiyear should be true or false
+				str = record[multiyearIdx];
+				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+					countMultiyearTypeError++;
+				}	
+
+
+				//distribution should be a value in the distTypes list
+				str = record[distributionIdx];
+				if(!distTypes.contains(str)) {
+					countDistributionError++;
+				}
+
+				//param 1 beta should be a double
+				str = record[param1Idx];
+				try {
+					double dbl = Double.parseDouble(str);
+				} catch(NumberFormatException e){
+					countParam1Error ++;
+				}
+
+				//param 2 beta should be a double
+				str = record[param2Idx];
+				try {
+					double dbl = Double.parseDouble(str);
+				} catch(NumberFormatException e){
+					countParam2Error ++;
+				}
+
+				//param a should be a double
+				str = record[paramAIdx];
+				try {
+					double dbl = Double.parseDouble(str);
+				} catch(NumberFormatException e){
+					countParamAError ++;
+				}
+
+				//param b should be a double
+				str = record[paramBIdx];
+				try {
+					double dbl = Double.parseDouble(str);
+				} catch(NumberFormatException e){
+					countParamBError ++;
+				}
+
+				//multiyear costs should be a double and >= 0
+				str = record[multiyearCostsIdx];
+				try {
+					if(str != null && !str.equals("")) {
+						float dbl = Float.parseFloat(str);
+						if(dbl < 0) {
+							countMultiyearCostsError++;
+						}
+					}
+				} catch(NumberFormatException e){
+					countMultiyearCostsTypeError ++;
+				}
+
+				// //function should be a valid formula
+				// str = record[functionIdx];
+				// e = new Expression(str);
+
+				// missingVars = e.getMissingUserDefinedArguments();
+
+				// for (String varName : missingVars) {
+				// 	e.addArguments(new Argument(varName + " = 1"));
+				// }
+
+				// if(!e.checkSyntax()) {
+				// 	countFunctionError++;
+				// }	
+
+		
+			}
+
+			//summarize validation message
+
+			if(countStartAgeTypeError>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countStartAgeTypeError == 1) {
+					strRecord = String.valueOf(countStartAgeTypeError) + " record has a Start Age value that is not a valid integer.";
+				}
+				else {
+					strRecord = String.valueOf(countStartAgeTypeError) + " records have Start Age values that are not valid integers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countEndAgeTypeError>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countEndAgeTypeError == 1) {
+					strRecord = String.valueOf(countEndAgeTypeError) + " record has a End Age value that is not a valid integer.";
+				}
+				else {
+					strRecord = String.valueOf(countEndAgeTypeError) + " records have End Age values that are not valid integers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countAgeRangeError>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countAgeRangeError == 1) {
+					strRecord = String.valueOf(countAgeRangeError) + " record has an invalid age range.";
+				}
+				else {
+					strRecord = String.valueOf(countAgeRangeError) + " records have an invalid age range.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+			
+
+			if(countDistributionError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countDistributionError == 1) {
+					strRecord = String.valueOf(countDistributionError) + " record has an invalid Distribution value.";
+				}
+				else {
+					strRecord = String.valueOf(countDistributionError) + " records have invalid Distribution values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countParam1Error > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countParam1Error == 1) {
+					strRecord = String.valueOf(countParam1Error) + " record has a Standard Error value that is not a valid number.";
+				}
+				else {
+					strRecord = String.valueOf(countParam1Error) + " records have Standard Error values that are not valid numbers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countParam2Error > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countParam2Error == 1) {
+					strRecord = String.valueOf(countParam2Error) + " record has a Param 2 A value that is not a valid number.";
+				}
+				else {
+					strRecord = String.valueOf(countParam2Error) + " records have Param 2 A values that are not valid numbers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countParamAError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countParamAError == 1) {
+					strRecord = String.valueOf(countParamAError) + " record has an A value that is not a valid number.";
+				}
+				else {
+					strRecord = String.valueOf(countParamAError) + " records have A values that are not valid numbers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countParamBError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countParamBError == 1) {
+					strRecord = String.valueOf(countParamBError) + " record has a B value that is not a valid number.";
+				}
+				else {
+					strRecord = String.valueOf(countParamBError) + " records have B values that are not valid numbers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countMissingEndpoint>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMissingEndpoint == 1) {
+					strRecord = String.valueOf(countMissingEndpoint) + " record is missing a Health Effect value.";
+				}
+				else {
+					strRecord = String.valueOf(countMissingEndpoint) + " records are missing Health Effect values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countMultiyearCostsTypeError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMultiyearCostsTypeError == 1) {
+					strRecord = String.valueOf(countMultiyearCostsTypeError) + " record has an Multiyear Costs value that is not a valid number.";
+				}
+				else {
+					strRecord = String.valueOf(countMultiyearCostsTypeError) + " records have Multiyear Costs values that are not valid numbers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countMultiyearCostsError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMultiyearCostsError == 1) {
+					strRecord = String.valueOf(countMultiyearCostsError) + " record has an Multiyear Costs value that is less than 0.";
+				}
+				else {
+					strRecord = String.valueOf(countMultiyearCostsError) + " records have Multiyear Costs values that are less than 0.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countEpaStandardTypeError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countEpaStandardTypeError == 1) {
+					strRecord = String.valueOf(countEpaStandardTypeError) + " record has an invalid EPA Standard value.";
+				}
+				else {
+					strRecord = String.valueOf(countEpaStandardTypeError) + " records have invalid EPA Standard values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countMultiyearTypeError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMultiyearTypeError == 1) {
+					strRecord = String.valueOf(countMultiyearTypeError) + " record has an invalid Multiyear value.";
+				}
+				else {
+					strRecord = String.valueOf(countMultiyearTypeError) + " records have invalid Multiyear values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(lstUndefinedEndpoints.size()>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				msg.message = "The following Health Effect values are not defined: " + String.join(",", lstUndefinedEndpoints) + ".";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countMissingEndpointGroup>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countMissingEndpointGroup == 1) {
+					strRecord = String.valueOf(countMissingEndpointGroup) + " record is missing a Health Effect Category value.";
+				}
+				else {
+					strRecord = String.valueOf(countMissingEndpointGroup) + " records are missing Health Effect Category values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(lstUndefinedEndpointGroups.size()>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				msg.message = "The following Health Effect Category values are not defined: " + String.join(",", lstUndefinedEndpointGroups) + ".";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+
+			if(countFunctionError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countFunctionError == 1) {
+					strRecord = String.valueOf(countFunctionError) + " record has a function value that is not a valid formula.";
+				}
+				else {
+					strRecord = String.valueOf(countFunctionError) + " records have function values that are not valid formulas.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+			
+			//---End of csv validation
+			
+		} catch (Exception e) {
+			log.error("Error validating valuation function upload", e);
+			response.type("application/json");
+			//response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of valuation functions."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+
+		if(validationMsg.messages.size() > 0) {
+			log.error("Error validating valuation function upload");
+			response.type("application/json");
+			//response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of valuation functions."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+		
+		Integer hifDatasetId = null;
+		
+		// //import data
+		try (InputStream is = request.raw().getPart("file").getInputStream()){
+			CSVReader csvReader = new CSVReader (new InputStreamReader(is));
+			String[] record;
+			record = csvReader.readNext();
+			while ((record = csvReader.readNext()) != null) {		
+
+				String endpointName = record[endpointIdx].toLowerCase();
+				
+				int endpointId = endpointIdLookup.get(endpointName);
+
+				short startAge = Short.valueOf(record[startAgeIdx]);
+				short endAge = Short.valueOf(record[endAgeIdx]);
+
+				boolean multiyearValue = false;
+				String multiyear = record[multiyearIdx];
+				if(multiyear != null && !multiyear.equals("")) {
+					multiyearValue = Boolean.valueOf(multiyear);
+				}
+
+				boolean epaStandardValue = false;
+				String epaStandard = record[epaStandardIdx];
+				if(epaStandard != null && !epaStandard.equals("")) {
+					epaStandardValue = Boolean.valueOf(epaStandard);
+				}
+
+				String accessUrl = null;
+				if(record[accessUrlIdx] != null) {
+					accessUrl = record[accessUrlIdx];
+				}
+
+				String valuationType = null;
+				if(record[valuationTypeIdx] != null) {
+					valuationType = record[valuationTypeIdx];
+				}
+
+				Double p1beta = 0.0;
+				if(!record[param1Idx].equals("")){
+					p1beta = Double.valueOf(record[param1Idx]);
+				}
+
+				Double p2beta = 0.0;
+				if(!record[param2Idx].equals("")){
+					p2beta = Double.valueOf(record[param2Idx]);
+				}
+
+				Double valA = 0.0;
+				if(!record[paramAIdx].equals("")){
+					valA = Double.valueOf(record[paramAIdx]);
+				}
+
+				Double valB = 0.0;
+				if(!record[paramBIdx].equals("")){
+					valB = Double.valueOf(record[paramBIdx]);
+				}
+
+				Double valC = 0.0;
+				if(record[paramCIdx] != null && !record[paramCIdx].equals("")){
+					valC = Double.valueOf(record[paramCIdx]);
+				}
+
+				Double valD = 0.0;
+				if(record[paramDIdx] != null && !record[paramDIdx].equals("")){
+					valD = Double.valueOf(record[paramDIdx]);
+				}
+
+				// Double multiyearCosts = 0.0;
+				// if(record[multiyearCostsIdx] != null && !record[multiyearCostsIdx].equals("")){
+				// 	multiyearCosts = Double.valueOf(record[multiyearCostsIdx]);
+				// }
+
+				Double multiyearDr = 0.0;
+				if(record[multiyearDrIdx] != null && !record[multiyearDrIdx].equals("")){
+					multiyearDr = Double.valueOf(record[multiyearDrIdx]);
+				}
+
+
+				//Create the hif record
+				vfRecord = DSL.using(JooqUtil.getJooqConfiguration())
+				.insertInto(VALUATION_FUNCTION
+						, VALUATION_FUNCTION.VALUATION_DATASET_ID
+						, VALUATION_FUNCTION.ENDPOINT_GROUP_ID
+						, VALUATION_FUNCTION.ENDPOINT_ID
+						, VALUATION_FUNCTION.QUALIFIER
+						, VALUATION_FUNCTION.REFERENCE
+						, VALUATION_FUNCTION.START_AGE
+						, VALUATION_FUNCTION.END_AGE
+						, VALUATION_FUNCTION.FUNCTION_TEXT
+						, VALUATION_FUNCTION.DIST_A
+						, VALUATION_FUNCTION.P1A
+						, VALUATION_FUNCTION.P2A
+						, VALUATION_FUNCTION.VAL_A
+						, VALUATION_FUNCTION.NAME_A
+						, VALUATION_FUNCTION.VAL_B
+						, VALUATION_FUNCTION.NAME_B
+						, VALUATION_FUNCTION.VAL_C
+						, VALUATION_FUNCTION.NAME_C
+						, VALUATION_FUNCTION.VAL_D
+						, VALUATION_FUNCTION.NAME_D
+						, VALUATION_FUNCTION.EPA_STANDARD
+						, VALUATION_FUNCTION.ACCESS_URL
+						, VALUATION_FUNCTION.VALUATION_TYPE
+						, VALUATION_FUNCTION.MULTIYEAR
+						, VALUATION_FUNCTION.MULTIYEAR_DR
+						, VALUATION_FUNCTION.USER_ID
+						, VALUATION_FUNCTION.SHARE_SCOPE
+						)
+				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
+				record[functionIdx], record[distributionIdx], p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
+				valuationType, multiyearValue, multiyearDr, userId, Constants.SHARING_NONE)
+				.returning(VALUATION_FUNCTION.ID)
+				.fetchOne();
+
+				int vfRecordId = vfRecord.getId();
+
+			}
+		
+		} catch (Exception e) {
+			log.error("Error importing valuation functions", e);
+			response.type("application/json");
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of valuation functions."));
+			// deleteIncidenceDataset(incidenceDatasetId, userProfile);
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
+		
+		response.type("application/json");
+		validationMsg.success = true;
+		return CoreApi.transformValMsgToJSON(validationMsg); 
+	}
+
+
+
 	/**
 	 * 
 	 * @param request
@@ -670,6 +1467,40 @@ public class ValuationApi {
 		
 		response.type("application/json");
 		return valuationDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+	}
+
+	public static Object archiveValuationFunction(Request request, Response response, Optional<UserProfile> userProfile) {
+	
+		ValidationMessage validationMsg = new ValidationMessage();
+		Integer id;
+
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		ValuationFunctionRecord vfResult = create.selectFrom(VALUATION_FUNCTION).where(VALUATION_FUNCTION.ID.eq(id)).fetchAny();
+		if(vfResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Nobody can archive shared VFs
+		//All users can archive their own VFs
+		//Admins can archive any non-shared VFs
+		if(vfResult.getShareScope() == Constants.SHARING_ALL || !(vfResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		vfResult.setArchived((short) 1);
+
+		vfResult.store();
+
+		response.type("application/json");
+		validationMsg.success = true;
+		return CoreApi.transformValMsgToJSON(validationMsg); 
 	}
 	
 	/**
