@@ -41,7 +41,7 @@ public class ValuationConfig {
 		StringBuilder b = new StringBuilder();
 
 		if(vfRecord.get("qualifier") != null) {
-			b.append("Qualifier: ").append(vfRecord.get("qualifier")).append("\n");
+			b.append("Risk Model Details: ").append(vfRecord.get("qualifier")).append("\n");
 		}
 		b.append("Health Effect Group: ").append(vfRecord.get("endpoint_group_name")).append("\n");
 		b.append("Health Effect: ").append(vfRecord.get("endpoint_name")).append("\n");		
