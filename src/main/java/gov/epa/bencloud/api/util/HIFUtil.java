@@ -72,7 +72,7 @@ public class HIFUtil {
      */
 
 
-    public static String validateModelColumnHeadings(int endpointIdx, int endpointGroupIdx, int pollutantIdx, int metricIdx, int seasonalMetricIdx, int metricStatisticIdx, int timingIdx, int authorIdx, int studyYearIdx, int studyLocIdx, int otherPollutantIdx, int qualifierIdx, int referenceIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int baselineFunctionIdx, int betaIdx, int distBetaIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int paramCIdx, int paramCNameIdx, int distributionIdx) {
+    public static String validateModelColumnHeadings(int endpointIdx, int endpointGroupIdx, int pollutantIdx, int metricIdx, int timingIdx, int authorIdx, int studyYearIdx, int studyLocIdx, int otherPollutantIdx, int qualifierIdx, int referenceIdx, int raceIdx, int genderIdx, int ethnicityIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int baselineFunctionIdx, int betaIdx, int distBetaIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int paramCIdx, int paramCNameIdx, int distributionIdx) {
 		StringBuilder b = new StringBuilder();
 		if(endpointGroupIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Health Effect");
@@ -85,12 +85,6 @@ public class HIFUtil {
 		}
 		if(metricIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Metric");
-		}
-		if(seasonalMetricIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "Seasonal Metric");
-		}
-		if(metricStatisticIdx == -999) {
-			b.append((b.length()==0 ? "" : ", ") + "Metric Statistic");
 		}
 		if(timingIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Timing");
