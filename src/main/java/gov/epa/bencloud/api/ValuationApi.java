@@ -1594,9 +1594,16 @@ public class ValuationApi {
 	 */
 	public static Object getAllHealthEffectGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 
+		String userId = userProfile.get().getId();
+
+		Condition filterCondition = DSL.trueCondition();
+
+		filterCondition = filterCondition.and(ENDPOINT_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(ENDPOINT_GROUP.USER_ID.eq(userId)));
+
 		Result<Record> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select()
 				.from(ENDPOINT_GROUP)
+				.where(filterCondition)
 				.orderBy(ENDPOINT_GROUP.NAME.asc())
 				.fetch();
 		
