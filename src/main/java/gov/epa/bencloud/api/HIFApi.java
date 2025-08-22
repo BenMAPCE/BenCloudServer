@@ -835,9 +835,8 @@ public class HIFApi {
 		//remove built in tokens (e, pi, sin, etc.)
 		//these were causing function arguments to get parsed incorrectly
 		//not working as expected, need to find a different way to validate functions
-		for(String s : mXparser.getBuiltinTokensToRemove()) {
-			mXparser.removeBuiltinTokens(s);
-		}
+		mXparser.removeBuiltinTokens("e");
+		mXparser.removeBuiltinTokens("Beta");
 
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			BOMInputStream bis = new BOMInputStream(is, false);
@@ -962,7 +961,7 @@ public class HIFApi {
 				}
 			}
 
-			String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, seasonalMetricIdx, metricStatisticIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx);
+			String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx);
 
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
@@ -1034,11 +1033,12 @@ public class HIFApi {
 			distTypes.add("LogNormal");
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
+			distTypes.add("Gamma");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
 				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
-				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
+				String endpointGroupName = record[endpointGroupIdx].strip().toLowerCase();
 				if (!endpointIdLookup.containsKey(endpointGroupName)){
 					Integer endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
 					//endpoint group id is a short in endpoint data but an Integer in endpoint group data
@@ -1050,7 +1050,7 @@ public class HIFApi {
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
 				String str = "";
 
-				str = record[pollutantIdx];
+				str = record[pollutantIdx].strip();
 				if(str == "") {
 					countMissingPollutant ++;
 				} else if(!pollutantIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
@@ -1059,14 +1059,14 @@ public class HIFApi {
 					}
 				}
 
-				str = record[ethnicityIdx];
+				str = record[ethnicityIdx].strip();
 				if(!ethnicityIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
 					if (!lstUndefinedEthnicities.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedEthnicities.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 				
-				str = record[raceIdx];
+				str = record[raceIdx].strip();
 				if(!raceIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
 					if (!lstUndefinedRaces.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedRaces.add(String.valueOf(str.toLowerCase()));
@@ -1074,14 +1074,14 @@ public class HIFApi {
 				}
 
 				
-				str= record[genderIdx];
+				str= record[genderIdx].strip();
 				if(!genderIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
 					if (!lstUndefinedGenders.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedGenders.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 
-				str = record[endpointIdx];
+				str = record[endpointIdx].strip();
 				if(str == "") {
 					countMissingEndpoint ++;
 				} else if(!endpointIdLookup.get(endpointGroupName).containsKey(str.toLowerCase()) ) {
@@ -1090,7 +1090,7 @@ public class HIFApi {
 					}
 				}
 
-				str = record[endpointGroupIdx];
+				str = record[endpointGroupIdx].strip();
 				if(str == "") {
 					countMissingEndpointGroup ++;
 				} else if(!endpointGroupIdLookup.containsKey(str.toLowerCase()) ) {
@@ -1099,11 +1099,11 @@ public class HIFApi {
 					}
 				}
 
-				str= record[metricIdx];
+				str= record[metricIdx].strip();
 				if(str == "") {
 					countMissingMetric ++;
-				} else if(pollutantIdLookup.containsKey(record[pollutantIdx].toLowerCase())) {
-					int pollId = pollutantIdLookup.get(record[pollutantIdx].toLowerCase());
+				} else if(pollutantIdLookup.containsKey(record[pollutantIdx].strip().toLowerCase())) {
+					int pollId = pollutantIdLookup.get(record[pollutantIdx].strip().toLowerCase());
 					if(pollId == 4) {
 						if(!ozoneMetricIdLookup.containsKey(str.toLowerCase())) {
 							if (!lstUndefinedMetrics.contains(String.valueOf(str.toLowerCase()))) {
@@ -1119,7 +1119,7 @@ public class HIFApi {
 					}
 				}
 
-				str= record[timingIdx];
+				str= record[timingIdx].strip();
 				if(str == "") {
 					countMissingTiming ++;
 				} else if(!timingIdLookup.containsKey(str.toLowerCase())) {
@@ -1131,110 +1131,122 @@ public class HIFApi {
 				
 		// 		//step 3: Verify data types for each field
 				//study year is required and should be an integer
-				str = record[studyYearIdx];
+				str = record[studyYearIdx].strip();
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStudyYearTypeError++;
 				}	
 
 				//start age is required and should be an integer
-				str = record[startAgeIdx];
+				str = record[startAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStartAgeTypeError++;
 				}	
 
 				//end age is required and should be an integer
-				str = record[endAgeIdx];
+				str = record[endAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countEndAgeTypeError++;
 				}	
 
-				if(Integer.parseInt(record[startAgeIdx]) > Integer.parseInt(record[endAgeIdx])) {
+				if(Integer.parseInt(record[startAgeIdx].strip()) > Integer.parseInt(record[endAgeIdx].strip())) {
 					countAgeRangeError++;
 				}
 
-				//beta should be a double and 
-				str = record[betaIdx];
+				//beta should be a double
+				str = record[betaIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countBetaError ++;
 				}
 
 				//dist beta should be a value in the distTypes list
-				str = record[distBetaIdx];
+				str = record[distBetaIdx].strip();
 				if(!distTypes.contains(str)) {
 					countDistBetaError++;
 				}
 
 				//param 1 beta should be a double
-				str = record[param1Idx];
+				str = record[param1Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParam1Error ++;
 				}
 
 				//param 2 beta should be a double
-				str = record[param2Idx];
+				str = record[param2Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParam2Error ++;
 				}
 
 				//param a should be a double
-				str = record[paramAIdx];
+				str = record[paramAIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParamAError ++;
 				}
 
 				//param b should be a double
-				str = record[paramBIdx];
+				str = record[paramBIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParamBError ++;
 				}
 
 				//param c should be a double
-				str = record[paramCIdx];
+				str = record[paramCIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParamCError ++;
 				}
 
-				//baselinefunction should be a valid formula
-				// str = record[baselineFunctionIdx];
-				// Expression e = new Expression(str);
+				// baselinefunction should be a valid formula
+				str = record[baselineFunctionIdx].strip().toLowerCase();
+				Expression e = new Expression(str);
 				
-				// String[] missingVars = e.getMissingUserDefinedArguments();
+				String[] missingVars = e.getMissingUserDefinedArguments();
 
-				// for (String varName : missingVars) {
-				// 	e.addArguments(new Argument(varName + " = 1"));
-				// }
+				for (String varName : missingVars) {
+					e.addArguments(new Argument(varName + " = 1"));
+				}
 
-				// if(!e.checkSyntax()) {
-				// 	countBaselineFunctionError++;
-				// }	
+				if(!e.checkSyntax()) {
+					countBaselineFunctionError++;
+				}	
 
-				// //function should be a valid formula
-				// str = record[functionIdx];
-				// e = new Expression(str);
+				//function should be a valid formula
+				str = record[functionIdx].strip().toLowerCase();
+				e = new Expression(str);
 
-				// missingVars = e.getMissingUserDefinedArguments();
+				missingVars = e.getMissingUserDefinedArguments();
 
-				// for (String varName : missingVars) {
-				// 	e.addArguments(new Argument(varName + " = 1"));
-				// }
+				for (String varName : missingVars) {
+					e.addArguments(new Argument(varName + " = 1"));
+				}
 
-				// if(!e.checkSyntax()) {
-				// 	countFunctionError++;
-				// }	
+				if(!e.checkSyntax()) {
+					countFunctionError++;
+				}	
 
 		
 		// //check that we don't have duplicate records for a given categorization and row/col
@@ -1637,16 +1649,16 @@ public class HIFApi {
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
 
-				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
-				String endpointName = record[endpointIdx].toLowerCase();
+				String endpointGroupName = record[endpointGroupIdx].strip().toLowerCase();
+				String endpointName = record[endpointIdx].strip().toLowerCase();
 				int endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
 				
 				int endpointId = endpointIdLookup.get(endpointGroupName).get(endpointName);
 				
-				String pollutantName = record[pollutantIdx].toLowerCase();
+				String pollutantName = record[pollutantIdx].strip().toLowerCase();
 				int pollutantId = pollutantIdLookup.get(pollutantName);
 
-				String metricName = record[metricIdx].toLowerCase();
+				String metricName = record[metricIdx].strip().toLowerCase();
 				int metricId = 0;
 				
 				if(pollutantId == 4) {
@@ -1656,74 +1668,74 @@ public class HIFApi {
 				}
 
 
-				String timingName = record[timingIdx].toLowerCase();
+				String timingName = record[timingIdx].strip().toLowerCase();
 				int timingId = timingIdLookup.get(timingName);
 
-				String raceName = record[raceIdx].toLowerCase();
+				String raceName = record[raceIdx].strip().toLowerCase();
 				if (raceName.equals("")){
 					raceName = "all";
 				}
 				int raceId = raceIdLookup.get(raceName);
 
-				String genderName = record[genderIdx].toLowerCase();
+				String genderName = record[genderIdx].strip().toLowerCase();
 				if (genderName.equals("")){
 					genderName = "all";
 				}
 				int genderId = genderIdLookup.get(genderName);
 
-				String ethnicityName = record[ethnicityIdx].toLowerCase();
+				String ethnicityName = record[ethnicityIdx].strip().toLowerCase();
 				if (ethnicityName.equals("")){
 					ethnicityName = "all";
 				}
 				int ethnicityId = ethnicityIdLookup.get(ethnicityName);
 
-				int functionYear = Integer.valueOf(record[studyYearIdx]);
-				short startAge = Short.valueOf(record[startAgeIdx]);
-				short endAge = Short.valueOf(record[endAgeIdx]);
+				int functionYear = Integer.valueOf(record[studyYearIdx].strip());
+				short startAge = Short.valueOf(record[startAgeIdx].strip());
+				short endAge = Short.valueOf(record[endAgeIdx].strip());
 
 				int heroId = -1;
-				if(record[heroIdIdx] != null && !record[heroIdIdx].equals("")) {
-					heroId = Integer.valueOf(record[heroIdIdx]);
+				if(heroIdIdx != -999 && !record[heroIdIdx].strip().equals("")) {
+					heroId = Integer.valueOf(record[heroIdIdx].strip());
 				}
 
 				String heroUrl = null;
-				if(record[heroUrlIdx] != null) {
+				if(heroUrlIdx != -999) {
 					heroUrl = record[heroUrlIdx];
 				}
 
 				String accessUrl = null;
-				if(record[accessUrlIdx] != null) {
+				if(accessUrlIdx != -999) {
 					accessUrl = record[accessUrlIdx];
 				}
 
 				Double beta = 0.0;
-				if(!record[betaIdx].equals("")){
-					beta = Double.valueOf(record[betaIdx]);
+				if(!record[betaIdx].strip().equals("")){
+					beta = Double.valueOf(record[betaIdx].strip());
 				}
 
 				Double p1beta = 0.0;
-				if(!record[param1Idx].equals("")){
-					p1beta = Double.valueOf(record[param1Idx]);
+				if(!record[param1Idx].strip().equals("")){
+					p1beta = Double.valueOf(record[param1Idx].strip());
 				}
 
 				Double p2beta = 0.0;
-				if(!record[param2Idx].equals("")){
-					p2beta = Double.valueOf(record[param2Idx]);
+				if(!record[param2Idx].strip().equals("")){
+					p2beta = Double.valueOf(record[param2Idx].strip());
 				}
 
 				Double valA = 0.0;
-				if(!record[paramAIdx].equals("")){
-					valA = Double.valueOf(record[paramAIdx]);
+				if(!record[paramAIdx].strip().equals("")){
+					valA = Double.valueOf(record[paramAIdx].strip());
 				}
 
 				Double valB = 0.0;
-				if(!record[paramBIdx].equals("")){
-					valB = Double.valueOf(record[paramBIdx]);
+				if(!record[paramBIdx].strip().equals("")){
+					valB = Double.valueOf(record[paramBIdx].strip());
 				}
 
 				Double valC = 0.0;
-				if(!record[paramCIdx].equals("")){
-					valC = Double.valueOf(record[paramCIdx]);
+				if(!record[paramCIdx].strip().equals("")){
+					valC = Double.valueOf(record[paramCIdx].strip());
 				}
 
 				// String geogArea = "";
@@ -1785,8 +1797,8 @@ public class HIFApi {
 						)
 				.values(1, endpointGroupId, endpointId, pollutantId, metricId, timingId, record[authorIdx], functionYear, 
 				record[studyLocIdx], record[otherPollutantIdx], record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx], beta, record[distBetaIdx], p1beta, p2beta, valA, record[paramANameIdx], valB, 
-				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx], raceId, genderId, ethnicityId, 
+				record[functionIdx].strip(), beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
 				(heroId != -1 ? heroId : null), heroUrl, accessUrl, userId, Constants.SHARING_NONE)
 				.returning(HEALTH_IMPACT_FUNCTION.ID)
 				.fetchOne();

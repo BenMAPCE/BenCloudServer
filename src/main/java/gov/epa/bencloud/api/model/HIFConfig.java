@@ -137,7 +137,7 @@ public class HIFConfig {
 			b.append("Other Pollutants: ").append(hifRecord.get("other_pollutants")).append("\n");
 		}
 		if(hifRecord.get("qualifier") != null) {
-			b.append("Qualifier: ").append(hifRecord.get("qualifier")).append("\n");
+			b.append("Risk Model Details: ").append(hifRecord.get("qualifier")).append("\n");
 		}
 		if(hifRecord.get("reference") != null) {
 			b.append("Reference: ").append(hifRecord.get("reference")).append("\n");
