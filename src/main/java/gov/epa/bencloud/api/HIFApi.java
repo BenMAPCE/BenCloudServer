@@ -1050,107 +1050,107 @@ public class HIFApi {
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
 				String str = "";
 
-				str = record[pollutantIdx];
+				str = record[pollutantIdx].strip();
 				if(str == "") {
 					countMissingPollutant ++;
-				} else if(!pollutantIdLookup.containsKey(str.strip().toLowerCase() ) && !str.strip().equals("")) {
-					if (!lstUndefinedPollutants.contains(String.valueOf(str.strip().toLowerCase()))) {
-						lstUndefinedPollutants.add(String.valueOf(str.strip().toLowerCase()));
+				} else if(!pollutantIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
+					if (!lstUndefinedPollutants.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedPollutants.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 
-				str = record[ethnicityIdx];
-				if(!ethnicityIdLookup.containsKey(str.strip().toLowerCase() ) && !str.strip().equals("")) {
-					if (!lstUndefinedEthnicities.contains(String.valueOf(str.strip().toLowerCase()))) {
-						lstUndefinedEthnicities.add(String.valueOf(str.strip().toLowerCase()));
+				str = record[ethnicityIdx].strip();
+				if(!ethnicityIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
+					if (!lstUndefinedEthnicities.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedEthnicities.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 				
-				str = record[raceIdx];
-				if(!raceIdLookup.containsKey(str.strip().toLowerCase()) && !str.equals("")) {
-					if (!lstUndefinedRaces.contains(String.valueOf(str.strip().toLowerCase()))) {
-						lstUndefinedRaces.add(String.valueOf(str.strip().toLowerCase()));
+				str = record[raceIdx].strip();
+				if(!raceIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
+					if (!lstUndefinedRaces.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedRaces.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 
 				
-				str= record[genderIdx];
-				if(!genderIdLookup.containsKey(str.strip().toLowerCase()) && !str.equals("")) {
-					if (!lstUndefinedGenders.contains(String.valueOf(str.strip().toLowerCase()))) {
-						lstUndefinedGenders.add(String.valueOf(str.strip().toLowerCase()));
+				str= record[genderIdx].strip();
+				if(!genderIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
+					if (!lstUndefinedGenders.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedGenders.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 
-				str = record[endpointIdx];
+				str = record[endpointIdx].strip();
 				if(str == "") {
 					countMissingEndpoint ++;
-				} else if(!endpointIdLookup.get(endpointGroupName).containsKey(str.strip().toLowerCase()) ) {
-					if (!lstUndefinedEndpoints.contains(String.valueOf(str.strip().toLowerCase()))) {
-						lstUndefinedEndpoints.add(String.valueOf(str.strip().toLowerCase()));
+				} else if(!endpointIdLookup.get(endpointGroupName).containsKey(str.toLowerCase()) ) {
+					if (!lstUndefinedEndpoints.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedEndpoints.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 
-				str = record[endpointGroupIdx];
+				str = record[endpointGroupIdx].strip();
 				if(str == "") {
 					countMissingEndpointGroup ++;
-				} else if(!endpointGroupIdLookup.containsKey(str.strip().toLowerCase()) ) {
-					if (!lstUndefinedEndpointGroups.contains(String.valueOf(str.strip().toLowerCase()))) {
-						lstUndefinedEndpointGroups.add(String.valueOf(str.strip().toLowerCase()));
+				} else if(!endpointGroupIdLookup.containsKey(str.toLowerCase()) ) {
+					if (!lstUndefinedEndpointGroups.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedEndpointGroups.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 
-				str= record[metricIdx];
+				str= record[metricIdx].strip();
 				if(str == "") {
 					countMissingMetric ++;
 				} else if(pollutantIdLookup.containsKey(record[pollutantIdx].strip().toLowerCase())) {
 					int pollId = pollutantIdLookup.get(record[pollutantIdx].strip().toLowerCase());
 					if(pollId == 4) {
-						if(!ozoneMetricIdLookup.containsKey(str.strip().toLowerCase())) {
-							if (!lstUndefinedMetrics.contains(String.valueOf(str.strip().toLowerCase()))) {
-								lstUndefinedMetrics.add(String.valueOf(str.strip().toLowerCase()));
+						if(!ozoneMetricIdLookup.containsKey(str.toLowerCase())) {
+							if (!lstUndefinedMetrics.contains(String.valueOf(str.toLowerCase()))) {
+								lstUndefinedMetrics.add(String.valueOf(str.toLowerCase()));
 							}
 						}	
 					} else if(pollId == 6) {
-						if(!pmMetricIdLookup.containsKey(str.strip().toLowerCase())) {
-							if (!lstUndefinedMetrics.contains(String.valueOf(str.strip().toLowerCase()))) {
-								lstUndefinedMetrics.add(String.valueOf(str.strip().toLowerCase()));
+						if(!pmMetricIdLookup.containsKey(str.toLowerCase())) {
+							if (!lstUndefinedMetrics.contains(String.valueOf(str.toLowerCase()))) {
+								lstUndefinedMetrics.add(String.valueOf(str.toLowerCase()));
 							}
 						}	
 					}
 				}
 
-				str= record[timingIdx];
+				str= record[timingIdx].strip();
 				if(str == "") {
 					countMissingTiming ++;
-				} else if(!timingIdLookup.containsKey(str.strip().toLowerCase())) {
-					if (!lstUndefinedTimings.contains(String.valueOf(str.strip().toLowerCase()))) {
-						lstUndefinedTimings.add(String.valueOf(str.strip().toLowerCase()));
+				} else if(!timingIdLookup.containsKey(str.toLowerCase())) {
+					if (!lstUndefinedTimings.contains(String.valueOf(str.toLowerCase()))) {
+						lstUndefinedTimings.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 			
 				
 		// 		//step 3: Verify data types for each field
 				//study year is required and should be an integer
-				str = record[studyYearIdx];
+				str = record[studyYearIdx].strip();
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStudyYearTypeError++;
 				}	
 
 				//start age is required and should be an integer
-				str = record[startAgeIdx];
+				str = record[startAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStartAgeTypeError++;
 				}	
 
 				//end age is required and should be an integer
-				str = record[endAgeIdx];
+				str = record[endAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countEndAgeTypeError++;
 				}	
 
-				if(Integer.parseInt(record[startAgeIdx]) > Integer.parseInt(record[endAgeIdx])) {
+				if(Integer.parseInt(record[startAgeIdx].strip()) > Integer.parseInt(record[endAgeIdx].strip())) {
 					countAgeRangeError++;
 				}
 
@@ -1797,8 +1797,8 @@ public class HIFApi {
 						)
 				.values(1, endpointGroupId, endpointId, pollutantId, metricId, timingId, record[authorIdx], functionYear, 
 				record[studyLocIdx], record[otherPollutantIdx], record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx], beta, record[distBetaIdx], p1beta, p2beta, valA, record[paramANameIdx], valB, 
-				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx], raceId, genderId, ethnicityId, 
+				record[functionIdx].strip(), beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
 				(heroId != -1 ? heroId : null), heroUrl, accessUrl, userId, Constants.SHARING_NONE)
 				.returning(HEALTH_IMPACT_FUNCTION.ID)
 				.fetchOne();

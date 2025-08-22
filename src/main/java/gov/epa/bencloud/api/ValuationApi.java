@@ -926,24 +926,24 @@ public class ValuationApi {
 			distTypes.add("LogNormal");
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
-
+			distTypes.add("Gamma");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
 				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
-				if (!endpointIdLookup.containsKey(record[endpointIdx].toLowerCase())){
+				if (!endpointIdLookup.containsKey(record[endpointIdx].strip().toLowerCase())){
 					EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
 							.insertInto(ENDPOINT
 									, ENDPOINT.NAME
 									, ENDPOINT.ENDPOINT_GROUP_ID
 									)
-							.values(record[endpointIdx], (short) heGroupId)
+							.values(record[endpointIdx].strip(), (short) heGroupId)
 							.returning(ENDPOINT.ID)
 							.fetchOne();
 
 					int heId = heRecord.value1();
 					
-					endpointIdLookup.put(record[endpointIdx].toLowerCase(), heId);
+					endpointIdLookup.put(record[endpointIdx].strip().toLowerCase(), heId);
 					
 				}
 
@@ -952,76 +952,84 @@ public class ValuationApi {
 				String str = "";
 
 				//start age is required and should be an integer
-				str = record[startAgeIdx];
+				str = record[startAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStartAgeTypeError++;
 				}	
 
 				//end age is required and should be an integer
-				str = record[endAgeIdx];
+				str = record[endAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countEndAgeTypeError++;
 				}	
 
-				if(Integer.parseInt(record[startAgeIdx]) > Integer.parseInt(record[endAgeIdx])) {
+				if(Integer.parseInt(record[startAgeIdx].strip()) > Integer.parseInt(record[endAgeIdx].strip())) {
 					countAgeRangeError++;
 				}
 
 				//EPA standard should be true or false
-				str = record[epaStandardIdx];
+				str = record[epaStandardIdx].strip();
 				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
 					countEpaStandardTypeError++;
 				}	
 
 				//Multiyear should be true or false
-				str = record[multiyearIdx];
+				str = record[multiyearIdx].strip();
 				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
 					countMultiyearTypeError++;
 				}	
 
 
 				//distribution should be a value in the distTypes list
-				str = record[distributionIdx];
+				str = record[distributionIdx].strip();
 				if(!distTypes.contains(str)) {
 					countDistributionError++;
 				}
 
 				//param 1 beta should be a double
-				str = record[param1Idx];
+				str = record[param1Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParam1Error ++;
 				}
 
 				//param 2 beta should be a double
-				str = record[param2Idx];
+				str = record[param2Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParam2Error ++;
 				}
 
 				//param a should be a double
-				str = record[paramAIdx];
+				str = record[paramAIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParamAError ++;
 				}
 
 				//param b should be a double
-				str = record[paramBIdx];
+				str = record[paramBIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						double dbl = Double.parseDouble(str);
+					}
 				} catch(NumberFormatException e){
 					countParamBError ++;
 				}
 
 				//multiyear costs should be a double and >= 0
-				str = record[multiyearCostsIdx];
+				str = record[multiyearCostsIdx].strip();
 				try {
 					if(str != null && !str.equals("")) {
 						float dbl = Float.parseFloat(str);
@@ -1324,63 +1332,63 @@ public class ValuationApi {
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
 
-				String endpointName = record[endpointIdx].toLowerCase();
+				String endpointName = record[endpointIdx].strip().toLowerCase();
 				
 				int endpointId = endpointIdLookup.get(endpointName);
 
-				short startAge = Short.valueOf(record[startAgeIdx]);
-				short endAge = Short.valueOf(record[endAgeIdx]);
+				short startAge = Short.valueOf(record[startAgeIdx].strip());
+				short endAge = Short.valueOf(record[endAgeIdx].strip());
 
 				boolean multiyearValue = false;
-				String multiyear = record[multiyearIdx];
+				String multiyear = record[multiyearIdx].strip();
 				if(multiyear != null && !multiyear.equals("")) {
 					multiyearValue = Boolean.valueOf(multiyear);
 				}
 
 				boolean epaStandardValue = false;
-				String epaStandard = record[epaStandardIdx];
+				String epaStandard = record[epaStandardIdx].strip();
 				if(epaStandard != null && !epaStandard.equals("")) {
 					epaStandardValue = Boolean.valueOf(epaStandard);
 				}
 
 				String accessUrl = null;
-				if(record[accessUrlIdx] != null) {
+				if(accessUrlIdx != -999) {
 					accessUrl = record[accessUrlIdx];
 				}
 
 				String valuationType = null;
-				if(record[valuationTypeIdx] != null) {
+				if(valuationTypeIdx != -999) {
 					valuationType = record[valuationTypeIdx];
 				}
 
 				Double p1beta = 0.0;
-				if(!record[param1Idx].equals("")){
-					p1beta = Double.valueOf(record[param1Idx]);
+				if(!record[param1Idx].strip().equals("")){
+					p1beta = Double.valueOf(record[param1Idx].strip());
 				}
 
 				Double p2beta = 0.0;
-				if(!record[param2Idx].equals("")){
-					p2beta = Double.valueOf(record[param2Idx]);
+				if(!record[param2Idx].strip().equals("")){
+					p2beta = Double.valueOf(record[param2Idx].strip());
 				}
 
 				Double valA = 0.0;
-				if(!record[paramAIdx].equals("")){
-					valA = Double.valueOf(record[paramAIdx]);
+				if(!record[paramAIdx].strip().equals("")){
+					valA = Double.valueOf(record[paramAIdx].strip());
 				}
 
 				Double valB = 0.0;
-				if(!record[paramBIdx].equals("")){
-					valB = Double.valueOf(record[paramBIdx]);
+				if(!record[paramBIdx].strip().equals("")){
+					valB = Double.valueOf(record[paramBIdx].strip());
 				}
 
 				Double valC = 0.0;
-				if(record[paramCIdx] != null && !record[paramCIdx].equals("")){
-					valC = Double.valueOf(record[paramCIdx]);
+				if(paramCIdx != -999 && !record[paramCIdx].strip().equals("")){
+					valC = Double.valueOf(record[paramCIdx].strip());
 				}
 
 				Double valD = 0.0;
-				if(record[paramDIdx] != null && !record[paramDIdx].equals("")){
-					valD = Double.valueOf(record[paramDIdx]);
+				if(paramDIdx != -999 && !record[paramDIdx].strip().equals("")){
+					valD = Double.valueOf(record[paramDIdx].strip());
 				}
 
 				// Double multiyearCosts = 0.0;
@@ -1389,8 +1397,8 @@ public class ValuationApi {
 				// }
 
 				Double multiyearDr = 0.0;
-				if(record[multiyearDrIdx] != null && !record[multiyearDrIdx].equals("")){
-					multiyearDr = Double.valueOf(record[multiyearDrIdx]);
+				if(multiyearDrIdx != -999 && !record[multiyearDrIdx].strip().equals("")){
+					multiyearDr = Double.valueOf(record[multiyearDrIdx].strip());
 				}
 
 
@@ -1425,7 +1433,7 @@ public class ValuationApi {
 						, VALUATION_FUNCTION.SHARE_SCOPE
 						)
 				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx], record[distributionIdx], p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				record[functionIdx].strip(), record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
 				valuationType, multiyearValue, multiyearDr, userId, Constants.SHARING_NONE)
 				.returning(VALUATION_FUNCTION.ID)
