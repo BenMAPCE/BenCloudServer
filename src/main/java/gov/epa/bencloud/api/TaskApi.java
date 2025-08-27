@@ -98,7 +98,7 @@ public class TaskApi {
 	public static Object getTaskConfigs(Request request, Response response, Optional<UserProfile> userProfile) {
 		//TODO: Add type filter to select HIF or Valuation
 
-		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record> res = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 				.select(TASK_CONFIG.asterisk())
 				.from(TASK_CONFIG)
 				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
@@ -122,7 +122,7 @@ public class TaskApi {
 		
 		
 		//Users can only delete templates created by themselves 		
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());	
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));	
 		Result<Record1<Integer>> res = create.select(TASK_CONFIG.ID)
 				.from(TASK_CONFIG)
 				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
@@ -167,7 +167,7 @@ public class TaskApi {
 			}			
 		
 		//Users can only edit templates created by themselves 		
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());	
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));	
 		Result<Record1<Integer>> res = create.select(TASK_CONFIG.ID)
 				.from(TASK_CONFIG)
 				.where(TASK_CONFIG.USER_ID.eq(userProfile.get().getId()))
@@ -242,7 +242,7 @@ public class TaskApi {
 			return "{\"message\": \"" + errorMsg + "\"}";
 		}	
 		
-		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
+		TaskConfigRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 		.insertInto(TASK_CONFIG, TASK_CONFIG.NAME, TASK_CONFIG.TYPE, TASK_CONFIG.PARAMETERS, TASK_CONFIG.USER_ID)
 		.values(name, type, params, userProfile.get().getId())
 		.returning(TASK_CONFIG.asterisk())
@@ -252,7 +252,7 @@ public class TaskApi {
 	}
 
 	public static int getTotalTaskCountForUser(UserProfile profile) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 		int pendingCount = create.fetchCount(TASK_QUEUE
 		, TASK_QUEUE.USER_ID.eq(profile.getId()).and(TASK_QUEUE.TASK_TYPE.in("HIF", "Valuation","Exposure")));
 		int completedCount = create.fetchCount(TASK_COMPLETE
@@ -383,7 +383,7 @@ public class TaskApi {
 			
 		}
 
-		Record1<Integer> baselineMetricRecord = DSL.using(JooqUtil.getJooqConfiguration())
+		Record1<Integer> baselineMetricRecord = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 				.select(AIR_QUALITY_LAYER_METRICS.METRIC_ID)
 				.from(AIR_QUALITY_LAYER_METRICS)
 				.where(AIR_QUALITY_LAYER_METRICS.AIR_QUALITY_LAYER_ID.eq(baselineId))
@@ -392,7 +392,7 @@ public class TaskApi {
 		Integer baselineMetricId = baselineMetricRecord.value1();
 		
 		
-		Result<Record> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 				.select(HEALTH_IMPACT_FUNCTION_GROUP.NAME
 						, HEALTH_IMPACT_FUNCTION_GROUP.ID.as("groupId")
 						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
@@ -480,7 +480,7 @@ public class TaskApi {
 			return CoreApi.getErrorResponse(request, response, 400, "Unable to build response"); 
 		}
 
-		Result<Record> exposureGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record> exposureGroupRecords = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 				.select(EXPOSURE_FUNCTION_GROUP.NAME
 						, EXPOSURE_FUNCTION_GROUP.ID.as("groupId")
 						, EXPOSURE_FUNCTION_GROUP.HELP_TEXT
@@ -601,7 +601,7 @@ public class TaskApi {
 		} 
 
 		//Insert the task_batch parent record
-		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
+		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 		.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
 		.values(
 				batchTaskConfig.name
@@ -806,7 +806,7 @@ public class TaskApi {
 						batchFilterCondition = batchFilterCondition.and(TASK_BATCH.USER_ID.eq(userId));
 					}
 
-					Result<Record> batchResult = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					Result<Record> batchResult = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC")).select()
 						.from(TASK_BATCH)
 						.where(batchFilterCondition) 
 						.orderBy(TASK_BATCH.ID.asc())
@@ -826,7 +826,7 @@ public class TaskApi {
 						data.put("aq_baseline_name", aqBaselineName);
 
 						Record2<String, String> metricName = 
-						DSL.using(JooqUtil.getJooqConfiguration())
+						DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 							.select(
 									POLLUTANT_METRIC.NAME.as("task_metric_name"),
 									GRID_DEFINITION.NAME.as("aq_grid_definition_name")
@@ -847,7 +847,7 @@ public class TaskApi {
 
 						Condition filterCondition = DSL.trueCondition();
 						filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(batchTaskId));
-						Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration()).select()
+						Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC")).select()
 							.from(TASK_COMPLETE)
 							.where(filterCondition) 
 							.orderBy(TASK_COMPLETE.TASK_STARTED_DATE.asc())
@@ -903,7 +903,7 @@ public class TaskApi {
 						}
 					}
 
-					Result<Record> scenarioRecords = DSL.using(JooqUtil.getJooqConfiguration()).select()
+					Result<Record> scenarioRecords = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC")).select()
 						.from(AIR_QUALITY_LAYER)
 						.where(AIR_QUALITY_LAYER.ID.in(scenarioIdList)) 
 						.orderBy(AIR_QUALITY_LAYER.ID.asc())
@@ -1296,7 +1296,7 @@ public class TaskApi {
 		
 		if(includeExposure) {
 			//Exposure results
-			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 			//get valuation task ids 
 			List<Integer> exposureResultDatasetIds;
 			if(uuidType.equals("E")) {
@@ -1393,7 +1393,7 @@ public class TaskApi {
 			}					
 		}
 		if(includeHealthImpact) {
-			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 			//get hif task ids
 			List<Integer> hifResultDatasetIds;
 			if(uuidType.equals("H")) {
@@ -1535,7 +1535,7 @@ public class TaskApi {
 		}
 		if(includeValuation) {
 			//Valuation results
-			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 			//get valuation task ids
 			List<Integer> valuationResultDatasetIds;
 			if(uuidType.equals("H")) {
@@ -1717,7 +1717,7 @@ public class TaskApi {
 	 * @return a batch task configuration from a given task batch id.
 	 */
 	public static BatchTaskConfig getTaskBatchConfigFromDb(Integer batchId) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 
 		BatchTaskConfig batchTaskConfig = new BatchTaskConfig();		
 
@@ -1823,7 +1823,7 @@ public class TaskApi {
 			}
 			
 			// Add records to task_batch and task_queue to export the results
-			TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
+			TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 					.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
 					.values("Result export: " + batchTaskConfig.name, batchParamsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
 					.returning(TASK_BATCH.ID).fetchOne();
@@ -1852,7 +1852,7 @@ public class TaskApi {
 				return CoreApi.getErrorResponseInvalidId(request, response);
 			}
 
-			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 			Record record = create
 					.select(TASK_COMPLETE.TASK_PARAMETERS)
 					.from(TASK_COMPLETE)
