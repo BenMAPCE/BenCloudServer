@@ -684,6 +684,16 @@ public class HIFApi {
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
 
+		Condition filterCondition = DSL.trueCondition();
+
+		if(pollutantId != 0) {
+			filterCondition = filterCondition.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId));
+		}
+
+		filterCondition = filterCondition.and(HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(HEALTH_IMPACT_FUNCTION_GROUP.USER_ID.eq(userId)));
+
+
+
 		Result<Record4<String, Integer, String, Integer[]>> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION_GROUP.NAME
 						, HEALTH_IMPACT_FUNCTION_GROUP.ID
@@ -693,8 +703,7 @@ public class HIFApi {
 				.from(HEALTH_IMPACT_FUNCTION_GROUP)
 				.join(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER).on(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_GROUP_ID))
 				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID))
-				.where(pollutantId == 0 ? DSL.noCondition() : HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId)
-					.and(HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(HEALTH_IMPACT_FUNCTION_GROUP.USER_ID.eq(userId))))
+				.where(filterCondition)
 				.groupBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME
 						, HEALTH_IMPACT_FUNCTION_GROUP.ID)
 				.orderBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME.desc())
