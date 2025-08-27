@@ -62,19 +62,31 @@ public class TaskComplete {
 
 		ApiUtil.cancelQueriesByUuid(taskUuid);
 
-		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
-
-		if(task != null){
-			try {
-
-				DSL.using(JooqUtil.getJooqConfiguration()).transaction(ctx -> {
-
-					//taskWorkerUuid might be null if a child task is failed because the parent task failed
-					if(taskWorkerUuid != null) {	
-						DSL.using(ctx).delete(TASK_WORKER)
+		//clear task worker table
+		//taskWorkerUuid might be null if a child task is failed because the parent task failed
+		if(taskWorkerUuid != null){
+			DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC")).transaction(ctx -> {
+				DSL.using(ctx).delete(TASK_WORKER)
 						.where(TASK_WORKER.TASK_WORKER_UUID.eq(taskWorkerUuid))
 						.execute();
-					}
+			});
+		}
+		if(taskUuid != null){
+			DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC")).transaction(ctx -> {
+				DSL.using(ctx).delete(TASK_WORKER)
+						.where(TASK_WORKER.TASK_UUID.eq(taskUuid))
+						.execute();
+			});
+		}
+
+		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
+
+		if(task != null && task.getBatchId() != null){
+			try {
+
+				DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC")).transaction(ctx -> {
+
+					
 
 					DSL.using(ctx).insertInto(TASK_COMPLETE,
 							TASK_COMPLETE.USER_ID,
