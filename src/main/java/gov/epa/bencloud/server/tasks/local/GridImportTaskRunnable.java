@@ -134,7 +134,7 @@ public class GridImportTaskRunnable implements Runnable {
 				throw new Exception("Grid file processing failed.");
 			}
 			
-			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 			
 			Record gridStats = create.fetchOne("select count(distinct col) as col_count, count(distinct row) as row_count from grids." + gridTableName);
 			
@@ -368,7 +368,7 @@ public class GridImportTaskRunnable implements Runnable {
 	    dbDataStore.dispose();
 	    
 	    //Standardize the name of the geom, col, and row fields using SQL alter table
-	    DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+	    DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 	    if(geomColumnName != null && !geomColumnName.equals("geom")) {
 	    	create.execute("alter table grids." + gridTableName + " rename column \"" + geomColumnName + "\" to geom;");
 	    }
