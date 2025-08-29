@@ -555,31 +555,61 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     }
 
     /**
-     * Setter for <code>data.health_impact_function.archived</code>.
-     */
-    public void setArchived(Short value) {
-        set(38, value);
-    }
-
-    /**
-     * Getter for <code>data.health_impact_function.archived</code>.
-     */
-    public Short getArchived() {
-        return (Short) get(38);
-    }
-
-    /**
      * Setter for <code>data.health_impact_function.timing_id</code>.
      */
     public void setTimingId(Integer value) {
-        set(39, value);
+        set(38, value);
     }
 
     /**
      * Getter for <code>data.health_impact_function.timing_id</code>.
      */
     public Integer getTimingId() {
-        return (Integer) get(39);
+        return (Integer) get(38);
+    }
+
+    /**
+     * Setter for <code>data.health_impact_function.archived</code>.
+     */
+    public void setArchived(Short value) {
+        set(39, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.archived</code>.
+     */
+    public Short getArchived() {
+        return (Short) get(39);
+    }
+
+    /**
+     * Setter for <code>data.health_impact_function.geographic_area</code>.
+     */
+    public void setGeographicArea(String value) {
+        set(40, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.geographic_area</code>.
+     */
+    public String getGeographicArea() {
+        return (String) get(40);
+    }
+
+    /**
+     * Setter for
+     * <code>data.health_impact_function.geographic_area_feature</code>.
+     */
+    public void setGeographicAreaFeature(String value) {
+        set(41, value);
+    }
+
+    /**
+     * Getter for
+     * <code>data.health_impact_function.geographic_area_feature</code>.
+     */
+    public String getGeographicAreaFeature() {
+        return (String) get(41);
     }
 
     // -------------------------------------------------------------------------
@@ -605,7 +635,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Create a detached, initialised HealthImpactFunctionRecord
      */
-    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl, String userId, Short shareScope, Short archived, Integer timingId) {
+    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl, String userId, Short shareScope, Integer timingId, Short archived, String geographicArea, String geographicAreaFeature) {
         super(HealthImpactFunction.HEALTH_IMPACT_FUNCTION);
 
         setId(id);
@@ -646,7 +676,9 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         setAccessUrl(accessUrl);
         setUserId(userId);
         setShareScope(shareScope);
-        setArchived(archived);
         setTimingId(timingId);
+        setArchived(archived);
+        setGeographicArea(geographicArea);
+        setGeographicAreaFeature(geographicAreaFeature);
     }
 }
