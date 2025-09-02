@@ -420,7 +420,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							Result<Record> hifRecords = create.select(
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-									ENDPOINT.NAME.as("endpoint"),
+									ENDPOINT.NAME.as("health_effect"),
 									HEALTH_IMPACT_FUNCTION.AUTHOR,
 									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 									HEALTH_IMPACT_FUNCTION.LOCATION,
@@ -583,7 +583,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							vfRecords = create.select(
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-									DSL.val(null, String.class).as("endpoint"),
+									DSL.val(null, String.class).as("health_effect"),
 									DSL.val(null, String.class).as("name"),
 									HEALTH_IMPACT_FUNCTION.AUTHOR,
 									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
@@ -645,7 +645,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							for(Record res : vfRecords) {
 								HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
 								res.setValue(DSL.field("name"), vfConfig.get("name"));
-								res.setValue(DSL.field("endpoint"), vfConfig.get("endpoint"));	
+								res.setValue(DSL.field("health_effect"), vfConfig.get("endpoint"));	
 							}
 							
 							//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
@@ -666,7 +666,7 @@ public class ResultExportTaskRunnable implements Runnable {
 								}
 							}
 							//Remove percentiles by keeping all other fields
-							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22));
+							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
 						} catch(DataAccessException e) {
 							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
