@@ -327,6 +327,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				}					
 			}
 			if(includeHealthImpact) {
+				//map hifRecords to UI column names. key 3: author, key 4: year. They are used together for UI column "study"
 				Map<Integer, String> hifColumnsMap = new HashMap <Integer, String>();
 				hifColumnsMap.put(0, "column");
 				hifColumnsMap.put(1, "row");
@@ -344,18 +345,19 @@ public class ResultExportTaskRunnable implements Runnable {
 				hifColumnsMap.put(13, "metric");
 				hifColumnsMap.put(14, "seasonal_metric");
 				hifColumnsMap.put(15, "metric_statistic");
-				hifColumnsMap.put(16, "point_estimate");
-				hifColumnsMap.put(17, "population");
-				hifColumnsMap.put(18, "delta_aq");
-				hifColumnsMap.put(19, "baseline_aq");
-				hifColumnsMap.put(20, "scenario_aq");
-				hifColumnsMap.put(21, "mean");
-				hifColumnsMap.put(22, "baseline");
-				hifColumnsMap.put(23, "percent_of_baseline");
-				hifColumnsMap.put(24, "standard_deviation");
-				hifColumnsMap.put(25, "variance");
-				hifColumnsMap.put(26, "pct_2_5");
-				hifColumnsMap.put(27, "pct_97_5");
+				hifColumnsMap.put(16, "timing");
+				hifColumnsMap.put(17, "point_estimate");
+				hifColumnsMap.put(18, "population");
+				hifColumnsMap.put(19, "delta_aq");
+				hifColumnsMap.put(20, "baseline_aq");
+				hifColumnsMap.put(21, "scenario_aq");
+				hifColumnsMap.put(22, "mean");
+				hifColumnsMap.put(23, "baseline");
+				hifColumnsMap.put(24, "percent_of_baseline");
+				hifColumnsMap.put(25, "standard_deviation");
+				hifColumnsMap.put(26, "variance");
+				hifColumnsMap.put(27, "pct_2_5");
+				hifColumnsMap.put(28, "pct_97_5");
 				DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 				//get hif task ids
 				List<Integer> hifResultDatasetIds;
