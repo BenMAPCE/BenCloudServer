@@ -555,6 +555,7 @@ public class ValuationApi {
 					.from(VALUATION_FUNCTION)
 					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
 					.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
+					.where(VALUATION_FUNCTION.ARCHIVED.eq((short) 0))
 					.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.QUALIFIER)
 					.fetch();
 		} catch (DataAccessException e) {

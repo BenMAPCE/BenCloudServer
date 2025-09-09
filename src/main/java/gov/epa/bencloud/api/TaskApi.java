@@ -421,7 +421,8 @@ public class TaskApi {
 				.leftJoin(TIMING_TYPE).on(HEALTH_IMPACT_FUNCTION.TIMING_ID.eq(TIMING_TYPE.ID))
 				.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(hifGroupList)
 						.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId))
-						.and(HEALTH_IMPACT_FUNCTION.METRIC_ID.contains(baselineMetricId))
+						.and(HEALTH_IMPACT_FUNCTION.METRIC_ID.contains(baselineMetricId)
+						.and(HEALTH_IMPACT_FUNCTION.ARCHIVED.eq((short) 0)))
 						)
 				.orderBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME)
 				.fetch();
