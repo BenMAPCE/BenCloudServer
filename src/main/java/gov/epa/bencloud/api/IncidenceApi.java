@@ -794,7 +794,7 @@ public class IncidenceApi {
 				case "healtheffect":
 					endpointIdx=i;
 					break;
-				case "healtheffectgroup":
+				case "healtheffectcategory":
 					endpointGroupIdx=i;
 					break;
 				case "race":
@@ -837,7 +837,7 @@ public class IncidenceApi {
 					System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
-			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointGroupIdx, endpointIdx, raceIdx, genderIdx, ethnicityIdx, yearIdx, startAgeIdx, endAgeIdx, typeIdx, timeFrameIdx, unitsIdx, valueIdx, distributionIdx, standardErrorIdx);
+			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointIdx, endpointGroupIdx, raceIdx, genderIdx, ethnicityIdx, yearIdx, startAgeIdx, endAgeIdx, typeIdx, timeFrameIdx, unitsIdx, valueIdx, distributionIdx, standardErrorIdx);
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
 
@@ -1167,10 +1167,10 @@ public class IncidenceApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMissingEndpoint == 1) {
-					strRecord = String.valueOf(countMissingEndpoint) + " record is missing a Endpoint value.";
+					strRecord = String.valueOf(countMissingEndpoint) + " record is missing a Health Effect value.";
 				}
 				else {
-					strRecord = String.valueOf(countMissingEndpoint) + " records are missing Endpoint values.";
+					strRecord = String.valueOf(countMissingEndpoint) + " records are missing Health Effect values.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1182,10 +1182,10 @@ public class IncidenceApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMissingEthnicity == 1) {
-					strRecord = String.valueOf(countMissingEndpointGroup) + " record is missing a Endpoint Group value.";
+					strRecord = String.valueOf(countMissingEndpointGroup) + " record is missing a Health Effect Category value.";
 				}
 				else {
-					strRecord = String.valueOf(countMissingEndpointGroup) + " records are missing Endpoint Group values.";
+					strRecord = String.valueOf(countMissingEndpointGroup) + " records are missing Health Effect Category values.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
