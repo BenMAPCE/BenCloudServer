@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -856,7 +858,7 @@ public class HIFApi {
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			BOMInputStream bis = new BOMInputStream(is, false);
 			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
-
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			String[] record;
 			
 			//step 1: verify column names 
@@ -1201,7 +1203,8 @@ public class HIFApi {
 				str = record[betaIdx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countBetaError ++;
@@ -1217,7 +1220,8 @@ public class HIFApi {
 				str = record[param1Idx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParam1Error ++;
@@ -1227,7 +1231,8 @@ public class HIFApi {
 				str = record[param2Idx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParam2Error ++;
@@ -1237,7 +1242,8 @@ public class HIFApi {
 				str = record[paramAIdx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParamAError ++;
@@ -1247,7 +1253,8 @@ public class HIFApi {
 				str = record[paramBIdx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParamBError ++;
@@ -1257,7 +1264,8 @@ public class HIFApi {
 				str = record[paramCIdx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParamCError ++;
@@ -1723,6 +1731,7 @@ public class HIFApi {
 		try (InputStream is = request.raw().getPart("file").getInputStream()){
 			CSVReader csvReader = new CSVReader (new InputStreamReader(is));
 			String[] record;
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
 
@@ -1789,32 +1798,39 @@ public class HIFApi {
 
 				Double beta = 0.0;
 				if(!record[betaIdx].strip().equals("")){
-					beta = Double.valueOf(record[betaIdx].strip());
+					Number number = format.parse(record[betaIdx].strip());
+					beta = number.doubleValue();
 				}
 
 				Double p1beta = 0.0;
 				if(!record[param1Idx].strip().equals("")){
-					p1beta = Double.valueOf(record[param1Idx].strip());
+					Number number = format.parse(record[param1Idx].strip());
+					p1beta = number.doubleValue();
 				}
 
 				Double p2beta = 0.0;
 				if(!record[param2Idx].strip().equals("")){
-					p2beta = Double.valueOf(record[param2Idx].strip());
+					Number number = format.parse(record[param2Idx].strip());
+					p2beta = number.doubleValue();
 				}
 
 				Double valA = 0.0;
 				if(!record[paramAIdx].strip().equals("")){
-					valA = Double.valueOf(record[paramAIdx].strip());
+					Number number = format.parse(record[paramAIdx].strip());
+					valA = number.doubleValue();
 				}
 
 				Double valB = 0.0;
 				if(!record[paramBIdx].strip().equals("")){
 					valB = Double.valueOf(record[paramBIdx].strip());
+					Number number = format.parse(record[paramBIdx].strip());
+					valB = number.doubleValue();
 				}
 
 				Double valC = 0.0;
 				if(!record[paramCIdx].strip().equals("")){
-					valC = Double.valueOf(record[paramCIdx].strip());
+					Number number = format.parse(record[paramCIdx].strip());
+					valC = number.doubleValue();
 				}
 
 				String geogArea = "";
