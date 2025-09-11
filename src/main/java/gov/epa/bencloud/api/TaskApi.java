@@ -626,6 +626,7 @@ public class TaskApi {
 			HIFTaskConfig hifTaskConfig = new HIFTaskConfig();
 			hifTaskConfig.aqBaselineId = batchTaskConfig.aqBaselineId;
 			hifTaskConfig.popId = batchTaskConfig.popId;
+			hifTaskConfig.limitToGridId = batchTaskConfig.limitToGridId;
 			
 			ValuationTaskConfig valuationTaskConfig = new ValuationTaskConfig();
 			valuationTaskConfig.gridDefinitionId = batchTaskConfig.gridDefinitionId;
