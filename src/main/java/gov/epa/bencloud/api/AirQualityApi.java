@@ -11,9 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.servlet.MultipartConfigElement;
 
@@ -36,8 +38,10 @@ import org.jooq.Record14;
 import org.jooq.Record15;
 import org.jooq.Record16;
 import org.jooq.Record18;
+import org.jooq.Record2;
 import org.jooq.Record21;
 import org.jooq.Record22;
+import org.jooq.Record3;
 import org.jooq.Record6;
 import org.jooq.Record7;
 import org.jooq.Result;
@@ -45,6 +49,7 @@ import org.jooq.SortOrder;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +74,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityCellR
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
 import gov.epa.bencloud.server.util.DataConversionUtil;
 import gov.epa.bencloud.server.util.ParameterUtil;
+
 import spark.Request;
 import spark.Response;
 
@@ -718,15 +724,19 @@ public class AirQualityApi {
 	 * @return Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
 	 */
 	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id) {
-/*
-		Map<Integer, AirQualityCellRecord> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
-				.selectFrom(AIR_QUALITY_CELL)
-				.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id))
-				.orderBy(AIR_QUALITY_CELL.GRID_COL, AIR_QUALITY_CELL.GRID_ROW)
-				.fetchMap(AIR_QUALITY_CELL.GRID_CELL_ID);	
-*/
-		
-		Result<Record7<Long, Integer, Integer, Integer, Integer, Integer, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		return getAirQualityLayerMap(id, null);
+	}
+
+	/**
+	 * 
+	 * @param id air quality layer id
+	 * @return Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
+	 */
+	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id, Integer limitToGridId) {
+		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
+
+		// Retrieve the full list of AQ cells in this surface
+		Result<Record7<Long, Integer, Integer, Integer, Integer, Integer, Double>> aqRecords = dslContext
 				.select(AIR_QUALITY_CELL.GRID_CELL_ID
 						, AIR_QUALITY_CELL.GRID_COL
 						, AIR_QUALITY_CELL.GRID_ROW
@@ -738,17 +748,44 @@ public class AirQualityApi {
 				.where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(id))
 				.fetch();
 		
-		
+		//If limitToGrid was provided, filter the results to only those cells that intersect
+		String aqGridTable = null;
+		String limitGridTable = null;
+
+		Result<Record2<Integer, Integer>> limitedAqCells = null;
+		Set<Long> limitCellIds = null;
+
+		if(limitToGridId != null && limitToGridId != 0) {
+			// Get the table names for the AQ and limit grids
+			Integer aqGridId = AirQualityApi.getAirQualityLayerGridId(id);
+			aqGridTable = GridDefinitionApi.getGridDefinitionTableName(aqGridId);
+			limitGridTable = GridDefinitionApi.getGridDefinitionTableName(limitToGridId);
+
+			// Get to aq cells that intersect the limit cells
+			limitedAqCells = dslContext
+				.select(DSL.field(aqGridTable + ".col", Integer.class), DSL.field(aqGridTable + ".row", Integer.class))
+				.from(aqGridTable)
+				.join(limitGridTable).on("ST_Intersects(" + aqGridTable + ".geom, ST_Transform(" + limitGridTable + ".geom, ST_SRID(" + aqGridTable + ".geom)))")
+				.fetch();
+			
+			limitCellIds = new HashSet<>();
+			// Finally, build a Set of aq cells we should consider in the analysis
+			for (Record2<Integer, Integer> r : limitedAqCells) {
+				limitCellIds.add(ApiUtil.getCellId(r.value1(), r.value2()));
+			}
+		}
+
 		Map<Long, AirQualityCell> aqMap = new HashMap<Long, AirQualityCell>();
 		
 		for(Record7<Long, Integer, Integer, Integer, Integer, Integer, Double> r : aqRecords) {
 			//Do we have a top-level entry in aqMap for this cell?
 			// If not, add it
 			Long cellId = r.get(AIR_QUALITY_CELL.GRID_CELL_ID);
-			
+
 			//Get the cellAqMetrics from the map (or add it to the map)
+			// Filter aqRecords to only intersecting cells (if applicable)
 			AirQualityCell cellAq = aqMap.get(cellId);
-			if (cellAq == null) {
+			if (cellAq == null && (limitCellIds == null || limitCellIds.contains(cellId))) {
 				cellAq = new AirQualityCell(r.get(AIR_QUALITY_CELL.GRID_COL), r.get(AIR_QUALITY_CELL.GRID_ROW));
 				aqMap.put(cellId, cellAq);
 			}
@@ -760,20 +797,22 @@ public class AirQualityApi {
 			// 
 			
 			//Each cellAq object contains the cell's col, row, and a map of aq values indexed by metric id and seasonal metric id
-			Map<Integer, Map<Integer, AirQualityCellMetric>> cellAqMetrics = cellAq.getCellMetrics();
-			
-			AirQualityCellMetric cellAqMetric = new AirQualityCellMetric(r.get(AIR_QUALITY_CELL.METRIC_ID),r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID), r.get(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID), r.get(AIR_QUALITY_CELL.VALUE));
-			
-			Map<Integer, AirQualityCellMetric> cellAqSeasonalMetrics = cellAqMetrics.get(r.get(AIR_QUALITY_CELL.METRIC_ID));
-			if(cellAqSeasonalMetrics == null) {
-				cellAqSeasonalMetrics = new HashMap<Integer, AirQualityCellMetric>();	
-				cellAqMetrics.put(r.get(AIR_QUALITY_CELL.METRIC_ID), cellAqSeasonalMetrics);
-			}	
-					
-			if(r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID) != null && r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID) != 0) {
-				cellAqSeasonalMetrics.put(r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID), cellAqMetric);				
-			} else {
-				cellAqSeasonalMetrics.put(0, cellAqMetric);
+			if(cellAq != null) {
+				Map<Integer, Map<Integer, AirQualityCellMetric>> cellAqMetrics = cellAq.getCellMetrics();
+				
+				AirQualityCellMetric cellAqMetric = new AirQualityCellMetric(r.get(AIR_QUALITY_CELL.METRIC_ID),r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID), r.get(AIR_QUALITY_CELL.ANNUAL_STATISTIC_ID), r.get(AIR_QUALITY_CELL.VALUE));
+				
+				Map<Integer, AirQualityCellMetric> cellAqSeasonalMetrics = cellAqMetrics.get(r.get(AIR_QUALITY_CELL.METRIC_ID));
+				if(cellAqSeasonalMetrics == null) {
+					cellAqSeasonalMetrics = new HashMap<Integer, AirQualityCellMetric>();	
+					cellAqMetrics.put(r.get(AIR_QUALITY_CELL.METRIC_ID), cellAqSeasonalMetrics);
+				}	
+						
+				if(r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID) != null && r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID) != 0) {
+					cellAqSeasonalMetrics.put(r.get(AIR_QUALITY_CELL.SEASONAL_METRIC_ID), cellAqMetric);				
+				} else {
+					cellAqSeasonalMetrics.put(0, cellAqMetric);
+				}
 			}
 		}
 		

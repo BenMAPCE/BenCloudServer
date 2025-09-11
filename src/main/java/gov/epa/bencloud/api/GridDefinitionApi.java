@@ -161,6 +161,25 @@ public class GridDefinitionApi {
 		return gridRecord;
 	}
 	
+		/**
+	 * 
+	 * @param gridId
+	 * @return the grid definition table name.
+	 */
+	public static String getGridDefinitionTableName(int gridId) {
+		Record1<String> g1 = DSL.using(JooqUtil.getJooqConfiguration())
+		.select(GRID_DEFINITION.TABLE_NAME)
+		.from(GRID_DEFINITION)
+		.where(GRID_DEFINITION.ID.eq(gridId))
+		.fetchOne();
+
+		if(g1 == null) {
+			return null;
+		}
+
+		return g1.value1();
+	}
+
 	/**
 	 * gets the row, column, geometries from the grids schema- might use later when maps are added to display grid definitions
 	 * @param request

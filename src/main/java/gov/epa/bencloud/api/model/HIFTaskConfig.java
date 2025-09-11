@@ -48,6 +48,7 @@ public class HIFTaskConfig {
 	public Integer popYear = 0;
 	public Boolean preserveLegacyBehavior = false;
 	public List<HIFConfig> hifs = new ArrayList<HIFConfig>();
+	public Integer limitToGridId = 0; //Optional, used to limit AQ baseline 
 	public Integer gridDefinitionId = 0;
 
 	/*
