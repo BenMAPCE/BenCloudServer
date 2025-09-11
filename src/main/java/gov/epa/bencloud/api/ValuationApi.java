@@ -6,12 +6,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -789,7 +791,7 @@ public class ValuationApi {
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			BOMInputStream bis = new BOMInputStream(is, false);
 			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
-
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			String[] record;
 			
 			//step 1: verify column names 
@@ -970,18 +972,21 @@ public class ValuationApi {
 					countAgeRangeError++;
 				}
 
-				//EPA standard should be true or false
-				str = record[epaStandardIdx].strip();
-				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
-					countEpaStandardTypeError++;
-				}	
+				//EPA standard is optional, should be true or false
+				if(epaStandardIdx != -999) {
+					str = record[epaStandardIdx].strip();
+					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+						countEpaStandardTypeError++;
+					}
+				}
 
-				//Multiyear should be true or false
-				str = record[multiyearIdx].strip();
-				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
-					countMultiyearTypeError++;
-				}	
-
+				//Multiyear is optional, should be true or false
+				if(multiyearIdx != -999) {
+					str = record[multiyearIdx].strip();
+					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+						countMultiyearTypeError++;
+					}	
+				}
 
 				//distribution should be a value in the distTypes list
 				str = record[distributionIdx].strip();
@@ -993,7 +998,8 @@ public class ValuationApi {
 				str = record[param1Idx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParam1Error ++;
@@ -1003,7 +1009,8 @@ public class ValuationApi {
 				str = record[param2Idx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParam2Error ++;
@@ -1013,7 +1020,8 @@ public class ValuationApi {
 				str = record[paramAIdx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParamAError ++;
@@ -1023,23 +1031,27 @@ public class ValuationApi {
 				str = record[paramBIdx].strip();
 				try {
 					if(!str.equals("")){
-						double dbl = Double.parseDouble(str);
+						Number number = format.parse(str);
+						double value = number.doubleValue();
 					}
 				} catch(NumberFormatException e){
 					countParamBError ++;
 				}
 
-				//multiyear costs should be a double and >= 0
-				str = record[multiyearCostsIdx].strip();
-				try {
-					if(str != null && !str.equals("")) {
-						float dbl = Float.parseFloat(str);
-						if(dbl < 0) {
-							countMultiyearCostsError++;
+				//multiyear costs is optional, should be a double and >= 0
+				if(multiyearCostsIdx != -999) {
+					str = record[multiyearCostsIdx].strip();
+					try {
+						if(str != null && !str.equals("")) {
+							Number number = format.parse(str);
+							float value = number.floatValue();
+							if(value < 0) {
+								countMultiyearCostsError++;
+							}
 						}
+					} catch(NumberFormatException e){
+						countMultiyearCostsTypeError ++;
 					}
-				} catch(NumberFormatException e){
-					countMultiyearCostsTypeError ++;
 				}
 
 				// //function should be a valid formula
@@ -1330,6 +1342,7 @@ public class ValuationApi {
 		try (InputStream is = request.raw().getPart("file").getInputStream()){
 			CSVReader csvReader = new CSVReader (new InputStreamReader(is));
 			String[] record;
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
 
@@ -1341,16 +1354,20 @@ public class ValuationApi {
 				short endAge = Short.valueOf(record[endAgeIdx].strip());
 
 				boolean multiyearValue = false;
-				String multiyear = record[multiyearIdx].strip();
-				if(multiyear != null && !multiyear.equals("")) {
-					multiyearValue = Boolean.valueOf(multiyear);
+				if(multiyearIdx != -999) {
+					String multiyear = record[multiyearIdx].strip();
+					if(multiyear != null && !multiyear.equals("")) {
+						multiyearValue = Boolean.valueOf(multiyear);
+					}
 				}
 
 				boolean epaStandardValue = false;
-				String epaStandard = record[epaStandardIdx].strip();
-				if(epaStandard != null && !epaStandard.equals("")) {
-					epaStandardValue = Boolean.valueOf(epaStandard);
-				}
+				if(epaStandardIdx != -999) {
+					String epaStandard = record[epaStandardIdx].strip();
+					if(epaStandard != null && !epaStandard.equals("")) {
+						epaStandardValue = Boolean.valueOf(epaStandard);
+					}
+				}	
 
 				String accessUrl = null;
 				if(accessUrlIdx != -999) {
@@ -1364,32 +1381,38 @@ public class ValuationApi {
 
 				Double p1beta = 0.0;
 				if(!record[param1Idx].strip().equals("")){
-					p1beta = Double.valueOf(record[param1Idx].strip());
+					Number number = format.parse(record[param1Idx].strip());
+					p1beta = number.doubleValue();
 				}
 
 				Double p2beta = 0.0;
 				if(!record[param2Idx].strip().equals("")){
-					p2beta = Double.valueOf(record[param2Idx].strip());
+					Number number = format.parse(record[param2Idx].strip());
+					p2beta = number.doubleValue();
 				}
 
 				Double valA = 0.0;
 				if(!record[paramAIdx].strip().equals("")){
-					valA = Double.valueOf(record[paramAIdx].strip());
+					Number number = format.parse(record[paramAIdx].strip());
+					valA = number.doubleValue();
 				}
 
 				Double valB = 0.0;
 				if(!record[paramBIdx].strip().equals("")){
-					valB = Double.valueOf(record[paramBIdx].strip());
+					Number number = format.parse(record[paramBIdx].strip());
+					valB = number.doubleValue();
 				}
 
 				Double valC = 0.0;
 				if(paramCIdx != -999 && !record[paramCIdx].strip().equals("")){
-					valC = Double.valueOf(record[paramCIdx].strip());
+					Number number = format.parse(record[paramCIdx].strip());
+					valC = number.doubleValue();
 				}
 
 				Double valD = 0.0;
 				if(paramDIdx != -999 && !record[paramDIdx].strip().equals("")){
-					valD = Double.valueOf(record[paramDIdx].strip());
+					Number number = format.parse(record[paramDIdx].strip());
+					valD = number.doubleValue();
 				}
 
 				// Double multiyearCosts = 0.0;
@@ -1399,7 +1422,8 @@ public class ValuationApi {
 
 				Double multiyearDr = 0.0;
 				if(multiyearDrIdx != -999 && !record[multiyearDrIdx].strip().equals("")){
-					multiyearDr = Double.valueOf(record[multiyearDrIdx].strip());
+					Number number = format.parse(record[multiyearDrIdx].strip());
+					multiyearDr = number.doubleValue();
 				}
 
 
