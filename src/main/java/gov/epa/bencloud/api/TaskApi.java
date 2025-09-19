@@ -295,6 +295,7 @@ public class TaskApi {
 		int defaultIncidencePrevalenceDataset;
 		int gridDefinitionId;
 		int pollutantId;
+		int limitToGridId;
 		int populationId;
 		int baselineId;
 		String scenariosParam;
@@ -324,6 +325,7 @@ public class TaskApi {
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
 			valuationSelection = ParameterUtil.getParameterValueAsString(request.raw().getParameter("valuationSelection"), "");
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
+			limitToGridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("limitToGridId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
 			populationId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("populationId"), 0);
 			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), AirQualityApi.getAirQualityLayerGridId(baselineId));
@@ -539,6 +541,7 @@ public class TaskApi {
 
 		b.gridDefinitionId = gridDefinitionId;
 		b.pollutantId = pollutantId;
+		b.limitToGridId = limitToGridId;
 		b.pollutantName = PollutantApi.getPollutantName(pollutantId);
 		b.popId = populationId;
 		b.aqBaselineId = baselineId;
