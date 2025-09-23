@@ -237,14 +237,14 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
     public final TableField<HealthImpactFunctionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     /**
-     * The column <code>data.health_impact_function.timing_id</code>.
-     */
-    public final TableField<HealthImpactFunctionRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
-
-    /**
      * The column <code>data.health_impact_function.archived</code>.
      */
     public final TableField<HealthImpactFunctionRecord, Short> ARCHIVED = createField(DSL.name("archived"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.health_impact_function.timing_id</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>data.health_impact_function.geographic_area</code>.
