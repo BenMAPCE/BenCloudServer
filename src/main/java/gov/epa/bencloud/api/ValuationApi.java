@@ -651,6 +651,7 @@ public class ValuationApi {
 					.where(filterCondition)
 					.orderBy(orderFields)
 					.offset((page * rowsPerPage) - rowsPerPage)
+					.limit(rowsPerPage)
 					.fetch();
 		} catch (DataAccessException e) {
 			log.error("Error getAllValuationFunctions", e);
@@ -702,15 +703,13 @@ public class ValuationApi {
 	public static Object postValuationFunctionData(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String healthEffectGroupName;
+		boolean newCategory;
 		String description;
-		String filename;
-		LocalDateTime uploadDate;
 		
 		try{
 			healthEffectGroupName = ApiUtil.getMultipartFormParameterAsString(request, "healthEffectGroupName");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
-			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
-			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			newCategory = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("newCategory"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -766,6 +765,15 @@ public class ValuationApi {
 		Map<String, Integer> heGroupNameMap = getAllHealthEffectGroupsByUser(userId);
 
 		if(heGroupNameMap.containsKey(healthEffectGroupName.toLowerCase())) {
+			if(newCategory) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "A Health Effect Category called '" + healthEffectGroupName + "' already exists. "
+					+ "Please enter a different name, or select the 'Append to an existing health effect category' option.";
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 			heGroupId = heGroupNameMap.get(healthEffectGroupName.toLowerCase());
 		} else {
 			heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -1621,17 +1629,31 @@ public class ValuationApi {
 
 		String userId = userProfile.get().getId();
 
+		Boolean getAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("getAll"), false);
+
 		Condition filterCondition = DSL.trueCondition();
 
 		filterCondition = filterCondition.and(ENDPOINT_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(ENDPOINT_GROUP.USER_ID.eq(userId)));		
 
-		Result<Record> healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record> healthEffectGroupRecords;
+		
+		if(getAll) {
+			healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.selectDistinct(ENDPOINT_GROUP.fields())
+				.from(ENDPOINT_GROUP)
+				.where(filterCondition)
+				.orderBy(ENDPOINT_GROUP.NAME.asc())
+				.fetch();
+		} else {
+			//limit to endpoint groups that are associated with and existing valuation function
+			healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.selectDistinct(ENDPOINT_GROUP.fields())
 				.from(ENDPOINT_GROUP)
 				.join(VALUATION_FUNCTION).on(ENDPOINT_GROUP.ID.eq(VALUATION_FUNCTION.ENDPOINT_GROUP_ID))
 				.where(filterCondition)
 				.orderBy(ENDPOINT_GROUP.NAME.asc())
 				.fetch();
+		}
 		
 		response.type("application/json");
 		return healthEffectGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
