@@ -1111,7 +1111,7 @@ public class HIFApi {
 									, ENDPOINT_GROUP.USER_ID
 									, ENDPOINT_GROUP.SHARE_SCOPE
 									)
-							.values(healthEffectCategoryName, userId, Constants.SHARING_NONE)
+							.values(record[endpointGroupIdx].strip(), userId, Constants.SHARING_NONE)
 							.returning(ENDPOINT_GROUP.ID)
 							.fetchOne();
 
