@@ -723,8 +723,8 @@ public class AirQualityApi {
 	 * @param id air quality layer id
 	 * @return Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
 	 */
-	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id) {
-		return getAirQualityLayerMap(id, null);
+	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id, String taskUuid) {
+		return getAirQualityLayerMap(id, null, taskUuid);
 	}
 
 	/**
@@ -732,11 +732,9 @@ public class AirQualityApi {
 	 * @param id air quality layer id
 	 * @return Map<gridCellId, <metricId + seasonalMetricId + annualMetric, value>>
 	 */
-	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id, Integer limitToGridId) {
-		DSLContext dslContext = DSL.using(JooqUtil.getJooqConfiguration());
-
+	public static Map<Long, AirQualityCell> getAirQualityLayerMap(Integer id, Integer limitToGridId, String taskUuid) {
 		// Retrieve the full list of AQ cells in this surface
-		Result<Record7<Long, Integer, Integer, Integer, Integer, Integer, Double>> aqRecords = dslContext
+		Result<Record7<Long, Integer, Integer, Integer, Integer, Integer, Double>> aqRecords = DSL.using(JooqUtil.getJooqConfiguration(taskUuid))
 				.select(AIR_QUALITY_CELL.GRID_CELL_ID
 						, AIR_QUALITY_CELL.GRID_COL
 						, AIR_QUALITY_CELL.GRID_ROW
@@ -762,11 +760,31 @@ public class AirQualityApi {
 			limitGridTable = GridDefinitionApi.getGridDefinitionTableName(limitToGridId);
 
 			// Get to aq cells that intersect the limit cells
-			limitedAqCells = dslContext
-				.select(DSL.field(aqGridTable + ".col", Integer.class), DSL.field(aqGridTable + ".row", Integer.class))
-				.from(aqGridTable)
-				.join(limitGridTable).on("ST_Intersects(" + aqGridTable + ".geom, ST_Transform(" + limitGridTable + ".geom, ST_SRID(" + aqGridTable + ".geom)))")
-				.fetch();
+			
+			// limitedAqCells = DSL.using(JooqUtil.getJooqConfiguration(taskUuid))
+			// 	.select(DSL.field(aqGridTable + ".col", Integer.class), DSL.field(aqGridTable + ".row", Integer.class))
+			// 	.from(aqGridTable)
+			// 	.join(limitGridTable).on("ST_Intersects(" + aqGridTable + ".geom, ST_Transform(" + limitGridTable + ".geom, ST_SRID(" + aqGridTable + ".geom)))")
+			// 	.fetch();
+
+			limitedAqCells = DSL.using(JooqUtil.getJooqConfiguration(taskUuid))
+			.with("mask").as(
+				DSL.select(DSL.field("ST_Union(ST_Transform(geom, a.srid))").as("geom"))
+					.from(limitGridTable)
+					.crossJoin(
+						DSL.selectDistinct(DSL.field("ST_SRID(geom)", Integer.class).as("srid"))
+							.from(aqGridTable)
+							.asTable("a")
+					)
+			)
+			.select(
+				DSL.field("b.col", Integer.class),
+				DSL.field("b.row", Integer.class)
+			)
+			.from(DSL.table(aqGridTable).as("b"),
+					DSL.table("mask").as("m"))
+			.where(DSL.condition("ST_Intersects(b.geom, m.geom)"))
+			.fetch();
 			
 			limitCellIds = new HashSet<>();
 			// Finally, build a Set of aq cells we should consider in the analysis
