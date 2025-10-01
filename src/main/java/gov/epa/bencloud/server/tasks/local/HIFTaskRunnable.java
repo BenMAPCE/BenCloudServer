@@ -105,8 +105,8 @@ public class HIFTaskRunnable implements Runnable {
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
 			// Additionally, EPA wants to replace hif.SeasonalMetric and hif.MetricStatistics with one Timing column.
 			// Therefore SeasonalMetric will only be defined by pollutant or AQ data; MetricStatistics will always be "Mean" when Timing = "Annual"
-			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId, hifTaskConfig.limitToGridId);
-			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId);
+			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqBaselineId, hifTaskConfig.limitToGridId, taskUuid);
+			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(hifTaskConfig.aqScenarioId, taskUuid);
 			
 			ArrayList<HIFunction> hifFunctionList = new ArrayList<HIFunction>();
 			ArrayList<HIFunction> hifBaselineList = new ArrayList<HIFunction>();
