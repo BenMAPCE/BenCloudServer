@@ -750,11 +750,12 @@ public class HIFApi {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String hifGroupName;
 		String description;
-
+		boolean newGroup;
 		
 		try{
 			hifGroupName = ApiUtil.getMultipartFormParameterAsString(request, "hifGroupName");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
+			newGroup = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("newGroup"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -832,6 +833,15 @@ public class HIFApi {
 		Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
 
 		if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
+			if(newGroup) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "A Health Impact Function Group called '" + hifGroupName + "' already exists. "
+					+ "Please enter a different name, or select the 'Append to an existing health impact function group' option.";
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 			hifGroupId = hifGroupNameMap.get(hifGroupName.toLowerCase());
 		} else {
 
