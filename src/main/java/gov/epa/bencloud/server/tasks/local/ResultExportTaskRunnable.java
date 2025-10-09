@@ -216,7 +216,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				List<Integer> exposureResultDatasetIds;
 				if(uuidType.equals("E")) {
 					//export current scenario
-					exposureResultDatasetIds = create.select()
+					exposureResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(taskUuid)).select()
 							.from(EXPOSURE_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.where(TASK_COMPLETE.TASK_UUID.eq(taskUuid))
@@ -363,14 +363,14 @@ public class ResultExportTaskRunnable implements Runnable {
 				List<Integer> hifResultDatasetIds;
 				if(uuidType.equals("H")) {
 					//export all hif results from the same senario as taskUuid.
-					hifResultDatasetIds = create.select()
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.and(HIF_RESULT_DATASET.TASK_UUID.eq(taskUuid))
 							.fetch(HIF_RESULT_DATASET.ID);
 				}
 				else if(uuidType.equals("V")) {
-					hifResultDatasetIds = create.select()
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.join(VALUATION_RESULT_DATASET).on(HIF_RESULT_DATASET.ID.eq(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID))
@@ -378,7 +378,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							.fetch(HIF_RESULT_DATASET.ID);
 				}
 				else {
-					hifResultDatasetIds = create.select()
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
@@ -399,7 +399,7 @@ public class ResultExportTaskRunnable implements Runnable {
 						//If the crosswalk isn't there, create it now
 						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
 							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
-							List<String> gridDefinitionNames = create
+							List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()))
 									.select(GRID_DEFINITION.NAME)
 									.from(GRID_DEFINITION)
 									.where(GRID_DEFINITION.ID.in(gridDefinitionIds))
@@ -411,13 +411,13 @@ public class ResultExportTaskRunnable implements Runnable {
 							return;
 						}
 						try {
-							Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
+							Table<GetHifResultsRecord> hifResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 								GET_HIF_RESULTS(
 										hifResultDatasetId, 
 										null, 
 										gridIds[i]))
 								.asTable("hif_result_records");
-							Result<Record> hifRecords = create.select(
+							Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
 									ENDPOINT.NAME.as("health_effect"),
@@ -525,7 +525,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				List<Integer> valuationResultDatasetIds;
 				if(uuidType.equals("H")) {
 					//export all val results from the same scenario as hif taskUuid.
-					valuationResultDatasetIds = create.select()
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
@@ -533,14 +533,14 @@ public class ResultExportTaskRunnable implements Runnable {
 							.fetch(VALUATION_RESULT_DATASET.ID);
 				}
 				else if(uuidType.equals("V")) {
-					valuationResultDatasetIds = create.select()
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.and(VALUATION_RESULT_DATASET.TASK_UUID.eq(taskUuid))
 							.fetch(VALUATION_RESULT_DATASET.ID);
 				}
 				else {
-					valuationResultDatasetIds = create.select()
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
@@ -560,7 +560,7 @@ public class ResultExportTaskRunnable implements Runnable {
 						//If the crosswalk isn't there, create it now
 						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
 							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
-							List<String> gridDefinitionNames = create
+							List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()))
 									.select(GRID_DEFINITION.NAME)
 									.from(GRID_DEFINITION)
 									.where(GRID_DEFINITION.ID.in(gridDefinitionIds))
@@ -572,7 +572,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							return;
 						}
 						try {
-							Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
+							Table<GetValuationResultsRecord> vfResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 									GET_VALUATION_RESULTS(
 										valuationResultDatasetId, 
 										null, 
@@ -580,7 +580,7 @@ public class ResultExportTaskRunnable implements Runnable {
 										gridIds[i]))
 								.asTable("valuation_result_records");
 							Result<Record> vfRecords;
-							vfRecords = create.select(
+							vfRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
 									DSL.val(null, String.class).as("health_effect"),
