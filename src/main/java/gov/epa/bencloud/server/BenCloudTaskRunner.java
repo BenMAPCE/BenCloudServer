@@ -23,13 +23,13 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
-import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.ResultExportTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
+import gov.epa.bencloud.server.tasks.runnable.ExposureTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.GridImportTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.HIFTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.ResultExportTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.ValuationTaskRunnable;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class BenCloudTaskRunner {
