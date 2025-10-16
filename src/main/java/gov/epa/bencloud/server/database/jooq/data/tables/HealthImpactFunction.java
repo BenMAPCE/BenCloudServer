@@ -246,6 +246,17 @@ public class HealthImpactFunction extends TableImpl<HealthImpactFunctionRecord> 
      */
     public final TableField<HealthImpactFunctionRecord, Integer> TIMING_ID = createField(DSL.name("timing_id"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>data.health_impact_function.geographic_area</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, String> GEOGRAPHIC_AREA = createField(DSL.name("geographic_area"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column
+     * <code>data.health_impact_function.geographic_area_feature</code>.
+     */
+    public final TableField<HealthImpactFunctionRecord, String> GEOGRAPHIC_AREA_FEATURE = createField(DSL.name("geographic_area_feature"), SQLDataType.CLOB, this, "");
+
     private HealthImpactFunction(Name alias, Table<HealthImpactFunctionRecord> aliased) {
         this(alias, aliased, null);
     }

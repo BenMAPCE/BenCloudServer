@@ -6,12 +6,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -555,6 +557,7 @@ public class ValuationApi {
 					.from(VALUATION_FUNCTION)
 					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
 					.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
+					.where(VALUATION_FUNCTION.ARCHIVED.eq((short) 0))
 					.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.QUALIFIER)
 					.fetch();
 		} catch (DataAccessException e) {
@@ -648,6 +651,7 @@ public class ValuationApi {
 					.where(filterCondition)
 					.orderBy(orderFields)
 					.offset((page * rowsPerPage) - rowsPerPage)
+					.limit(rowsPerPage)
 					.fetch();
 		} catch (DataAccessException e) {
 			log.error("Error getAllValuationFunctions", e);
@@ -699,15 +703,13 @@ public class ValuationApi {
 	public static Object postValuationFunctionData(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String healthEffectGroupName;
+		boolean newCategory;
 		String description;
-		String filename;
-		LocalDateTime uploadDate;
 		
 		try{
 			healthEffectGroupName = ApiUtil.getMultipartFormParameterAsString(request, "healthEffectGroupName");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
-			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
-			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			newCategory = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("newCategory"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -763,6 +765,15 @@ public class ValuationApi {
 		Map<String, Integer> heGroupNameMap = getAllHealthEffectGroupsByUser(userId);
 
 		if(heGroupNameMap.containsKey(healthEffectGroupName.toLowerCase())) {
+			if(newCategory) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "A Health Effect Category called '" + healthEffectGroupName + "' already exists. "
+					+ "Please enter a different name, or select the 'Append to an existing health effect category' option.";
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 			heGroupId = heGroupNameMap.get(healthEffectGroupName.toLowerCase());
 		} else {
 			heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -788,7 +799,7 @@ public class ValuationApi {
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			BOMInputStream bis = new BOMInputStream(is, false);
 			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
-
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			String[] record;
 			
 			//step 1: verify column names 
@@ -926,24 +937,24 @@ public class ValuationApi {
 			distTypes.add("LogNormal");
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
-
+			distTypes.add("Gamma");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
 				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
-				if (!endpointIdLookup.containsKey(record[endpointIdx].toLowerCase())){
+				if (!endpointIdLookup.containsKey(record[endpointIdx].strip().toLowerCase())){
 					EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
 							.insertInto(ENDPOINT
 									, ENDPOINT.NAME
 									, ENDPOINT.ENDPOINT_GROUP_ID
 									)
-							.values(record[endpointIdx], (short) heGroupId)
+							.values(record[endpointIdx].strip(), (short) heGroupId)
 							.returning(ENDPOINT.ID)
 							.fetchOne();
 
 					int heId = heRecord.value1();
 					
-					endpointIdLookup.put(record[endpointIdx].toLowerCase(), heId);
+					endpointIdLookup.put(record[endpointIdx].strip().toLowerCase(), heId);
 					
 				}
 
@@ -952,85 +963,103 @@ public class ValuationApi {
 				String str = "";
 
 				//start age is required and should be an integer
-				str = record[startAgeIdx];
+				str = record[startAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStartAgeTypeError++;
 				}	
 
 				//end age is required and should be an integer
-				str = record[endAgeIdx];
+				str = record[endAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countEndAgeTypeError++;
 				}	
 
-				if(Integer.parseInt(record[startAgeIdx]) > Integer.parseInt(record[endAgeIdx])) {
+				if(Integer.parseInt(record[startAgeIdx].strip()) > Integer.parseInt(record[endAgeIdx].strip())) {
 					countAgeRangeError++;
 				}
 
-				//EPA standard should be true or false
-				str = record[epaStandardIdx];
-				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
-					countEpaStandardTypeError++;
-				}	
+				//EPA standard is optional, should be true or false
+				if(epaStandardIdx != -999) {
+					str = record[epaStandardIdx].strip();
+					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+						countEpaStandardTypeError++;
+					}
+				}
 
-				//Multiyear should be true or false
-				str = record[multiyearIdx];
-				if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
-					countMultiyearTypeError++;
-				}	
-
+				//Multiyear is optional, should be true or false
+				if(multiyearIdx != -999) {
+					str = record[multiyearIdx].strip();
+					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+						countMultiyearTypeError++;
+					}	
+				}
 
 				//distribution should be a value in the distTypes list
-				str = record[distributionIdx];
+				str = record[distributionIdx].strip();
 				if(!distTypes.contains(str)) {
 					countDistributionError++;
 				}
 
 				//param 1 beta should be a double
-				str = record[param1Idx];
+				str = record[param1Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParam1Error ++;
 				}
 
 				//param 2 beta should be a double
-				str = record[param2Idx];
+				str = record[param2Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParam2Error ++;
 				}
 
 				//param a should be a double
-				str = record[paramAIdx];
+				str = record[paramAIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParamAError ++;
 				}
 
 				//param b should be a double
-				str = record[paramBIdx];
+				str = record[paramBIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParamBError ++;
 				}
 
-				//multiyear costs should be a double and >= 0
-				str = record[multiyearCostsIdx];
-				try {
-					if(str != null && !str.equals("")) {
-						float dbl = Float.parseFloat(str);
-						if(dbl < 0) {
-							countMultiyearCostsError++;
+				//multiyear costs is optional, should be a double and >= 0
+				if(multiyearCostsIdx != -999) {
+					str = record[multiyearCostsIdx].strip();
+					try {
+						if(str != null && !str.equals("")) {
+							Number number = format.parse(str);
+							float value = number.floatValue();
+							if(value < 0) {
+								countMultiyearCostsError++;
+							}
 						}
+					} catch(NumberFormatException e){
+						countMultiyearCostsTypeError ++;
 					}
-				} catch(NumberFormatException e){
-					countMultiyearCostsTypeError ++;
 				}
 
 				// //function should be a valid formula
@@ -1321,66 +1350,77 @@ public class ValuationApi {
 		try (InputStream is = request.raw().getPart("file").getInputStream()){
 			CSVReader csvReader = new CSVReader (new InputStreamReader(is));
 			String[] record;
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
 
-				String endpointName = record[endpointIdx].toLowerCase();
+				String endpointName = record[endpointIdx].strip().toLowerCase();
 				
 				int endpointId = endpointIdLookup.get(endpointName);
 
-				short startAge = Short.valueOf(record[startAgeIdx]);
-				short endAge = Short.valueOf(record[endAgeIdx]);
+				short startAge = Short.valueOf(record[startAgeIdx].strip());
+				short endAge = Short.valueOf(record[endAgeIdx].strip());
 
 				boolean multiyearValue = false;
-				String multiyear = record[multiyearIdx];
-				if(multiyear != null && !multiyear.equals("")) {
-					multiyearValue = Boolean.valueOf(multiyear);
+				if(multiyearIdx != -999) {
+					String multiyear = record[multiyearIdx].strip();
+					if(multiyear != null && !multiyear.equals("")) {
+						multiyearValue = Boolean.valueOf(multiyear);
+					}
 				}
 
 				boolean epaStandardValue = false;
-				String epaStandard = record[epaStandardIdx];
-				if(epaStandard != null && !epaStandard.equals("")) {
-					epaStandardValue = Boolean.valueOf(epaStandard);
-				}
+				if(epaStandardIdx != -999) {
+					String epaStandard = record[epaStandardIdx].strip();
+					if(epaStandard != null && !epaStandard.equals("")) {
+						epaStandardValue = Boolean.valueOf(epaStandard);
+					}
+				}	
 
 				String accessUrl = null;
-				if(record[accessUrlIdx] != null) {
+				if(accessUrlIdx != -999) {
 					accessUrl = record[accessUrlIdx];
 				}
 
 				String valuationType = null;
-				if(record[valuationTypeIdx] != null) {
+				if(valuationTypeIdx != -999) {
 					valuationType = record[valuationTypeIdx];
 				}
 
 				Double p1beta = 0.0;
-				if(!record[param1Idx].equals("")){
-					p1beta = Double.valueOf(record[param1Idx]);
+				if(!record[param1Idx].strip().equals("")){
+					Number number = format.parse(record[param1Idx].strip());
+					p1beta = number.doubleValue();
 				}
 
 				Double p2beta = 0.0;
-				if(!record[param2Idx].equals("")){
-					p2beta = Double.valueOf(record[param2Idx]);
+				if(!record[param2Idx].strip().equals("")){
+					Number number = format.parse(record[param2Idx].strip());
+					p2beta = number.doubleValue();
 				}
 
 				Double valA = 0.0;
-				if(!record[paramAIdx].equals("")){
-					valA = Double.valueOf(record[paramAIdx]);
+				if(!record[paramAIdx].strip().equals("")){
+					Number number = format.parse(record[paramAIdx].strip());
+					valA = number.doubleValue();
 				}
 
 				Double valB = 0.0;
-				if(!record[paramBIdx].equals("")){
-					valB = Double.valueOf(record[paramBIdx]);
+				if(!record[paramBIdx].strip().equals("")){
+					Number number = format.parse(record[paramBIdx].strip());
+					valB = number.doubleValue();
 				}
 
 				Double valC = 0.0;
-				if(record[paramCIdx] != null && !record[paramCIdx].equals("")){
-					valC = Double.valueOf(record[paramCIdx]);
+				if(paramCIdx != -999 && !record[paramCIdx].strip().equals("")){
+					Number number = format.parse(record[paramCIdx].strip());
+					valC = number.doubleValue();
 				}
 
 				Double valD = 0.0;
-				if(record[paramDIdx] != null && !record[paramDIdx].equals("")){
-					valD = Double.valueOf(record[paramDIdx]);
+				if(paramDIdx != -999 && !record[paramDIdx].strip().equals("")){
+					Number number = format.parse(record[paramDIdx].strip());
+					valD = number.doubleValue();
 				}
 
 				// Double multiyearCosts = 0.0;
@@ -1389,8 +1429,9 @@ public class ValuationApi {
 				// }
 
 				Double multiyearDr = 0.0;
-				if(record[multiyearDrIdx] != null && !record[multiyearDrIdx].equals("")){
-					multiyearDr = Double.valueOf(record[multiyearDrIdx]);
+				if(multiyearDrIdx != -999 && !record[multiyearDrIdx].strip().equals("")){
+					Number number = format.parse(record[multiyearDrIdx].strip());
+					multiyearDr = number.doubleValue();
 				}
 
 
@@ -1425,7 +1466,7 @@ public class ValuationApi {
 						, VALUATION_FUNCTION.SHARE_SCOPE
 						)
 				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx], record[distributionIdx], p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				record[functionIdx].strip(), record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
 				valuationType, multiyearValue, multiyearDr, userId, Constants.SHARING_NONE)
 				.returning(VALUATION_FUNCTION.ID)
@@ -1586,14 +1627,36 @@ public class ValuationApi {
 	 */
 	public static Object getAllHealthEffectGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 
-		Result<Record> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
-				.select()
+		String userId = userProfile.get().getId();
+
+		Boolean getAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("getAll"), false);
+
+		Condition filterCondition = DSL.trueCondition();
+
+		filterCondition = filterCondition.and(ENDPOINT_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(ENDPOINT_GROUP.USER_ID.eq(userId)));		
+
+		Result<Record> healthEffectGroupRecords;
+		
+		if(getAll) {
+			healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.selectDistinct(ENDPOINT_GROUP.fields())
 				.from(ENDPOINT_GROUP)
+				.where(filterCondition)
 				.orderBy(ENDPOINT_GROUP.NAME.asc())
 				.fetch();
+		} else {
+			//limit to endpoint groups that are associated with and existing valuation function
+			healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.selectDistinct(ENDPOINT_GROUP.fields())
+				.from(ENDPOINT_GROUP)
+				.join(VALUATION_FUNCTION).on(ENDPOINT_GROUP.ID.eq(VALUATION_FUNCTION.ENDPOINT_GROUP_ID))
+				.where(filterCondition)
+				.orderBy(ENDPOINT_GROUP.NAME.asc())
+				.fetch();
+		}
 		
 		response.type("application/json");
-		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+		return healthEffectGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
 	/**

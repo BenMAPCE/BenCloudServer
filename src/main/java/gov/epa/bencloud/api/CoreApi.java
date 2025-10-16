@@ -211,7 +211,7 @@ public class CoreApi {
 	 */
 	public static Object getBanner(Request req, Response res, Optional<UserProfile> userOptionalProfile) {
 
-		SettingsRecord bannerRecord = DSL.using(JooqUtil.getJooqConfiguration())
+		SettingsRecord bannerRecord = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 			.selectFrom(SETTINGS)
 			.where(SETTINGS.KEY.equalIgnoreCase(BANNER_KEY))
 			.orderBy(SETTINGS.MODIFIED_DATE.desc())
@@ -276,7 +276,7 @@ public class CoreApi {
 			return CoreApi.getErrorResponse(req, res, 400, "Invalid type " + type +". Expected 1, 2, or 3.");
 		}
 
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 
 		boolean bannerExists = create.fetchExists(
 			create.selectFrom(SETTINGS)

@@ -128,7 +128,7 @@ public class PopulationGrowthWeight extends TableImpl<PopulationGrowthWeightReco
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.POPULATION_GROWTH_WEIGHT_SOURCE_IDX, Indexes.POPULATION_GROWTH_WEIGHT_TARGET_IDX);
+        return Arrays.asList(Indexes.IDX_PGW_COMBO, Indexes.POPULATION_GROWTH_WEIGHT_SOURCE_IDX, Indexes.POPULATION_GROWTH_WEIGHT_TARGET_IDX);
     }
 
     @Override

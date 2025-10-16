@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -73,6 +75,8 @@ import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.IncidenceUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceDataset;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointGroupRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.HifResultDatasetRecord;
@@ -615,6 +619,7 @@ public class HIFApi {
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(POLLUTANT).on(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(POLLUTANT.ID))
 				.join(POLLUTANT_METRIC).on(HEALTH_IMPACT_FUNCTION.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+				.join(TIMING_TYPE).on(HEALTH_IMPACT_FUNCTION.TIMING_ID.eq(TIMING_TYPE.ID))
 				.where(filterCondition)
 				.fetchOne(DSL.count());
 
@@ -627,6 +632,7 @@ public class HIFApi {
 						, ETHNICITY.NAME.as("ethnicity_name")
 						, POLLUTANT.FRIENDLY_NAME.as("pollutant")
 						, POLLUTANT_METRIC.NAME.as("metric")
+						, TIMING_TYPE.NAME.as("timing")
 						)
 				.from(HEALTH_IMPACT_FUNCTION)
 				.join(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER).on(HEALTH_IMPACT_FUNCTION.ID.eq(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID))
@@ -637,6 +643,7 @@ public class HIFApi {
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(POLLUTANT).on(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(POLLUTANT.ID))
 				.join(POLLUTANT_METRIC).on(HEALTH_IMPACT_FUNCTION.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+				.join(TIMING_TYPE).on(HEALTH_IMPACT_FUNCTION.TIMING_ID.eq(TIMING_TYPE.ID))
 				.where(filterCondition)
 				.orderBy(orderFields)
 				.offset((page * rowsPerPage) - rowsPerPage)
@@ -684,6 +691,16 @@ public class HIFApi {
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
 
+		Condition filterCondition = DSL.trueCondition();
+
+		if(pollutantId != 0) {
+			filterCondition = filterCondition.and(HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId));
+		}
+
+		filterCondition = filterCondition.and(HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(HEALTH_IMPACT_FUNCTION_GROUP.USER_ID.eq(userId)));
+
+
+
 		Result<Record4<String, Integer, String, Integer[]>> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION_GROUP.NAME
 						, HEALTH_IMPACT_FUNCTION_GROUP.ID
@@ -693,8 +710,7 @@ public class HIFApi {
 				.from(HEALTH_IMPACT_FUNCTION_GROUP)
 				.join(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER).on(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_GROUP_ID))
 				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID))
-				.where(pollutantId == 0 ? DSL.noCondition() : HEALTH_IMPACT_FUNCTION.POLLUTANT_ID.eq(pollutantId)
-					.and(HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(HEALTH_IMPACT_FUNCTION_GROUP.USER_ID.eq(userId))))
+				.where(filterCondition)
 				.groupBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME
 						, HEALTH_IMPACT_FUNCTION_GROUP.ID)
 				.orderBy(HEALTH_IMPACT_FUNCTION_GROUP.NAME.desc())
@@ -734,11 +750,12 @@ public class HIFApi {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String hifGroupName;
 		String description;
-
+		boolean newGroup;
 		
 		try{
 			hifGroupName = ApiUtil.getMultipartFormParameterAsString(request, "hifGroupName");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
+			newGroup = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("newGroup"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -764,17 +781,16 @@ public class HIFApi {
 		
 		HealthImpactFunctionGroupRecord hifGroupRecord=null;
 		HealthImpactFunctionRecord hifRecord=null;
+		EndpointGroupRecord heGroupRecord=null;
 		int endpointGroupIdx=-999;
 		int endpointIdx=-999;
 		int pollutantIdx=-999;
 		int metricIdx=-999;
-		int seasonalMetricIdx=-999;
-		int metricStatisticIdx=-999;
 		int timingIdx=-999;
 		int authorIdx=-999;
 		int studyYearIdx=-999;
-		// int geogAreaIdx=-999;
-		// int geogAreaFeatureIdx=-999;
+		int geogAreaIdx=-999;
+		int geogAreaFeatureIdx=-999;
 		int studyLocIdx=-999;
 		int otherPollutantIdx=-999;
 		int qualifierIdx=-999;
@@ -797,6 +813,8 @@ public class HIFApi {
 		int paramCIdx=-999;
 		int paramCNameIdx=-999;
 		int distributionIdx=-999;
+		int startDayIdx=-999;
+		int endDayIdx=-999;
 		int heroIdIdx=-999;
 		int heroUrlIdx=-999;
 		int accessUrlIdx=-999;
@@ -805,8 +823,8 @@ public class HIFApi {
 		Map<String, Integer> raceIdLookup = new HashMap<>();		
 		Map<String, Integer> ethnicityIdLookup = new HashMap<>();		
 		Map<String, Integer> genderIdLookup = new HashMap<>();
-		HashMap<String,Map<String,Integer>> endpointIdLookup = new HashMap<String,Map<String,Integer>>();
-		Map<String, Integer> endpointGroupIdLookup = new HashMap<>();
+		Map<String,Integer> endpointIdLookup = new HashMap<String,Integer>();
+		Map<String, Integer> healthEffectCategoryIdLookup = new HashMap<>();
 		Map<String, Integer> ozoneMetricIdLookup = new HashMap<>();
 		Map<String, Integer> pmMetricIdLookup = new HashMap<>();
 		Map<String, Integer> timingIdLookup = new HashMap<>();
@@ -815,6 +833,15 @@ public class HIFApi {
 		Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
 
 		if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
+			if(newGroup) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "A Health Impact Function Group called '" + hifGroupName + "' already exists. "
+					+ "Please enter a different name, or select the 'Append to an existing health impact function group' option.";
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 			hifGroupId = hifGroupNameMap.get(hifGroupName.toLowerCase());
 		} else {
 
@@ -835,14 +862,13 @@ public class HIFApi {
 		//remove built in tokens (e, pi, sin, etc.)
 		//these were causing function arguments to get parsed incorrectly
 		//not working as expected, need to find a different way to validate functions
-		for(String s : mXparser.getBuiltinTokensToRemove()) {
-			mXparser.removeBuiltinTokens(s);
-		}
+		mXparser.removeBuiltinTokens("e");
+		mXparser.removeBuiltinTokens("Beta");
 
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			BOMInputStream bis = new BOMInputStream(is, false);
 			CSVReader csvReader = new CSVReader (new InputStreamReader(bis));				
-
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			String[] record;
 			
 			//step 1: verify column names 
@@ -864,12 +890,6 @@ public class HIFApi {
 				case "metric":
 					metricIdx=i;
 					break;
-				case "seasonalmetric":
-					seasonalMetricIdx=i;
-					break;
-				case "metricstatistic":
-					metricStatisticIdx=i;
-					break;
 				case "timing":
 					timingIdx=i;
 					break;
@@ -879,12 +899,12 @@ public class HIFApi {
 				case "studyyear":
 					studyYearIdx=i;
 					break;
-				// case "geographicarea":
-				// 	geogAreaIdx=i;
-				// 	break;
-				// case "geographicareafeature":
-				// 	geogAreaFeatureIdx=i;
-				// 	break;
+				case "geographicarea":
+					geogAreaIdx=i;
+					break;
+				case "geographicareafeature":
+					geogAreaFeatureIdx=i;
+					break;
 				case "studylocation":
 					studyLocIdx=i;
 					break;
@@ -948,6 +968,12 @@ public class HIFApi {
 				case "namec":
 					paramCNameIdx=i;
 					break;	
+				case "startday":
+					startDayIdx=i;
+					break;
+				case "endday":
+					endDayIdx=i;
+					break;
 				case "heroid":
 					heroIdIdx=i;
 					break;
@@ -962,7 +988,7 @@ public class HIFApi {
 				}
 			}
 
-			String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, seasonalMetricIdx, metricStatisticIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx);
+			String tmp = HIFUtil.validateModelColumnHeadings(endpointGroupIdx, endpointIdx, pollutantIdx, metricIdx, timingIdx, authorIdx, studyYearIdx, studyLocIdx, otherPollutantIdx, qualifierIdx, referenceIdx, raceIdx, genderIdx, ethnicityIdx, startAgeIdx, endAgeIdx, functionIdx, baselineFunctionIdx, betaIdx, distBetaIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, paramCIdx, paramCNameIdx, distributionIdx);
 
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
@@ -981,11 +1007,10 @@ public class HIFApi {
 			ethnicityIdLookup = HIFUtil.getEthnicityIdLookup();
 			raceIdLookup = HIFUtil.getRaceIdLookup();
 			genderIdLookup = HIFUtil.getGenderIdLookup();
-			endpointGroupIdLookup = HIFUtil.getEndpointGroupIdLookup();
+			healthEffectCategoryIdLookup = HIFUtil.getEndpointGroupIdLookup();
 			ozoneMetricIdLookup = HIFUtil.getMetricIdLookup(4);
 			pmMetricIdLookup = HIFUtil.getMetricIdLookup(6);
 			timingIdLookup = HIFUtil.getTimingIdLookup();
-
 			
 		// 	//We might also need to clean up the header. Or, maybe we should make this a transaction?
 			
@@ -994,6 +1019,8 @@ public class HIFApi {
 			int countStudyYearTypeError = 0;
 			int countStartAgeTypeError = 0;
 			int countEndAgeTypeError = 0;
+			int countStartDayTypeError = 0;
+			int countEndDayTypeError = 0;
 			int countAgeRangeError = 0;
 
 			int countMissingPollutant = 0;
@@ -1017,8 +1044,6 @@ public class HIFApi {
 			List<String> lstUndefinedEthnicities = new ArrayList<String>();
 			List<String> lstUndefinedRaces = new ArrayList<String>();
 			List<String> lstUndefinedGenders = new ArrayList<String>();
-			List<String> lstUndefinedEndpoints = new ArrayList<String>();
-			List<String> lstUndefinedEndpointGroups = new ArrayList<String>();
 			List<String> lstUndefinedMetrics = new ArrayList<String>();
 			List<String> lstUndefinedTimings = new ArrayList<String>();
 
@@ -1034,23 +1059,16 @@ public class HIFApi {
 			distTypes.add("LogNormal");
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
+			distTypes.add("Gamma");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
-				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
-				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
-				if (!endpointIdLookup.containsKey(endpointGroupName)){
-					Integer endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
-					//endpoint group id is a short in endpoint data but an Integer in endpoint group data
-					short shortEndpointGroupId = (short) (int) endpointGroupId;
-					endpointIdLookup.put(endpointGroupName, HIFUtil.getEndpointIdLookup(shortEndpointGroupId));
-				}
-
+				
 				//TODO: Update this validation code when we add lookup tables for timeframe, units, and/or distribution
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
 				String str = "";
 
-				str = record[pollutantIdx];
+				str = record[pollutantIdx].strip();
 				if(str == "") {
 					countMissingPollutant ++;
 				} else if(!pollutantIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
@@ -1059,14 +1077,14 @@ public class HIFApi {
 					}
 				}
 
-				str = record[ethnicityIdx];
+				str = record[ethnicityIdx].strip();
 				if(!ethnicityIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
 					if (!lstUndefinedEthnicities.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedEthnicities.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 				
-				str = record[raceIdx];
+				str = record[raceIdx].strip();
 				if(!raceIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
 					if (!lstUndefinedRaces.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedRaces.add(String.valueOf(str.toLowerCase()));
@@ -1074,36 +1092,73 @@ public class HIFApi {
 				}
 
 				
-				str= record[genderIdx];
+				str= record[genderIdx].strip();
 				if(!genderIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
 					if (!lstUndefinedGenders.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedGenders.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 
-				str = record[endpointIdx];
-				if(str == "") {
-					countMissingEndpoint ++;
-				} else if(!endpointIdLookup.get(endpointGroupName).containsKey(str.toLowerCase()) ) {
-					if (!lstUndefinedEndpoints.contains(String.valueOf(str.toLowerCase()))) {
-						lstUndefinedEndpoints.add(String.valueOf(str.toLowerCase()));
-					}
-				}
+				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
+				String healthEffectCategoryName = record[endpointGroupIdx].strip().toLowerCase();
+				int heGroupId = 0;
+				String healthEffectName = record[endpointIdx].strip().toLowerCase();
+				int heId = 0;
 
-				str = record[endpointGroupIdx];
+				str = healthEffectCategoryName;
 				if(str == "") {
 					countMissingEndpointGroup ++;
-				} else if(!endpointGroupIdLookup.containsKey(str.toLowerCase()) ) {
-					if (!lstUndefinedEndpointGroups.contains(String.valueOf(str.toLowerCase()))) {
-						lstUndefinedEndpointGroups.add(String.valueOf(str.toLowerCase()));
+					if(record[endpointIdx].strip().toLowerCase().equals("")) {
+						countMissingEndpoint ++;
 					}
+				} else {
+					if(healthEffectCategoryIdLookup.containsKey(healthEffectCategoryName.toLowerCase())) {
+						heGroupId = healthEffectCategoryIdLookup.get(healthEffectCategoryName.toLowerCase());
+					} else {
+						heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+							.insertInto(ENDPOINT_GROUP
+									, ENDPOINT_GROUP.NAME
+									, ENDPOINT_GROUP.USER_ID
+									, ENDPOINT_GROUP.SHARE_SCOPE
+									)
+							.values(record[endpointGroupIdx].strip(), userId, Constants.SHARING_NONE)
+							.returning(ENDPOINT_GROUP.ID)
+							.fetchOne();
+
+						heGroupId = heGroupRecord.value1();
+
+						healthEffectCategoryIdLookup.put(healthEffectCategoryName, heGroupId);
+					}
+
+					endpointIdLookup = HIFUtil.getEndpointIdLookup((short) heGroupId);
+
+					str = healthEffectName;
+					if(str == "") {
+						countMissingEndpoint ++;
+					} else {
+						if(endpointIdLookup.containsKey(str)) {
+							heId = endpointIdLookup.get(str);
+						} else {
+							EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
+									.insertInto(ENDPOINT
+											, ENDPOINT.NAME
+											, ENDPOINT.ENDPOINT_GROUP_ID
+											)
+									.values(record[endpointIdx].strip(), (short) heGroupId)
+									.returning(ENDPOINT.ID)
+									.fetchOne();
+
+							heId = heRecord.value1();
+						}
+					}
+
 				}
 
-				str= record[metricIdx];
+				str= record[metricIdx].strip();
 				if(str == "") {
 					countMissingMetric ++;
-				} else if(pollutantIdLookup.containsKey(record[pollutantIdx].toLowerCase())) {
-					int pollId = pollutantIdLookup.get(record[pollutantIdx].toLowerCase());
+				} else if(pollutantIdLookup.containsKey(record[pollutantIdx].strip().toLowerCase())) {
+					int pollId = pollutantIdLookup.get(record[pollutantIdx].strip().toLowerCase());
 					if(pollId == 4) {
 						if(!ozoneMetricIdLookup.containsKey(str.toLowerCase())) {
 							if (!lstUndefinedMetrics.contains(String.valueOf(str.toLowerCase()))) {
@@ -1119,7 +1174,7 @@ public class HIFApi {
 					}
 				}
 
-				str= record[timingIdx];
+				str= record[timingIdx].strip();
 				if(str == "") {
 					countMissingTiming ++;
 				} else if(!timingIdLookup.containsKey(str.toLowerCase())) {
@@ -1131,110 +1186,148 @@ public class HIFApi {
 				
 		// 		//step 3: Verify data types for each field
 				//study year is required and should be an integer
-				str = record[studyYearIdx];
+				str = record[studyYearIdx].strip();
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStudyYearTypeError++;
 				}	
 
 				//start age is required and should be an integer
-				str = record[startAgeIdx];
+				str = record[startAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countStartAgeTypeError++;
 				}	
 
 				//end age is required and should be an integer
-				str = record[endAgeIdx];
+				str = record[endAgeIdx].strip();
 				//question: or use Integer.parseInt(str)??
 				if(str=="" || !str.matches("-?\\d+")) {
 					countEndAgeTypeError++;
 				}	
 
-				if(Integer.parseInt(record[startAgeIdx]) > Integer.parseInt(record[endAgeIdx])) {
+				if(Integer.parseInt(record[startAgeIdx].strip()) > Integer.parseInt(record[endAgeIdx].strip())) {
 					countAgeRangeError++;
 				}
 
-				//beta should be a double and 
-				str = record[betaIdx];
+				//beta should be a double
+				str = record[betaIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countBetaError ++;
 				}
 
 				//dist beta should be a value in the distTypes list
-				str = record[distBetaIdx];
+				str = record[distBetaIdx].strip();
 				if(!distTypes.contains(str)) {
 					countDistBetaError++;
 				}
 
 				//param 1 beta should be a double
-				str = record[param1Idx];
+				str = record[param1Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParam1Error ++;
 				}
 
 				//param 2 beta should be a double
-				str = record[param2Idx];
+				str = record[param2Idx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParam2Error ++;
 				}
 
 				//param a should be a double
-				str = record[paramAIdx];
+				str = record[paramAIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParamAError ++;
 				}
 
 				//param b should be a double
-				str = record[paramBIdx];
+				str = record[paramBIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParamBError ++;
 				}
 
 				//param c should be a double
-				str = record[paramCIdx];
+				str = record[paramCIdx].strip();
 				try {
-					double dbl = Double.parseDouble(str);
+					if(!str.equals("")){
+						Number number = format.parse(str);
+						double value = number.doubleValue();
+					}
 				} catch(NumberFormatException e){
 					countParamCError ++;
 				}
 
-				//baselinefunction should be a valid formula
-				// str = record[baselineFunctionIdx];
-				// Expression e = new Expression(str);
+				// baselinefunction should be a valid formula
+				str = record[baselineFunctionIdx].strip().toLowerCase();
+				Expression e = new Expression(str);
 				
-				// String[] missingVars = e.getMissingUserDefinedArguments();
+				String[] missingVars = e.getMissingUserDefinedArguments();
 
-				// for (String varName : missingVars) {
-				// 	e.addArguments(new Argument(varName + " = 1"));
-				// }
+				for (String varName : missingVars) {
+					e.addArguments(new Argument(varName + " = 1"));
+				}
 
-				// if(!e.checkSyntax()) {
-				// 	countBaselineFunctionError++;
-				// }	
+				if(!e.checkSyntax()) {
+					countBaselineFunctionError++;
+				}	
 
-				// //function should be a valid formula
-				// str = record[functionIdx];
-				// e = new Expression(str);
+				//function should be a valid formula
+				str = record[functionIdx].strip().toLowerCase();
+				e = new Expression(str);
 
-				// missingVars = e.getMissingUserDefinedArguments();
+				missingVars = e.getMissingUserDefinedArguments();
 
-				// for (String varName : missingVars) {
-				// 	e.addArguments(new Argument(varName + " = 1"));
-				// }
+				for (String varName : missingVars) {
+					e.addArguments(new Argument(varName + " = 1"));
+				}
 
-				// if(!e.checkSyntax()) {
-				// 	countFunctionError++;
-				// }	
+				if(!e.checkSyntax()) {
+					countFunctionError++;
+				}	
+
+				//start day is optional and should be an integer
+				str = "";
+				if(startDayIdx != -999) {
+					str = record[startDayIdx].strip();
+				}
+				//question: or use Integer.parseInt(str)??
+				if(!str.equals("") && !str.matches("-?\\d+")) {
+					countStartDayTypeError++;
+				}	
+
+				//end day is optional and should be an integer
+				str = "";
+				if(endDayIdx != -999) {
+					str = record[endDayIdx].strip();
+				}
+				//question: or use Integer.parseInt(str)??
+				if(!str.equals("") && !str.matches("-?\\d+")) {
+					countEndDayTypeError++;
+				}	
 
 		
 		// //check that we don't have duplicate records for a given categorization and row/col
@@ -1431,6 +1524,36 @@ public class HIFApi {
 				validationMsg.messages.add(msg);
 			}
 
+			if(countStartDayTypeError>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countStartDayTypeError == 1) {
+					strRecord = String.valueOf(countStartDayTypeError) + " record has a Start Day value that is not a valid integer.";
+				}
+				else {
+					strRecord = String.valueOf(countStartDayTypeError) + " records have Start Day values that are not valid integers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countEndDayTypeError>0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countEndDayTypeError == 1) {
+					strRecord = String.valueOf(countEndDayTypeError) + " record has a End Day value that is not a valid integer.";
+				}
+				else {
+					strRecord = String.valueOf(countEndDayTypeError) + " records have End Day values that are not valid integers.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
 			if(lstUndefinedEthnicities.size()>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -1493,14 +1616,6 @@ public class HIFApi {
 				validationMsg.messages.add(msg);
 			}
 
-			if(lstUndefinedEndpoints.size()>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Health Effect values are not defined: " + String.join(",", lstUndefinedEndpoints) + ".";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
 			if(countMissingEndpointGroup>0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -1542,14 +1657,6 @@ public class HIFApi {
 					strRecord = String.valueOf(countMissingTiming) + " records are missing Timing values.";
 				}
 				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(lstUndefinedEndpointGroups.size()>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Health Effect Category values are not defined: " + String.join(",", lstUndefinedEndpointGroups) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1634,19 +1741,22 @@ public class HIFApi {
 		try (InputStream is = request.raw().getPart("file").getInputStream()){
 			CSVReader csvReader = new CSVReader (new InputStreamReader(is));
 			String[] record;
+			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
 
-				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
-				String endpointName = record[endpointIdx].toLowerCase();
-				int endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
+				String endpointGroupName = record[endpointGroupIdx].strip().toLowerCase();
+				String endpointName = record[endpointIdx].strip().toLowerCase();
+				int endpointGroupId = healthEffectCategoryIdLookup.get(endpointGroupName);
 				
-				int endpointId = endpointIdLookup.get(endpointGroupName).get(endpointName);
+				endpointIdLookup = HIFUtil.getEndpointIdLookup((short) endpointGroupId);
+
+				int endpointId = endpointIdLookup.get(endpointName);
 				
-				String pollutantName = record[pollutantIdx].toLowerCase();
+				String pollutantName = record[pollutantIdx].strip().toLowerCase();
 				int pollutantId = pollutantIdLookup.get(pollutantName);
 
-				String metricName = record[metricIdx].toLowerCase();
+				String metricName = record[metricIdx].strip().toLowerCase();
 				int metricId = 0;
 				
 				if(pollutantId == 4) {
@@ -1656,92 +1766,103 @@ public class HIFApi {
 				}
 
 
-				String timingName = record[timingIdx].toLowerCase();
+				String timingName = record[timingIdx].strip().toLowerCase();
 				int timingId = timingIdLookup.get(timingName);
 
-				String raceName = record[raceIdx].toLowerCase();
+				String raceName = record[raceIdx].strip().toLowerCase();
 				if (raceName.equals("")){
 					raceName = "all";
 				}
 				int raceId = raceIdLookup.get(raceName);
 
-				String genderName = record[genderIdx].toLowerCase();
+				String genderName = record[genderIdx].strip().toLowerCase();
 				if (genderName.equals("")){
 					genderName = "all";
 				}
 				int genderId = genderIdLookup.get(genderName);
 
-				String ethnicityName = record[ethnicityIdx].toLowerCase();
+				String ethnicityName = record[ethnicityIdx].strip().toLowerCase();
 				if (ethnicityName.equals("")){
 					ethnicityName = "all";
 				}
 				int ethnicityId = ethnicityIdLookup.get(ethnicityName);
 
-				int functionYear = Integer.valueOf(record[studyYearIdx]);
-				short startAge = Short.valueOf(record[startAgeIdx]);
-				short endAge = Short.valueOf(record[endAgeIdx]);
+				int functionYear = Integer.valueOf(record[studyYearIdx].strip());
+				short startAge = Short.valueOf(record[startAgeIdx].strip());
+				short endAge = Short.valueOf(record[endAgeIdx].strip());
 
 				int heroId = -1;
-				if(record[heroIdIdx] != null && !record[heroIdIdx].equals("")) {
-					heroId = Integer.valueOf(record[heroIdIdx]);
+				if(heroIdIdx != -999 && !record[heroIdIdx].strip().equals("")) {
+					heroId = Integer.valueOf(record[heroIdIdx].strip());
 				}
 
 				String heroUrl = null;
-				if(record[heroUrlIdx] != null) {
+				if(heroUrlIdx != -999) {
 					heroUrl = record[heroUrlIdx];
 				}
 
 				String accessUrl = null;
-				if(record[accessUrlIdx] != null) {
+				if(accessUrlIdx != -999) {
 					accessUrl = record[accessUrlIdx];
 				}
 
 				Double beta = 0.0;
-				if(!record[betaIdx].equals("")){
-					beta = Double.valueOf(record[betaIdx]);
+				if(!record[betaIdx].strip().equals("")){
+					Number number = format.parse(record[betaIdx].strip());
+					beta = number.doubleValue();
 				}
 
 				Double p1beta = 0.0;
-				if(!record[param1Idx].equals("")){
-					p1beta = Double.valueOf(record[param1Idx]);
+				if(!record[param1Idx].strip().equals("")){
+					Number number = format.parse(record[param1Idx].strip());
+					p1beta = number.doubleValue();
 				}
 
 				Double p2beta = 0.0;
-				if(!record[param2Idx].equals("")){
-					p2beta = Double.valueOf(record[param2Idx]);
+				if(!record[param2Idx].strip().equals("")){
+					Number number = format.parse(record[param2Idx].strip());
+					p2beta = number.doubleValue();
 				}
 
 				Double valA = 0.0;
-				if(!record[paramAIdx].equals("")){
-					valA = Double.valueOf(record[paramAIdx]);
+				if(!record[paramAIdx].strip().equals("")){
+					Number number = format.parse(record[paramAIdx].strip());
+					valA = number.doubleValue();
 				}
 
 				Double valB = 0.0;
-				if(!record[paramBIdx].equals("")){
-					valB = Double.valueOf(record[paramBIdx]);
+				if(!record[paramBIdx].strip().equals("")){
+					valB = Double.valueOf(record[paramBIdx].strip());
+					Number number = format.parse(record[paramBIdx].strip());
+					valB = number.doubleValue();
 				}
 
 				Double valC = 0.0;
-				if(!record[paramCIdx].equals("")){
-					valC = Double.valueOf(record[paramCIdx]);
+				if(!record[paramCIdx].strip().equals("")){
+					Number number = format.parse(record[paramCIdx].strip());
+					valC = number.doubleValue();
 				}
 
-				// String geogArea = "";
-				// if(geogAreaIdx != -999) {
-				// 	geogArea = record[geogAreaIdx];
-				// }
+				String geogArea = "";
+				if(geogAreaIdx != -999) {
+					geogArea = record[geogAreaIdx];
+				}
 
-				// String geogAreaFeature = "";
-				// if(geogAreaFeatureIdx != -999) {
-				// 	geogAreaFeature = record[geogAreaFeatureIdx];
-				// }
+				String geogAreaFeature = "";
+				if(geogAreaFeatureIdx != -999) {
+					geogAreaFeature = record[geogAreaFeatureIdx];
+				}
 
 
-				// short startDay = Short.valueOf(record[startDayIdx]);
-				// short endDay = Short.valueOf(record[endDayIdx]);
-
-				//Create the hif group record, if necessary
-
+				Short startDay = null;
+				if(startDayIdx != -999 && !record[startDayIdx].equals("")) {
+					startDay = Short.valueOf(record[startDayIdx]);
+				}
+				
+				Short endDay = null;
+				if(endDayIdx != -999 && !record[endDayIdx].equals("")) {
+					endDay = Short.valueOf(record[endDayIdx]);
+				}
 
 				//Create the hif record
 				hifRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -1775,8 +1896,10 @@ public class HIFApi {
 						, HEALTH_IMPACT_FUNCTION.RACE_ID
 						, HEALTH_IMPACT_FUNCTION.GENDER_ID
 						, HEALTH_IMPACT_FUNCTION.ETHNICITY_ID
-						// , HEALTH_IMPACT_FUNCTION.START_DAY
-						// , HEALTH_IMPACT_FUNCTION.END_DAY
+						, HEALTH_IMPACT_FUNCTION.START_DAY
+						, HEALTH_IMPACT_FUNCTION.END_DAY
+						, HEALTH_IMPACT_FUNCTION.GEOGRAPHIC_AREA
+						, HEALTH_IMPACT_FUNCTION.GEOGRAPHIC_AREA_FEATURE
 						, HEALTH_IMPACT_FUNCTION.HERO_ID
 						, HEALTH_IMPACT_FUNCTION.EPA_HERO_URL
 						, HEALTH_IMPACT_FUNCTION.ACCESS_URL
@@ -1785,9 +1908,10 @@ public class HIFApi {
 						)
 				.values(1, endpointGroupId, endpointId, pollutantId, metricId, timingId, record[authorIdx], functionYear, 
 				record[studyLocIdx], record[otherPollutantIdx], record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx], beta, record[distBetaIdx], p1beta, p2beta, valA, record[paramANameIdx], valB, 
-				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx], raceId, genderId, ethnicityId, 
-				(heroId != -1 ? heroId : null), heroUrl, accessUrl, userId, Constants.SHARING_NONE)
+				record[functionIdx].strip(), beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
+				startDay, endDay, geogArea, geogAreaFeature, (heroId != -1 ? heroId : null), heroUrl, accessUrl, 
+				userId, Constants.SHARING_NONE)
 				.returning(HEALTH_IMPACT_FUNCTION.ID)
 				.fetchOne();
 

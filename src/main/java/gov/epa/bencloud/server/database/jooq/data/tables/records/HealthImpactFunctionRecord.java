@@ -582,6 +582,36 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         return (Integer) get(39);
     }
 
+    /**
+     * Setter for <code>data.health_impact_function.geographic_area</code>.
+     */
+    public void setGeographicArea(String value) {
+        set(40, value);
+    }
+
+    /**
+     * Getter for <code>data.health_impact_function.geographic_area</code>.
+     */
+    public String getGeographicArea() {
+        return (String) get(40);
+    }
+
+    /**
+     * Setter for
+     * <code>data.health_impact_function.geographic_area_feature</code>.
+     */
+    public void setGeographicAreaFeature(String value) {
+        set(41, value);
+    }
+
+    /**
+     * Getter for
+     * <code>data.health_impact_function.geographic_area_feature</code>.
+     */
+    public String getGeographicAreaFeature() {
+        return (String) get(41);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -605,7 +635,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
     /**
      * Create a detached, initialised HealthImpactFunctionRecord
      */
-    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl, String userId, Short shareScope, Short archived, Integer timingId) {
+    public HealthImpactFunctionRecord(Integer id, Integer healthImpactFunctionDatasetId, Integer endpointGroupId, Integer endpointId, Integer pollutantId, Integer metricId, Integer seasonalMetricId, Integer metricStatistic, String author, Integer functionYear, String location, String otherPollutants, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double beta, String distBeta, Double p1Beta, Double p2Beta, Double valA, String nameA, Double valB, String nameB, Double valC, String nameC, String baselineFunctionText, Integer raceId, Integer genderId, Integer ethnicityId, Integer startDay, Integer endDay, Integer heroId, String epaHeroUrl, String accessUrl, String userId, Short shareScope, Short archived, Integer timingId, String geographicArea, String geographicAreaFeature) {
         super(HealthImpactFunction.HEALTH_IMPACT_FUNCTION);
 
         setId(id);
@@ -648,5 +678,7 @@ public class HealthImpactFunctionRecord extends UpdatableRecordImpl<HealthImpact
         setShareScope(shareScope);
         setArchived(archived);
         setTimingId(timingId);
+        setGeographicArea(geographicArea);
+        setGeographicAreaFeature(geographicAreaFeature);
     }
 }

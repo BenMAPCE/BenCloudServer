@@ -327,6 +327,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				}					
 			}
 			if(includeHealthImpact) {
+				//map hifRecords to UI column names. key 3: author, key 4: year. They are used together for UI column "study"
 				Map<Integer, String> hifColumnsMap = new HashMap <Integer, String>();
 				hifColumnsMap.put(0, "column");
 				hifColumnsMap.put(1, "row");
@@ -344,18 +345,19 @@ public class ResultExportTaskRunnable implements Runnable {
 				hifColumnsMap.put(13, "metric");
 				hifColumnsMap.put(14, "seasonal_metric");
 				hifColumnsMap.put(15, "metric_statistic");
-				hifColumnsMap.put(16, "point_estimate");
-				hifColumnsMap.put(17, "population");
-				hifColumnsMap.put(18, "delta_aq");
-				hifColumnsMap.put(19, "baseline_aq");
-				hifColumnsMap.put(20, "scenario_aq");
-				hifColumnsMap.put(21, "mean");
-				hifColumnsMap.put(22, "baseline");
-				hifColumnsMap.put(23, "percent_of_baseline");
-				hifColumnsMap.put(24, "standard_deviation");
-				hifColumnsMap.put(25, "variance");
-				hifColumnsMap.put(26, "pct_2_5");
-				hifColumnsMap.put(27, "pct_97_5");
+				hifColumnsMap.put(16, "timing");
+				hifColumnsMap.put(17, "point_estimate");
+				hifColumnsMap.put(18, "population");
+				hifColumnsMap.put(19, "delta_aq");
+				hifColumnsMap.put(20, "baseline_aq");
+				hifColumnsMap.put(21, "scenario_aq");
+				hifColumnsMap.put(22, "mean");
+				hifColumnsMap.put(23, "baseline");
+				hifColumnsMap.put(24, "percent_of_baseline");
+				hifColumnsMap.put(25, "standard_deviation");
+				hifColumnsMap.put(26, "variance");
+				hifColumnsMap.put(27, "pct_2_5");
+				hifColumnsMap.put(28, "pct_97_5");
 				DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 				//get hif task ids
 				List<Integer> hifResultDatasetIds;
@@ -418,11 +420,11 @@ public class ResultExportTaskRunnable implements Runnable {
 							Result<Record> hifRecords = create.select(
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-									ENDPOINT.NAME.as("endpoint"),
+									ENDPOINT.NAME.as("health_effect"),
 									HEALTH_IMPACT_FUNCTION.AUTHOR,
 									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 									HEALTH_IMPACT_FUNCTION.LOCATION,
-									HEALTH_IMPACT_FUNCTION.QUALIFIER,
+									HEALTH_IMPACT_FUNCTION.QUALIFIER.as("risk_model_details"),
 									HIF_RESULT_FUNCTION_CONFIG.START_AGE,
 									HIF_RESULT_FUNCTION_CONFIG.END_AGE,
 									HEALTH_IMPACT_FUNCTION.BETA,
@@ -581,11 +583,11 @@ public class ResultExportTaskRunnable implements Runnable {
 							vfRecords = create.select(
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-									DSL.val(null, String.class).as("endpoint"),
+									DSL.val(null, String.class).as("health_effect"),
 									DSL.val(null, String.class).as("name"),
 									HEALTH_IMPACT_FUNCTION.AUTHOR,
 									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
-									HEALTH_IMPACT_FUNCTION.QUALIFIER,
+									HEALTH_IMPACT_FUNCTION.QUALIFIER.as("risk_model_details"),
 									RACE.NAME.as("race"),
 									ETHNICITY.NAME.as("ethnicity"),
 									GENDER.NAME.as("gender"),
@@ -643,7 +645,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							for(Record res : vfRecords) {
 								HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
 								res.setValue(DSL.field("name"), vfConfig.get("name"));
-								res.setValue(DSL.field("endpoint"), vfConfig.get("endpoint"));	
+								res.setValue(DSL.field("health_effect"), vfConfig.get("endpoint"));	
 							}
 							
 							//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
@@ -664,7 +666,7 @@ public class ResultExportTaskRunnable implements Runnable {
 								}
 							}
 							//Remove percentiles by keeping all other fields
-							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22));
+							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
 						} catch(DataAccessException e) {
 							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);

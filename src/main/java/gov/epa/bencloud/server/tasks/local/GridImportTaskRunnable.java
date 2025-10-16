@@ -27,6 +27,7 @@ import org.geotools.api.data.DataStore;
 import org.geotools.api.data.DataStoreFinder;
 import org.geotools.api.data.FeatureSource;
 import org.geotools.api.data.SimpleFeatureStore;
+import org.geotools.api.feature.Property;
 import org.geotools.api.feature.simple.SimpleFeature;
 import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.api.feature.type.AttributeDescriptor;
@@ -35,9 +36,13 @@ import org.geotools.api.feature.type.GeometryDescriptor;
 import org.geotools.api.feature.type.GeometryType;
 import org.geotools.api.referencing.FactoryException;
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.postgis.PostgisNGDataStoreFactory;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.AttributeTypeBuilder;
 import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
 import org.geotools.util.URLs;
@@ -134,7 +139,7 @@ public class GridImportTaskRunnable implements Runnable {
 				throw new Exception("Grid file processing failed.");
 			}
 			
-			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"));
 			
 			Record gridStats = create.fetchOne("select count(distinct col) as col_count, count(distinct row) as row_count from grids." + gridTableName);
 			
@@ -269,116 +274,161 @@ public class GridImportTaskRunnable implements Runnable {
 	}
 
 	public static String importShapefile(Path filePath) throws IOException {
-		
+
 		File inFile = filePath.toFile();
-		
-	    Map<String, Object> dbParams = new HashMap<>();
-	    //dbParams.put(PostgisNGDataStoreFactory.DBTYPE.key, PostgisNGDataStoreFactory.DBTYPE.sample);
-	    dbParams.put(PostgisNGDataStoreFactory.DBTYPE.key, "postgis");
-	    dbParams.put(PostgisNGDataStoreFactory.USER.key, PooledDataSource.dbUser);
-	    dbParams.put(PostgisNGDataStoreFactory.PASSWD.key, PooledDataSource.dbPassword);
-	    dbParams.put(PostgisNGDataStoreFactory.HOST.key, PooledDataSource.dbHost);
-	    dbParams.put(PostgisNGDataStoreFactory.PORT.key, PooledDataSource.dbPort);
-	    dbParams.put(PostgisNGDataStoreFactory.DATABASE.key, PooledDataSource.dbName);
-	    dbParams.put(PostgisNGDataStoreFactory.SCHEMA.key, "grids");
 
-	    // Read the shapefile
-	    DataStore inputDataStore = DataStoreFinder.getDataStore(Collections.singletonMap("url", URLs.fileToUrl(inFile)));
+		Map<String, Object> dbParams = new HashMap<>();
+		dbParams.put(PostgisNGDataStoreFactory.DBTYPE.key, "postgis");
+		dbParams.put(PostgisNGDataStoreFactory.USER.key, PooledDataSource.dbUser);
+		dbParams.put(PostgisNGDataStoreFactory.PASSWD.key, PooledDataSource.dbPassword);
+		dbParams.put(PostgisNGDataStoreFactory.HOST.key, PooledDataSource.dbHost);
+		dbParams.put(PostgisNGDataStoreFactory.PORT.key, PooledDataSource.dbPort);
+		dbParams.put(PostgisNGDataStoreFactory.DATABASE.key, PooledDataSource.dbName);
+		dbParams.put(PostgisNGDataStoreFactory.SCHEMA.key, "grids");
 
-	    String inputTypeName = inputDataStore.getTypeNames()[0];
-	    SimpleFeatureType inputType = inputDataStore.getSchema(inputTypeName);
+		// Read the shapefile
+		DataStore inputDataStore = DataStoreFinder.getDataStore(Collections.singletonMap("url", URLs.fileToUrl(inFile)));
+		String inputTypeName = inputDataStore.getTypeNames()[0];
+		SimpleFeatureType inputType = inputDataStore.getSchema(inputTypeName);
+		FeatureSource<SimpleFeatureType, SimpleFeature> source = inputDataStore.getFeatureSource(inputTypeName);
+		FeatureCollection<SimpleFeatureType, SimpleFeature> inputFeatureCollection = source.getFeatures();
 
-	    FeatureSource<SimpleFeatureType, SimpleFeature> source = inputDataStore.getFeatureSource(inputTypeName);
+		// Write to database
+		DataStore dbDataStore = DataStoreFinder.getDataStore(dbParams);
 
-	    FeatureCollection<SimpleFeatureType, SimpleFeature> inputFeatureCollection = source.getFeatures();
+		// Prepend the "g_" on the unique table name to avoid the need to quote it in
+		// SQL if it starts with a number
+		// Also, tables that begin with "g_" will be excluded during jOOQ code
+		// generation
+		String gridTableName = "g_" + UUID.randomUUID().toString().replace("-", "");
 
-	    // Write to database
-	    DataStore dbDataStore = DataStoreFinder.getDataStore(dbParams);    
-	    
-	    // Iterator it = DataStoreFinder.getAvailableDataStores();
-	    // while(it.hasNext()){
-	    //   System.out.println("GeoTools available datastore: " + it.next());
-	    // }
-	    
-	    // Prepend the "g_" on the unique table name to avoid the need to quote it in SQL if it starts with a number
-	    // Also, tables that begin with "g_" will be excluded during jOOQ code generation
-	    String gridTableName = "g_" + UUID.randomUUID().toString().replace("-", "");
-	    
-	    SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-	    String geomColumnName = null;
-	    String colColumnName = null;
-	    String rowColumnName = null;
-	    AttributeTypeBuilder attributeBuilder = new AttributeTypeBuilder();
+		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+		String geomColumnName = null;
+		String colColumnName = null;
+		String rowColumnName = null;
+		AttributeTypeBuilder attributeBuilder = new AttributeTypeBuilder();
 
 		// NAD83 PRJ from PostGIS
 		// TODO: Find more elegant way to handle this issue with missing prj file?
 		String wkt = "GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]]";
-        CoordinateReferenceSystem crsNAD83 = null;
+		CoordinateReferenceSystem crsNAD83 = null;
 		try {
 			crsNAD83 = CRS.parseWKT(wkt);
 		} catch (FactoryException e) {
 			e.printStackTrace();
 			return null;
 		}
+
+		// Inspect the shapefile and make note of the names of the geom, col, and row fields
+		// Sometimes the geom column might be named something else (e.g. the_geom or
+		// geometry) and col/row might be proper or upper case (e.g. Col or COL)
+		for (AttributeDescriptor att : inputType.getAttributeDescriptors()) {
+			String name = att.getLocalName();
+			AttributeType type = att.getType();
+			if (type instanceof GeometryType) {
+				// Remember this as the geom column name
+				geomColumnName = name;
+				if (inputType.getCoordinateReferenceSystem() == null) {
+					// The geometry column doesn't have a CRS so let's hope it's NAD83 and try it
+					builder.setCRS(crsNAD83);
+					GeometryDescriptor g = inputType.getGeometryDescriptor();
+					attributeBuilder.init(g);
+					attributeBuilder.setCRS(crsNAD83);
+					// GeometryDescriptor att2 = (GeometryDescriptor)
+					// attributeBuilder.buildDescriptor(g.getLocalName());
+					// Use "geom" as the column name instead of the original name
+					GeometryDescriptor att2 = (GeometryDescriptor) attributeBuilder.buildDescriptor("geom");
+					builder.add(att2);
+					builder.setDefaultGeometry(att2.getLocalName());
+				} else {
+					builder.setCRS(inputType.getCoordinateReferenceSystem());
+					attributeBuilder.init(att);
+					// Use "geom" as the column name instead of the original name
+					GeometryDescriptor att2 = (GeometryDescriptor) attributeBuilder.buildDescriptor("geom");
+					builder.add(att2);
+					builder.setDefaultGeometry("geom");
+				}
+			} else {
+				// See if this is the col or row column
+				if (name.equalsIgnoreCase("col")) {
+					colColumnName = name;
+					// Make sure col column is added as an integer
+					builder.add("col", Integer.class);
+				} else if (name.equalsIgnoreCase("row")) {
+					rowColumnName = name;
+					// Make sure row column is added as an integer
+					builder.add("row", Integer.class);
+				} else {
+					builder.add(att);
+				}
+			}
+		}
+
+		builder.setName(gridTableName);
+		builder.setSuperType((SimpleFeatureType) inputType.getSuper());
+		SimpleFeatureType dbSchema = builder.buildFeatureType();
+
+		dbDataStore.createSchema(dbSchema);
+		SimpleFeatureStore dbFeatureStore = (SimpleFeatureStore) dbDataStore.getFeatureSource(gridTableName);
+		FeatureIterator<SimpleFeature> featureIter = inputFeatureCollection.features();
+
+		try {
+			List<SimpleFeature> transformedFeatures = new ArrayList<>();
+			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(dbSchema);
+
+			while (featureIter.hasNext()) {
+				SimpleFeature feature = featureIter.next();
+
+				// Map attributes from source to target schema with new names
+				for (AttributeDescriptor targetAtt : dbSchema.getAttributeDescriptors()) {
+					String targetName = targetAtt.getLocalName();
+
+					if (targetName.equals("geom")) {
+						// Map from original geometry column name
+						featureBuilder.set("geom", feature.getAttribute(geomColumnName));
+					} else if (targetName.equals("col") && colColumnName != null) {
+						// Map from original col column name
+						Object value = feature.getAttribute(colColumnName);
+						if (value != null) {
+							try {
+								int intValue = Integer.parseInt(value.toString());
+								featureBuilder.set("col", intValue);
+							} catch (NumberFormatException e) {
+								featureBuilder.set("col", null);
+							}
+						} else {
+							featureBuilder.set("col", null);
+						}
+					} else if (targetName.equals("row") && rowColumnName != null) {
+						// Map from original row column name
+						Object value = feature.getAttribute(rowColumnName);
+						if (value != null) {
+							try {
+								int intValue = Integer.parseInt(value.toString());
+								featureBuilder.set("row", intValue);
+							} catch (NumberFormatException e) {
+								featureBuilder.set("row", null);
+							}
+						} else {
+							featureBuilder.set("row", null);
+						}
+					} else {
+						// Copy other attributes as is
+						featureBuilder.set(targetName, feature.getAttribute(targetName));
+					}
+				}
+
+				transformedFeatures.add(featureBuilder.buildFeature(feature.getID()));
+			}
+
+			dbFeatureStore.addFeatures(DataUtilities.collection(transformedFeatures));
+		} finally {
+			featureIter.close();
+		}
+
+		inputDataStore.dispose();
+		dbDataStore.dispose();
 		
-	    //Inspect the shapefile and make note of the names of the geom, col, and row fields
-	    // Sometimes the geom column might be named something else (e.g. the_geom or geometry) and col/row might be proper or upper case (e.g. Col or COL)
-	    // We currently use SQL alter table commands below to fix the key columns after the table is created
-	    for (AttributeDescriptor att : inputType.getAttributeDescriptors()) {
-	    	String name = att.getLocalName();
-	    	AttributeType type = att.getType();
-	    	if (type instanceof GeometryType) {
-	    		// Remember this as the geom column name
-	    		geomColumnName = name;
-
-	    	    if (inputType.getCoordinateReferenceSystem() == null) {
-	    	        // The geometry column doesn't have a CRS so let's hope it's NAD83 and try it
-	    	        builder.setCRS(crsNAD83);
-	    	        GeometryDescriptor g = inputType.getGeometryDescriptor();
-	    	        attributeBuilder.init(g);
-	    	        attributeBuilder.setCRS(crsNAD83);
-	    	        GeometryDescriptor att2 = (GeometryDescriptor) attributeBuilder.buildDescriptor(g.getLocalName());
-	    	        builder.add(att2);
-	    	        builder.setDefaultGeometry(att2.getLocalName());
-	    	    } else {
-	    	        builder.setCRS(inputType.getCoordinateReferenceSystem());
-	    	    	builder.add(att);
-	    	        builder.setDefaultGeometry(att.getLocalName());
-	    	    }
-	    	} else {
-	    		// See if this is the col or row column
-	    		if(name.equalsIgnoreCase("col")) { 
-	    			colColumnName = name;
-	    		} else if(name.equalsIgnoreCase("row")) {
-	    			rowColumnName = name;
-	    		}
-	    		builder.add(att);
-	    	}
-	    }
-
-	    builder.setName(gridTableName);
-	    builder.setSuperType((SimpleFeatureType) inputType.getSuper());
-	    SimpleFeatureType dbSchema = builder.buildFeatureType();
-	    
-	    dbDataStore.createSchema(dbSchema);
-	    SimpleFeatureStore dbFeatureStore = (SimpleFeatureStore) dbDataStore.getFeatureSource(gridTableName);
-	    dbFeatureStore.addFeatures(inputFeatureCollection);
-
-	    inputDataStore.dispose();
-	    dbDataStore.dispose();
-	    
-	    //Standardize the name of the geom, col, and row fields using SQL alter table
-	    DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-	    if(geomColumnName != null && !geomColumnName.equals("geom")) {
-	    	create.execute("alter table grids." + gridTableName + " rename column \"" + geomColumnName + "\" to geom;");
-	    }
-	    if(colColumnName != null && !colColumnName.equals("col")) {
-	    	create.execute("alter table grids." + gridTableName + " rename column \"" + colColumnName + "\" to col;");
-	    }
-	    if(rowColumnName != null && !rowColumnName.equals("row")) {
-	    	create.execute("alter table grids." + gridTableName + " rename column \"" + rowColumnName + "\" to row;");
-	    }
-	    
-	    return gridTableName;
+		return gridTableName;
 	}
 }
