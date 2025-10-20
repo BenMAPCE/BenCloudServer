@@ -27,6 +27,7 @@ import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 import gov.epa.bencloud.server.tasks.runnable.ExposureTaskRunnable;
 import gov.epa.bencloud.server.tasks.runnable.GridImportTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.AirQualityImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.runnable.HIFTaskRunnable;
 import gov.epa.bencloud.server.tasks.runnable.ResultExportTaskRunnable;
 import gov.epa.bencloud.server.tasks.runnable.ValuationTaskRunnable;
@@ -125,6 +126,9 @@ public class BenCloudTaskRunner {
 				et.run();
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_GRID_IMPORT)) {				
 				GridImportTaskRunnable et = new GridImportTaskRunnable(taskUuid, taskRunnerUuid);
+				et.run();
+			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_AQ_IMPORT)) {				
+				AirQualityImportTaskRunnable et = new AirQualityImportTaskRunnable(taskUuid, taskRunnerUuid);
 				et.run();
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_RESULT_EXPORT)) {				
 				ResultExportTaskRunnable et = new ResultExportTaskRunnable(taskUuid, taskRunnerUuid);

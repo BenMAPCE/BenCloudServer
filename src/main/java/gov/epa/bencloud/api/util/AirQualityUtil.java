@@ -7,8 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.jooq.DSLContext;
+import org.jooq.JSON;
 import org.jooq.impl.DSL;
 
+import gov.epa.bencloud.api.model.AirQualityImportTaskLog;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PollutantMetricRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.SeasonalMetricRecord;
@@ -190,6 +192,14 @@ public class AirQualityUtil {
 				.fetch(DSL.lower(AIR_QUALITY_LAYER.NAME));
 
 		return layerNames;
+	}
+
+	public static void storeTaskLog(AirQualityImportTaskLog airQualityImportTaskLog) {
+		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		JSON taskLogJson = JSON.json(airQualityImportTaskLog.toJsonString());
+		
+		// TODO: store task log		
 	}
 
 }

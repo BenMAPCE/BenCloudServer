@@ -898,10 +898,10 @@ public class AirQualityApi {
 		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
 		try {
 			for(Part part : request.raw().getParts()){
-				if(part.getName().equals("files")){
+				filename = part.getSubmittedFileName();
+				if (filename != null && !filename.isEmpty()){
 					//check layer name
 					String layerName = userLayerName;
-					filename = part.getSubmittedFileName();
 					if(layerName.isEmpty())layerName = filename;								
 					if (layerNames.contains(layerName.toLowerCase())) {
 						validationMsg.success = false;
@@ -912,7 +912,8 @@ public class AirQualityApi {
 					//check file type
 					String contentType = part.getContentType();	
 					if (contentType != null && contentType.contains("/")) {
-						if(!contentType.split("/")[1].toLowerCase().equals("csv")){
+						String contentTypeEnd = contentType.split("/")[1].toLowerCase();
+						if (!(contentTypeEnd.equals("csv") || (contentTypeEnd.equals("vnd.ms-excel") && filename.endsWith(".csv")))){
 							validationMsg.success = false;
 							validationMsg.messages.add(new ValidationMessage.Message("error","file " + filename + " is not a csv."));
 							response.type("application/json");
@@ -933,8 +934,8 @@ public class AirQualityApi {
 		//store files in Filestore		
 		try {
 			for(Part part : request.raw().getParts()){
-				if(part.getName().equals("files")){
-					filename = part.getSubmittedFileName();
+				filename = part.getSubmittedFileName();
+				if (filename != null && !filename.isEmpty()) {
 					String layerName = userLayerName;
 					if(layerName.equals(""))layerName = filename;				
 					InputStream is = part.getInputStream();
