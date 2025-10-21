@@ -7,8 +7,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.jooq.DSLContext;
+import org.jooq.JSON;
 import org.jooq.impl.DSL;
 
+import gov.epa.bencloud.api.model.AirQualityImportFileConfig;
+import gov.epa.bencloud.api.model.AirQualityImportTaskLog;
+import gov.epa.bencloud.api.model.GridImportTaskLog;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PollutantMetricRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.SeasonalMetricRecord;
@@ -192,4 +196,21 @@ public class AirQualityUtil {
 		return layerNames;
 	}
 
+		public static void storeTaskLog(AirQualityImportTaskLog aqImportTaskLog) {
+		//This will store a copy of each task log in the relevant aq surface dataset records
+
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		JSON taskLogJson = JSON.json(aqImportTaskLog.toJsonString());
+		
+		for(AirQualityImportFileConfig theFile : aqImportTaskLog.getAqImportTaskConfig().files) {
+			if(theFile.aqSurfaceId != null && theFile.aqSurfaceId > 0) {
+				create.update(AIR_QUALITY_LAYER)
+					.set(AIR_QUALITY_LAYER.TASK_LOG, taskLogJson)
+					.where(AIR_QUALITY_LAYER.ID.eq(theFile.aqSurfaceId))
+					.execute();			
+			} else {
+				//TODO: Add error reporting here?
+			}
+		}
+	}
 }

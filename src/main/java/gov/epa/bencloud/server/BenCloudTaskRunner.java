@@ -25,6 +25,7 @@ import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
+import gov.epa.bencloud.server.tasks.runnable.AQImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.runnable.ExposureTaskRunnable;
 import gov.epa.bencloud.server.tasks.runnable.GridImportTaskRunnable;
 import gov.epa.bencloud.server.tasks.runnable.HIFTaskRunnable;
@@ -93,9 +94,9 @@ public class BenCloudTaskRunner {
 				log.error("Task not found in queue");
 				
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_HIF)) {
-				HIFTaskRunnable ht = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
-				ht.run();
-				ht = null;
+				HIFTaskRunnable t = new HIFTaskRunnable(taskUuid, taskRunnerUuid);
+				t.run();
+				t = null;
 				
 				//After the HIFs are done, let's go ahead and look for any valuation tasks
 				Task childTask = TaskQueue.getChildValuationTaskFromQueueRecord(taskUuid);
@@ -118,17 +119,20 @@ public class BenCloudTaskRunner {
 					vt.run();	
 				}
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_VALUATION)) {				
-				ValuationTaskRunnable vt = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
-				vt.run();
+				ValuationTaskRunnable t = new ValuationTaskRunnable(taskUuid, taskRunnerUuid);
+				t.run();
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_EXPOSURE)) {				
 				ExposureTaskRunnable et = new ExposureTaskRunnable(taskUuid, taskRunnerUuid);
 				et.run();
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_GRID_IMPORT)) {				
-				GridImportTaskRunnable et = new GridImportTaskRunnable(taskUuid, taskRunnerUuid);
-				et.run();
+				GridImportTaskRunnable t = new GridImportTaskRunnable(taskUuid, taskRunnerUuid);
+				t.run();
 			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_RESULT_EXPORT)) {				
-				ResultExportTaskRunnable et = new ResultExportTaskRunnable(taskUuid, taskRunnerUuid);
-				et.run();
+				ResultExportTaskRunnable t = new ResultExportTaskRunnable(taskUuid, taskRunnerUuid);
+				t.run();
+			} else if(task.getType().equalsIgnoreCase(Constants.TASK_TYPE_AQ_IMPORT)) {				
+				AQImportTaskRunnable t = new AQImportTaskRunnable(taskUuid, taskRunnerUuid);
+				t.run();
 			} else {
 				log.error("Unknown task type: " + task.getType());
 				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(taskUuid, taskRunnerUuid, false, "Task failed");
