@@ -909,7 +909,8 @@ public class AirQualityApi {
 					//check file type
 					String contentType = part.getContentType();	
 					if (contentType != null && contentType.contains("/")) {
-						if(!contentType.split("/")[1].toLowerCase().equals("csv")){
+						String contentTypeEnd = contentType.split("/")[1].toLowerCase();
+						if (!(contentTypeEnd.equals("csv") || (contentTypeEnd.equals("vnd.ms-excel") && filename.endsWith(".csv")))){
 							validationMsg.success = false;
 							validationMsg.messages.add(new ValidationMessage.Message("error","file " + filename + " is not a csv."));
 							response.type("application/json");
