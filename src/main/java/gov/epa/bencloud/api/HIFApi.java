@@ -66,6 +66,7 @@ import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
 
 import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValidationMessage;
@@ -166,12 +167,13 @@ public class HIFApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), gridId);
-
+		Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(id).limitToGridId;
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
 						id, 
 						hifIds == null ? null : hifIds.toArray(new Integer[0]), 
-						gridId))
+						gridId,
+						limitToGridId))
 				.asTable("hif_result_records");
 
 		try{
@@ -360,12 +362,13 @@ public class HIFApi {
 			try {
 				//If the crosswalk isn't there, create it now
 				CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
-
+				Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(id).limitToGridId;
 				Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 					GET_HIF_RESULTS(
 							id, 
 							null, 
-							gridIds[i]))
+							gridIds[i],
+							limitToGridId))
 					.asTable("hif_result_records");
 				log.info("Before fetch");
 				Result<Record> hifRecords = create.select(
@@ -501,12 +504,13 @@ public class HIFApi {
 		
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), incidenceAggregationGrid);
-
+		Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(id).limitToGridId;
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
 						id, 
 						hifIds, 
-						incidenceAggregationGrid))
+						incidenceAggregationGrid,
+						limitToGridId))
 				.asTable("hif_result_records");
 		
 
@@ -2134,6 +2138,11 @@ public class HIFApi {
 		hifTaskConfig.popYear = hifTaskConfigRecord.getPopulationYear();
 		hifTaskConfig.aqBaselineId = hifTaskConfigRecord.getBaselineAqLayerId();
 		hifTaskConfig.aqScenarioId = hifTaskConfigRecord.getScenarioAqLayerId();
+
+		BatchTaskConfig batchTaskConfig = TaskApi.getTaskBatchConfigFromDbByResultID(hifResultDatasetId,"hif");
+
+		hifTaskConfig.limitToGridId = batchTaskConfig.limitToGridId;
+		
 		//TODO: Add code to load the hif details
 		
 		return hifTaskConfig;
@@ -2252,13 +2261,14 @@ public class HIFApi {
 		
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(hifResultDatasetId), incidenceAggregationGrid);
-
+		Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).limitToGridId;
 		Record1<Integer> hifResultCount = create
 				.select(DSL.count())
 				.from(GET_HIF_RESULTS(
 						hifResultDatasetId, 
 						hifIdList.toArray(new Integer[0]), 
-						incidenceAggregationGrid))
+						incidenceAggregationGrid,
+						limitToGridId))
 				.fetchOne();
 		
 		if(hifResultCount == null) {

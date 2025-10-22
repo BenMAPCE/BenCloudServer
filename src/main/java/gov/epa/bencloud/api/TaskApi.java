@@ -1439,11 +1439,13 @@ public class TaskApi {
 					//If the crosswalk isn't there, create it now
 					CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 					try {
+						Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).limitToGridId;
 						Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 							GET_HIF_RESULTS(
 									hifResultDatasetId, 
 									null, 
-									gridIds[i]))
+									gridIds[i],
+									limitToGridId))
 							.asTable("hif_result_records");
 						Result<Record> hifRecords = create.select(
 								hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
@@ -1580,12 +1582,14 @@ public class TaskApi {
 					//If the crosswalk isn't there, create it now
 					CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 					try {
+						Integer limitToGridId = ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).limitToGridId;
 						Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 								GET_VALUATION_RESULTS(
 									valuationResultDatasetId, 
 									null, 
 									null,
-									gridIds[i]))
+									gridIds[i],
+									limitToGridId))
 							.asTable("valuation_result_records");
 						Result<Record> vfRecords;
 						vfRecords = create.select(
@@ -1740,6 +1744,66 @@ public class TaskApi {
 		return batchTaskConfig;
 	}
 
+	/**
+	 * 
+	 * @param resultDataSetId
+	 * @param resultType
+	 * @return a batch task configuration from a given task batch id.
+	 */
+	public static BatchTaskConfig getTaskBatchConfigFromDbByResultID(Integer resultDatasetId, String resultType) {
+
+		BatchTaskConfig batchTaskConfig = new BatchTaskConfig();		
+
+		TaskBatchRecord batchTaskRecord = null;
+		
+		if(resultType.toLowerCase()=="hif"){
+			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
+			.selectFrom(TASK_BATCH)
+			.where(TASK_BATCH.ID.in(
+				DSL.select(TASK_COMPLETE.TASK_BATCH_ID)
+					.from(TASK_COMPLETE)
+					.innerJoin(HIF_RESULT_DATASET)
+						.on(TASK_COMPLETE.TASK_UUID.eq(HIF_RESULT_DATASET.TASK_UUID))
+					.where(HIF_RESULT_DATASET.ID.eq(resultDatasetId))
+			))
+			.fetchOne();
+		}
+		else if (resultType.toLowerCase()=="valuation"){
+			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
+			.selectFrom(TASK_BATCH)
+			.where(TASK_BATCH.ID.in(
+				DSL.select(TASK_COMPLETE.TASK_BATCH_ID)
+					.from(TASK_COMPLETE)
+					.innerJoin(VALUATION_RESULT_DATASET)
+						.on(TASK_COMPLETE.TASK_UUID.eq(VALUATION_RESULT_DATASET.TASK_UUID))
+					.where(VALUATION_RESULT_DATASET.ID.eq(resultDatasetId))
+			))
+			.fetchOne();
+		}
+		else if (resultType.toLowerCase()=="exposure"){
+			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
+			.selectFrom(TASK_BATCH)
+			.where(TASK_BATCH.ID.in(
+				DSL.select(TASK_COMPLETE.TASK_BATCH_ID)
+					.from(TASK_COMPLETE)
+					.innerJoin(EXPOSURE_RESULT_DATASET)
+						.on(TASK_COMPLETE.TASK_UUID.eq(EXPOSURE_RESULT_DATASET.TASK_UUID))
+					.where(EXPOSURE_RESULT_DATASET.ID.eq(resultDatasetId))
+			))
+			.fetchOne();
+		}		
+		else{
+			batchTaskRecord = new TaskBatchRecord();
+		}
+			
+		try {
+			batchTaskConfig = objectMapper.readValue(batchTaskRecord.getParameters(), BatchTaskConfig.class);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return batchTaskConfig;
+	}
 
 		public static Object postResultExportTask(Request request, Response response, Optional<UserProfile> userProfile) {
 	//		 PARAMETERS:

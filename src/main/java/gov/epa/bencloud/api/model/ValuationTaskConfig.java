@@ -41,6 +41,7 @@ public class ValuationTaskConfig {
 	public Boolean useInflationFactors = true;
 	public Boolean useGrowthFactors = true;
 	public Integer gridDefinitionId = null;
+	public Integer limitToGridId = 0; //Optional, used to limit AQ baseline 
 	
 	public List<ValuationConfig> valuationFunctions = new ArrayList<ValuationConfig>();
 	
