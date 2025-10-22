@@ -20,13 +20,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.jobs.KubernetesUtil;
-import gov.epa.bencloud.server.tasks.local.ExposureTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.HIFTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.ResultExportTaskRunnable;
-import gov.epa.bencloud.server.tasks.local.ValuationTaskRunnable;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
+import gov.epa.bencloud.server.tasks.runnable.AQImportTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.ExposureTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.GridImportTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.HIFTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.ResultExportTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.ValuationTaskRunnable;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class TaskWorker {
@@ -126,6 +127,7 @@ public class TaskWorker {
 			case Constants.TASK_TYPE_EXPOSURE:
 			case Constants.TASK_TYPE_GRID_IMPORT:
 			case Constants.TASK_TYPE_RESULT_EXPORT:
+			case Constants.TASK_TYPE_AQ_IMPORT:
 				break;
 			default:
 				log.error("Unknown task type: " + task.getType());
@@ -159,6 +161,10 @@ public class TaskWorker {
 				break;
 			case Constants.TASK_TYPE_RESULT_EXPORT:
 				t = new Thread(new ResultExportTaskRunnable(task.getUuid(), taskWorkerUuid));
+				t.start();	
+				break;
+			case Constants.TASK_TYPE_AQ_IMPORT:
+				t = new Thread(new AQImportTaskRunnable(task.getUuid(), taskWorkerUuid));
 				t.start();	
 				break;
 			}	

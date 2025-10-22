@@ -1,4 +1,4 @@
-package gov.epa.bencloud.server.tasks.local;
+package gov.epa.bencloud.server.tasks.runnable;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ETHNICITY;

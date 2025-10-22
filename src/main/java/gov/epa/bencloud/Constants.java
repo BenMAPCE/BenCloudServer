@@ -22,6 +22,7 @@ public final class Constants {
     public static final String  TASK_TYPE_VALUATION = "Valuation";
     public static final String  TASK_TYPE_EXPOSURE = "Exposure";
     public static final String  TASK_TYPE_GRID_IMPORT = "Grid Import";
+    public static final String  TASK_TYPE_AQ_IMPORT = "AQ Import";
     public static final String  TASK_TYPE_RESULT_EXPORT = "Result Export";
     
 }
