@@ -64,6 +64,7 @@ import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
 
 import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.model.ValuationConfig;
@@ -169,13 +170,14 @@ public class ValuationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(ValuationApi.getBaselineGridForValuationResults(id), gridId);
-
+		Integer limitToGridId = ValuationApi.getValuationTaskConfigFromDb(id).limitToGridId;
 		Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 				GET_VALUATION_RESULTS(
 						id, 
 						hifIds == null ? null : hifIds.toArray(new Integer[0]),
 						vfIds == null ? null : vfIds.toArray(new Integer[0]),
-								gridId))
+								gridId,
+						limitToGridId))
 				.asTable("vf_result_records");
 		
 		Result<?> vfRecordsClean = null;
@@ -515,6 +517,9 @@ public class ValuationApi {
 		
 		valuationTaskConfig.name = valuationTaskConfigRecord.getName();
 		//TODO: Add code to load the other details
+		BatchTaskConfig batchTaskConfig = TaskApi.getTaskBatchConfigFromDbByResultID(valuationResultDatasetId,"valuation");
+
+		valuationTaskConfig.limitToGridId = batchTaskConfig.limitToGridId;
 		
 		return valuationTaskConfig;
 	}

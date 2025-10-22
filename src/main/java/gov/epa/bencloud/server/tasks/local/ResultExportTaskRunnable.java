@@ -411,12 +411,17 @@ public class ResultExportTaskRunnable implements Runnable {
 							return;
 						}
 						try {
+							Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).limitToGridId;
+							//log.info("LimitToGridId = " + limitToGridId);
 							Table<GetHifResultsRecord> hifResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 								GET_HIF_RESULTS(
 										hifResultDatasetId, 
 										null, 
-										gridIds[i]))
-								.asTable("hif_result_records");
+										gridIds[i],
+										limitToGridId)
+										)
+								.asTable("hif_result_records");			
+
 							Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
@@ -572,12 +577,14 @@ public class ResultExportTaskRunnable implements Runnable {
 							return;
 						}
 						try {
+							Integer limitToGridId = ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).limitToGridId;
 							Table<GetValuationResultsRecord> vfResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 									GET_VALUATION_RESULTS(
 										valuationResultDatasetId, 
 										null, 
 										null,
-										gridIds[i]))
+										gridIds[i],
+										limitToGridId))
 								.asTable("valuation_result_records");
 							Result<Record> vfRecords;
 							vfRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(

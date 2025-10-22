@@ -105,6 +105,7 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
             DSL.val(null, SQLDataType.INTEGER),
             DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
             DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER),
             DSL.val(null, SQLDataType.INTEGER)
         });
     }
@@ -182,12 +183,14 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
         , Integer[] _HifId
         , Integer[] _VfId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         GetValuationResults result = new GetValuationResults(DSL.name("get_valuation_results"), null, new Field[] {
             DSL.val(_DatasetId, SQLDataType.INTEGER),
             DSL.val(_HifId, SQLDataType.INTEGER.getArrayDataType()),
             DSL.val(_VfId, SQLDataType.INTEGER.getArrayDataType()),
-            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
+            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER),
+            DSL.val(_LimitToGridId, SQLDataType.INTEGER)
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -201,12 +204,14 @@ public class GetValuationResults extends TableImpl<GetValuationResultsRecord> {
         , Field<Integer[]> _HifId
         , Field<Integer[]> _VfId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         GetValuationResults result = new GetValuationResults(DSL.name("get_valuation_results"), null, new Field[] {
             _DatasetId,
             _HifId,
             _VfId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
