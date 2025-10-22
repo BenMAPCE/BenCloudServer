@@ -104,7 +104,7 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_PV_GRID_ENTRY);
+        return Arrays.asList(Indexes.IDX_PV_GRID_ENTRY, Indexes.POPULATION_VALUE_POP_VALUE);
     }
 
     @Override

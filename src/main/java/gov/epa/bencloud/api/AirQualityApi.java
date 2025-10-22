@@ -857,22 +857,18 @@ public class AirQualityApi {
 		String description;
 		String source;
 		String dataType;		
-		Map<String, Integer> csvFilestoreIds = null; //layerName and fielstoreId
+		Map<String, Integer> csvFilestoreIds = null; //layerName and filestoreId
 		csvFilestoreIds = new HashMap<String, Integer>();
-		//boolean batchUpload = false;  
 		
 		try{
 			pollutantId = ApiUtil.getMultipartFormParameterAsInteger(request, "pollutantId");
-			groupName = ApiUtil.getMultipartFormParameterAsString(request, "group");
+			groupName = ApiUtil.getMultipartFormParameterAsString(request, "groupName");
 			userLayerName = ApiUtil.getMultipartFormParameterAsString(request, "userLayerName");
 			aqYear = ApiUtil.getMultipartFormParameterAsString(request, "aqYear");
 			source = ApiUtil.getMultipartFormParameterAsString(request, "source");
 			dataType = ApiUtil.getMultipartFormParameterAsString(request, "dataType");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
 			gridId = ApiUtil.getMultipartFormParameterAsInteger(request, "gridId");
-
-			// Add this in later when we start supporting other air quality surface types such as monitor data
-			//String layerType = IOUtils.toString(request.raw().getPart("type").getInputStream(), StandardCharsets.UTF_8);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -889,7 +885,7 @@ public class AirQualityApi {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: group name, pollutantId, gridId."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: groupName, pollutantId, gridId."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 
@@ -898,7 +894,8 @@ public class AirQualityApi {
 		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
 		try {
 			for(Part part : request.raw().getParts()){
-				if(part.getName().equals("files")){
+				//Files parts will be named file0, file1, and so on.
+				if(part.getName().startsWith("file")){
 					//check layer name
 					String layerName = userLayerName;
 					filename = part.getSubmittedFileName();
@@ -912,7 +909,8 @@ public class AirQualityApi {
 					//check file type
 					String contentType = part.getContentType();	
 					if (contentType != null && contentType.contains("/")) {
-						if(!contentType.split("/")[1].toLowerCase().equals("csv")){
+						String contentTypeEnd = contentType.split("/")[1].toLowerCase();
+						if (!(contentTypeEnd.equals("csv") || (contentTypeEnd.equals("vnd.ms-excel") && filename.endsWith(".csv")))){
 							validationMsg.success = false;
 							validationMsg.messages.add(new ValidationMessage.Message("error","file " + filename + " is not a csv."));
 							response.type("application/json");
@@ -933,16 +931,22 @@ public class AirQualityApi {
 		//store files in Filestore		
 		try {
 			for(Part part : request.raw().getParts()){
-				if(part.getName().equals("files")){
+				if(part.getName().startsWith("file")){
 					filename = part.getSubmittedFileName();
 					String layerName = userLayerName;
 					if(layerName.equals(""))layerName = filename;				
 					InputStream is = part.getInputStream();
 					ObjectMapper mapper = new ObjectMapper();				
 					ObjectNode paramsNode = mapper.createObjectNode();
-					paramsNode.put("group name", groupName);
-					paramsNode.put("file name", filename);
-					paramsNode.put("layer name", layerName);
+					paramsNode.put("pollutantId", pollutantId);
+					paramsNode.put("gridId", gridId);
+					paramsNode.put("aqYear", aqYear);
+					paramsNode.put("description", description);
+					paramsNode.put("source", source);
+					paramsNode.put("dataType", dataType);
+					paramsNode.put("groupName", groupName);
+					paramsNode.put("filename", filename);
+					paramsNode.put("layerName", layerName);
 					paramsNode.put("userId", userProfile.get().getId());
 					Integer filestoreId = 0;
 					filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_AQ, userProfile.get().getId(), paramsNode.toString());
@@ -973,11 +977,6 @@ public class AirQualityApi {
 			}
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		} 
-
-		//TODO: REMOVE THIS. IT'S JUST A WORKAROUND FOR A TEMPORARY UI BUG
-		if(pollutantId.equals(0)) {
-			pollutantId = 6;
-		}
 
 		//Validate csv files
 		for(Map.Entry<String, Integer> myMap : csvFilestoreIds.entrySet()){
@@ -1311,7 +1310,7 @@ public class AirQualityApi {
 		ObjectMapper mapper = new ObjectMapper();				
 		ObjectNode paramsNode = mapper.createObjectNode();				
 
-		paramsNode.put("group name", groupName);
+		paramsNode.put("groupName", groupName);
 		paramsNode.put("userId", userProfile.get().getId());
 		paramsNode.put("pollutantId", pollutantId);
 		paramsNode.put("aqYear", aqYear);
@@ -1331,25 +1330,28 @@ public class AirQualityApi {
 		
 		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP Server"))
 		.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
-		.values("AQ import: " + groupName, paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
+		.values("Air Quality import: " + groupName, paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
 		.returning(TASK_BATCH.ID).fetchOne();
 		Integer batchTaskId = rec.getId();
 
+		//TODO: Right now, we create a single "task" record that includes a list of all files in the parameters.
+		//If desired, we could refactor this piece to create a separate task record for each surface which would allow
+		//them to be processed in parallel if faster performance is desired.
 		Task aqImportTask = new Task();
 		aqImportTask.setUserIdentifier(userProfile.get().getId());
 		aqImportTask.setType(Constants.TASK_TYPE_AQ_IMPORT);
 		aqImportTask.setBatchId(batchTaskId);
-		aqImportTask.setName("AQ import: " + groupName);
+		aqImportTask.setName("Air Quality import: " + groupName);
 		aqImportTask.setParameters(paramsNode.toString());
 		String aqImportTaskUUID = UUID.randomUUID().toString();
 		aqImportTask.setUuid(aqImportTaskUUID);
 		TaskQueue.writeTaskToQueue(aqImportTask);
-		// Return success
+
 		return CoreApi.getSuccessResponse(request, response, 200, csvFilestoreIds.entrySet().size() + " AQ files saved for processing.");
 	}
 	
 	// This version of this method is used when an error occurs during AQ surface upload to clean up
-	private static void deleteAirQualityLayerDefinition(Integer aqLayerId, Optional<UserProfile> userProfile) {
+	public static void deleteAirQualityLayerDefinition(Integer aqLayerId, Optional<UserProfile> userProfile) {
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		try {
 			create.deleteFrom(AIR_QUALITY_CELL).where(AIR_QUALITY_CELL.AIR_QUALITY_LAYER_ID.eq(aqLayerId)).execute();

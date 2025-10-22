@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.epa.bencloud.server.database.PooledDataSource;
-import gov.epa.bencloud.server.tasks.local.GridImportTaskRunnable;
+import gov.epa.bencloud.server.tasks.runnable.GridImportTaskRunnable;
 import gov.epa.bencloud.server.util.ApplicationUtil;
 
 public class BenCloudShapefileTester {
