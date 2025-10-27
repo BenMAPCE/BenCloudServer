@@ -863,9 +863,8 @@ public class HIFApi {
 			hifGroupId = hifGroupRecord.value1();
 		}
 		
-		//remove built in tokens (e, pi, sin, etc.)
+		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
-		//not working as expected, need to find a different way to validate functions
 		mXparser.removeBuiltinTokens("e");
 		mXparser.removeBuiltinTokens("Beta");
 
@@ -1042,6 +1041,7 @@ public class HIFApi {
 			int countParamCError = 0;
 
 			int countBaselineFunctionError = 0;
+			int countFunctionParamError = 0;
 			int countFunctionError = 0;
 
 			List<String> lstUndefinedPollutants = new ArrayList<String>();
@@ -1064,6 +1064,18 @@ public class HIFApi {
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
 			distTypes.add("Gamma");
+
+			List<String> functionParameters = new ArrayList<String>();
+			functionParameters.add("a");
+			functionParameters.add("b");
+			functionParameters.add("c");
+			functionParameters.add("beta");
+			functionParameters.add("q0");
+			functionParameters.add("q1");
+			functionParameters.add("deltaq");
+			functionParameters.add("incidence");
+			functionParameters.add("prevalence");
+			functionParameters.add("population");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
@@ -1306,6 +1318,9 @@ public class HIFApi {
 				missingVars = e.getMissingUserDefinedArguments();
 
 				for (String varName : missingVars) {
+					if(!functionParameters.contains(varName)) {
+						countFunctionParamError ++;
+					}
 					e.addArguments(new Argument(varName + " = 1"));
 				}
 
@@ -1698,6 +1713,21 @@ public class HIFApi {
 				}
 				else {
 					strRecord = String.valueOf(countBaselineFunctionError) + " records have baseline function values that are not valid formulas.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countFunctionParamError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countFunctionParamError == 1) {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameter detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				else {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameters detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
