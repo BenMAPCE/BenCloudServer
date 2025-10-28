@@ -724,6 +724,61 @@ public class HIFApi {
 		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+	/**
+	 * Deletes a health impact function group from the database (grid id is a request parameter).
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return
+	 */
+	public static Object deleteHealthImpactFunctionGroup(Request request, Response response, Optional<UserProfile> userProfile) {
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		HealthImpactFunctionGroupRecord hifGroupResult = create.selectFrom(HEALTH_IMPACT_FUNCTION_GROUP).where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(id)).fetchAny();
+		if(hifGroupResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Nobody can delete shared health impact function groups
+		//All users can delete their own health impact function groups
+		//Admins can delete any non-shared health impact function groups
+		if(hifGroupResult.getShareScope() == Constants.SHARING_ALL || !(hifGroupResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		// Finally, delete the health impact function group from the hif group table
+		int numDeletedHifGroups = create.deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+			.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(id))
+			.execute();
+
+		// If no health impact function groups were deleted, return an error
+		if(numDeletedHifGroups == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error deleting health impact function group");
+		}
+
+		// Archive health impact functions in the deleted group
+		create.update(HEALTH_IMPACT_FUNCTION)
+			.set(HEALTH_IMPACT_FUNCTION.ARCHIVED, (short) 1)
+			.where(HEALTH_IMPACT_FUNCTION.ID.in(
+				DSL.select(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID)
+					.from(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_GROUP_ID.eq(id))
+			))
+		.execute();
+		
+		response.status(204);
+		return response;
+
+	}
+		
+
 	/*
 	 * @param userProfile
 	 * @return JSON representation of all hif groups for a given pollutant (pollutant id is a request parameter).

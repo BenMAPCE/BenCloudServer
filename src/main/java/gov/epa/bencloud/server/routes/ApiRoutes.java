@@ -251,6 +251,15 @@ public class ApiRoutes extends RoutesBase {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
 		});
 
+		/*
+		 * DELETE a health impact function group
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/health-impact-function-groups/:id", (request, response) -> {
+			return HIFApi.deleteHealthImpactFunctionGroup(request, response, getUserProfile(request, response));
+		});
+
 		
 		/*
 		 * GET array of exposure function groups
