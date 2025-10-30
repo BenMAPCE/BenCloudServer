@@ -724,6 +724,61 @@ public class HIFApi {
 		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+	/**
+	 * Deletes a health impact function group from the database (grid id is a request parameter).
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return
+	 */
+	public static Object deleteHealthImpactFunctionGroup(Request request, Response response, Optional<UserProfile> userProfile) {
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		HealthImpactFunctionGroupRecord hifGroupResult = create.selectFrom(HEALTH_IMPACT_FUNCTION_GROUP).where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(id)).fetchAny();
+		if(hifGroupResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Nobody can delete shared health impact function groups
+		//All users can delete their own health impact function groups
+		//Admins can delete any non-shared health impact function groups
+		if(hifGroupResult.getShareScope() == Constants.SHARING_ALL || !(hifGroupResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		// Finally, delete the health impact function group from the hif group table
+		int numDeletedHifGroups = create.deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+			.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(id))
+			.execute();
+
+		// If no health impact function groups were deleted, return an error
+		if(numDeletedHifGroups == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error deleting health impact function group");
+		}
+
+		// Archive health impact functions in the deleted group
+		create.update(HEALTH_IMPACT_FUNCTION)
+			.set(HEALTH_IMPACT_FUNCTION.ARCHIVED, (short) 1)
+			.where(HEALTH_IMPACT_FUNCTION.ID.in(
+				DSL.select(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID)
+					.from(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_GROUP_ID.eq(id))
+			))
+		.execute();
+		
+		response.status(204);
+		return response;
+
+	}
+		
+
 	/*
 	 * @param userProfile
 	 * @return JSON representation of all hif groups for a given pollutant (pollutant id is a request parameter).
@@ -863,9 +918,8 @@ public class HIFApi {
 			hifGroupId = hifGroupRecord.value1();
 		}
 		
-		//remove built in tokens (e, pi, sin, etc.)
+		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
-		//not working as expected, need to find a different way to validate functions
 		mXparser.removeBuiltinTokens("e");
 		mXparser.removeBuiltinTokens("Beta");
 
@@ -1042,6 +1096,7 @@ public class HIFApi {
 			int countParamCError = 0;
 
 			int countBaselineFunctionError = 0;
+			int countFunctionParamError = 0;
 			int countFunctionError = 0;
 
 			List<String> lstUndefinedPollutants = new ArrayList<String>();
@@ -1064,6 +1119,18 @@ public class HIFApi {
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
 			distTypes.add("Gamma");
+
+			List<String> functionParameters = new ArrayList<String>();
+			functionParameters.add("a");
+			functionParameters.add("b");
+			functionParameters.add("c");
+			functionParameters.add("beta");
+			functionParameters.add("q0");
+			functionParameters.add("q1");
+			functionParameters.add("deltaq");
+			functionParameters.add("incidence");
+			functionParameters.add("prevalence");
+			functionParameters.add("population");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
@@ -1306,6 +1373,9 @@ public class HIFApi {
 				missingVars = e.getMissingUserDefinedArguments();
 
 				for (String varName : missingVars) {
+					if(!functionParameters.contains(varName)) {
+						countFunctionParamError ++;
+					}
 					e.addArguments(new Argument(varName + " = 1"));
 				}
 
@@ -1698,6 +1768,21 @@ public class HIFApi {
 				}
 				else {
 					strRecord = String.valueOf(countBaselineFunctionError) + " records have baseline function values that are not valid formulas.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countFunctionParamError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countFunctionParamError == 1) {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameter detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				else {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameters detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";

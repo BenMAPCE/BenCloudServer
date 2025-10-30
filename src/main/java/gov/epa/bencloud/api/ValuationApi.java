@@ -62,6 +62,7 @@ import com.opencsv.CSVReader;
 import org.mariuszgromada.math.mxparser.Argument;
 import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
+import org.mariuszgromada.math.mxparser.Constant;
 
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.api.model.BatchTaskConfig;
@@ -794,12 +795,10 @@ public class ValuationApi {
 			heGroupId = heGroupRecord.value1();
 		}
 		
-		//remove built in tokens (e, pi, sin, etc.)
+		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
-		//not working as expected, need to find a different way to validate functions
-		for(String s : mXparser.getBuiltinTokensToRemove()) {
-			mXparser.removeBuiltinTokens(s);
-		}
+		mXparser.removeBuiltinTokens("e");
+		mXparser.removeBuiltinTokens("Beta");
 
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			BOMInputStream bis = new BOMInputStream(is, false);
@@ -927,6 +926,7 @@ public class ValuationApi {
 			int countMultiyearCostsError = 0;
 			int countMultiyearCostsTypeError = 0;
 
+			int countFunctionParamError = 0;
 			int countFunctionError = 0;
 
 			List<String> lstUndefinedEndpoints = new ArrayList<String>();
@@ -943,6 +943,15 @@ public class ValuationApi {
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
 			distTypes.add("Gamma");
+
+			List<String> functionParameters = new ArrayList<String>();
+			functionParameters.add("a");
+			functionParameters.add("b");
+			functionParameters.add("c");
+			functionParameters.add("d");
+			functionParameters.add("allgoodsindex");
+			functionParameters.add("medicalcostindex");
+			functionParameters.add("wageindex");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
@@ -1067,20 +1076,22 @@ public class ValuationApi {
 					}
 				}
 
-				// //function should be a valid formula
-				// str = record[functionIdx];
-				// e = new Expression(str);
+				//function should be a valid formula
+				str = record[functionIdx].strip().toLowerCase();
+				Expression e = new Expression(str);
 
-				// missingVars = e.getMissingUserDefinedArguments();
+				String[] missingVars = e.getMissingUserDefinedArguments();
 
-				// for (String varName : missingVars) {
-				// 	e.addArguments(new Argument(varName + " = 1"));
-				// }
+				for (String varName : missingVars) {
+					if(!functionParameters.contains(varName)) {
+						countFunctionParamError ++;
+					}
+					e.addArguments(new Argument(varName + " = 1"));
+				}
 
-				// if(!e.checkSyntax()) {
-				// 	countFunctionError++;
-				// }	
-
+				if(!e.checkSyntax()) {
+					countFunctionError++;
+				}
 		
 			}
 
@@ -1313,6 +1324,20 @@ public class ValuationApi {
 				validationMsg.messages.add(msg);
 			}
 
+			if(countFunctionParamError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countFunctionParamError == 1) {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameter detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				else {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameters detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 
 			if(countFunctionError > 0) {
 				validationMsg.success = false;
