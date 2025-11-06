@@ -765,6 +765,9 @@ public class ValuationApi {
 		int multiyearCostsIdx=-999;
 		int accessUrlIdx=-999;
 
+		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
+		List<Integer> newHealthEffects = new ArrayList<Integer>();
+
 		Map<String,Integer> endpointIdLookup = new HashMap<String,Integer>();
 
 		int heGroupId = 0;
@@ -793,7 +796,11 @@ public class ValuationApi {
 				.fetchOne();
 
 			heGroupId = heGroupRecord.value1();
+
+			newHealthEffectGroups.add(heGroupId);
 		}
+
+		
 		
 		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
@@ -969,6 +976,8 @@ public class ValuationApi {
 					int heId = heRecord.value1();
 					
 					endpointIdLookup.put(record[endpointIdx].strip().toLowerCase(), heId);
+
+					newHealthEffects.add(heId);
 					
 				}
 
@@ -1358,6 +1367,12 @@ public class ValuationApi {
 			
 		} catch (Exception e) {
 			log.error("Error validating valuation function upload", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1367,6 +1382,12 @@ public class ValuationApi {
 
 		if(validationMsg.messages.size() > 0) {
 			log.error("Error validating valuation function upload");
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1464,6 +1485,14 @@ public class ValuationApi {
 					multiyearDr = number.doubleValue();
 				}
 
+				String functionText = record[functionIdx].strip();
+				// Normalize known expressions
+				functionText = functionText.replaceAll("(?i)\\bEXP\\s*\\(", "exp(");
+				functionText = functionText.replaceAll("(?i)\\bMIN\\s*\\(", "min(");
+				functionText = functionText.replaceAll("(?i)\\bMAX\\s*\\(", "max(");
+				functionText = functionText.replaceAll("(?i)\\bLOG10\\s*\\(", "log10(");
+				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
+
 
 				//Create the hif record
 				vfRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -1496,7 +1525,7 @@ public class ValuationApi {
 						, VALUATION_FUNCTION.SHARE_SCOPE
 						)
 				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx].strip(), record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				functionText, record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
 				valuationType, multiyearValue, multiyearDr, userId, Constants.SHARING_NONE)
 				.returning(VALUATION_FUNCTION.ID)
@@ -1508,6 +1537,12 @@ public class ValuationApi {
 		
 		} catch (Exception e) {
 			log.error("Error importing valuation functions", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of valuation functions."));

@@ -890,6 +890,7 @@ public class HIFApi {
 
 		int hifGroupId = 0;
 		Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
+		List<Integer> newHifGroupIds = new ArrayList<Integer>();
 
 		if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
 			if(newGroup) {
@@ -916,7 +917,11 @@ public class HIFApi {
 				.fetchOne();
 
 			hifGroupId = hifGroupRecord.value1();
+			newHifGroupIds.add(hifGroupId);
 		}
+
+		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
+		List<Integer> newHealthEffects = new ArrayList<Integer>();
 		
 		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
@@ -1108,7 +1113,7 @@ public class HIFApi {
 
 			List<String> lstDupMetricCombo = new ArrayList<String>();
 			
-			Map<String, Integer> dicUniqueRecord = new HashMap<String,Integer>();	
+			Map<String, Integer> dicUniqueRecord = new HashMap<String,Integer>();
 
 			List<String> distTypes = new ArrayList<String>();
 			distTypes.add("None");
@@ -1199,6 +1204,8 @@ public class HIFApi {
 						heGroupId = heGroupRecord.value1();
 
 						healthEffectCategoryIdLookup.put(healthEffectCategoryName, heGroupId);
+
+						newHealthEffectGroups.add(heGroupId);
 					}
 
 					endpointIdLookup = HIFUtil.getEndpointIdLookup((short) heGroupId);
@@ -1220,6 +1227,8 @@ public class HIFApi {
 									.fetchOne();
 
 							heId = heRecord.value1();
+
+							newHealthEffects.add(heId);
 						}
 					}
 
@@ -1354,6 +1363,7 @@ public class HIFApi {
 
 				// baselinefunction should be a valid formula
 				str = record[baselineFunctionIdx].strip().toLowerCase();
+				str = str.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 				Expression e = new Expression(str);
 				
 				String[] missingVars = e.getMissingUserDefinedArguments();
@@ -1808,6 +1818,15 @@ public class HIFApi {
 			
 		} catch (Exception e) {
 			log.error("Error validating health impact function upload", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1817,6 +1836,15 @@ public class HIFApi {
 
 		if(validationMsg.messages.size() > 0) {
 			log.error("Error validating health impact function upload");
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1953,6 +1981,14 @@ public class HIFApi {
 					endDay = Short.valueOf(record[endDayIdx]);
 				}
 
+				String functionText = record[functionIdx].strip();
+				// Normalize known expressions
+				functionText = functionText.replaceAll("(?i)\\bEXP\\s*\\(", "exp(");
+				functionText = functionText.replaceAll("(?i)\\bMIN\\s*\\(", "min(");
+				functionText = functionText.replaceAll("(?i)\\bMAX\\s*\\(", "max(");
+				functionText = functionText.replaceAll("(?i)\\bLOG10\\s*\\(", "log10(");
+				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
+
 				//Create the hif record
 				hifRecord = DSL.using(JooqUtil.getJooqConfiguration())
 				.insertInto(HEALTH_IMPACT_FUNCTION
@@ -1997,7 +2033,7 @@ public class HIFApi {
 						)
 				.values(1, endpointGroupId, endpointId, pollutantId, metricId, timingId, record[authorIdx], functionYear, 
 				record[studyLocIdx], record[otherPollutantIdx], record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx].strip(), beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				functionText, beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
 				startDay, endDay, geogArea, geogAreaFeature, (heroId != -1 ? heroId : null), heroUrl, accessUrl, 
 				userId, Constants.SHARING_NONE)
@@ -2018,6 +2054,15 @@ public class HIFApi {
 		
 		} catch (Exception e) {
 			log.error("Error importing health impact functions", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of health impact functions."));
