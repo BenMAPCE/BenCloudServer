@@ -890,6 +890,7 @@ public class HIFApi {
 
 		int hifGroupId = 0;
 		Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
+		List<Integer> newHifGroupIds = new ArrayList<Integer>();
 
 		if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
 			if(newGroup) {
@@ -916,6 +917,7 @@ public class HIFApi {
 				.fetchOne();
 
 			hifGroupId = hifGroupRecord.value1();
+			newHifGroupIds.add(hifGroupId);
 		}
 
 		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
@@ -1815,8 +1817,9 @@ public class HIFApi {
 			//---End of csv validation
 			
 		} catch (Exception e) {
+			log.error("Error validating health impact function upload", e);
 			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
-					.where(HEALTH_IMPACT_FUNCTION_GROUP.NAME.eq(hifGroupName))
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
 					.execute();
 			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
 					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
@@ -1824,7 +1827,6 @@ public class HIFApi {
 			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
 					.where(ENDPOINT.ID.in(newHealthEffects))
 					.execute();
-			log.error("Error validating health impact function upload", e);
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1833,8 +1835,9 @@ public class HIFApi {
 		}
 
 		if(validationMsg.messages.size() > 0) {
+			log.error("Error validating health impact function upload");
 			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
-					.where(HEALTH_IMPACT_FUNCTION_GROUP.NAME.eq(hifGroupName))
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
 					.execute();
 			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
 					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
@@ -1842,7 +1845,6 @@ public class HIFApi {
 			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
 					.where(ENDPOINT.ID.in(newHealthEffects))
 					.execute();
-			log.error("Error validating health impact function upload");
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -2052,6 +2054,15 @@ public class HIFApi {
 		
 		} catch (Exception e) {
 			log.error("Error importing health impact functions", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of health impact functions."));
