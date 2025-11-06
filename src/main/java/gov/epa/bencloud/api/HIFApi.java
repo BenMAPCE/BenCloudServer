@@ -1057,6 +1057,9 @@ public class HIFApi {
 				log.debug("end age index is :" + endAgeIdx);
 
 				log.debug("health impact function dataset posted - columns are missing: " + tmp);
+				DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following columns are missing: " + tmp;

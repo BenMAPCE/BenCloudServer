@@ -900,6 +900,9 @@ public class ValuationApi {
 				log.debug("end age index is :" + endAgeIdx);
 
 				log.debug("valuation function dataset posted - columns are missing: " + tmp);
+				DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following columns are missing: " + tmp;
