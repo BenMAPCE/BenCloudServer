@@ -890,7 +890,7 @@ public class ValuationApi {
 					accessUrlIdx=i;
 					break;			
 				default:
-					System.out.println(record[i].toLowerCase().replace(" ", ""));
+					// System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
 
@@ -1090,6 +1090,7 @@ public class ValuationApi {
 
 				//function should be a valid formula
 				str = record[functionIdx].strip().toLowerCase();
+				str = str.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 				Expression e = new Expression(str);
 
 				String[] missingVars = e.getMissingUserDefinedArguments();
