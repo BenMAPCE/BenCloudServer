@@ -1464,6 +1464,14 @@ public class ValuationApi {
 					multiyearDr = number.doubleValue();
 				}
 
+				String functionText = record[functionIdx].strip();
+				// Normalize known expressions
+				functionText = functionText.replaceAll("(?i)\\bEXP\\s*\\(", "exp(");
+				functionText = functionText.replaceAll("(?i)\\bMIN\\s*\\(", "min(");
+				functionText = functionText.replaceAll("(?i)\\bMAX\\s*\\(", "max(");
+				functionText = functionText.replaceAll("(?i)\\bLOG10\\s*\\(", "log10(");
+				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
+
 
 				//Create the hif record
 				vfRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -1496,7 +1504,7 @@ public class ValuationApi {
 						, VALUATION_FUNCTION.SHARE_SCOPE
 						)
 				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx].strip(), record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				functionText, record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
 				valuationType, multiyearValue, multiyearDr, userId, Constants.SHARING_NONE)
 				.returning(VALUATION_FUNCTION.ID)

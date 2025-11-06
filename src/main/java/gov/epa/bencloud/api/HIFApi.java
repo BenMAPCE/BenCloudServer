@@ -1354,6 +1354,7 @@ public class HIFApi {
 
 				// baselinefunction should be a valid formula
 				str = record[baselineFunctionIdx].strip().toLowerCase();
+				str = str.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 				Expression e = new Expression(str);
 				
 				String[] missingVars = e.getMissingUserDefinedArguments();
@@ -1953,6 +1954,14 @@ public class HIFApi {
 					endDay = Short.valueOf(record[endDayIdx]);
 				}
 
+				String functionText = record[functionIdx].strip();
+				// Normalize known expressions
+				functionText = functionText.replaceAll("(?i)\\bEXP\\s*\\(", "exp(");
+				functionText = functionText.replaceAll("(?i)\\bMIN\\s*\\(", "min(");
+				functionText = functionText.replaceAll("(?i)\\bMAX\\s*\\(", "max(");
+				functionText = functionText.replaceAll("(?i)\\bLOG10\\s*\\(", "log10(");
+				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
+
 				//Create the hif record
 				hifRecord = DSL.using(JooqUtil.getJooqConfiguration())
 				.insertInto(HEALTH_IMPACT_FUNCTION
@@ -1997,7 +2006,7 @@ public class HIFApi {
 						)
 				.values(1, endpointGroupId, endpointId, pollutantId, metricId, timingId, record[authorIdx], functionYear, 
 				record[studyLocIdx], record[otherPollutantIdx], record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx].strip(), beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				functionText, beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
 				startDay, endDay, geogArea, geogAreaFeature, (heroId != -1 ? heroId : null), heroUrl, accessUrl, 
 				userId, Constants.SHARING_NONE)
