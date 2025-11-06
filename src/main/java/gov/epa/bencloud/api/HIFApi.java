@@ -917,6 +917,9 @@ public class HIFApi {
 
 			hifGroupId = hifGroupRecord.value1();
 		}
+
+		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
+		List<Integer> newHealthEffects = new ArrayList<Integer>();
 		
 		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
@@ -1108,7 +1111,7 @@ public class HIFApi {
 
 			List<String> lstDupMetricCombo = new ArrayList<String>();
 			
-			Map<String, Integer> dicUniqueRecord = new HashMap<String,Integer>();	
+			Map<String, Integer> dicUniqueRecord = new HashMap<String,Integer>();
 
 			List<String> distTypes = new ArrayList<String>();
 			distTypes.add("None");
@@ -1199,6 +1202,8 @@ public class HIFApi {
 						heGroupId = heGroupRecord.value1();
 
 						healthEffectCategoryIdLookup.put(healthEffectCategoryName, heGroupId);
+
+						newHealthEffectGroups.add(heGroupId);
 					}
 
 					endpointIdLookup = HIFUtil.getEndpointIdLookup((short) heGroupId);
@@ -1220,6 +1225,8 @@ public class HIFApi {
 									.fetchOne();
 
 							heId = heRecord.value1();
+
+							newHealthEffects.add(heId);
 						}
 					}
 
@@ -1808,6 +1815,15 @@ public class HIFApi {
 			//---End of csv validation
 			
 		} catch (Exception e) {
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.NAME.eq(hifGroupName))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			log.error("Error validating health impact function upload", e);
 			response.type("application/json");
 			//response.status(400);
@@ -1817,6 +1833,15 @@ public class HIFApi {
 		}
 
 		if(validationMsg.messages.size() > 0) {
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.NAME.eq(hifGroupName))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			log.error("Error validating health impact function upload");
 			response.type("application/json");
 			//response.status(400);
