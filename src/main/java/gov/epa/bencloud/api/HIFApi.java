@@ -1047,7 +1047,7 @@ public class HIFApi {
 					accessUrlIdx=i;
 					break;			
 				default:
-					System.out.println(record[i].toLowerCase().replace(" ", ""));
+					// System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
 
@@ -1381,6 +1381,7 @@ public class HIFApi {
 
 				//function should be a valid formula
 				str = record[functionIdx].strip().toLowerCase();
+				str = str.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 				e = new Expression(str);
 
 				missingVars = e.getMissingUserDefinedArguments();
