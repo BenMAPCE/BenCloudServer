@@ -1,3 +1,6 @@
+
+UPDATE data.settings SET value_int=78 WHERE "key"='version';
+
 INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id)
 select 1 as health_impact_function_group_id, hif.id as health_impact_function_id
 from data.health_impact_function hif
