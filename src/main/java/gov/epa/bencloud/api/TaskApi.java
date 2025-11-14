@@ -400,7 +400,7 @@ public class TaskApi {
 						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
 						, HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -1450,7 +1450,7 @@ public class TaskApi {
 						Result<Record> hifRecords = create.select(
 								hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 								hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-								ENDPOINT.NAME.as("endpoint"),
+								ENDPOINT.DISPLAY_NAME.as("endpoint"),
 								HEALTH_IMPACT_FUNCTION.AUTHOR,
 								HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 								HEALTH_IMPACT_FUNCTION.LOCATION,

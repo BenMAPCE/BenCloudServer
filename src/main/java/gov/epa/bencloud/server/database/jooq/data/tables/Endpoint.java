@@ -16,7 +16,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row4;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -62,6 +62,11 @@ public class Endpoint extends TableImpl<EndpointRecord> {
      * The column <code>data.endpoint.name</code>.
      */
     public final TableField<EndpointRecord, String> NAME = createField(DSL.name("name"), SQLDataType.CLOB.nullable(false), this, "");
+
+    /**
+     * The column <code>data.endpoint.display_name</code>.
+     */
+    public final TableField<EndpointRecord, String> DISPLAY_NAME = createField(DSL.name("display_name"), SQLDataType.CLOB, this, "");
 
     private Endpoint(Name alias, Table<EndpointRecord> aliased) {
         this(alias, aliased, null);
@@ -152,11 +157,11 @@ public class Endpoint extends TableImpl<EndpointRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row4 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Integer, Short, String> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row4<Integer, Short, String, String> fieldsRow() {
+        return (Row4) super.fieldsRow();
     }
 }

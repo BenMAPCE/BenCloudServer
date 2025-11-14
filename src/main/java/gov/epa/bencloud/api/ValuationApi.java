@@ -387,7 +387,7 @@ public class ValuationApi {
 				vfRecords = create.select(
 						vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 						vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-						ENDPOINT.NAME.as("endpoint"),
+						ENDPOINT.DISPLAY_NAME.as("endpoint"),
 						VALUATION_FUNCTION.QUALIFIER.as("name"),
 						HEALTH_IMPACT_FUNCTION.AUTHOR,
 						HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
@@ -558,13 +558,13 @@ public class ValuationApi {
 			valuationRecords = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(VALUATION_FUNCTION.asterisk()
 							, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-							, ENDPOINT.NAME.as("endpoint_name")
+							, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 							)
 					.from(VALUATION_FUNCTION)
 					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
 					.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
 					.where(VALUATION_FUNCTION.ARCHIVED.eq((short) 0))
-					.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.QUALIFIER)
+					.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, VALUATION_FUNCTION.QUALIFIER)
 					.fetch();
 		} catch (DataAccessException e) {
 			log.error("Error getAllValuationFunctions", e);
@@ -649,7 +649,7 @@ public class ValuationApi {
 			valuationRecords = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(VALUATION_FUNCTION.asterisk()
 							, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-							, ENDPOINT.NAME.as("endpoint_name")
+							, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 							)
 					.from(VALUATION_FUNCTION)
 					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
@@ -970,9 +970,10 @@ public class ValuationApi {
 					EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
 							.insertInto(ENDPOINT
 									, ENDPOINT.NAME
+									, ENDPOINT.DISPLAY_NAME
 									, ENDPOINT.ENDPOINT_GROUP_ID
 									)
-							.values(record[endpointIdx].strip(), (short) heGroupId)
+							.values(record[endpointIdx].strip(), record[endpointIdx].strip(), (short) heGroupId)
 							.returning(ENDPOINT.ID)
 							.fetchOne();
 
@@ -1651,7 +1652,7 @@ public class ValuationApi {
 								)
 						.as("hif")
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						)
 				.from(VALUATION_FUNCTION)
 				.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
@@ -1659,7 +1660,7 @@ public class ValuationApi {
 				.join(VALUATION_RESULT_FUNCTION_CONFIG).on(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(VALUATION_FUNCTION.ID))
 				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID))
 				.where(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(id))
-				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.REFERENCE)
+				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, VALUATION_FUNCTION.REFERENCE)
 				.fetch();
 		
 		response.type("application/json");
@@ -1793,7 +1794,7 @@ public class ValuationApi {
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 
-				searchCondition.or(ENDPOINT.NAME
+				searchCondition.or(ENDPOINT.DISPLAY_NAME
 						.containsIgnoreCase(filterValue));
 		
 		searchCondition = 
