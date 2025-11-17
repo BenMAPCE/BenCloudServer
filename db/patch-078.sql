@@ -1,14 +1,17 @@
+/*Update health_impact_function_group with new hif from BWD-206*/
 
 UPDATE data.settings SET value_int=78 WHERE "key"='version';
 
+--Add functions to group "Premature Death - All"
 INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id)
 select 1 as health_impact_function_group_id, hif.id as health_impact_function_id
 from data.health_impact_function hif
 where hif.health_impact_function_dataset_id = 15
 and hif.archived = 0
-and hif.endpoint_group_id =12 --please double check
+and hif.endpoint_group_id =12 
 and hif.id not in (select health_impact_function_id from  data.health_impact_function_group_member);
 
+--Add functions to group "Premature Death - Primary"
 INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id)
 select 5 as health_impact_function_group_id,
        hif.id as health_impact_function_id
@@ -27,6 +30,7 @@ and (
     or (hif.author = 'Zanobetti and Schwartz' and hif.qualifier = 'Warm season (June - August). Respiratory mortality, sum of lags 0-3 (Table 1)')
 );
 
+--Add functions to group "Testing Health Impact Functions"
 INSERT INTO "data".health_impact_function_group_member (health_impact_function_group_id,health_impact_function_id)
 select hifg.id as health_impact_function_group_id,
        hif.id as health_impact_function_id
