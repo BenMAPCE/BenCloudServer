@@ -19,8 +19,21 @@ Medina-Ramon and Schwartz, 2008
 Zanobetti and Schwartz, 2008
 *******************************************/
 
+/*******************************************
+BWD-233 - add “Mortality, All-cause, infant" health effect for Woodruff et al HIF
+Woodruff et al is linked to only one EPA recommended valuation function, the function that uses the undiscounted VSL
+*******************************************/
+
 UPDATE data.settings SET value_int=77 WHERE "key"='version';
 
+-- Archive old Katsouyanni functions
+update data.health_impact_function hif
+set archived = 1
+where hif.id in (861,863,864,865,866,881,894,895,899,900);
+
+-- Add endpoint.display_name column
+ALTER TABLE data.endpoint ADD display_name text NULL;
+UPDATE data.endpoint SET display_name=name;
 
 -- Step 1: Create new Health Effects and store their IDs
 --  Create four new Health Effects within the Mortality Health Effect Category: 
@@ -30,19 +43,20 @@ UPDATE data.settings SET value_int=77 WHERE "key"='version';
 --“Mortality, Respiratory, long-term”
 WITH new_values AS (
     SELECT * FROM (VALUES
-        (12, 'Mortality, All-cause, short-term'),
-        (12, 'Mortality, Respiratory, short-term'),
-        (12, 'Mortality, All-cause, long-term'),
-        (12, 'Mortality, Respiratory, long-term')
-    ) AS v(endpoint_group_id, name)
+        (12, 'Mortality, All-cause, short-term', 'Mortality, All Cause'),
+        (12, 'Mortality, Respiratory, short-term', 'Mortality, Respiratory'),
+        (12, 'Mortality, All-cause, long-term', 'Mortality, All Cause'),
+        (12, 'Mortality, Respiratory, long-term', 'Mortality, Respiratory'),
+        (12, 'Mortality, All-cause, infant', 'Mortality, All Cause')
+    ) AS v(endpoint_group_id, name, display_name)
     WHERE NOT EXISTS (
         SELECT 1 FROM data.endpoint e WHERE e.name = v.name
     )
 ),
 new_endpoint AS (
-    INSERT INTO data.endpoint (endpoint_group_id, name)
-    SELECT endpoint_group_id, name FROM new_values
-    RETURNING id, name, endpoint_group_id
+    INSERT INTO data.endpoint (endpoint_group_id, name, display_name)
+    SELECT endpoint_group_id, name, display_name FROM new_values
+    RETURNING id, name, endpoint_group_id, display_name
 )
 SELECT * INTO data.temp_endpoint FROM new_endpoint;
 ;
@@ -68,7 +82,8 @@ LEFT JOIN data.health_impact_function hif
     ON e.endpoint_id = hif.endpoint_id 
     AND e.endpoint_group_id = hif.endpoint_group_id
 WHERE e.name IN ('Mortality, All Cause', 'Mortality, Respiratory')
-    AND hif.health_impact_function_dataset_id = 15;
+    AND hif.health_impact_function_dataset_id = 15
+    AND hif.archived = 0;
 
 -- Insert new health impact functions with updated endpoint ids from temporary table
 -- Create new table with the new health impact functions ids, endpoint ids, endpoint group ids, and timing ids to use in next step
@@ -88,13 +103,14 @@ SELECT
 FROM data.tmp_health_function thf 
 LEFT JOIN  data.temp_endpoint te 
     ON te.name = CASE
+	    WHEN thf.name = 'Mortality, All Cause' AND thf.author like 'Woodruff%' THEN 'Mortality, All-cause, infant'
         WHEN thf.name = 'Mortality, All Cause' AND thf.timing_id  = 2 THEN 'Mortality, All-cause, short-term'
         WHEN thf.name = 'Mortality, All Cause' AND thf.timing_id = 1 THEN 'Mortality, All-cause, long-term'
         WHEN thf.name = 'Mortality, Respiratory' AND thf.timing_id = 2 THEN 'Mortality, Respiratory, short-term'
         WHEN thf.name = 'Mortality, Respiratory' AND thf.timing_id = 1 THEN 'Mortality, Respiratory, long-term'
     END
 WHERE thf.name IN ('Mortality, All Cause', 'Mortality, Respiratory')
-RETURNING id, endpoint_id, endpoint_group_id,timing_id
+RETURNING id, endpoint_id, endpoint_group_id,timing_id, author
 )
 SELECT * INTO TABLE "data".new_hif_functions FROM new_health_functions;
 
@@ -130,7 +146,7 @@ select
 	where vf.endpoint_group_id = 12 
 		and vf.endpoint_id = 50
 		and te.name ilike '%Mortality, All-cause%'
-		and NOT (te.name ILIKE '%short_term%' AND vf.name_b ILIKE '%d.r%'); 
+		and NOT ((te.name ILIKE '%short_term%' or te.name ILIKE '%infant%') AND vf.name_b ILIKE '%d.r%'); 
 
 create table "data".tmp_val_resp_function as 
 select 
@@ -146,7 +162,7 @@ select
 
 update  data.tmp_val_all_cause_function
 set epa_standard = true
-where name ILIKE '%short_term%';
+where name ILIKE '%short_term%' or name ILIKE '%infant%';
 
 update  data.tmp_val_resp_function
 set epa_standard = true

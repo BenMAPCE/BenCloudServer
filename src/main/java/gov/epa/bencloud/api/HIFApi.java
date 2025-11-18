@@ -183,7 +183,7 @@ public class HIFApi {
 			Result<Record> hifRecords = create.select(
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-				ENDPOINT.NAME.as("endpoint"),
+				ENDPOINT.DISPLAY_NAME.as("endpoint"),
 				HEALTH_IMPACT_FUNCTION.AUTHOR,
 				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 				HEALTH_IMPACT_FUNCTION.LOCATION,
@@ -374,7 +374,7 @@ public class HIFApi {
 				Result<Record> hifRecords = create.select(
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-						ENDPOINT.NAME.as("endpoint"),
+						ENDPOINT.DISPLAY_NAME.as("endpoint"),
 						HEALTH_IMPACT_FUNCTION.AUTHOR,
 						HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 						HEALTH_IMPACT_FUNCTION.LOCATION,
@@ -630,7 +630,7 @@ public class HIFApi {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -1223,9 +1223,10 @@ public class HIFApi {
 							EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
 									.insertInto(ENDPOINT
 											, ENDPOINT.NAME
+											, ENDPOINT.DISPLAY_NAME
 											, ENDPOINT.ENDPOINT_GROUP_ID
 											)
-									.values(record[endpointIdx].strip(), (short) heGroupId)
+									.values(record[endpointIdx].strip(), record[endpointIdx].strip(), (short) heGroupId)
 									.returning(ENDPOINT.ID)
 									.fetchOne();
 
@@ -2163,7 +2164,7 @@ public class HIFApi {
 						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
 						, HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -2322,7 +2323,7 @@ public class HIFApi {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -2334,7 +2335,7 @@ public class HIFApi {
 				.join(GENDER).on(HEALTH_IMPACT_FUNCTION.GENDER_ID.eq(GENDER.ID))
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(id))
-				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
+				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
 				.fetch();
 		
 		if(hifRecords.isEmpty()) {
@@ -2451,7 +2452,7 @@ public class HIFApi {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -2464,7 +2465,7 @@ public class HIFApi {
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HEALTH_IMPACT_FUNCTION.ID))
 				.where(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(Integer.valueOf(id)))
-				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
+				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
 				.fetch();
 		
 		if(hifRecords.isEmpty()) {
@@ -2525,7 +2526,7 @@ public class HIFApi {
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 
-				searchCondition.or(ENDPOINT.NAME
+				searchCondition.or(ENDPOINT.DISPLAY_NAME
 						.containsIgnoreCase(filterValue));
 		
 		searchCondition = 

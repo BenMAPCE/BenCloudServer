@@ -415,7 +415,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-									ENDPOINT.NAME.as("health_effect"),
+									ENDPOINT.DISPLAY_NAME.as("health_effect"),
 									HEALTH_IMPACT_FUNCTION.AUTHOR,
 									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 									HEALTH_IMPACT_FUNCTION.LOCATION,

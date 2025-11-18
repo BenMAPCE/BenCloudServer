@@ -98,7 +98,7 @@ public class ValuationUtil {
 		Record record = create
 				.select(VALUATION_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						,ENDPOINT.NAME.as("endpoint_name"))
+						,ENDPOINT.DISPLAY_NAME.as("endpoint_name"))
 				.from(VALUATION_FUNCTION)
 				.leftJoin(ENDPOINT_GROUP).on(ENDPOINT_GROUP.ID.eq(VALUATION_FUNCTION.ENDPOINT_GROUP_ID))
 				.leftJoin(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
@@ -375,10 +375,10 @@ public class ValuationUtil {
      */
     public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
         Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
+            .select(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID)
             .from(ENDPOINT)
             .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
-            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
+            .fetchMap(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID);
         return endpointMap;}
     
 }

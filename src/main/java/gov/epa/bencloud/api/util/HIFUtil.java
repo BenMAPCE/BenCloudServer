@@ -335,7 +335,7 @@ public class HIFUtil {
 		Record record = create
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						,ENDPOINT.NAME.as("endpoint_name")
+						,ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						,POLLUTANT.NAME.as("pollutant_name")
 						,POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
 						,POLLUTANT_METRIC.NAME.as("metric_name")
@@ -1312,7 +1312,7 @@ public class HIFUtil {
 		Record record = create
 						.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						,ENDPOINT.NAME.as("endpoint_name")
+						,ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						,POLLUTANT.NAME.as("pollutant_name")
 						,POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
 						,POLLUTANT_METRIC.NAME.as("metric_name")
@@ -1393,10 +1393,10 @@ public class HIFUtil {
      */
     public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
         Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
+            .select(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID)
             .from(ENDPOINT)
             .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
-            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
+            .fetchMap(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID);
         return endpointMap;}    
     
     
