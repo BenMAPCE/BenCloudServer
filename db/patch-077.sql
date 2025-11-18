@@ -26,6 +26,11 @@ Woodruff et al is linked to only one EPA recommended valuation function, the fun
 
 UPDATE data.settings SET value_int=77 WHERE "key"='version';
 
+-- Archive old Katsouyanni functions
+update data.health_impact_function hif
+set archived = 1
+where hif.id in (861,863,864,865,866,881,894,895,899,900);
+
 -- Add endpoint.display_name column
 ALTER TABLE data.endpoint ADD display_name text NULL;
 UPDATE data.endpoint SET display_name=name;
@@ -77,7 +82,8 @@ LEFT JOIN data.health_impact_function hif
     ON e.endpoint_id = hif.endpoint_id 
     AND e.endpoint_group_id = hif.endpoint_group_id
 WHERE e.name IN ('Mortality, All Cause', 'Mortality, Respiratory')
-    AND hif.health_impact_function_dataset_id = 15;
+    AND hif.health_impact_function_dataset_id = 15
+    AND hif.archived = 0;
 
 -- Insert new health impact functions with updated endpoint ids from temporary table
 -- Create new table with the new health impact functions ids, endpoint ids, endpoint group ids, and timing ids to use in next step
