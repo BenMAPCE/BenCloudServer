@@ -29,7 +29,7 @@ final_ed_group AS (
     SELECT id FROM existing_ed_group
 ),
 existing_ed AS (
-    SELECT id FROM data.endpoint WHERE name = 'Incidence, Dementia'
+    SELECT id FROM data.endpoint WHERE name = 'Incidence, Dementia' and endpoint_group_id in (select id from data.endpoint_group where name = 'Incidence, Neurological')
 ),
 new_ed AS (
     INSERT INTO data.endpoint (name, endpoint_group_id)
@@ -55,7 +55,8 @@ CREATE TABLE data.tmp_dem_hif (
 "function_year" int4 NULL, "location" text NULL, "other_pollutants" text NULL, "qualifier" text NULL, "reference" text NULL, "start_age" int4 NULL, "end_age" int4 NULL,"function_text" text NULL,
 "beta" float8 NULL, "dist_beta" text NULL, "p1_beta" float8 NULL, "p2_beta" float8 NULL, "val_a" float8 NULL, "name_a" text NULL, "val_b" float8 NULL, "name_b" text NULL,"val_c" float8 NULL,
 "name_c" text NULL, "baseline_function_text" text NULL, "race_id" int4 NULL, "gender_id" int4 NULL, "ethnicity_id" int4 NULL, "start_day" int4 NULL, "end_day"int4 NULL,"hero_id"int4 NULL,
-"epa_hero_url" text NULL, "access_url" text NULL, "user_id" text NULL, "share_scope" int2 NULL, "archived" int2 NULL,  "timing_id" int2 NULL, "geographic_area" text NULL,"geographic_area_feature" text NULL
+"epa_hero_url" text NULL, "access_url" text NULL, "user_id" text NULL, "share_scope" int2 NULL, "archived" int2 NULL,  "timing_id" int2 NULL, "geographic_area" text NULL,"geographic_area_feature" text null,
+"endpoint_name" text NULL, "endpoint_group_name" text NULL  
 );
 
 insert into data.tmp_dem_hif(
@@ -63,12 +64,12 @@ insert into data.tmp_dem_hif(
 "function_year"  , "location"  , "other_pollutants"  , "qualifier"  , "reference"  , "start_age"  , "end_age"  ,"function_text"  ,
 "beta"  , "dist_beta"  , "p1_beta"  , "p2_beta"  , "val_a"  , "name_a"  , "val_b"  , "name_b"  ,"val_c"  ,
 "name_c"  , "baseline_function_text"  , "race_id"  , "gender_id"  , "ethnicity_id"  , "start_day"  , "end_day" ,"hero_id" ,
-"epa_hero_url"  , "access_url"  , "user_id"  , "share_scope"  , "archived"  ,  "timing_id"  , "geographic_area"  ,"geographic_area_feature"  
+"epa_hero_url"  , "access_url"  , "user_id"  , "share_scope"  , "archived"  ,  "timing_id"  , "geographic_area"  ,"geographic_area_feature", "endpoint_name", "endpoint_group_name"  
 ) VALUES
 (15, 6, 11, 8, 1, 'Wilker et al.', 2023, 'Nationwide', NULL, 'Pooled random-effect estimate using North American active ascertainment studies (Semmens 2022; Shaffer 2021; Sullivan 2021; Wang 2022), HR (95% CI) per 2 ug/m3, Dementia disease', 
     'Wilker, E. H., Osman, M., & Weisskopf, M. G. (2023). Ambient air pollution and clinical dementia: systematic review and meta-analysis. bmj, 381.', 55, 99,
     '(1-(1/exp(BETA*DELTAQ)))*INCIDENCE*POPULATION', 0.142589471, 'Normal', 0.140908265, 0,0, NULL, 0, NULL, 0, NULL, 'INCIDENCE*POPULATION', 5, 3, 3, NULL, NULL,11175807,
-    'https://hero.epa.gov/hero/index.cfm/reference/details/reference_id/11175807', 'https://www.bmj.com/content/381/bmj-2022-071620', NULL, 1, 0, 1, NULL, NULL
+    'https://hero.epa.gov/hero/index.cfm/reference/details/reference_id/11175807', 'https://www.bmj.com/content/381/bmj-2022-071620', NULL, 1, 0, 1, NULL, null,'Incidence, Dementia','Incidence, Neurological'
 );
 
 insert into data.health_impact_function ("health_impact_function_dataset_id","endpoint_group_id","endpoint_id", "pollutant_id", "metric_id", 
@@ -76,31 +77,33 @@ insert into data.health_impact_function ("health_impact_function_dataset_id","en
 "end_age","function_text","beta", "dist_beta", "p1_beta", "p2_beta", "val_a", "name_a", "val_b" , "name_b" ,"val_c", "name_c", "baseline_function_text" ,
 "race_id" , "gender_id" , "ethnicity_id" , "start_day" , "end_day","hero_id", "epa_hero_url", "access_url" , "user_id" , "share_scope", "archived",
 "timing_id" , "geographic_area","geographic_area_feature")
-select tdh.health_impact_function_dataset_id, tt.ed_group_id as endpoint_group_id, tt.ed_id as endpoint_id, tdh.pollutant_id, tdh.metric_id, tdh.seasonal_metric_id
+select tdh.health_impact_function_dataset_id, eg.id  as endpoint_group_id, e.id as endpoint_id, tdh.pollutant_id, tdh.metric_id, tdh.seasonal_metric_id
 	, tdh.metric_statistic, tdh.author, tdh.function_year, tdh.location, tdh.other_pollutants, tdh.qualifier, tdh.reference, tdh.start_age, tdh.end_age, 
 	tdh.function_text, tdh.beta, tdh.dist_beta, tdh.p1_beta, tdh.p2_beta, tdh.val_a, tdh.name_a, tdh.val_b, tdh.name_b, tdh.val_c, tdh.name_c, 
 	tdh.baseline_function_text, tdh.race_id, tdh.gender_id, tdh.ethnicity_id, tdh.start_day, tdh.end_day, tdh.hero_id, tdh.epa_hero_url, tdh.access_url,
 	tdh.user_id, tdh.share_scope, tdh.archived, tdh.timing_id, tdh.geographic_area, tdh.geographic_area_feature
-from  data.tmp_table tt 
-cross join data.tmp_dem_hif tdh;
+from  data.tmp_dem_hif tdh 
+inner join data.endpoint e on tdh.endpoint_name = e.name
+inner join data.endpoint_group eg on tdh.endpoint_group_name = eg.name and e.endpoint_group_id = eg.id 
 
 --# CREATE VALUATION FUNCTIONS 
 --# Add 3 new valuation functions for Dementia 
 CREATE table data.tmp_dem_vf("valuation_dataset_id" int4 NULL, "qualifier" text NULL,"reference"text NULL,"start_age"int4 NULL,"end_age"int4 NULL,"function_text" text NULL,"val_a" float8 NULL,"name_a" text NULL,"dist_a" text NULL,"p1a" float8 NULL,
 "p2a" float8 NULL,"val_b" float8 NULL,"name_b" text NULL,"val_c" float8 NULL,"name_c" text NULL,"val_d" float8 NULL,"name_d" text NULL,"epa_standard" bool NULL, "access_url" text NULL, "valuation_type" text NULL ,"multiyear" bool NULL,
- "multiyear_dr" float8 NULL,"multiyear_costs" _float8 NULL,"user_id" text NULL, "share_scope" int2 null , "archived" int2 NULL);
+ "multiyear_dr" float8 NULL,"multiyear_costs" _float8 NULL,"user_id" text NULL, "share_scope" int2 null , "archived" int2 null, "endpoint_name" text NULL, "endpoint_group_name" text NULL);
 
-Insert into data.tmp_dem_vf(valuation_dataset_id,qualifier,reference,start_age,end_age,function_text,val_a,name_a,dist_a,p1a,p2a,val_b,name_b,val_c,name_c,val_d,name_d,epa_standard,access_url,valuation_type,multiyear,multiyear_dr,multiyear_costs,user_id,share_scope,archived) VALUES
-(8,'COI: 4.8 yrs med + informal care (replacement cost), 2% DR','Medical costs: Nandi, A., Counts, N., Bröker, J., Malik, S., Chen, S., Han, R., ... & Bloom, D. E. (2024). Cost of care for Alzheimer’s disease and related dementias in the United States: 2016 to 2060. npj Aging, 10(1), 13; Liang, C. S., Li, D. J., Yang, F. C., Tseng, P. T., Carvalho, A. F., Stubbs, B., ... & Chu, C. S. (2021). Years of survival from diagnosis: Mortality rates in Alzheimer’s disease and non-Alzheimer’s dementias: a systematic review and meta-analysis. The Lancet Healthy Longevity, 2(8), e479-e488.',70,99,'A*MedicalCostIndex+B*WageIndex',120014.49,'Formal medical cost (from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 2% DR','None',0,0,156726.66,'Informal care (replacement cost, from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 2% DR',0,0,0,0,TRUE,'https://www.nature.com/articles/s41514-024-00136-6',NULL,FALSE,NULL,NULL,NULL,1,0),
-(8,'COI: 4.8 yrs med + informal care (replacement cost), 3% DR','Medical costs: Nandi, A., Counts, N., Bröker, J., Malik, S., Chen, S., Han, R., ... & Bloom, D. E. (2024). Cost of care for Alzheimer’s disease and related dementias in the United States: 2016 to 2060. npj Aging, 10(1), 13; Liang, C. S., Li, D. J., Yang, F. C., Tseng, P. T., Carvalho, A. F., Stubbs, B., ... & Chu, C. S. (2021). Years of survival from diagnosis: Mortality rates in Alzheimer’s disease and non-Alzheimer’s dementias: a systematic review and meta-analysis. The Lancet Healthy Longevity, 2(8), e479-e488.',70,99,'A*MedicalCostIndex+B*WageIndex',118580.51,'Formal medical cost (from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 3% DR','None',0,0,153939.09,'Informal care (replacement cost, from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 3% DR',0,0,0,0,TRUE,'https://www.nature.com/articles/s41514-024-00136-6',NULL,FALSE,NULL,NULL,NULL,1,0),
-(8,'COI: 4.8 yrs med + informal care (replacement cost), 7% DR','Medical costs: Nandi, A., Counts, N., Bröker, J., Malik, S., Chen, S., Han, R., ... & Bloom, D. E. (2024). Cost of care for Alzheimer’s disease and related dementias in the United States: 2016 to 2060. npj Aging, 10(1), 13; Liang, C. S., Li, D. J., Yang, F. C., Tseng, P. T., Carvalho, A. F., Stubbs, B., ... & Chu, C. S. (2021). Years of survival from diagnosis: Mortality rates in Alzheimer’s disease and non-Alzheimer’s dementias: a systematic review and meta-analysis. The Lancet Healthy Longevity, 2(8), e479-e488.',70,99,'A*MedicalCostIndex+B*WageIndex',113280.26,'Formal medical cost (from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 7% DR','None',0,0,143752.35,'Informal care (replacement cost, from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 7% DR',0,0,0,0,TRUE,'https://www.nature.com/articles/s41514-024-00136-6',NULL,FALSE,NULL,NULL,NULL,1,0);
+Insert into data.tmp_dem_vf(valuation_dataset_id,qualifier,reference,start_age,end_age,function_text,val_a,name_a,dist_a,p1a,p2a,val_b,name_b,val_c,name_c,val_d,name_d,epa_standard,access_url,valuation_type,multiyear,multiyear_dr,multiyear_costs,user_id,share_scope,archived, endpoint_name, endpoint_group_name) VALUES
+(8,'COI: 4.8 yrs med + informal care (replacement cost), 2% DR','Medical costs: Nandi, A., Counts, N., Bröker, J., Malik, S., Chen, S., Han, R., ... & Bloom, D. E. (2024). Cost of care for Alzheimer’s disease and related dementias in the United States: 2016 to 2060. npj Aging, 10(1), 13; Liang, C. S., Li, D. J., Yang, F. C., Tseng, P. T., Carvalho, A. F., Stubbs, B., ... & Chu, C. S. (2021). Years of survival from diagnosis: Mortality rates in Alzheimer’s disease and non-Alzheimer’s dementias: a systematic review and meta-analysis. The Lancet Healthy Longevity, 2(8), e479-e488.',70,99,'A*MedicalCostIndex+B*WageIndex',120014.49,'Formal medical cost (from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 2% DR','None',0,0,156726.66,'Informal care (replacement cost, from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 2% DR',0,0,0,0,TRUE,'https://www.nature.com/articles/s41514-024-00136-6',NULL,FALSE,NULL,NULL,NULL,1,0,'Incidence, Dementia','Incidence, Neurological'),
+(8,'COI: 4.8 yrs med + informal care (replacement cost), 3% DR','Medical costs: Nandi, A., Counts, N., Bröker, J., Malik, S., Chen, S., Han, R., ... & Bloom, D. E. (2024). Cost of care for Alzheimer’s disease and related dementias in the United States: 2016 to 2060. npj Aging, 10(1), 13; Liang, C. S., Li, D. J., Yang, F. C., Tseng, P. T., Carvalho, A. F., Stubbs, B., ... & Chu, C. S. (2021). Years of survival from diagnosis: Mortality rates in Alzheimer’s disease and non-Alzheimer’s dementias: a systematic review and meta-analysis. The Lancet Healthy Longevity, 2(8), e479-e488.',70,99,'A*MedicalCostIndex+B*WageIndex',118580.51,'Formal medical cost (from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 3% DR','None',0,0,153939.09,'Informal care (replacement cost, from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 3% DR',0,0,0,0,TRUE,'https://www.nature.com/articles/s41514-024-00136-6',NULL,FALSE,NULL,NULL,NULL,1,0,'Incidence, Dementia','Incidence, Neurological'),
+(8,'COI: 4.8 yrs med + informal care (replacement cost), 7% DR','Medical costs: Nandi, A., Counts, N., Bröker, J., Malik, S., Chen, S., Han, R., ... & Bloom, D. E. (2024). Cost of care for Alzheimer’s disease and related dementias in the United States: 2016 to 2060. npj Aging, 10(1), 13; Liang, C. S., Li, D. J., Yang, F. C., Tseng, P. T., Carvalho, A. F., Stubbs, B., ... & Chu, C. S. (2021). Years of survival from diagnosis: Mortality rates in Alzheimer’s disease and non-Alzheimer’s dementias: a systematic review and meta-analysis. The Lancet Healthy Longevity, 2(8), e479-e488.',70,99,'A*MedicalCostIndex+B*WageIndex',113280.26,'Formal medical cost (from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 7% DR','None',0,0,143752.35,'Informal care (replacement cost, from Nandi et al. 2024 Table 1) over 4.8 years (survival from diagnosis from Liang et al. 2021 Table 1) in 2015$, 7% DR',0,0,0,0,TRUE,'https://www.nature.com/articles/s41514-024-00136-6',NULL,FALSE,NULL,NULL,NULL,1,0,'Incidence, Dementia','Incidence, Neurological');
 
 insert into data.valuation_function ("valuation_dataset_id","endpoint_group_id","endpoint_id","qualifier","reference","start_age","end_age","function_text","val_a","name_a","dist_a","p1a","p2a","val_b","name_b","val_c","name_c",
 "val_d","name_d","epa_standard","access_url","valuation_type","multiyear","multiyear_dr","multiyear_costs","user_id","share_scope","archived")
-select vf.valuation_dataset_id, tt.ed_group_id, tt.ed_id, vf.qualifier, vf.reference, vf.start_age, vf.end_age,vf.function_text,vf.val_a,vf.name_a,vf.dist_a,vf.p1a,vf.p2a,vf.val_b,vf.name_b,vf.val_c,vf.name_c,vf.val_d,
+select vf.valuation_dataset_id, eg.id as endpoint_group_id, e.id as endpoint_id, vf.qualifier, vf.reference, vf.start_age, vf.end_age,vf.function_text,vf.val_a,vf.name_a,vf.dist_a,vf.p1a,vf.p2a,vf.val_b,vf.name_b,vf.val_c,vf.name_c,vf.val_d,
 vf.name_d,vf.epa_standard,vf.access_url,vf.valuation_type,vf.multiyear,vf.multiyear_dr,vf.multiyear_costs,vf.user_id,vf.share_scope,vf.archived
-from data.tmp_table tt 
-cross join data.tmp_dem_vf vf;
+from data.tmp_dem_vf vf
+inner join data.endpoint e on vf.endpoint_name = e.name
+inner join data.endpoint_group eg on vf.endpoint_group_name = eg.name and e.endpoint_group_id = eg.id ;
 
 --# Create incidence INFORMATION
 --# add incidence information for Dementia
