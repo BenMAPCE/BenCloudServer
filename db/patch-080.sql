@@ -1,7 +1,7 @@
-/*
-    BWD-223 - update new dementia health effect display_name
-    BWD-232 - remove Di et al., and Turner et al. PM functions from the “Premature Death – Primary” group
-*/
+
+ --   BWD-223 - update new dementia health effect display_name
+ --   BWD-232 - remove Di et al., and Turner et al. PM functions from the “Premature Death – Primary” group
+
 
 UPDATE data.settings SET value_int=80 WHERE "key"='version';
 
