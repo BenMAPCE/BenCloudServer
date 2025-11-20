@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1214,18 +1215,7 @@ public class AirQualityApi {
 						.collect(Collectors.toSet());
 
 				// Find col/row mismatch
-				List<String> notInAQ = gridColRowSet.stream()
-						.filter(pair -> !aqColRowSet.contains(pair))
-						.sorted()
-						.map(pair -> pair.toString())
-						.collect(Collectors.toList());
-				int countColRowMissingError = notInAQ.size();
-				List<String> notInGrid = aqColRowSet.stream()
-						.filter(pair -> !gridColRowSet.contains(pair))
-						.sorted()
-						.map(pair -> pair.toString())
-						.collect(Collectors.toList());
-				int countColRowExtraError = notInGrid.size();
+				boolean noAqGridMatches = Collections.disjoint(gridColRowSet, aqColRowSet);
 				
 				//summarize validation message
 				if(countColTypeError>0) {
@@ -1340,31 +1330,11 @@ public class AirQualityApi {
 					msg.type = "error";
 					validationMsg.messages.add(msg);
 				}
-				if(countColRowMissingError>0) {
+				if(noAqGridMatches) {
 					fileIsValid = false;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
-					String strRecord = "";
-					if (countColRowMissingError == 1) {
-						strRecord = "The following (Column,Row) pair is";
-					} else {
-						strRecord = "The following " + countColRowMissingError + " (Column,Row) pairs are";
-					}
-					msg.message = strRecord + " in the \"" + gridName + "\" Grid Definition, but not the Air Quality Layer: " + String.join(", ", notInAQ) + ".";
-					msg.type = "error";
-					validationMsg.messages.add(msg);
-				}
-				if(countColRowExtraError>0) {
-					fileIsValid = false;
-					validationMsg.success = false;
-					ValidationMessage.Message msg = new ValidationMessage.Message();
-					String strRecord = "";
-					if (countColRowExtraError == 1) {
-						strRecord = "The following (Column,Row) pair is";
-					} else {
-						strRecord = "The following " + countColRowExtraError + " (Column,Row) pairs are";
-					}
-					msg.message = strRecord + " in the Air Quality Layer, but not the \"" + gridName + "\" Grid Definition: " + String.join(", ", notInGrid) + ".";
+					msg.message = "Air Quality Layer and Grid Definition, \"" + gridName + "\", do not have any matching column/row pairs.";
 					msg.type = "error";
 					validationMsg.messages.add(msg);
 				}
