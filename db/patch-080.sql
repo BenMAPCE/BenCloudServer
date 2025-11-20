@@ -5,7 +5,7 @@
 
 UPDATE data.settings SET value_int=80 WHERE "key"='version';
 
-UPDATE data.endpoint SET display_name = name WHERE name = "Incidence, Dementia";
+UPDATE data.endpoint SET display_name = name WHERE name = 'Incidence, Dementia';
 
 DELETE FROM data.health_impact_function_group_member 
     WHERE health_impact_function_group_id = 5 AND health_impact_function_id IN (
