@@ -84,7 +84,7 @@ select tdh.health_impact_function_dataset_id, eg.id  as endpoint_group_id, e.id 
 	tdh.user_id, tdh.share_scope, tdh.archived, tdh.timing_id, tdh.geographic_area, tdh.geographic_area_feature
 from  data.tmp_dem_hif tdh 
 inner join data.endpoint e on tdh.endpoint_name = e.name
-inner join data.endpoint_group eg on tdh.endpoint_group_name = eg.name and e.endpoint_group_id = eg.id 
+inner join data.endpoint_group eg on tdh.endpoint_group_name = eg.name and e.endpoint_group_id = eg.id ;
 
 --# CREATE VALUATION FUNCTIONS 
 --# Add 3 new valuation functions for Dementia 
