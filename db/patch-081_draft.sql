@@ -15,26 +15,6 @@ where not exists (
 );
 
 
--- insert into data.health_impact_function_group_member("health_impact_function_group_id","health_impact_function_id")
--- select 
---         hifg.id as "health_impact_function_group_id",
---         hif.id as "health_impact_function_id"
--- from 
---    data.health_impact_function_group hifg 
--- cross join
---    data.health_impact_function hif
--- where
---         hifg.name = 'Chronic Effects - Primary' 
--- and 
---         ((hif.pollutant_id = 4 AND 
---          (hif.author ILIKE '%tetreault%' or author ILIKE '%parker%'))
---     or
---         (hif.pollutant_id = 6 AND 
---          (hif.author ILIKE '%wei%' or author ILIKE '%tetreault%' or author ILIKE '%parker%' or author ILIKE '%gharibvand%' or author ILIKE '%ensor%' or author ILIKE '%rosenthal%' or author ILIKE '%silverman%' or author ILIKE '%kloog%' or author ILIKE '%wilker%')
---         ))      
-     
---1047,1048 ,966,888,889,968,969,871,887,976,1045,1046,1050,1051,965,1049,1018,964,963,962
-
 CREATE TABLE "data".tmp_health_impact_function(
     "health_impact_function_id" int4 NULL
 );
@@ -74,3 +54,21 @@ from
          hifg.name = 'Chronic Effects - Primary';
 
 DROP TABLE "data".tmp_health_impact_function;
+
+--Add new Dementia functions. Filter by author name as its id varies across platforms
+ insert into data.health_impact_function_group_member("health_impact_function_group_id","health_impact_function_id")
+ select 
+         hifg.id as "health_impact_function_group_id",
+         hif.id as "health_impact_function_id"
+ from 
+    data.health_impact_function_group hifg 
+ cross join
+    data.health_impact_function hif
+ where
+         hifg.name = 'Chronic Effects - Primary' 
+ and 
+         (
+         (hif.pollutant_id = 6 AND 
+          (author ILIKE '%wilker%')
+         )) 
+ and hif.health_impact_function_dataset_id = 15;
