@@ -504,10 +504,27 @@ public class HIFUtil {
 			boolean useEPADefault = defaultIncidencePrevalenceDataset == -1 ? true : false;
 
 			//get list of EPA datasets for the given population year
-			List<Integer> incidenceOptions = (populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) ? 
-				new ArrayList<Integer>(Arrays.asList(3,6,7,8,9)) : 
-				new ArrayList<Integer>(Arrays.asList(1,2,3,4,5));
+			// List<Integer> incidenceOptions = (populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) ? 
+			// 	new ArrayList<Integer>(Arrays.asList(3,6,7,8,9)) : 
+			// 	new ArrayList<Integer>(Arrays.asList(1,2,3,4,5));
 			
+			List<Integer> incidenceOptions = new ArrayList<Integer>();
+
+			//EPA default incidence datasets
+			if (populationId < 50){
+				//hard-code 2010 incidence IDs used for 2010 population data in case we add them back
+				incidenceOptions.addAll(Arrays.asList(1,2,3,4,5));
+			}else{
+				Result<Record1<Integer>> records =  DSL.using(JooqUtil.getJooqConfiguration()).select(INCIDENCE_DATASET.ID)
+					.from(INCIDENCE_DATASET)
+					.where(INCIDENCE_DATASET.USER_ID.isNull()
+						.or(INCIDENCE_DATASET.USER_ID.eq("")))
+					.fetch();
+				for(Record1<Integer> record : records) {
+					incidenceOptions.add(record.get(INCIDENCE_DATASET.ID));
+				}
+			}
+
 			//if a user-uploaded dataset was selected, add user-uploaded datasets to the list of incidence options
 			if(!useEPADefault) {
 				Result<Record1<Integer>> records =  DSL.using(JooqUtil.getJooqConfiguration()).select(INCIDENCE_DATASET.ID)
