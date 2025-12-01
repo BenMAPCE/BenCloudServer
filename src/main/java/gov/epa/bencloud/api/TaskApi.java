@@ -850,6 +850,11 @@ public class TaskApi {
 						data.put("valuation_grid_id", valuationGridId);
 						data.put("valuation_grid_name", GridDefinitionApi.getGridDefinitionName(valuationGridId));
 
+						Integer limitToGridId = batchParamsNode.get("limitToGridId").asInt();
+						if(limitToGridId != 0) {
+							data.put("limit_to_grid_name", GridDefinitionApi.getGridDefinitionName(limitToGridId));
+						}
+
 						Condition filterCondition = DSL.trueCondition();
 						filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(batchTaskId));
 						Result<Record> result = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC")).select()
