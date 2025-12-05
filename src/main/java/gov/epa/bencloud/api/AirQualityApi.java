@@ -986,7 +986,7 @@ public class AirQualityApi {
 			File csvFile = FilestoreUtil.getFile(filestoreId);
 
 			validationMsg.messages.add(new ValidationMessage.Message("layer",myMap.getKey()));
-			boolean fileIsValid = true;
+			boolean layerHasMessage = false;
 			
 			try (CSVReader csvReader = new CSVReader (new FileReader(csvFile))) {
 				
@@ -1017,7 +1017,7 @@ public class AirQualityApi {
 							columnIdx=i;
 						}
 						else {
-							fileIsValid = false;
+							layerHasMessage = true;
 							validationMsg.success = false;
 							ValidationMessage.Message msg = new ValidationMessage.Message();
 							msg.message = "File has both 'col' and 'column' fields.";
@@ -1030,7 +1030,7 @@ public class AirQualityApi {
 							columnIdx=i;
 						}
 						else {
-							fileIsValid = false;
+							layerHasMessage = true;
 							validationMsg.success = false;
 							ValidationMessage.Message msg = new ValidationMessage.Message();
 							msg.message = "File has both 'col' and 'column' fields";
@@ -1065,7 +1065,7 @@ public class AirQualityApi {
 				if(tmp.length() > 0) {
 					
 					log.debug("AQ dataset posted - columns are missing: " + tmp);
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					msg.message = "The following columns are missing: " + tmp;
@@ -1215,11 +1215,23 @@ public class AirQualityApi {
 						.collect(Collectors.toSet());
 
 				// Find col/row mismatch
+				List<String> notInAQ = gridColRowSet.stream()
+					.filter(pair -> !aqColRowSet.contains(pair))
+					.sorted()
+					.map(pair -> pair.toString())
+					.collect(Collectors.toList());
+				int countColRowMissing = notInAQ.size();
+				List<String> notInGrid = aqColRowSet.stream()
+					.filter(pair -> !gridColRowSet.contains(pair))
+					.sorted()
+					.map(pair -> pair.toString())
+					.collect(Collectors.toList());
+				int countColRowExtra = notInGrid.size();
 				boolean noAqGridMatches = Collections.disjoint(gridColRowSet, aqColRowSet);
 				
 				//summarize validation message
 				if(countColTypeError>0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					String strRecord = "";
@@ -1234,7 +1246,7 @@ public class AirQualityApi {
 					validationMsg.messages.add(msg);
 				}
 				if(countRowTypeError>0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					String strRecord = "";
@@ -1249,7 +1261,7 @@ public class AirQualityApi {
 					validationMsg.messages.add(msg);
 				}
 				if(countValueTypeError > 0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					String strRecord = "";
@@ -1264,7 +1276,7 @@ public class AirQualityApi {
 					validationMsg.messages.add(msg);
 				}
 				if(countValueError > 0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					String strRecord = "";
@@ -1279,7 +1291,7 @@ public class AirQualityApi {
 					validationMsg.messages.add(msg);
 				}
 				if(countMissingMetric>0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					String strRecord = "";
@@ -1294,7 +1306,7 @@ public class AirQualityApi {
 					validationMsg.messages.add(msg);
 				}
 				if(lstUndefinedMetric.size()>0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					msg.message = "The following Metrics are not defined: " + String.join(",", lstUndefinedMetric) + ".";
@@ -1307,7 +1319,7 @@ public class AirQualityApi {
 						String smold = lstUndefinedSeasonalMetric.get(i);					
 						lstUndefinedSeasonalMetric.set(i,smold.substring(smold.lastIndexOf('~') + 1));
 					}
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					msg.message = "The following Seasonal Metrics are not defined: " + String.join(",", lstUndefinedSeasonalMetric)+ ".";
@@ -1315,7 +1327,7 @@ public class AirQualityApi {
 					validationMsg.messages.add(msg);
 				}
 				if(lstUndefinedStatistics.size()>0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					msg.message = "The following Annual Statistics are not valid: " + String.join(",", lstUndefinedStatistics)+ ".";
@@ -1323,15 +1335,43 @@ public class AirQualityApi {
 					validationMsg.messages.add(msg);
 				}
 				if(lstDupMetricCombo.size()>0) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					msg.message = "The following Metric combinations are not unique: " + String.join(",", lstDupMetricCombo)+ ".";
 					msg.type = "error";
 					validationMsg.messages.add(msg);
 				}
+				if(countColRowMissing>0) {
+					layerHasMessage = true;
+					// Don't change validationMsg.success to false as it is just a warning
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "";
+					if (countColRowMissing == 1) {
+						strRecord = "The following (Column,Row) pair is";
+					} else {
+						strRecord = "The following " + countColRowMissing + " (Column,Row) pairs are";
+					}
+					msg.message = strRecord + " in the \"" + gridName + "\" Grid Definition, but not the Air Quality Layer: " + String.join(", ", notInAQ) + ".";
+					msg.type = "warning";
+					validationMsg.messages.add(msg);
+				}
+				if(countColRowExtra>0) {
+					layerHasMessage = true;
+					// Don't change validationMsg.success to false as it is just a warning
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "";
+					if (countColRowExtra == 1) {
+						strRecord = "The following (Column,Row) pair is";
+					} else {
+						strRecord = "The following " + countColRowExtra + " (Column,Row) pairs are";
+					}
+					msg.message = strRecord + " in the Air Quality Layer, but not the \"" + gridName + "\" Grid Definition: " + String.join(", ", notInGrid) + ".";
+					msg.type = "warning";
+					validationMsg.messages.add(msg);
+				}
 				if(noAqGridMatches) {
-					fileIsValid = false;
+					layerHasMessage = true;
 					validationMsg.success = false;
 					ValidationMessage.Message msg = new ValidationMessage.Message();
 					msg.message = "Air Quality Layer and Grid Definition, \"" + gridName + "\", do not have any matching column/row pairs.";
@@ -1344,7 +1384,7 @@ public class AirQualityApi {
 				validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during validation of air quality file."));
 				continue;
 			}
-			if (fileIsValid) {
+			if (!layerHasMessage) {
 				validationMsg.messages.removeIf(m -> m.type.equals("layer") && m.message.equals(myMap.getKey()));
 			}
 		}
@@ -1400,7 +1440,12 @@ public class AirQualityApi {
 		aqImportTask.setUuid(aqImportTaskUUID);
 		TaskQueue.writeTaskToQueue(aqImportTask);
 
-		return CoreApi.getSuccessResponse(request, response, 200, csvFilestoreIds.entrySet().size() + " AQ files saved for processing.");
+		ObjectNode responseNode = (ObjectNode)CoreApi.transformValMsgToJSON(validationMsg); 
+
+		response.type("application/json");
+		response.status(200);
+		responseNode.put("message", csvFilestoreIds.entrySet().size() + " AQ files saved for processing.");
+		return responseNode;
 	}
 	
 	// This version of this method is used when an error occurs during AQ surface upload to clean up
