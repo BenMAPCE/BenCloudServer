@@ -114,6 +114,15 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/air-quality-data", (request, response) -> {
 			return AirQualityApi.getAirQualityLayerDefinitions(request, response, getUserProfile(request, response),"");
 		});
+
+		/*
+		 * GET array of air quality surface group names
+		 * PARAMETERS:
+		 *  pollutantId= (optional)
+		 */
+		service.get(apiPrefix + "/air-quality-group-names", (request, response) -> {
+			return AirQualityApi.getAirQualityGroupNames(request, response, getUserProfile(request, response),"");
+		});
 		
 		/*
 		 * GET array of air quality surface definitions flattened for tabular display
