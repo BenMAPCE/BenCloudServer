@@ -259,6 +259,7 @@ public class AQImportTaskRunnable implements Runnable {
 				.insertInto(
 					AIR_QUALITY_LAYER,
 					AIR_QUALITY_LAYER.NAME,
+					AIR_QUALITY_LAYER.GROUP_NAME,
 					AIR_QUALITY_LAYER.POLLUTANT_ID,
 					AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
 					AIR_QUALITY_LAYER.USER_ID,
@@ -271,6 +272,7 @@ public class AQImportTaskRunnable implements Runnable {
 					AIR_QUALITY_LAYER.UPLOAD_DATE)
 				.values(
 					theFile.layerName,
+					aqImportTaskConfig.groupName,
 					aqImportTaskConfig.pollutantId,
 					aqImportTaskConfig.gridId,
 					aqImportTaskConfig.userId,

@@ -43,6 +43,7 @@ import org.jooq.OrderField;
 import org.jooq.Record1;
 import org.jooq.Record13;
 import org.jooq.Record16;
+import org.jooq.Record17;
 import org.jooq.Record18;
 import org.jooq.Record2;
 import org.jooq.Record21;
@@ -98,6 +99,51 @@ public class AirQualityApi {
 	 * @param request
 	 * @param response
 	 * @param userProfile
+	 * @return a JSON array of the air quality group names.
+	 */
+	public static Object getAirQualityGroupNames(Request request, Response response, Optional<UserProfile> userProfile, String taskUuid) {
+		int pollutantId;
+    
+		try {
+			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+		
+		String userId = userProfile.get().getId();
+
+		Condition filterCondition = AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId));
+
+		if (pollutantId != 0) {
+			filterCondition = filterCondition.and(DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId));
+		}
+
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(taskUuid));
+
+		Result<Record1<String>> aqGroupNames = create.select(
+		AIR_QUALITY_LAYER.GROUP_NAME)
+		.from(AIR_QUALITY_LAYER)
+		.where(filterCondition.and(AIR_QUALITY_LAYER.GROUP_NAME.isNotNull()))
+		.groupBy(AIR_QUALITY_LAYER.GROUP_NAME)
+		.orderBy(AIR_QUALITY_LAYER.GROUP_NAME)
+		.fetch();
+
+
+		//log.debug("Requested all pollutants: " + userProfile.get().getId());
+		response.type("application/json");
+		return aqGroupNames.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.	OBJECT));
+
+  }
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param userProfile
 	 * @return a JSON representation of the air quality layer definitions for the given request.
 	 */
 	public static Object getAirQualityLayerDefinitions(Request request, Response response, Optional<UserProfile> userProfile, String taskUuid) {
@@ -109,6 +155,8 @@ public class AirQualityApi {
 		boolean descending;
 		String filter;
 		boolean showAll;
+		String groupName;
+
 		try {
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
 			page = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("page"), 1);
@@ -122,7 +170,8 @@ public class AirQualityApi {
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
 			showAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("showAll"), false);
-			
+			groupName = ParameterUtil.getParameterValueAsString(request.raw().getParameter("groupName"), "");
+
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -157,23 +206,23 @@ public class AirQualityApi {
 
 		if (!"".equals(filter)) {
 			filterCondition = filterCondition.and(buildAirQualityLayersFilterCondition(filter));
-
 			// System.out.println(filterCondition);
 		}
+
+		if (!"".equals(groupName)) {
+			filterCondition = filterCondition.and(DSL.field(AIR_QUALITY_LAYER.GROUP_NAME).equalIgnoreCase(groupName));
+		}
+
 		// Skip the following for an admin user that wants to see all data
 		if(!showAll || !CoreApi.isAdmin(userProfile)) {
 			filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
 		}
 
-		//System.out.println(orderFields);
-	
-
 		Integer filteredRecordsCount = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
 				.from(AIR_QUALITY_LAYER)
 				.join(POLLUTANT).on(POLLUTANT.ID.eq(AIR_QUALITY_LAYER.POLLUTANT_ID))				
-				.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))
-				
+				.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(AIR_QUALITY_LAYER.GRID_DEFINITION_ID))	
 				.where(filterCondition)
 				.fetchOne(DSL.count());
 		
@@ -201,10 +250,11 @@ public class AirQualityApi {
 				.asTable("metric_statistics");
 
 		@SuppressWarnings("unchecked")
-		@NotNull Result<Record16<Integer, String, String, Short, Integer, Integer, String, String, String, String, String, String, String, String, LocalDateTime,JSON>> aqRecords = 
+		@NotNull Result<Record17<Integer, String, String, String, Short, Integer, Integer, String, String, String, String, String, String, String, String, LocalDateTime, JSON>> aqRecords = 
 			create.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
+						AIR_QUALITY_LAYER.GROUP_NAME,
 						AIR_QUALITY_LAYER.USER_ID,
 						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
@@ -240,6 +290,7 @@ public class AirQualityApi {
 				.where(filterCondition)
 				.groupBy(AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
+						AIR_QUALITY_LAYER.GROUP_NAME,
 						AIR_QUALITY_LAYER.USER_ID,
 						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
@@ -883,7 +934,7 @@ public class AirQualityApi {
 
 		ValidationMessage validationMsg = new ValidationMessage();
 
-		if(groupName.isEmpty() || pollutantId == null || gridId == null) {
+		if(pollutantId == null || gridId == null) {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
@@ -893,11 +944,14 @@ public class AirQualityApi {
 
 		//check file types are csv. Make sure layer names do not already exist in the database
 		String filename = "";
+		int fileCount = 0;
+
 		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
 		try {
 			for(Part part : request.raw().getParts()){
 				//Files parts will be named file0, file1, and so on.
 				if(part.getName().startsWith("file")){
+					fileCount++;
 					//check layer name
 					String layerName = userLayerName;
 					filename = part.getSubmittedFileName();
@@ -929,6 +983,15 @@ public class AirQualityApi {
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred uploading your AQ file(s)."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		} 
+
+		// Final validation that groupName was included if user is uploading multiple files
+		if(groupName.isEmpty() && fileCount > 1) {
+			response.type("application/json");
+			response.status(400);
+			validationMsg.success=false;
+			validationMsg.messages.add(new ValidationMessage.Message("error","Group Name is required when uploading multiple files."));
+			return CoreApi.transformValMsgToJSON(validationMsg);
+		}
 
 		//store files in Filestore		
 		try {
@@ -1188,7 +1251,7 @@ public class AirQualityApi {
 					.fetchOne(DSL.count());
 				Integer aqRecordCount = rowCount;
 				Double lowerThreshold = gridRecordCount * 0.5; // 50% less
-				Double upperThreshold = gridRecordCount * 1.51; // 51% more
+				Double upperThreshold = gridRecordCount * 2.04; // 104% more (to allow 12km full surfaces to be mapped onto the 12km clipped grid)
 				
 				//summarize validation message
 				if(countColTypeError>0) {
