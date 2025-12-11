@@ -66,6 +66,7 @@ import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
 
 import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValidationMessage;
@@ -166,12 +167,13 @@ public class HIFApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), gridId);
-
+		Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(id).limitToGridId;
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
 						id, 
 						hifIds == null ? null : hifIds.toArray(new Integer[0]), 
-						gridId))
+						gridId,
+						limitToGridId))
 				.asTable("hif_result_records");
 
 		try{
@@ -181,7 +183,7 @@ public class HIFApi {
 			Result<Record> hifRecords = create.select(
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 				hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-				ENDPOINT.NAME.as("endpoint"),
+				ENDPOINT.DISPLAY_NAME.as("endpoint"),
 				HEALTH_IMPACT_FUNCTION.AUTHOR,
 				HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 				HEALTH_IMPACT_FUNCTION.LOCATION,
@@ -360,18 +362,19 @@ public class HIFApi {
 			try {
 				//If the crosswalk isn't there, create it now
 				CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
-
+				Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(id).limitToGridId;
 				Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 					GET_HIF_RESULTS(
 							id, 
 							null, 
-							gridIds[i]))
+							gridIds[i],
+							limitToGridId))
 					.asTable("hif_result_records");
 				log.info("Before fetch");
 				Result<Record> hifRecords = create.select(
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 						hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-						ENDPOINT.NAME.as("endpoint"),
+						ENDPOINT.DISPLAY_NAME.as("endpoint"),
 						HEALTH_IMPACT_FUNCTION.AUTHOR,
 						HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 						HEALTH_IMPACT_FUNCTION.LOCATION,
@@ -501,12 +504,13 @@ public class HIFApi {
 		
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), incidenceAggregationGrid);
-
+		Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(id).limitToGridId;
 		Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 				GET_HIF_RESULTS(
 						id, 
 						hifIds, 
-						incidenceAggregationGrid))
+						incidenceAggregationGrid,
+						limitToGridId))
 				.asTable("hif_result_records");
 		
 
@@ -626,7 +630,7 @@ public class HIFApi {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -720,6 +724,61 @@ public class HIFApi {
 		return hifGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
 
+	/**
+	 * Deletes a health impact function group from the database (grid id is a request parameter).
+	 * @param request
+	 * @param response
+	 * @param userProfile
+	 * @return
+	 */
+	public static Object deleteHealthImpactFunctionGroup(Request request, Response response, Optional<UserProfile> userProfile) {
+		Integer id;
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		HealthImpactFunctionGroupRecord hifGroupResult = create.selectFrom(HEALTH_IMPACT_FUNCTION_GROUP).where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(id)).fetchAny();
+		if(hifGroupResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Nobody can delete shared health impact function groups
+		//All users can delete their own health impact function groups
+		//Admins can delete any non-shared health impact function groups
+		if(hifGroupResult.getShareScope() == Constants.SHARING_ALL || !(hifGroupResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		// Finally, delete the health impact function group from the hif group table
+		int numDeletedHifGroups = create.deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+			.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.eq(id))
+			.execute();
+
+		// If no health impact function groups were deleted, return an error
+		if(numDeletedHifGroups == 0) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error deleting health impact function group");
+		}
+
+		// Archive health impact functions in the deleted group
+		create.update(HEALTH_IMPACT_FUNCTION)
+			.set(HEALTH_IMPACT_FUNCTION.ARCHIVED, (short) 1)
+			.where(HEALTH_IMPACT_FUNCTION.ID.in(
+				DSL.select(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID)
+					.from(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_GROUP_ID.eq(id))
+			))
+		.execute();
+		
+		response.status(204);
+		return response;
+
+	}
+		
+
 	/*
 	 * @param userProfile
 	 * @return JSON representation of all hif groups for a given pollutant (pollutant id is a request parameter).
@@ -750,11 +809,12 @@ public class HIFApi {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String hifGroupName;
 		String description;
-
+		boolean newGroup;
 		
 		try{
 			hifGroupName = ApiUtil.getMultipartFormParameterAsString(request, "hifGroupName");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
+			newGroup = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("newGroup"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -830,8 +890,18 @@ public class HIFApi {
 
 		int hifGroupId = 0;
 		Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
+		List<Integer> newHifGroupIds = new ArrayList<Integer>();
 
 		if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
+			if(newGroup) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "A Health Impact Function Group called '" + hifGroupName + "' already exists. "
+					+ "Please enter a different name, or select the 'Append to an existing health impact function group' option.";
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 			hifGroupId = hifGroupNameMap.get(hifGroupName.toLowerCase());
 		} else {
 
@@ -847,11 +917,14 @@ public class HIFApi {
 				.fetchOne();
 
 			hifGroupId = hifGroupRecord.value1();
+			newHifGroupIds.add(hifGroupId);
 		}
+
+		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
+		List<Integer> newHealthEffects = new ArrayList<Integer>();
 		
-		//remove built in tokens (e, pi, sin, etc.)
+		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
-		//not working as expected, need to find a different way to validate functions
 		mXparser.removeBuiltinTokens("e");
 		mXparser.removeBuiltinTokens("Beta");
 
@@ -974,7 +1047,7 @@ public class HIFApi {
 					accessUrlIdx=i;
 					break;			
 				default:
-					System.out.println(record[i].toLowerCase().replace(" ", ""));
+					// System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
 
@@ -984,6 +1057,9 @@ public class HIFApi {
 				log.debug("end age index is :" + endAgeIdx);
 
 				log.debug("health impact function dataset posted - columns are missing: " + tmp);
+				DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following columns are missing: " + tmp;
@@ -1028,6 +1104,7 @@ public class HIFApi {
 			int countParamCError = 0;
 
 			int countBaselineFunctionError = 0;
+			int countFunctionParamError = 0;
 			int countFunctionError = 0;
 
 			List<String> lstUndefinedPollutants = new ArrayList<String>();
@@ -1039,7 +1116,7 @@ public class HIFApi {
 
 			List<String> lstDupMetricCombo = new ArrayList<String>();
 			
-			Map<String, Integer> dicUniqueRecord = new HashMap<String,Integer>();	
+			Map<String, Integer> dicUniqueRecord = new HashMap<String,Integer>();
 
 			List<String> distTypes = new ArrayList<String>();
 			distTypes.add("None");
@@ -1050,6 +1127,18 @@ public class HIFApi {
 			distTypes.add("Custom");
 			distTypes.add("Uniform");
 			distTypes.add("Gamma");
+
+			List<String> functionParameters = new ArrayList<String>();
+			functionParameters.add("a");
+			functionParameters.add("b");
+			functionParameters.add("c");
+			functionParameters.add("beta");
+			functionParameters.add("q0");
+			functionParameters.add("q1");
+			functionParameters.add("deltaq");
+			functionParameters.add("incidence");
+			functionParameters.add("prevalence");
+			functionParameters.add("population");
 
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
@@ -1111,13 +1200,15 @@ public class HIFApi {
 									, ENDPOINT_GROUP.USER_ID
 									, ENDPOINT_GROUP.SHARE_SCOPE
 									)
-							.values(healthEffectCategoryName, userId, Constants.SHARING_NONE)
+							.values(record[endpointGroupIdx].strip(), userId, Constants.SHARING_NONE)
 							.returning(ENDPOINT_GROUP.ID)
 							.fetchOne();
 
 						heGroupId = heGroupRecord.value1();
 
 						healthEffectCategoryIdLookup.put(healthEffectCategoryName, heGroupId);
+
+						newHealthEffectGroups.add(heGroupId);
 					}
 
 					endpointIdLookup = HIFUtil.getEndpointIdLookup((short) heGroupId);
@@ -1132,13 +1223,16 @@ public class HIFApi {
 							EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
 									.insertInto(ENDPOINT
 											, ENDPOINT.NAME
+											, ENDPOINT.DISPLAY_NAME
 											, ENDPOINT.ENDPOINT_GROUP_ID
 											)
-									.values(record[endpointIdx].strip(), (short) heGroupId)
+									.values(record[endpointIdx].strip(), record[endpointIdx].strip(), (short) heGroupId)
 									.returning(ENDPOINT.ID)
 									.fetchOne();
 
 							heId = heRecord.value1();
+
+							newHealthEffects.add(heId);
 						}
 					}
 
@@ -1273,6 +1367,7 @@ public class HIFApi {
 
 				// baselinefunction should be a valid formula
 				str = record[baselineFunctionIdx].strip().toLowerCase();
+				str = str.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 				Expression e = new Expression(str);
 				
 				String[] missingVars = e.getMissingUserDefinedArguments();
@@ -1287,11 +1382,15 @@ public class HIFApi {
 
 				//function should be a valid formula
 				str = record[functionIdx].strip().toLowerCase();
+				str = str.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 				e = new Expression(str);
 
 				missingVars = e.getMissingUserDefinedArguments();
 
 				for (String varName : missingVars) {
+					if(!functionParameters.contains(varName)) {
+						countFunctionParamError ++;
+					}
 					e.addArguments(new Argument(varName + " = 1"));
 				}
 
@@ -1690,6 +1789,21 @@ public class HIFApi {
 				validationMsg.messages.add(msg);
 			}
 
+			if(countFunctionParamError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countFunctionParamError == 1) {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameter detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				else {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameters detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
 			if(countFunctionError > 0) {
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
@@ -1709,6 +1823,15 @@ public class HIFApi {
 			
 		} catch (Exception e) {
 			log.error("Error validating health impact function upload", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1718,6 +1841,15 @@ public class HIFApi {
 
 		if(validationMsg.messages.size() > 0) {
 			log.error("Error validating health impact function upload");
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1854,6 +1986,14 @@ public class HIFApi {
 					endDay = Short.valueOf(record[endDayIdx]);
 				}
 
+				String functionText = record[functionIdx].strip();
+				// Normalize known expressions
+				functionText = functionText.replaceAll("(?i)\\bEXP\\s*\\(", "exp(");
+				functionText = functionText.replaceAll("(?i)\\bMIN\\s*\\(", "min(");
+				functionText = functionText.replaceAll("(?i)\\bMAX\\s*\\(", "max(");
+				functionText = functionText.replaceAll("(?i)\\bLOG10\\s*\\(", "log10(");
+				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
+
 				//Create the hif record
 				hifRecord = DSL.using(JooqUtil.getJooqConfiguration())
 				.insertInto(HEALTH_IMPACT_FUNCTION
@@ -1898,7 +2038,7 @@ public class HIFApi {
 						)
 				.values(1, endpointGroupId, endpointId, pollutantId, metricId, timingId, record[authorIdx], functionYear, 
 				record[studyLocIdx], record[otherPollutantIdx], record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx].strip(), beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				functionText, beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
 				startDay, endDay, geogArea, geogAreaFeature, (heroId != -1 ? heroId : null), heroUrl, accessUrl, 
 				userId, Constants.SHARING_NONE)
@@ -1919,6 +2059,15 @@ public class HIFApi {
 		
 		} catch (Exception e) {
 			log.error("Error importing health impact functions", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(HEALTH_IMPACT_FUNCTION_GROUP)
+					.where(HEALTH_IMPACT_FUNCTION_GROUP.ID.in(newHifGroupIds))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of health impact functions."));
@@ -2015,7 +2164,7 @@ public class HIFApi {
 						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
 						, HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -2124,6 +2273,11 @@ public class HIFApi {
 		hifTaskConfig.popYear = hifTaskConfigRecord.getPopulationYear();
 		hifTaskConfig.aqBaselineId = hifTaskConfigRecord.getBaselineAqLayerId();
 		hifTaskConfig.aqScenarioId = hifTaskConfigRecord.getScenarioAqLayerId();
+
+		BatchTaskConfig batchTaskConfig = TaskApi.getTaskBatchConfigFromDbByResultID(hifResultDatasetId,"hif");
+
+		hifTaskConfig.limitToGridId = batchTaskConfig.limitToGridId;
+		
 		//TODO: Add code to load the hif details
 		
 		return hifTaskConfig;
@@ -2169,7 +2323,7 @@ public class HIFApi {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -2181,7 +2335,7 @@ public class HIFApi {
 				.join(GENDER).on(HEALTH_IMPACT_FUNCTION.GENDER_ID.eq(GENDER.ID))
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.where(HEALTH_IMPACT_FUNCTION.ID.eq(id))
-				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
+				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
 				.fetch();
 		
 		if(hifRecords.isEmpty()) {
@@ -2242,13 +2396,14 @@ public class HIFApi {
 		
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(hifResultDatasetId), incidenceAggregationGrid);
-
+		Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).limitToGridId;
 		Record1<Integer> hifResultCount = create
 				.select(DSL.count())
 				.from(GET_HIF_RESULTS(
 						hifResultDatasetId, 
 						hifIdList.toArray(new Integer[0]), 
-						incidenceAggregationGrid))
+						incidenceAggregationGrid,
+						limitToGridId))
 				.fetchOne();
 		
 		if(hifResultCount == null) {
@@ -2297,7 +2452,7 @@ public class HIFApi {
 		Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -2310,7 +2465,7 @@ public class HIFApi {
 				.join(ETHNICITY).on(HEALTH_IMPACT_FUNCTION.ETHNICITY_ID.eq(ETHNICITY.ID))
 				.join(HIF_RESULT_FUNCTION_CONFIG).on(HIF_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HEALTH_IMPACT_FUNCTION.ID))
 				.where(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(Integer.valueOf(id)))
-				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
+				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, HEALTH_IMPACT_FUNCTION.AUTHOR)
 				.fetch();
 		
 		if(hifRecords.isEmpty()) {
@@ -2371,7 +2526,7 @@ public class HIFApi {
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 
-				searchCondition.or(ENDPOINT.NAME
+				searchCondition.or(ENDPOINT.DISPLAY_NAME
 						.containsIgnoreCase(filterValue));
 		
 		searchCondition = 

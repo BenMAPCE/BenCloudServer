@@ -570,7 +570,7 @@ public class IncidenceApi {
 				.select(
 						INCIDENCE_VALUE.GRID_COL.as("Column"),
 						INCIDENCE_VALUE.GRID_ROW.as("Row"),
-						ENDPOINT.NAME.as("Health Effect"),
+						ENDPOINT.DISPLAY_NAME.as("Health Effect"),
 						ENDPOINT_GROUP.NAME.as("Health Effect Group"),
 						RACE.NAME.as("Race"),
 						GENDER.NAME.as("Gender"),
@@ -1565,7 +1565,7 @@ public class IncidenceApi {
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 
-				searchCondition.or(ENDPOINT.NAME
+				searchCondition.or(ENDPOINT.DISPLAY_NAME
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 

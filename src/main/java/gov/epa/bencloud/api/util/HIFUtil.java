@@ -335,7 +335,7 @@ public class HIFUtil {
 		Record record = create
 				.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						,ENDPOINT.NAME.as("endpoint_name")
+						,ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						,POLLUTANT.NAME.as("pollutant_name")
 						,POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
 						,POLLUTANT_METRIC.NAME.as("metric_name")
@@ -504,10 +504,27 @@ public class HIFUtil {
 			boolean useEPADefault = defaultIncidencePrevalenceDataset == -1 ? true : false;
 
 			//get list of EPA datasets for the given population year
-			List<Integer> incidenceOptions = (populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) ? 
-				new ArrayList<Integer>(Arrays.asList(3,6,7,8,9)) : 
-				new ArrayList<Integer>(Arrays.asList(1,2,3,4,5));
+			// List<Integer> incidenceOptions = (populationId == 50 || populationId == 51 || populationId == 52 || populationId == 53) ? 
+			// 	new ArrayList<Integer>(Arrays.asList(3,6,7,8,9)) : 
+			// 	new ArrayList<Integer>(Arrays.asList(1,2,3,4,5));
 			
+			List<Integer> incidenceOptions = new ArrayList<Integer>();
+
+			//EPA default incidence datasets
+			if (populationId < 50){
+				//hard-code 2010 incidence IDs used for 2010 population data in case we add them back
+				incidenceOptions.addAll(Arrays.asList(1,2,3,4,5));
+			}else{
+				Result<Record1<Integer>> records =  DSL.using(JooqUtil.getJooqConfiguration()).select(INCIDENCE_DATASET.ID)
+					.from(INCIDENCE_DATASET)
+					.where(INCIDENCE_DATASET.USER_ID.isNull()
+						.or(INCIDENCE_DATASET.USER_ID.eq("")))
+					.fetch();
+				for(Record1<Integer> record : records) {
+					incidenceOptions.add(record.get(INCIDENCE_DATASET.ID));
+				}
+			}
+
 			//if a user-uploaded dataset was selected, add user-uploaded datasets to the list of incidence options
 			if(!useEPADefault) {
 				Result<Record1<Integer>> records =  DSL.using(JooqUtil.getJooqConfiguration()).select(INCIDENCE_DATASET.ID)
@@ -1312,7 +1329,7 @@ public class HIFUtil {
 		Record record = create
 						.select(HEALTH_IMPACT_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						,ENDPOINT.NAME.as("endpoint_name")
+						,ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						,POLLUTANT.NAME.as("pollutant_name")
 						,POLLUTANT.FRIENDLY_NAME.as("pollutant_friendly_name")
 						,POLLUTANT_METRIC.NAME.as("metric_name")
@@ -1393,10 +1410,10 @@ public class HIFUtil {
      */
     public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
         Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
+            .select(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID)
             .from(ENDPOINT)
             .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
-            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
+            .fetchMap(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID);
         return endpointMap;}    
     
     

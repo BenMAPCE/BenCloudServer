@@ -295,6 +295,7 @@ public class TaskApi {
 		int defaultIncidencePrevalenceDataset;
 		int gridDefinitionId;
 		int pollutantId;
+		int limitToGridId;
 		int populationId;
 		int baselineId;
 		String scenariosParam;
@@ -324,6 +325,7 @@ public class TaskApi {
 			defaultIncidencePrevalenceDataset = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("incidencePrevalenceDataset"), 0);
 			valuationSelection = ParameterUtil.getParameterValueAsString(request.raw().getParameter("valuationSelection"), "");
 			pollutantId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("pollutantId"), 0);
+			limitToGridId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("limitToGridId"), 0);
 			baselineId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("baselineId"), 0);
 			populationId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("populationId"), 0);
 			gridDefinitionId = ParameterUtil.getParameterValueAsInteger(request.raw().getParameter("gridDefinitionId"), AirQualityApi.getAirQualityLayerGridId(baselineId));
@@ -398,7 +400,7 @@ public class TaskApi {
 						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
 						, HEALTH_IMPACT_FUNCTION.asterisk()
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						, RACE.NAME.as("race_name")
 						, GENDER.NAME.as("gender_name")
 						, ETHNICITY.NAME.as("ethnicity_name")
@@ -539,6 +541,7 @@ public class TaskApi {
 
 		b.gridDefinitionId = gridDefinitionId;
 		b.pollutantId = pollutantId;
+		b.limitToGridId = limitToGridId;
 		b.pollutantName = PollutantApi.getPollutantName(pollutantId);
 		b.popId = populationId;
 		b.aqBaselineId = baselineId;
@@ -846,6 +849,11 @@ public class TaskApi {
 						int valuationGridId = batchParamsNode.get("gridDefinitionId").asInt();
 						data.put("valuation_grid_id", valuationGridId);
 						data.put("valuation_grid_name", GridDefinitionApi.getGridDefinitionName(valuationGridId));
+
+						Integer limitToGridId = batchParamsNode.get("limitToGridId").asInt();
+						if(limitToGridId != 0) {
+							data.put("limit_to_grid_name", GridDefinitionApi.getGridDefinitionName(limitToGridId));
+						}
 
 						Condition filterCondition = DSL.trueCondition();
 						filterCondition = filterCondition.and(TASK_COMPLETE.TASK_BATCH_ID.equal(batchTaskId));
@@ -1436,16 +1444,18 @@ public class TaskApi {
 					//If the crosswalk isn't there, create it now
 					CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 					try {
+						Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).limitToGridId;
 						Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
 							GET_HIF_RESULTS(
 									hifResultDatasetId, 
 									null, 
-									gridIds[i]))
+									gridIds[i],
+									limitToGridId))
 							.asTable("hif_result_records");
 						Result<Record> hifRecords = create.select(
 								hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 								hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-								ENDPOINT.NAME.as("endpoint"),
+								ENDPOINT.DISPLAY_NAME.as("endpoint"),
 								HEALTH_IMPACT_FUNCTION.AUTHOR,
 								HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 								HEALTH_IMPACT_FUNCTION.LOCATION,
@@ -1577,12 +1587,14 @@ public class TaskApi {
 					//If the crosswalk isn't there, create it now
 					CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i]);
 					try {
+						Integer limitToGridId = ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).limitToGridId;
 						Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 								GET_VALUATION_RESULTS(
 									valuationResultDatasetId, 
 									null, 
 									null,
-									gridIds[i]))
+									gridIds[i],
+									limitToGridId))
 							.asTable("valuation_result_records");
 						Result<Record> vfRecords;
 						vfRecords = create.select(
@@ -1737,6 +1749,66 @@ public class TaskApi {
 		return batchTaskConfig;
 	}
 
+	/**
+	 * 
+	 * @param resultDataSetId
+	 * @param resultType
+	 * @return a batch task configuration from a given task batch id.
+	 */
+	public static BatchTaskConfig getTaskBatchConfigFromDbByResultID(Integer resultDatasetId, String resultType) {
+
+		BatchTaskConfig batchTaskConfig = new BatchTaskConfig();		
+
+		TaskBatchRecord batchTaskRecord = null;
+		
+		if(resultType.toLowerCase()=="hif"){
+			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
+			.selectFrom(TASK_BATCH)
+			.where(TASK_BATCH.ID.in(
+				DSL.select(TASK_COMPLETE.TASK_BATCH_ID)
+					.from(TASK_COMPLETE)
+					.innerJoin(HIF_RESULT_DATASET)
+						.on(TASK_COMPLETE.TASK_UUID.eq(HIF_RESULT_DATASET.TASK_UUID))
+					.where(HIF_RESULT_DATASET.ID.eq(resultDatasetId))
+			))
+			.fetchOne();
+		}
+		else if (resultType.toLowerCase()=="valuation"){
+			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
+			.selectFrom(TASK_BATCH)
+			.where(TASK_BATCH.ID.in(
+				DSL.select(TASK_COMPLETE.TASK_BATCH_ID)
+					.from(TASK_COMPLETE)
+					.innerJoin(VALUATION_RESULT_DATASET)
+						.on(TASK_COMPLETE.TASK_UUID.eq(VALUATION_RESULT_DATASET.TASK_UUID))
+					.where(VALUATION_RESULT_DATASET.ID.eq(resultDatasetId))
+			))
+			.fetchOne();
+		}
+		else if (resultType.toLowerCase()=="exposure"){
+			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
+			.selectFrom(TASK_BATCH)
+			.where(TASK_BATCH.ID.in(
+				DSL.select(TASK_COMPLETE.TASK_BATCH_ID)
+					.from(TASK_COMPLETE)
+					.innerJoin(EXPOSURE_RESULT_DATASET)
+						.on(TASK_COMPLETE.TASK_UUID.eq(EXPOSURE_RESULT_DATASET.TASK_UUID))
+					.where(EXPOSURE_RESULT_DATASET.ID.eq(resultDatasetId))
+			))
+			.fetchOne();
+		}		
+		else{
+			batchTaskRecord = new TaskBatchRecord();
+		}
+			
+		try {
+			batchTaskConfig = objectMapper.readValue(batchTaskRecord.getParameters(), BatchTaskConfig.class);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return batchTaskConfig;
+	}
 
 		public static Object postResultExportTask(Request request, Response response, Optional<UserProfile> userProfile) {
 	//		 PARAMETERS:

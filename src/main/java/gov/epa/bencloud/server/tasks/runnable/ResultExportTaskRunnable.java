@@ -1,4 +1,4 @@
-package gov.epa.bencloud.server.tasks.local;
+package gov.epa.bencloud.server.tasks.runnable;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ENDPOINT;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.ETHNICITY;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jooq.DSLContext;
 import org.jooq.Record;
-import org.jooq.Record19;
+import org.jooq.Record16;
 import org.jooq.Record3;
 import org.jooq.Result;
 import org.jooq.Table;
@@ -216,7 +216,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				List<Integer> exposureResultDatasetIds;
 				if(uuidType.equals("E")) {
 					//export current scenario
-					exposureResultDatasetIds = create.select()
+					exposureResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(taskUuid)).select()
 							.from(EXPOSURE_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.where(TASK_COMPLETE.TASK_UUID.eq(taskUuid))
@@ -260,7 +260,7 @@ public class ResultExportTaskRunnable implements Runnable {
 										gridIds[i]))
 								.asTable("ef_result_records");
 							
-							Result<Record19<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double, Double, String, String>> efRecords = create.select(
+							Result<Record16<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> efRecords = create.select(
 									efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 									efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 									EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
@@ -275,13 +275,10 @@ public class ResultExportTaskRunnable implements Runnable {
 									efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
 									DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
 									.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-									efResultRecords.field(GET_EXPOSURE_RESULTS.RESULT),
 									efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
 									efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
 									DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
-									.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population"),
-									DSL.val(null, String.class).as("formatted_results_2sf"),
-									DSL.val(null, String.class).as("formatted_results_3sf")
+									.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population")
 									)
 									.from(efResultRecords)
 									.leftJoin(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
@@ -294,13 +291,6 @@ public class ResultExportTaskRunnable implements Runnable {
 									.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
 	                                .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
 									.fetch();
-
-							for (Record res : efRecords) {
-								res.setValue(DSL.field("formatted_results_2sf", String.class), 
-												ApiUtil.getValueSigFigs(res.get("result", Double.class), 2));
-								res.setValue(DSL.field("formatted_results_3sf", String.class), 
-												ApiUtil.getValueSigFigs(res.get("result", Double.class), 3));
-							}
 							
 							efRecordsClean = efRecords;
 						} catch(DataAccessException e) {
@@ -363,14 +353,14 @@ public class ResultExportTaskRunnable implements Runnable {
 				List<Integer> hifResultDatasetIds;
 				if(uuidType.equals("H")) {
 					//export all hif results from the same senario as taskUuid.
-					hifResultDatasetIds = create.select()
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.and(HIF_RESULT_DATASET.TASK_UUID.eq(taskUuid))
 							.fetch(HIF_RESULT_DATASET.ID);
 				}
 				else if(uuidType.equals("V")) {
-					hifResultDatasetIds = create.select()
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.join(VALUATION_RESULT_DATASET).on(HIF_RESULT_DATASET.ID.eq(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID))
@@ -378,7 +368,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							.fetch(HIF_RESULT_DATASET.ID);
 				}
 				else {
-					hifResultDatasetIds = create.select()
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
@@ -399,7 +389,7 @@ public class ResultExportTaskRunnable implements Runnable {
 						//If the crosswalk isn't there, create it now
 						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
 							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
-							List<String> gridDefinitionNames = create
+							List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()))
 									.select(GRID_DEFINITION.NAME)
 									.from(GRID_DEFINITION)
 									.where(GRID_DEFINITION.ID.in(gridDefinitionIds))
@@ -411,16 +401,21 @@ public class ResultExportTaskRunnable implements Runnable {
 							return;
 						}
 						try {
-							Table<GetHifResultsRecord> hifResultRecords = create.selectFrom(
+							Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).limitToGridId;
+							//log.info("LimitToGridId = " + limitToGridId);
+							Table<GetHifResultsRecord> hifResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 								GET_HIF_RESULTS(
 										hifResultDatasetId, 
 										null, 
-										gridIds[i]))
-								.asTable("hif_result_records");
-							Result<Record> hifRecords = create.select(
+										gridIds[i],
+										limitToGridId)
+										)
+								.asTable("hif_result_records");			
+
+							Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-									ENDPOINT.NAME.as("health_effect"),
+									ENDPOINT.DISPLAY_NAME.as("health_effect"),
 									HEALTH_IMPACT_FUNCTION.AUTHOR,
 									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
 									HEALTH_IMPACT_FUNCTION.LOCATION,
@@ -525,7 +520,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				List<Integer> valuationResultDatasetIds;
 				if(uuidType.equals("H")) {
 					//export all val results from the same scenario as hif taskUuid.
-					valuationResultDatasetIds = create.select()
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
@@ -533,14 +528,14 @@ public class ResultExportTaskRunnable implements Runnable {
 							.fetch(VALUATION_RESULT_DATASET.ID);
 				}
 				else if(uuidType.equals("V")) {
-					valuationResultDatasetIds = create.select()
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.and(VALUATION_RESULT_DATASET.TASK_UUID.eq(taskUuid))
 							.fetch(VALUATION_RESULT_DATASET.ID);
 				}
 				else {
-					valuationResultDatasetIds = create.select()
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
@@ -560,7 +555,7 @@ public class ResultExportTaskRunnable implements Runnable {
 						//If the crosswalk isn't there, create it now
 						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
 							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
-							List<String> gridDefinitionNames = create
+							List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()))
 									.select(GRID_DEFINITION.NAME)
 									.from(GRID_DEFINITION)
 									.where(GRID_DEFINITION.ID.in(gridDefinitionIds))
@@ -572,15 +567,17 @@ public class ResultExportTaskRunnable implements Runnable {
 							return;
 						}
 						try {
-							Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
+							Integer limitToGridId = ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).limitToGridId;
+							Table<GetValuationResultsRecord> vfResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 									GET_VALUATION_RESULTS(
 										valuationResultDatasetId, 
 										null, 
 										null,
-										gridIds[i]))
+										gridIds[i],
+										limitToGridId))
 								.asTable("valuation_result_records");
 							Result<Record> vfRecords;
-							vfRecords = create.select(
+							vfRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
 									DSL.val(null, String.class).as("health_effect"),

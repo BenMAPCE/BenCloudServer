@@ -24,6 +24,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.File;
 import gov.epa.bencloud.server.database.jooq.data.tables.Gender;
+import gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence;
@@ -185,6 +186,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunction
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableValue;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetClipCrosswalkRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
@@ -312,6 +314,51 @@ public class Data extends SchemaImpl {
     public final Gender GENDER = Gender.GENDER;
 
     /**
+     * The table <code>data.get_clip_crosswalk</code>.
+     */
+    public final GetClipCrosswalk GET_CLIP_CROSSWALK = GetClipCrosswalk.GET_CLIP_CROSSWALK;
+
+    /**
+     * Call <code>data.get_clip_crosswalk</code>.
+     */
+    public static Result<GetClipCrosswalkRecord> GET_CLIP_CROSSWALK(
+          Configuration configuration
+        , String _ResultGridTable
+        , String _LimitGridTable
+    ) {
+        return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+              _ResultGridTable
+            , _LimitGridTable
+        )).fetch();
+    }
+
+    /**
+     * Get <code>data.get_clip_crosswalk</code> as a table.
+     */
+    public static GetClipCrosswalk GET_CLIP_CROSSWALK(
+          String _ResultGridTable
+        , String _LimitGridTable
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+            _ResultGridTable,
+            _LimitGridTable
+        );
+    }
+
+    /**
+     * Get <code>data.get_clip_crosswalk</code> as a table.
+     */
+    public static GetClipCrosswalk GET_CLIP_CROSSWALK(
+          Field<String> _ResultGridTable
+        , Field<String> _LimitGridTable
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+            _ResultGridTable,
+            _LimitGridTable
+        );
+    }
+
+    /**
      * The table <code>data.get_exposure_results</code>.
      */
     public final GetExposureResults GET_EXPOSURE_RESULTS = GetExposureResults.GET_EXPOSURE_RESULTS;
@@ -375,11 +422,13 @@ public class Data extends SchemaImpl {
         , Integer _DatasetId
         , Integer[] _HifId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
               _DatasetId
             , _HifId
             , _OutputGridDefinitionId
+            , _LimitToGridId
         )).fetch();
     }
 
@@ -390,11 +439,13 @@ public class Data extends SchemaImpl {
           Integer _DatasetId
         , Integer[] _HifId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
             _DatasetId,
             _HifId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -405,11 +456,13 @@ public class Data extends SchemaImpl {
           Field<Integer> _DatasetId
         , Field<Integer[]> _HifId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
             _DatasetId,
             _HifId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -637,12 +690,14 @@ public class Data extends SchemaImpl {
         , Integer[] _HifId
         , Integer[] _VfId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
               _DatasetId
             , _HifId
             , _VfId
             , _OutputGridDefinitionId
+            , _LimitToGridId
         )).fetch();
     }
 
@@ -654,12 +709,14 @@ public class Data extends SchemaImpl {
         , Integer[] _HifId
         , Integer[] _VfId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
             _DatasetId,
             _HifId,
             _VfId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -671,12 +728,14 @@ public class Data extends SchemaImpl {
         , Field<Integer[]> _HifId
         , Field<Integer[]> _VfId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
             _DatasetId,
             _HifId,
             _VfId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -1541,6 +1600,7 @@ public class Data extends SchemaImpl {
             ExposureResultFunctionConfig.EXPOSURE_RESULT_FUNCTION_CONFIG,
             File.FILE,
             Gender.GENDER,
+            GetClipCrosswalk.GET_CLIP_CROSSWALK,
             GetExposureResults.GET_EXPOSURE_RESULTS,
             GetHifResults.GET_HIF_RESULTS,
             GetIncidence.GET_INCIDENCE,

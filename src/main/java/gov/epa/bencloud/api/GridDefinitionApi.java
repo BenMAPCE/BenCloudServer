@@ -546,7 +546,9 @@ public class GridDefinitionApi {
 		try {
 			create.dropTable(gridDefinitionResult.getTableName()).execute();
 		} catch (DataAccessException e) {
-			return CoreApi.getErrorResponse(request, response, 400, "Error dropping table");
+			//return CoreApi.getErrorResponse(request, response, 400, "Error dropping table");
+			// Do not return here. If something went wrong and the grid table was lost, the user needs some way to remove the reference records.
+			log.warn("Error dropping grid table", e);
 		}
 
 		// Finally, delete the grid definition from the grid definition table

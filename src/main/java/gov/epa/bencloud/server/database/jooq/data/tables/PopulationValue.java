@@ -5,11 +5,16 @@ package gov.epa.bencloud.server.database.jooq.data.tables;
 
 
 import gov.epa.bencloud.server.database.jooq.data.Data;
+import gov.epa.bencloud.server.database.jooq.data.Indexes;
 import gov.epa.bencloud.server.database.jooq.data.Keys;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.PopulationValueRecord;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row3;
@@ -95,6 +100,11 @@ public class PopulationValue extends TableImpl<PopulationValueRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Data.DATA;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_PV_GRID_ENTRY, Indexes.POPULATION_VALUE_POP_VALUE);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package gov.epa.bencloud.server.tasks.local;
+package gov.epa.bencloud.server.tasks.runnable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -84,8 +84,8 @@ public class ExposureTaskRunnable implements Runnable {
 			
 			//TODO: This will need to change as we start supporting more metrics within a single AQ layer.
 			// Right now, it's assuming one record per cell only. In the future, this should be a map keyed on metric for each cell.
-			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(exposureTaskConfig.aqBaselineId);
-			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(exposureTaskConfig.aqScenarioId);
+			Map<Long, AirQualityCell> baseline = AirQualityApi.getAirQualityLayerMap(exposureTaskConfig.aqBaselineId, taskUuid);
+			Map<Long, AirQualityCell> scenario = AirQualityApi.getAirQualityLayerMap(exposureTaskConfig.aqScenarioId, taskUuid);
 			
 			ArrayList<EFunction> exposureFunctionList = new ArrayList<EFunction>();
 			ArrayList<EFunction> complementFunctionList = new ArrayList<EFunction>();

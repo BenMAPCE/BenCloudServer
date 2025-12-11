@@ -62,8 +62,10 @@ import com.opencsv.CSVReader;
 import org.mariuszgromada.math.mxparser.Argument;
 import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
+import org.mariuszgromada.math.mxparser.Constant;
 
 import gov.epa.bencloud.Constants;
+import gov.epa.bencloud.api.model.BatchTaskConfig;
 import gov.epa.bencloud.api.model.HIFTaskLog;
 import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.model.ValuationConfig;
@@ -169,13 +171,14 @@ public class ValuationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(ValuationApi.getBaselineGridForValuationResults(id), gridId);
-
+		Integer limitToGridId = ValuationApi.getValuationTaskConfigFromDb(id).limitToGridId;
 		Table<GetValuationResultsRecord> vfResultRecords = create.selectFrom(
 				GET_VALUATION_RESULTS(
 						id, 
 						hifIds == null ? null : hifIds.toArray(new Integer[0]),
 						vfIds == null ? null : vfIds.toArray(new Integer[0]),
-								gridId))
+								gridId,
+						limitToGridId))
 				.asTable("vf_result_records");
 		
 		Result<?> vfRecordsClean = null;
@@ -384,7 +387,7 @@ public class ValuationApi {
 				vfRecords = create.select(
 						vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 						vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-						ENDPOINT.NAME.as("endpoint"),
+						ENDPOINT.DISPLAY_NAME.as("endpoint"),
 						VALUATION_FUNCTION.QUALIFIER.as("name"),
 						HEALTH_IMPACT_FUNCTION.AUTHOR,
 						HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
@@ -515,6 +518,9 @@ public class ValuationApi {
 		
 		valuationTaskConfig.name = valuationTaskConfigRecord.getName();
 		//TODO: Add code to load the other details
+		BatchTaskConfig batchTaskConfig = TaskApi.getTaskBatchConfigFromDbByResultID(valuationResultDatasetId,"valuation");
+
+		valuationTaskConfig.limitToGridId = batchTaskConfig.limitToGridId;
 		
 		return valuationTaskConfig;
 	}
@@ -552,13 +558,13 @@ public class ValuationApi {
 			valuationRecords = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(VALUATION_FUNCTION.asterisk()
 							, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-							, ENDPOINT.NAME.as("endpoint_name")
+							, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 							)
 					.from(VALUATION_FUNCTION)
 					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
 					.join(ENDPOINT).on(VALUATION_FUNCTION.ENDPOINT_ID.eq(ENDPOINT.ID))
 					.where(VALUATION_FUNCTION.ARCHIVED.eq((short) 0))
-					.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.QUALIFIER)
+					.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, VALUATION_FUNCTION.QUALIFIER)
 					.fetch();
 		} catch (DataAccessException e) {
 			log.error("Error getAllValuationFunctions", e);
@@ -643,7 +649,7 @@ public class ValuationApi {
 			valuationRecords = DSL.using(JooqUtil.getJooqConfiguration())
 					.select(VALUATION_FUNCTION.asterisk()
 							, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-							, ENDPOINT.NAME.as("endpoint_name")
+							, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 							)
 					.from(VALUATION_FUNCTION)
 					.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
@@ -651,6 +657,7 @@ public class ValuationApi {
 					.where(filterCondition)
 					.orderBy(orderFields)
 					.offset((page * rowsPerPage) - rowsPerPage)
+					.limit(rowsPerPage)
 					.fetch();
 		} catch (DataAccessException e) {
 			log.error("Error getAllValuationFunctions", e);
@@ -702,15 +709,13 @@ public class ValuationApi {
 	public static Object postValuationFunctionData(Request request, Response response, Optional<UserProfile> userProfile) {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 		String healthEffectGroupName;
+		boolean newCategory;
 		String description;
-		String filename;
-		LocalDateTime uploadDate;
 		
 		try{
 			healthEffectGroupName = ApiUtil.getMultipartFormParameterAsString(request, "healthEffectGroupName");
 			description = ApiUtil.getMultipartFormParameterAsString(request, "description");
-			filename = ApiUtil.getMultipartFormParameterAsString(request, "filename");
-			uploadDate = ApiUtil.getMultipartFormParameterAsLocalDateTime(request, "uploadDate", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			newCategory = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("newCategory"), false);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			return CoreApi.getErrorResponseInvalidId(request, response);
@@ -760,12 +765,24 @@ public class ValuationApi {
 		int multiyearCostsIdx=-999;
 		int accessUrlIdx=-999;
 
+		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
+		List<Integer> newHealthEffects = new ArrayList<Integer>();
+
 		Map<String,Integer> endpointIdLookup = new HashMap<String,Integer>();
 
 		int heGroupId = 0;
 		Map<String, Integer> heGroupNameMap = getAllHealthEffectGroupsByUser(userId);
 
 		if(heGroupNameMap.containsKey(healthEffectGroupName.toLowerCase())) {
+			if(newCategory) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "A Health Effect Category called '" + healthEffectGroupName + "' already exists. "
+					+ "Please enter a different name, or select the 'Append to an existing health effect category' option.";
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 			heGroupId = heGroupNameMap.get(healthEffectGroupName.toLowerCase());
 		} else {
 			heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -779,14 +796,16 @@ public class ValuationApi {
 				.fetchOne();
 
 			heGroupId = heGroupRecord.value1();
+
+			newHealthEffectGroups.add(heGroupId);
 		}
+
 		
-		//remove built in tokens (e, pi, sin, etc.)
+		
+		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
-		//not working as expected, need to find a different way to validate functions
-		for(String s : mXparser.getBuiltinTokensToRemove()) {
-			mXparser.removeBuiltinTokens(s);
-		}
+		mXparser.removeBuiltinTokens("e");
+		mXparser.removeBuiltinTokens("Beta");
 
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
 			BOMInputStream bis = new BOMInputStream(is, false);
@@ -871,7 +890,7 @@ public class ValuationApi {
 					accessUrlIdx=i;
 					break;			
 				default:
-					System.out.println(record[i].toLowerCase().replace(" ", ""));
+					// System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
 
@@ -881,6 +900,9 @@ public class ValuationApi {
 				log.debug("end age index is :" + endAgeIdx);
 
 				log.debug("valuation function dataset posted - columns are missing: " + tmp);
+				DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
 				validationMsg.success = false;
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				msg.message = "The following columns are missing: " + tmp;
@@ -914,6 +936,7 @@ public class ValuationApi {
 			int countMultiyearCostsError = 0;
 			int countMultiyearCostsTypeError = 0;
 
+			int countFunctionParamError = 0;
 			int countFunctionError = 0;
 
 			List<String> lstUndefinedEndpoints = new ArrayList<String>();
@@ -931,6 +954,15 @@ public class ValuationApi {
 			distTypes.add("Uniform");
 			distTypes.add("Gamma");
 
+			List<String> functionParameters = new ArrayList<String>();
+			functionParameters.add("a");
+			functionParameters.add("b");
+			functionParameters.add("c");
+			functionParameters.add("d");
+			functionParameters.add("allgoodsindex");
+			functionParameters.add("medicalcostindex");
+			functionParameters.add("wageindex");
+
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
 				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
@@ -938,15 +970,18 @@ public class ValuationApi {
 					EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
 							.insertInto(ENDPOINT
 									, ENDPOINT.NAME
+									, ENDPOINT.DISPLAY_NAME
 									, ENDPOINT.ENDPOINT_GROUP_ID
 									)
-							.values(record[endpointIdx].strip(), (short) heGroupId)
+							.values(record[endpointIdx].strip(), record[endpointIdx].strip(), (short) heGroupId)
 							.returning(ENDPOINT.ID)
 							.fetchOne();
 
 					int heId = heRecord.value1();
 					
 					endpointIdLookup.put(record[endpointIdx].strip().toLowerCase(), heId);
+
+					newHealthEffects.add(heId);
 					
 				}
 
@@ -1054,20 +1089,23 @@ public class ValuationApi {
 					}
 				}
 
-				// //function should be a valid formula
-				// str = record[functionIdx];
-				// e = new Expression(str);
+				//function should be a valid formula
+				str = record[functionIdx].strip().toLowerCase();
+				str = str.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
+				Expression e = new Expression(str);
 
-				// missingVars = e.getMissingUserDefinedArguments();
+				String[] missingVars = e.getMissingUserDefinedArguments();
 
-				// for (String varName : missingVars) {
-				// 	e.addArguments(new Argument(varName + " = 1"));
-				// }
+				for (String varName : missingVars) {
+					if(!functionParameters.contains(varName)) {
+						countFunctionParamError ++;
+					}
+					e.addArguments(new Argument(varName + " = 1"));
+				}
 
-				// if(!e.checkSyntax()) {
-				// 	countFunctionError++;
-				// }	
-
+				if(!e.checkSyntax()) {
+					countFunctionError++;
+				}
 		
 			}
 
@@ -1300,6 +1338,20 @@ public class ValuationApi {
 				validationMsg.messages.add(msg);
 			}
 
+			if(countFunctionParamError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countFunctionParamError == 1) {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameter detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				else {
+					strRecord = String.valueOf(countFunctionParamError) + " invalid function parameters detected. Valid parameters include: " + String.join(", ", functionParameters).toUpperCase() + ".";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
 
 			if(countFunctionError > 0) {
 				validationMsg.success = false;
@@ -1320,6 +1372,12 @@ public class ValuationApi {
 			
 		} catch (Exception e) {
 			log.error("Error validating valuation function upload", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1329,6 +1387,12 @@ public class ValuationApi {
 
 		if(validationMsg.messages.size() > 0) {
 			log.error("Error validating valuation function upload");
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			//response.status(400);
 			validationMsg.success=false;
@@ -1426,6 +1490,14 @@ public class ValuationApi {
 					multiyearDr = number.doubleValue();
 				}
 
+				String functionText = record[functionIdx].strip();
+				// Normalize known expressions
+				functionText = functionText.replaceAll("(?i)\\bEXP\\s*\\(", "exp(");
+				functionText = functionText.replaceAll("(?i)\\bMIN\\s*\\(", "min(");
+				functionText = functionText.replaceAll("(?i)\\bMAX\\s*\\(", "max(");
+				functionText = functionText.replaceAll("(?i)\\bLOG10\\s*\\(", "log10(");
+				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
+
 
 				//Create the hif record
 				vfRecord = DSL.using(JooqUtil.getJooqConfiguration())
@@ -1458,7 +1530,7 @@ public class ValuationApi {
 						, VALUATION_FUNCTION.SHARE_SCOPE
 						)
 				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
-				record[functionIdx].strip(), record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+				functionText, record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
 				valuationType, multiyearValue, multiyearDr, userId, Constants.SHARING_NONE)
 				.returning(VALUATION_FUNCTION.ID)
@@ -1470,6 +1542,12 @@ public class ValuationApi {
 		
 		} catch (Exception e) {
 			log.error("Error importing valuation functions", e);
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT_GROUP)
+					.where(ENDPOINT_GROUP.ID.in(newHealthEffectGroups))
+					.execute();
+			DSL.using(JooqUtil.getJooqConfiguration()).deleteFrom(ENDPOINT)
+					.where(ENDPOINT.ID.in(newHealthEffects))
+					.execute();
 			response.type("application/json");
 			validationMsg.success=false;
 			validationMsg.messages.add(new ValidationMessage.Message("error","Error occurred during import of valuation functions."));
@@ -1574,7 +1652,7 @@ public class ValuationApi {
 								)
 						.as("hif")
 						, ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						, ENDPOINT.NAME.as("endpoint_name")
+						, ENDPOINT.DISPLAY_NAME.as("endpoint_name")
 						)
 				.from(VALUATION_FUNCTION)
 				.join(ENDPOINT_GROUP).on(VALUATION_FUNCTION.ENDPOINT_GROUP_ID.eq(ENDPOINT_GROUP.ID))
@@ -1582,7 +1660,7 @@ public class ValuationApi {
 				.join(VALUATION_RESULT_FUNCTION_CONFIG).on(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(VALUATION_FUNCTION.ID))
 				.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID))
 				.where(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(id))
-				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.NAME, VALUATION_FUNCTION.REFERENCE)
+				.orderBy(ENDPOINT_GROUP.NAME, ENDPOINT.DISPLAY_NAME, VALUATION_FUNCTION.REFERENCE)
 				.fetch();
 		
 		response.type("application/json");
@@ -1621,17 +1699,31 @@ public class ValuationApi {
 
 		String userId = userProfile.get().getId();
 
+		Boolean getAll = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("getAll"), false);
+
 		Condition filterCondition = DSL.trueCondition();
 
 		filterCondition = filterCondition.and(ENDPOINT_GROUP.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(ENDPOINT_GROUP.USER_ID.eq(userId)));		
 
-		Result<Record> healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record> healthEffectGroupRecords;
+		
+		if(getAll) {
+			healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+				.selectDistinct(ENDPOINT_GROUP.fields())
+				.from(ENDPOINT_GROUP)
+				.where(filterCondition)
+				.orderBy(ENDPOINT_GROUP.NAME.asc())
+				.fetch();
+		} else {
+			//limit to endpoint groups that are associated with and existing valuation function
+			healthEffectGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.selectDistinct(ENDPOINT_GROUP.fields())
 				.from(ENDPOINT_GROUP)
 				.join(VALUATION_FUNCTION).on(ENDPOINT_GROUP.ID.eq(VALUATION_FUNCTION.ENDPOINT_GROUP_ID))
 				.where(filterCondition)
 				.orderBy(ENDPOINT_GROUP.NAME.asc())
 				.fetch();
+		}
 		
 		response.type("application/json");
 		return healthEffectGroupRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
@@ -1702,7 +1794,7 @@ public class ValuationApi {
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 
-				searchCondition.or(ENDPOINT.NAME
+				searchCondition.or(ENDPOINT.DISPLAY_NAME
 						.containsIgnoreCase(filterValue));
 		
 		searchCondition = 

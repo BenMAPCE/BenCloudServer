@@ -129,6 +129,7 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
         this(alias, aliased, new Field[] {
             DSL.val(null, SQLDataType.INTEGER),
             DSL.val(null, SQLDataType.INTEGER.getArrayDataType()),
+            DSL.val(null, SQLDataType.INTEGER),
             DSL.val(null, SQLDataType.INTEGER)
         });
     }
@@ -205,11 +206,13 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
           Integer _DatasetId
         , Integer[] _HifId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         GetHifResults result = new GetHifResults(DSL.name("get_hif_results"), null, new Field[] {
             DSL.val(_DatasetId, SQLDataType.INTEGER),
             DSL.val(_HifId, SQLDataType.INTEGER.getArrayDataType()),
-            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER)
+            DSL.val(_OutputGridDefinitionId, SQLDataType.INTEGER),
+            DSL.val(_LimitToGridId, SQLDataType.INTEGER)
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -222,11 +225,13 @@ public class GetHifResults extends TableImpl<GetHifResultsRecord> {
           Field<Integer> _DatasetId
         , Field<Integer[]> _HifId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         GetHifResults result = new GetHifResults(DSL.name("get_hif_results"), null, new Field[] {
             _DatasetId,
             _HifId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
