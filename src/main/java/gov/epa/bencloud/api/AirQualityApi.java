@@ -254,7 +254,7 @@ public class AirQualityApi {
 			create.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
-						AIR_QUALITY_LAYER.GROUP_NAME.as("group_name"),
+						DSL.coalesce(AIR_QUALITY_LAYER.GROUP_NAME, "").as("group_name"),
 						AIR_QUALITY_LAYER.USER_ID,
 						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
@@ -1414,9 +1414,13 @@ public class AirQualityApi {
 		paramsNode.put("description", description);
 		paramsNode.put("gridId", gridId);
 		
+		String firstLayerName = null;
 		ArrayNode filesArray = mapper.createArrayNode();
 		for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
 			ObjectNode file = mapper.createObjectNode();
+			if(firstLayerName == null) {
+				firstLayerName = entry.getKey();
+			}
 			file.put("layerName", entry.getKey());
 			file.put("filestoreId", entry.getValue());
 			filesArray.add(file);
@@ -1425,7 +1429,7 @@ public class AirQualityApi {
 		
 		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP Server"))
 		.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
-		.values("Air Quality import: " + groupName, paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
+		.values("Air Quality import: " + (groupName==null || groupName.isEmpty() ? firstLayerName : groupName), paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
 		.returning(TASK_BATCH.ID).fetchOne();
 		Integer batchTaskId = rec.getId();
 
