@@ -938,7 +938,7 @@ public class AirQualityApi {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: groupName, pollutantId, gridId."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: pollutantId, gridId."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 
@@ -985,7 +985,7 @@ public class AirQualityApi {
 		} 
 
 		// Final validation that groupName was included if user is uploading multiple files
-		if(groupName.isEmpty() && fileCount > 1) {
+		if(fileCount > 1 && (groupName == null || groupName.isEmpty())) {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
