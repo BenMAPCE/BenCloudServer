@@ -35,6 +35,7 @@ public class HIFConfig {
 	public Integer seasonalMetric = null;
 	public Integer metricStatistic = null;
 	public Integer timing = null;
+	public Integer incPreEndpointId = null; //the endpoint id used for incidence/prevalence lookup (because it's not always the same as the hif endpoint id)
 	
 	//incidence and prevlance may use different race, ethnicity, and/or gender than 
 	//the functions configuration due to data availability
@@ -43,7 +44,7 @@ public class HIFConfig {
 	public Integer incidenceYear = null;
 	public Integer incidenceRace = null;
 	public Integer incidenceEthnicity = null;
-	public Integer incidenceGender = null;
+	public Integer incidenceGender = null;	
 	
 	public Integer prevalence = null;
 	public String prevalenceName = null;
@@ -51,7 +52,7 @@ public class HIFConfig {
 	public Integer prevalenceRace = null;
 	public Integer prevalenceEthnicity = null;
 	public Integer prevalenceGender = null;	
-	
+
 	public Integer variable = null;
 	public Integer startDay = null;
 	public Integer endDay = null;
