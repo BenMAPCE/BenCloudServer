@@ -492,6 +492,8 @@ public class HIFUtil {
 			boolean isIncidenceFunction = functionText.contains("incidence");
 			boolean useEPADefault = defaultIncidencePrevalenceDataset == -1 ? true : false;
 
+			hifConfig.incPreEndpointId = endpointId;
+
 			// get list of EPA datasets for the given population year
 			// List<Integer> incidenceOptions = (populationId == 50 || populationId == 51 ||
 			// populationId == 52 || populationId == 53) ?
