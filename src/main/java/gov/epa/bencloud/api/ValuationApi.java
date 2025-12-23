@@ -764,6 +764,7 @@ public class ValuationApi {
 		int multiyearDrIdx=-999;
 		int multiyearCostsIdx=-999;
 		int accessUrlIdx=-999;
+		int discountedIdx=-999;
 
 		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
 		List<Integer> newHealthEffects = new ArrayList<Integer>();
@@ -799,8 +800,6 @@ public class ValuationApi {
 
 			newHealthEffectGroups.add(heGroupId);
 		}
-
-		
 		
 		//remove built in tokens (e, beta)
 		//these were causing function arguments to get parsed incorrectly
@@ -888,13 +887,16 @@ public class ValuationApi {
 					break;	
 				case "accessurl":
 					accessUrlIdx=i;
-					break;			
+					break;
+				case "discounted":
+					discountedIdx=i;
+					break;
 				default:
 					// System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
 
-			String tmp = ValuationUtil.validateModelColumnHeadings(endpointIdx, qualifierIdx, referenceIdx, startAgeIdx, endAgeIdx, functionIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, distributionIdx);
+			String tmp = ValuationUtil.validateModelColumnHeadings(endpointIdx, qualifierIdx, referenceIdx, startAgeIdx, endAgeIdx, functionIdx, param1Idx, param2Idx, paramAIdx, paramANameIdx, paramBIdx, paramBNameIdx, distributionIdx, discountedIdx);
 
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
@@ -929,6 +931,7 @@ public class ValuationApi {
 			int countMissingEndpointGroup = 0;
 
 			int countDistributionError = 0;
+			int countDiscountedError = 0;
 			int countParam1Error = 0;
 			int countParam2Error = 0;
 			int countParamAError = 0;
@@ -963,10 +966,44 @@ public class ValuationApi {
 			functionParameters.add("medicalcostindex");
 			functionParameters.add("wageindex");
 
+			List<String> discountedOptions = new ArrayList<String>();
+			discountedOptions.add("true");
+			discountedOptions.add("false");
+			discountedOptions.add("unknown");
+
+			String healthEffectName = "";
+
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
 				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
+				
+				//special cases where display_name != name, update endpoint name
+
+				healthEffectName = record[endpointIdx].strip().toLowerCase();
+
+				if(healthEffectGroupName.toLowerCase().equals("mortality") && discountedOptions.contains(record[discountedIdx].toLowerCase().strip())) {
+					if(healthEffectName.equals("mortality, all cause")) {
+						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
+							healthEffectName = "mortality, all-cause, infant";
+						} else {
+							if(record[discountedIdx].toLowerCase().strip().equals("true")) {
+								healthEffectName = "mortality, all-cause, long-term";
+							} else {
+								healthEffectName = "mortality, all-cause, short-term";
+							}
+						}
+					} else if(healthEffectName.equals("mortality, respiratory")) {
+						if(record[discountedIdx].toLowerCase().strip().equals("true")) {
+							healthEffectName = "mortality, respiratory, long-term";
+						} else {
+							healthEffectName = "mortality, respiratory, short-term";
+						}
+					}
+				}
+				
 				if (!endpointIdLookup.containsKey(record[endpointIdx].strip().toLowerCase())){
+
+					
 					EndpointRecord heRecord = DSL.using(JooqUtil.getJooqConfiguration())
 							.insertInto(ENDPOINT
 									, ENDPOINT.NAME
@@ -1027,6 +1064,12 @@ public class ValuationApi {
 				str = record[distributionIdx].strip();
 				if(!distTypes.contains(str)) {
 					countDistributionError++;
+				}
+
+				//discount rate should be a value in the discountedOptions list
+				str = record[discountedIdx].toLowerCase().strip();
+				if(!discountedOptions.contains(str)) {
+					countDiscountedError++;
 				}
 
 				//param 1 beta should be a double
@@ -1166,6 +1209,21 @@ public class ValuationApi {
 				}
 				else {
 					strRecord = String.valueOf(countDistributionError) + " records have invalid Distribution values.";
+				}
+				msg.message = strRecord + "";
+				msg.type = "error";
+				validationMsg.messages.add(msg);
+			}
+
+			if(countDiscountedError > 0) {
+				validationMsg.success = false;
+				ValidationMessage.Message msg = new ValidationMessage.Message();
+				String strRecord = "";
+				if(countDiscountedError == 1) {
+					strRecord = String.valueOf(countDiscountedError) + " record has an invalid Discounted value. Valid options include: true, false, or unknown";
+				}
+				else {
+					strRecord = String.valueOf(countDiscountedError) + " records have invalid Discounted values. Valid options include: true, false, or unknown";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1411,8 +1469,39 @@ public class ValuationApi {
 			while ((record = csvReader.readNext()) != null) {		
 
 				String endpointName = record[endpointIdx].strip().toLowerCase();
+				boolean discountedFalseOrUnknown = false;
+
+				//special cases where display_name != name, replace endpoint name
+				if(healthEffectGroupName.toLowerCase().equals("mortality")) {
+					if(endpointName.equals("mortality, all cause")) {
+						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
+							endpointName = "mortality, all-cause, infant";
+						} else {
+							if(record[discountedIdx].toLowerCase().strip().equals("true")) {
+								endpointName = "mortality, all-cause, long-term";
+							} else {
+								endpointName = "mortality, all-cause, long-term";
+								discountedFalseOrUnknown = true;
+							}
+						}
+					} else if(endpointName.equals("mortality, respiratory")) {
+						if(record[discountedIdx].toLowerCase().strip().equals("true")) {
+							endpointName = "mortality, respiratory, long-term";
+						} else {
+							endpointName = "mortality, respiratory, long-term";
+							discountedFalseOrUnknown = true;
+						}
+					}
+				}
 				
 				int endpointId = endpointIdLookup.get(endpointName);
+				int endpointId2 = 0;
+
+				//special cases where mortality discounted is unknown, add vf record for long-term and short-term endpoint
+				if(discountedFalseOrUnknown) {
+					endpointName = endpointName.replace("long-term", "short-term");
+					endpointId2 = endpointIdLookup.get(endpointName);
+				}
 
 				short startAge = Short.valueOf(record[startAgeIdx].strip());
 				short endAge = Short.valueOf(record[endAgeIdx].strip());
@@ -1498,8 +1587,9 @@ public class ValuationApi {
 				functionText = functionText.replaceAll("(?i)\\bLOG10\\s*\\(", "log10(");
 				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 
-
-				//Create the hif record
+				String discounted = record[discountedIdx].toLowerCase().strip();
+				
+				//Create the valuation function record
 				vfRecord = DSL.using(JooqUtil.getJooqConfiguration())
 				.insertInto(VALUATION_FUNCTION
 						, VALUATION_FUNCTION.VALUATION_DATASET_ID
@@ -1526,17 +1616,57 @@ public class ValuationApi {
 						, VALUATION_FUNCTION.VALUATION_TYPE
 						, VALUATION_FUNCTION.MULTIYEAR
 						, VALUATION_FUNCTION.MULTIYEAR_DR
+						, VALUATION_FUNCTION.DISCOUNTED
 						, VALUATION_FUNCTION.USER_ID
 						, VALUATION_FUNCTION.SHARE_SCOPE
 						)
 				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
 				functionText, record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
-				valuationType, multiyearValue, multiyearDr, userId, Constants.SHARING_NONE)
+				valuationType, multiyearValue, multiyearDr, discounted, userId, Constants.SHARING_NONE)
 				.returning(VALUATION_FUNCTION.ID)
 				.fetchOne();
 
-				int vfRecordId = vfRecord.getId();
+				if(discountedFalseOrUnknown && endpointId2 != 0) {
+					//Create a second record if discounted is unknown for mortality valuation function record
+
+					vfRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(VALUATION_FUNCTION
+							, VALUATION_FUNCTION.VALUATION_DATASET_ID
+							, VALUATION_FUNCTION.ENDPOINT_GROUP_ID
+							, VALUATION_FUNCTION.ENDPOINT_ID
+							, VALUATION_FUNCTION.QUALIFIER
+							, VALUATION_FUNCTION.REFERENCE
+							, VALUATION_FUNCTION.START_AGE
+							, VALUATION_FUNCTION.END_AGE
+							, VALUATION_FUNCTION.FUNCTION_TEXT
+							, VALUATION_FUNCTION.DIST_A
+							, VALUATION_FUNCTION.P1A
+							, VALUATION_FUNCTION.P2A
+							, VALUATION_FUNCTION.VAL_A
+							, VALUATION_FUNCTION.NAME_A
+							, VALUATION_FUNCTION.VAL_B
+							, VALUATION_FUNCTION.NAME_B
+							, VALUATION_FUNCTION.VAL_C
+							, VALUATION_FUNCTION.NAME_C
+							, VALUATION_FUNCTION.VAL_D
+							, VALUATION_FUNCTION.NAME_D
+							, VALUATION_FUNCTION.EPA_STANDARD
+							, VALUATION_FUNCTION.ACCESS_URL
+							, VALUATION_FUNCTION.VALUATION_TYPE
+							, VALUATION_FUNCTION.MULTIYEAR
+							, VALUATION_FUNCTION.MULTIYEAR_DR
+							, VALUATION_FUNCTION.DISCOUNTED
+							, VALUATION_FUNCTION.USER_ID
+							, VALUATION_FUNCTION.SHARE_SCOPE
+							)
+					.values(1, heGroupId, endpointId2, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
+					functionText, record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
+					record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
+					valuationType, multiyearValue, multiyearDr, discounted, userId, Constants.SHARING_NONE)
+					.returning(VALUATION_FUNCTION.ID)
+					.fetchOne();
+				}
 
 			}
 		

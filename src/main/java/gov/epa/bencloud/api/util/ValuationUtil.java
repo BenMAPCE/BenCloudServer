@@ -323,7 +323,7 @@ public class ValuationUtil {
 		
 	}
 
-	public static String validateModelColumnHeadings(int endpointIdx, int qualifierIdx, int referenceIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int distributionIdx) {
+	public static String validateModelColumnHeadings(int endpointIdx, int qualifierIdx, int referenceIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int distributionIdx, int discountedIdx) {
 		StringBuilder b = new StringBuilder();
 		if(endpointIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Health Effect Category");
@@ -364,6 +364,9 @@ public class ValuationUtil {
 		if(distributionIdx == -999) {
 			b.append((b.length()==0 ? "" : ", ") + "Distribution");
 		}
+		if(discountedIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Discounted");
+		}
 
 		return b.toString();
 	}
@@ -375,10 +378,10 @@ public class ValuationUtil {
      */
     public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
         Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
-            .select(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID)
+            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
             .from(ENDPOINT)
             .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
-            .fetchMap(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID);
+            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
         return endpointMap;}
     
 }
