@@ -1190,6 +1190,11 @@ public class HIFApi {
 					if(record[endpointIdx].strip().toLowerCase().equals("")) {
 						countMissingEndpoint ++;
 					}
+				} else if (healthEffectCategoryName.toLowerCase().equals("mortality") &&
+						(healthEffectName.toLowerCase().equals("mortality, all cause") ||
+						healthEffectName.toLowerCase().equals("mortality, respiratory"))
+				){  
+					//special cases where display_name != name, don't create a new endpoint
 				} else {
 					if(healthEffectCategoryIdLookup.containsKey(healthEffectCategoryName.toLowerCase())) {
 						heGroupId = healthEffectCategoryIdLookup.get(healthEffectCategoryName.toLowerCase());
@@ -1869,8 +1874,33 @@ public class HIFApi {
 
 				String endpointGroupName = record[endpointGroupIdx].strip().toLowerCase();
 				String endpointName = record[endpointIdx].strip().toLowerCase();
+
+				//special cases where display_name != name, update endpoint name
+				if (endpointGroupName.equals("mortality") &&
+						(endpointName.equals("mortality, all cause") ||
+						endpointName.equals("mortality, respiratory"))) {
+					if(endpointName.equals("mortality, all cause")) {
+						
+						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
+							endpointName = "mortality, all-cause, infant";
+						} else {
+							if(record[timingIdx].strip().toLowerCase().equals("daily")) {
+								endpointName = "mortality, all-cause, short-term";
+							} else {
+								endpointName = "mortality, all-cause, long-term";
+							}
+						}
+					} else {
+						if(record[timingIdx].strip().toLowerCase().equals("daily")) {
+							endpointName = "mortality, respiratory, short-term";
+						} else {
+							endpointName = "mortality, respiratory, long-term";
+						}
+					}
+				}
+
 				int endpointGroupId = healthEffectCategoryIdLookup.get(endpointGroupName);
-				
+
 				endpointIdLookup = HIFUtil.getEndpointIdLookup((short) endpointGroupId);
 
 				int endpointId = endpointIdLookup.get(endpointName);

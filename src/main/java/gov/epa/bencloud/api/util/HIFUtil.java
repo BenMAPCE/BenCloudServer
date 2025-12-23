@@ -1583,10 +1583,10 @@ public class HIFUtil {
 	 */
 	public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
 		Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
-				.select(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID)
+				.select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
 				.from(ENDPOINT)
 				.where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
-				.fetchMap(DSL.lower(ENDPOINT.DISPLAY_NAME), ENDPOINT.ID);
+				.fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
 		return endpointMap;
 	}
 
