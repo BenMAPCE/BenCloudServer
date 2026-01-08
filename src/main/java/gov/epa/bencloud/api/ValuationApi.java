@@ -973,7 +973,12 @@ public class ValuationApi {
 
 			String healthEffectName = "";
 
-			while ((record = csvReader.readNext()) != null) {				
+			while ((record = csvReader.readNext()) != null) {			
+				
+				if(ValuationUtil.isBlankRow(record)) {
+					continue;
+				}
+				
 				rowCount ++;
 				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
 				
@@ -1467,6 +1472,10 @@ public class ValuationApi {
 			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
+
+				if(ValuationUtil.isBlankRow(record)) {
+					continue;
+				}
 
 				String endpointName = record[endpointIdx].strip().toLowerCase();
 				boolean discountedFalseOrUnknown = false;
