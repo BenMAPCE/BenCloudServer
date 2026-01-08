@@ -1626,4 +1626,22 @@ public class HIFUtil {
 				.fetchMap(DSL.lower(TIMING_TYPE.NAME), TIMING_TYPE.ID);
 		return timingMap;
 	}
+
+    /*
+    *    Check if any blank rows are present in a CSV upload
+    */
+    public static boolean isBlankRow(String[] record) {
+
+        if (record == null || record.length == 0) {
+            return true;
+        }
+
+        for (String field : record) {
+            if (field != null && !field.trim().isEmpty()) {
+                return false;
+            }
+        }
+		
+        return true;
+    }
 }

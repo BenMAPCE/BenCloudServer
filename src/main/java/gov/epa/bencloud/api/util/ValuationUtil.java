@@ -382,6 +382,24 @@ public class ValuationUtil {
             .from(ENDPOINT)
             .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
             .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
-        return endpointMap;}
+        return endpointMap;
+	}
     
+	/*
+    *    Check if any blank rows are present in a CSV upload
+    */
+    public static boolean isBlankRow(String[] record) {
+
+        if (record == null || record.length == 0) {
+            return true;
+        }
+
+        for (String field : record) {
+            if (field != null && !field.trim().isEmpty()) {
+                return false;
+            }
+        }
+		
+        return true;
+    }
 }

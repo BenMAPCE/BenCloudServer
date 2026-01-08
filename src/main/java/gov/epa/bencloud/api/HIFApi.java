@@ -73,7 +73,6 @@ import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.AirQualityUtil;
 import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
-import gov.epa.bencloud.api.util.IncidenceUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointGroupRecord;
@@ -1141,6 +1140,11 @@ public class HIFApi {
 			functionParameters.add("population");
 
 			while ((record = csvReader.readNext()) != null) {				
+
+				if(HIFUtil.isBlankRow(record)) {
+					continue;
+				}
+
 				rowCount ++;
 				
 				//TODO: Update this validation code when we add lookup tables for timeframe, units, and/or distribution
@@ -1871,6 +1875,10 @@ public class HIFApi {
 			NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
 			record = csvReader.readNext();
 			while ((record = csvReader.readNext()) != null) {		
+
+				if(HIFUtil.isBlankRow(record)) {
+					continue;
+				}
 
 				String endpointGroupName = record[endpointGroupIdx].strip().toLowerCase();
 				String endpointName = record[endpointIdx].strip().toLowerCase();
