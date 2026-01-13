@@ -1,6 +1,6 @@
 /*****The scripts are to tackle a potential issue when a default endpoint group (or health impact function group) have the same name as user-uploaded group. */
 /*****It's an updated version of patch 084. 084 were treating dataset names in a case-sensitive way. This patch is case-insensitive*/
-UPDATE "data".settings SET value_int=90 where "key"='version';
+UPDATE "data".settings SET value_int=91 where "key"='version';
 
 /*It's possible that when we added default datasets from the backend, they were linked to user-uploaded groups if the user-uploaded ones are already in the lookup tables.
   In this case, we add a new item into the lookup table with user = null. The functions or data will be rewired to this one in later steps.  */
