@@ -1899,10 +1899,14 @@ public class HIFApi {
 							}
 						}
 					} else {
-						if(record[timingIdx].strip().toLowerCase().equals("daily")) {
-							endpointName = "mortality, respiratory, short-term";
+						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
+							endpointName = "mortality, respiratory, infant";
 						} else {
-							endpointName = "mortality, respiratory, long-term";
+							if(record[timingIdx].strip().toLowerCase().equals("daily")) {
+								endpointName = "mortality, respiratory, short-term";
+							} else {
+								endpointName = "mortality, respiratory, long-term";
+							}
 						}
 					}
 				}

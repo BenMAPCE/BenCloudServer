@@ -967,9 +967,10 @@ public class ValuationApi {
 			functionParameters.add("wageindex");
 
 			List<String> discountedOptions = new ArrayList<String>();
-			discountedOptions.add("true");
-			discountedOptions.add("false");
+			discountedOptions.add("yes");
+			discountedOptions.add("no");
 			discountedOptions.add("unknown");
+			discountedOptions.add("");
 
 			String healthEffectName = "";
 
@@ -991,17 +992,21 @@ public class ValuationApi {
 						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
 							healthEffectName = "mortality, all-cause, infant";
 						} else {
-							if(record[discountedIdx].toLowerCase().strip().equals("true")) {
+							if(record[discountedIdx].toLowerCase().strip().equals("yes")) {
 								healthEffectName = "mortality, all-cause, long-term";
 							} else {
 								healthEffectName = "mortality, all-cause, short-term";
 							}
 						}
 					} else if(healthEffectName.equals("mortality, respiratory")) {
-						if(record[discountedIdx].toLowerCase().strip().equals("true")) {
-							healthEffectName = "mortality, respiratory, long-term";
+						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
+							healthEffectName = "mortality, respiratory, infant";
 						} else {
-							healthEffectName = "mortality, respiratory, short-term";
+							if(record[discountedIdx].toLowerCase().strip().equals("yes")) {
+								healthEffectName = "mortality, respiratory, long-term";
+							} else {
+								healthEffectName = "mortality, respiratory, short-term";
+							}
 						}
 					}
 				}
@@ -1486,7 +1491,7 @@ public class ValuationApi {
 						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
 							endpointName = "mortality, all-cause, infant";
 						} else {
-							if(record[discountedIdx].toLowerCase().strip().equals("true")) {
+							if(record[discountedIdx].toLowerCase().strip().equals("yes")) {
 								endpointName = "mortality, all-cause, long-term";
 							} else {
 								endpointName = "mortality, all-cause, long-term";
@@ -1494,11 +1499,15 @@ public class ValuationApi {
 							}
 						}
 					} else if(endpointName.equals("mortality, respiratory")) {
-						if(record[discountedIdx].toLowerCase().strip().equals("true")) {
-							endpointName = "mortality, respiratory, long-term";
+						if(Integer.parseInt(record[startAgeIdx].strip()) == 0 && (Integer.parseInt(record[endAgeIdx].strip()) == 0 || Integer.parseInt(record[endAgeIdx].strip()) == 1)) {
+							endpointName = "mortality, respiratory, infant";
 						} else {
-							endpointName = "mortality, respiratory, long-term";
-							discountedFalseOrUnknown = true;
+							if(record[discountedIdx].toLowerCase().strip().equals("yes")) {
+								endpointName = "mortality, respiratory, long-term";
+							} else {
+								endpointName = "mortality, respiratory, long-term";
+								discountedFalseOrUnknown = true;
+							}
 						}
 					}
 				}
@@ -1597,6 +1606,9 @@ public class ValuationApi {
 				functionText = functionText.replaceAll("(?i)\\bLOG\\s*\\(", "log10(");
 
 				String discounted = record[discountedIdx].toLowerCase().strip();
+				if(discounted.equals("")) {
+					discounted = "unknown";
+				}
 				
 				//Create the valuation function record
 				vfRecord = DSL.using(JooqUtil.getJooqConfiguration())
