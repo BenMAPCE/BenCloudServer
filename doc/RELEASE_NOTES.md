@@ -26,6 +26,7 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 * Added Dementia health impact function and valuation function to groups “Chronic Effects - Primary” and “Chronic Effects - All”. Also added state-level dementia incidence data to the newly created incidence dataset with name “State”. (BWD-223, BWD-242)  
 * To prevent population loss during area-weighted cross-walking, the default CMAQ 12km Nation grid definition has been replaced with a version clipped to the shoreline to exclude cells in the ocean. All default air quality, population, and incidence data now use the updated version. The previous version has been archived in the database. (BWD-234, BWD-235) 
 * If existing user-uploaded datasets have the same name as the newly added default datasets, user IDs will be appended to the dataset name.  (BWD-243) 
+* Added prototype state air quality surfaces. Renamed and deleted some prototype 12km air quality surfaces. (BWD-241, BWD-256) 
 
 ### Cosmetic Changes and Bug Fixes
 
