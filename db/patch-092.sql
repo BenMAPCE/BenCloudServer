@@ -388,7 +388,7 @@ delete from data.air_quality_layer aql where aql."name" in ('Ozone Baseline Exam
 ,'Ozone Policy Example 2023'
 ,'PM Policy Example 2 2032'
 ,'PM Policy Example 3 2032')
- and aql.user_id is null
+ and aql.user_id is null;
 
  --Rename “PM Baseline Example 2032” to “PM2.5 Example A,” change the Source from “EPA” to “N/A,” 
  update data.air_quality_layer
