@@ -21,10 +21,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -66,9 +68,11 @@ import gov.epa.bencloud.api.model.HIFTaskConfig;
 import gov.epa.bencloud.api.model.PopulationCategoryKey;
 import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.ApiUtil;
+import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.IncidenceUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceEntryRecord;
@@ -114,6 +118,8 @@ public class IncidenceApi {
 		
 		Integer incPrevId = isIncidence ? hifConfig.incidence : hifConfig.prevalence;
 		Integer incPrevYear = isIncidence ? hifConfig.incidenceYear : hifConfig.prevalenceYear;
+
+		Integer incPreEndpointId = hifConfig.incPreEndpointId;
 		
 		//Use the race, ethnicity, and gender selected earlier in order to look up the exact data this function needs
 		//If needed, convert the ALL entry to the Null entry to match incidence data
@@ -123,12 +129,13 @@ public class IncidenceApi {
 		ethnicityId = (ethnicityId == 3 ? 4 : ethnicityId);
 		Integer genderId = (isIncidence ? hifConfig.incidenceGender : hifConfig.prevalenceGender);
 		genderId = (genderId == 3 ? 4 : genderId);
-		
+
+
 
 		
 		//Build a unique cache key for this incidence/prevalence result set
 		String cacheKey = incPrevId + "~" + incPrevYear 
-				+ "~" + h.get("endpoint_id", Integer.class) 
+				+ "~" + incPreEndpointId 
 				+ "~" + hifAgeStart 
 				+ "~" + hifAgeEnd
 				+ "~" + raceId
@@ -174,7 +181,8 @@ public class IncidenceApi {
 		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
-				h.get("endpoint_id", Integer.class), 
+				//h.get("endpoint_id", Integer.class), 
+				incPreEndpointId,
 				arrRaceId, 
 				arrEthnicityId,
 				arrGenderId,
@@ -197,7 +205,8 @@ public class IncidenceApi {
 			incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
-				h.get("endpoint_id", Integer.class), 
+				//h.get("endpoint_id", Integer.class), 
+				incPreEndpointId,
 				arrRaceId, 
 				arrEthnicityId,
 				arrGenderId,
@@ -566,7 +575,7 @@ public class IncidenceApi {
 				.select(
 						INCIDENCE_VALUE.GRID_COL.as("Column"),
 						INCIDENCE_VALUE.GRID_ROW.as("Row"),
-						ENDPOINT.NAME.as("Health Effect"),
+						ENDPOINT.DISPLAY_NAME.as("Health Effect"),
 						ENDPOINT_GROUP.NAME.as("Health Effect Group"),
 						RACE.NAME.as("Race"),
 						GENDER.NAME.as("Gender"),
@@ -743,6 +752,7 @@ public class IncidenceApi {
 		Map<String, Integer> ethnicityIdLookup = new HashMap<>();		
 		Map<String, Integer> genderIdLookup = new HashMap<>();
 		HashMap<String,Map<String,Integer>> endpointIdLookup = new HashMap<String,Map<String,Integer>>();
+		Map<String,Integer> currentEndpointIdLookup = new HashMap<String,Integer>();
 		Map<String, Integer> endpointGroupIdLookup = new HashMap<>();
 
 		
@@ -789,7 +799,7 @@ public class IncidenceApi {
 				case "healtheffect":
 					endpointIdx=i;
 					break;
-				case "healtheffectgroup":
+				case "healtheffectcategory":
 					endpointGroupIdx=i;
 					break;
 				case "race":
@@ -832,7 +842,7 @@ public class IncidenceApi {
 					System.out.println(record[i].toLowerCase().replace(" ", ""));
 				}
 			}
-			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointGroupIdx, endpointIdx, raceIdx, genderIdx, ethnicityIdx, yearIdx, startAgeIdx, endAgeIdx, typeIdx, timeFrameIdx, unitsIdx, valueIdx, distributionIdx, standardErrorIdx);
+			String tmp = IncidenceUtil.validateModelColumnHeadings(columnIdx, rowIdx, endpointIdx, endpointGroupIdx, raceIdx, genderIdx, ethnicityIdx, yearIdx, startAgeIdx, endAgeIdx, typeIdx, timeFrameIdx, unitsIdx, valueIdx, distributionIdx, standardErrorIdx);
 			if(tmp.length() > 0) {
 				log.debug("end age index is :" + endAgeIdx);
 
@@ -874,8 +884,9 @@ public class IncidenceApi {
 			List<String> lstUndefinedRaces = new ArrayList<String>();
 			List<String> lstUndefinedGenders = new ArrayList<String>();
 			List<String> lstUndefinedYears = new ArrayList<String>();
-			List<String> lstUndefinedEndpoints = new ArrayList<String>();
-			List<String> lstUndefinedEndpointGroups = new ArrayList<String>();
+
+			HashSet<String> lstUndefinedEndpoints = new HashSet<String>();
+			Map<String,HashSet<String>> undefinedEndpointMap = new HashMap<>();
 
 
 			List<String> lstDupMetricCombo = new ArrayList<String>();
@@ -884,18 +895,47 @@ public class IncidenceApi {
 			
 			while ((record = csvReader.readNext()) != null) {				
 				rowCount ++;
-				//endpoint id hashmap is a nested dictionary with the outer key being endpoint groups and values being hashmaps of endpoint names to ids
-				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
-				if (!endpointIdLookup.containsKey(endpointGroupName)){
-					Integer endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
-					//endpoint group id is a short in endpoint data but an Integer in endpoint group data
-					short shortEndpointGroupId = (short) (int) endpointGroupId;
-					endpointIdLookup.put(endpointGroupName, IncidenceUtil.getEndpointIdLookup(shortEndpointGroupId));
+
+				String endpointGroupName = record[endpointGroupIdx].strip().toLowerCase();
+				int endpointGroupId = 0;
+				String endpointName = record[endpointIdx].strip().toLowerCase();
+
+				String str = "";
+
+				//capture missing endpoints and endpoint groups
+				//capture endpoint group + endpoint combinations that don't exist in the database
+				str = endpointGroupName;
+				if(str == "") {
+					countMissingEndpointGroup ++;
+					if(endpointName.equals("")) {
+						countMissingEndpoint ++;
+					}
+				} else {
+					if(endpointName.equals("")) {
+						countMissingEndpoint ++;
+					} else {
+						lstUndefinedEndpoints = undefinedEndpointMap.get(record[endpointGroupIdx]) == null ? new HashSet<>() : undefinedEndpointMap.get(record[endpointGroupIdx]);
+
+						if(!endpointGroupIdLookup.containsKey(endpointGroupName)) {
+							lstUndefinedEndpoints.add(record[endpointIdx]);
+							undefinedEndpointMap.put(record[endpointGroupIdx], lstUndefinedEndpoints);
+						}
+						else {
+							endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
+							currentEndpointIdLookup = IncidenceUtil.getEndpointIdLookup((short) endpointGroupId) == null ? new HashMap<String, Integer>() : IncidenceUtil.getEndpointIdLookup((short) endpointGroupId);
+							str = record[endpointIdx];
+							if(str == "") {
+								countMissingEndpoint ++;
+							} else if(currentEndpointIdLookup.get(str.toLowerCase()) == null) {
+								lstUndefinedEndpoints.add(str);
+							} 
+							undefinedEndpointMap.put(record[endpointGroupIdx], lstUndefinedEndpoints);
+						}
+					}
 				}
 
 				//TODO: Update this validation code when we add lookup tables for timeframe, units, and/or distribution
 				// Make sure this metric exists in the db. If not, update the corresponding error array to return useful error message
-				String str = "";
 
 				str = record[ethnicityIdx];
 				if(!ethnicityIdLookup.containsKey(str.toLowerCase() ) && !str.equals("")) {
@@ -916,26 +956,6 @@ public class IncidenceApi {
 				if(!genderIdLookup.containsKey(str.toLowerCase()) && !str.equals("")) {
 					if (!lstUndefinedGenders.contains(String.valueOf(str.toLowerCase()))) {
 						lstUndefinedGenders.add(String.valueOf(str.toLowerCase()));
-					}
-				}
-
-				str = record[endpointIdx];
-				if(str == "") {
-					countMissingEndpoint ++;
-				}
-				if(!endpointIdLookup.get(endpointGroupName).containsKey(str.toLowerCase()) ) {
-					if (!lstUndefinedEndpoints.contains(String.valueOf(str.toLowerCase()))) {
-						lstUndefinedEndpoints.add(String.valueOf(str.toLowerCase()));
-					}
-				}
-
-				str = record[endpointGroupIdx];
-				if(str == "") {
-					countMissingEndpointGroup ++;
-				}
-				if(!endpointGroupIdLookup.containsKey(str.toLowerCase()) ) {
-					if (!lstUndefinedEndpointGroups.contains(String.valueOf(str.toLowerCase()))) {
-						lstUndefinedEndpointGroups.add(String.valueOf(str.toLowerCase()));
 					}
 				}
 			
@@ -1152,20 +1172,12 @@ public class IncidenceApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMissingEndpoint == 1) {
-					strRecord = String.valueOf(countMissingEndpoint) + " record is missing a Endpoint value.";
+					strRecord = String.valueOf(countMissingEndpoint) + " record is missing a Health Effect value.";
 				}
 				else {
-					strRecord = String.valueOf(countMissingEthnicity) + " records are missing Endpoint values.";
+					strRecord = String.valueOf(countMissingEndpoint) + " records are missing Health Effect values.";
 				}
 				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(lstUndefinedEndpoints.size()>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Endpoint values are not defined: " + String.join(",", lstUndefinedEndpoints) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1175,20 +1187,12 @@ public class IncidenceApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMissingEthnicity == 1) {
-					strRecord = String.valueOf(countMissingEndpointGroup) + " record is missing a Endpoint Group value.";
+					strRecord = String.valueOf(countMissingEndpointGroup) + " record is missing a Health Effect Category value.";
 				}
 				else {
-					strRecord = String.valueOf(countMissingEndpointGroup) + " records are missing Endpoint Group values.";
+					strRecord = String.valueOf(countMissingEndpointGroup) + " records are missing Health Effect Category values.";
 				}
 				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
-			}
-
-			if(lstUndefinedEndpointGroups.size()>0) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				msg.message = "The following Endpoint Group values are not defined: " + String.join(",", lstUndefinedEndpointGroups) + ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
 			}
@@ -1199,6 +1203,16 @@ public class IncidenceApi {
 				msg.message = "The following Metric combinations are not unique: " + String.join(",", lstDupMetricCombo)+ ".";
 				msg.type = "error";
 				validationMsg.messages.add(msg);
+			}
+
+			for(String group : undefinedEndpointMap.keySet()) {
+				for(String endpoint : undefinedEndpointMap.get(group)) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					msg.message = "There are no health impact functions with " + endpoint + " as an available Health Effect, and " + group + " as an available Health Effect Category. Please upload a health impact function with these health effect/health effect category pairings and then retry uploading your incidence file.";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
 			}
 			
 			
@@ -1259,7 +1273,8 @@ public class IncidenceApi {
 			//use the hashmaps created from incidenceUtil to get the id of each column metric
 				String endpointGroupName = record[endpointGroupIdx].toLowerCase();
 				int endpointGroupId = endpointGroupIdLookup.get(endpointGroupName);
-				int endpointId = endpointIdLookup.get(endpointGroupName).get(record[endpointIdx].toLowerCase());
+				currentEndpointIdLookup = IncidenceUtil.getEndpointIdLookup((short) endpointGroupId);
+				int endpointId = currentEndpointIdLookup.get(record[endpointIdx].toLowerCase());
 				int row = Integer.valueOf(record[rowIdx]);
 				int column = Integer.valueOf(record[columnIdx]);
 
@@ -1555,7 +1570,7 @@ public class IncidenceApi {
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 
-				searchCondition.or(ENDPOINT.NAME
+				searchCondition.or(ENDPOINT.DISPLAY_NAME
 						.containsIgnoreCase(filterValue));
 
 		searchCondition = 

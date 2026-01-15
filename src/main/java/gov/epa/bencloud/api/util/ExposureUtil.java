@@ -30,6 +30,7 @@ import gov.epa.bencloud.api.function.EFArguments;
 import gov.epa.bencloud.api.function.EFNativeFactory;
 import gov.epa.bencloud.api.function.EFunction;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureResultRecord;
@@ -113,8 +114,7 @@ public class ExposureUtil {
 	 * @param hifResults
 	 */
 	public static void storeResults(Task task, ExposureTaskConfig exposureTaskConfig, Vector<ExposureResultRecord> exposureResults) {
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
 		Integer exposureResultDatasetId = create
 				.selectFrom(EXPOSURE_RESULT_DATASET)
 				.where(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))
@@ -196,8 +196,22 @@ public class ExposureUtil {
 	}
 
 	/**
-	 * Stores the given hifTaskLog in the database.
-	 * @param hifTaskLog
+	 * Stores aggregated exposure results to result_agg table.
+	 * @param task
+	 * @param grid_id
+	 */
+	public static void storeAggResults(Task task, Integer grid_id) {
+        DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
+		Integer exposureResultDatasetId = create
+				.selectFrom(EXPOSURE_RESULT_DATASET)
+				.where(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))
+				.fetchOne(EXPOSURE_RESULT_DATASET.ID);
+		Routines.addExposureResultsAgg(create.configuration(), exposureResultDatasetId, grid_id);
+    }
+
+	/**
+	 * Stores the given exposureTaskLog in the database.
+	 * @param exposureTaskLog
 	 */
 	public static void storeTaskLog(ExposureTaskLog exposureTaskLog) {
 		
@@ -268,6 +282,8 @@ public class ExposureUtil {
 		return null;
 		
 	}
+
+    
 
 	
 	

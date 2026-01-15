@@ -166,6 +166,25 @@ paths:
                     help_text:
                       type: string
                       example: "Some help text"
+  /air-quality-group-names:
+    get:
+      summary: Returns the list of air quality group names.
+      parameters:
+        - name: pollutantId
+          in: query
+          required: false
+          description: Optional filter by pollutant
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully returned an array of air quality group names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
   /air-quality-data:
     get:
       summary: Returns the list of air quality surface definitions.

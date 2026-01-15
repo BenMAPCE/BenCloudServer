@@ -1,7 +1,45 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## Production 2025-07-??  | [API v1.0.0 and DB 61](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.0.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+
+## Production 2026-01-?? (in progress)  | [API v1.1.0 and DB 92](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.1.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+
+### New Features and Improvements 
+
+* Air quality uploads can now receive multiple csv files in one submission. These uploaded files will then be processed in the background. Progress can be monitored in the task manager. (BWD-14, BWD-186, BWD-249)
+* Analysis results will now display more quickly when viewing them in the user interface. (BWD-141)
+* The EPA HERO ID and Study Url are now available to help users better understand BenMAP's health impact functions. (BWD-169)
+* Users may now upload their own health impact and valuation functions for use during analysis. (BWD-171)
+* We increased the memory for certain database queries and started tracking task IDs in database sessions to prevent result duplication caused by unresponsive database. (BWD-168, BWD-213) 
+* When selecting air quality data, users can now filter by the group names using the newly added dropdown menu. (BWD-253) 
+* For health effect analysis, users can now narrow down the study area by selecting a pre-uploaded grid definition at the “Where do you want to perform your analysis?” screen. (BWD-196, BWD-224, BWD-195) 
+* The health effects of all default mortality HI and valuation functions are now split into subgroups (“short-term”, “long-term”, and “infant”) based on the Timing field and age ranges. This improvement will help the application automatically select valuation functions. Since their display names are not changed, users may not see any changes from the UI (BWD-206) 
+
+### Dataset Updates
+
+* Replaced age-stratified all race/ethnicity mortality incidence rates for year 2020-2060, health effect Mortality, All Cause and Mortality, Respiratory rates for all states. (BWD-209) 
+* Added Hawaii and Alaska data to most datasets. For datasets that do not include Hawaii and Alaska, “Contiguous U.S.” has been added to the dataset name. (e.g. “Contiguous US CMAQ 12km Nation - 2020”). (BWD-145, BWD-176, BWD-183, BWD-184, BWD-187, BWD-188) 
+* The following columns and corresponding data have been added to the valuation function template and database: access url, valuation type, multiyear, multiyear dr, multiyear cost, and discounted. (BWD-179, BWD-225, BWD-254) 
+* In health impact functions, “Seasonal Metric” and “Metric Statistics” are now replaced by column “Timing”. Acceptable values are “Daily” and “Annual”. (BWD-174) 
+* Added the default function group “Chronic Effects - Primary” and assigned 21 functions to this group (BWD-205). 
+* Katsouyanni’s mortality HIFs are removed from “Premature Death – Primary” and added to “Premature Death – All” group. Their HERO IDs and reference URLs are also updated. (BWD-177) 
+* Added Dementia health impact function and valuation function to groups “Chronic Effects - Primary” and “Chronic Effects - All”. Also added state-level dementia incidence data to the newly created incidence dataset with name “State”. (BWD-223, BWD-242)  
+* To prevent population loss during area-weighted cross-walking, the default CMAQ 12km Nation grid definition has been replaced with a version clipped to the shoreline to exclude cells in the ocean. All default air quality, population, and incidence data now use the updated version. The previous version has been archived in the database. (BWD-234, BWD-235) 
+* If existing user-uploaded datasets have the same name as the newly added default datasets, user IDs will be appended to the dataset name.  (BWD-243) 
+* Added prototype state air quality surfaces. Renamed and deleted some prototype 12km air quality surfaces. (BWD-241, BWD-256) 
+
+### Cosmetic Changes and Bug Fixes
+
+* Removed unnecessary dollar sign ($) from formatted health results. Added formatted results to valuation results screen. Re-ordered columns in result screen (BWD-180, BWD-181) 
+* The result summary screen now shows the grid definition of air quality data under “Geography”. (BWD-178) 
+* Changed term “endpoint” to “health_effect” in exported csv, and function import template. (BWD-190, BWD-173) 
+* Changed term “qualifier” to “risk_model_details” in exported csv, and function import template. (BWD-173) 
+* Changed term “Endpoint Group” to “Health Effect Category” in user interface and function import template. (BWD-190, BWD-173) 
+* Changed term “Parameter 1 Beta” to “Standard Error” in user interface and function import template. (BWD-173) 
+* Handling of long-running tasks and task cancelation has been improved for performance and stability. (BWD-168)
+
+
+## Production 2025-07-22  | [API v1.0.0 and DB 62](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.0.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
 ### New Features and Improvements
 * Analysis exports will now be processed as a background task (similar to analysis tasks) and can be downloaded from the task queue when they are complete. This will prevent large exports from failing due to request timeouts and API memory issues.

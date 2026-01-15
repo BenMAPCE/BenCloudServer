@@ -112,7 +112,16 @@ public class ApiRoutes extends RoutesBase {
 		 *  filter=
 		 */
 		service.get(apiPrefix + "/air-quality-data", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDefinitions(request, response, getUserProfile(request, response));
+			return AirQualityApi.getAirQualityLayerDefinitions(request, response, getUserProfile(request, response),"");
+		});
+
+		/*
+		 * GET array of air quality surface group names
+		 * PARAMETERS:
+		 *  pollutantId= (optional)
+		 */
+		service.get(apiPrefix + "/air-quality-group-names", (request, response) -> {
+			return AirQualityApi.getAirQualityGroupNames(request, response, getUserProfile(request, response),"");
 		});
 		
 		/*
@@ -126,7 +135,7 @@ public class ApiRoutes extends RoutesBase {
 		 *  filter=
 		 */
 		service.get(apiPrefix + "/air-quality-data-by-metric", (request, response) -> {
-			return AirQualityApi.getAirQualityLayerDefinitionsByMetric(request, response, getUserProfile(request, response));
+			return AirQualityApi.getAirQualityLayerDefinitionsByMetric(request, response, getUserProfile(request, response),"");
 		});
 
 		/*
@@ -185,12 +194,34 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/population", (request, response) -> {
 			return PopulationApi.getAllPopulationDatasets(request, response, getUserProfile(request, response));
 		});
+
+		/*
+		 * GET array of all health effect group definitions
+		 */
+		service.get(apiPrefix + "/health-effect-groups", (request, response) -> {
+			return ValuationApi.getAllHealthEffectGroups(request, response, getUserProfile(request, response));
+		});
 		
 		/*
 		 * GET array of all health impact function definitions
 		 */
 		service.get(apiPrefix + "/health-impact-functions", (request, response) -> {
 			return HIFApi.getAllHealthImpactFunctions(request, response, getUserProfile(request, response));
+		});
+
+
+		/*
+		 * Archive a health impact function dataset
+		 */
+		service.post(apiPrefix + "/health-impact-function/:id", (request, response) -> {
+			return HIFApi.archiveHealthImpactFunction(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST a health impact function dataset
+		 */
+		service.post(apiPrefix + "/health-impact-function-data", (request, response) -> {
+			return HIFApi.postHealthImpactFunctionData(request, response, getUserProfile(request, response));
 		});
 
 		/*
@@ -227,6 +258,15 @@ public class ApiRoutes extends RoutesBase {
 		 */	
 		service.get(apiPrefix + "/health-impact-function-groups/:ids", (request, response) -> {
 			return HIFApi.getSelectedHifGroups(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * DELETE a health impact function group
+		 * PARAMETERS:
+		 *  :id
+		 */
+		service.delete(apiPrefix + "/health-impact-function-groups/:id", (request, response) -> {
+			return HIFApi.deleteHealthImpactFunctionGroup(request, response, getUserProfile(request, response));
 		});
 
 		
@@ -335,6 +375,10 @@ public class ApiRoutes extends RoutesBase {
 			return ValuationApi.getAllValuationFunctions(request, response, getUserProfile(request, response));
 		});
 
+		service.get(apiPrefix + "/valuation-functions-by-health-effect", (request, response) -> {
+			return ValuationApi.getAllValuationFunctionsByHealthEffect(request, response, getUserProfile(request, response));
+		});
+
 
 		/*
 		 * GET array of all health impact function result datasets
@@ -342,6 +386,20 @@ public class ApiRoutes extends RoutesBase {
 		service.get(apiPrefix + "/health-impact-result-datasets", (request, response) -> {
 			return HIFApi.getHifResultDatasets(request, response, getUserProfile(request, response));
 
+		});
+
+		/*
+		 * Archive a valuation function
+		 */
+		service.post(apiPrefix + "/valuation-function/:id", (request, response) -> {
+			return ValuationApi.archiveValuationFunction(request, response, getUserProfile(request, response));
+		});
+
+		/*
+		 * POST a valuation function dataset
+		 */
+		service.post(apiPrefix + "/valuation-function-data", (request, response) -> {
+			return ValuationApi.postValuationFunctionData(request, response, getUserProfile(request, response));
 		});
 		
 		/*

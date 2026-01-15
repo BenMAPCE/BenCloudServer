@@ -13,7 +13,6 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row21;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -150,6 +149,51 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
      */
     public final TableField<ValuationFunctionRecord, Boolean> EPA_STANDARD = createField(DSL.name("epa_standard"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
 
+    /**
+     * The column <code>data.valuation_function.access_url</code>.
+     */
+    public final TableField<ValuationFunctionRecord, String> ACCESS_URL = createField(DSL.name("access_url"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.valuation_function.valuation_type</code>.
+     */
+    public final TableField<ValuationFunctionRecord, String> VALUATION_TYPE = createField(DSL.name("valuation_type"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.valuation_function.multiyear</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Boolean> MULTIYEAR = createField(DSL.name("multiyear"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
+
+    /**
+     * The column <code>data.valuation_function.multiyear_dr</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Double> MULTIYEAR_DR = createField(DSL.name("multiyear_dr"), SQLDataType.DOUBLE, this, "");
+
+    /**
+     * The column <code>data.valuation_function.multiyear_costs</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Double[]> MULTIYEAR_COSTS = createField(DSL.name("multiyear_costs"), SQLDataType.FLOAT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>data.valuation_function.user_id</code>.
+     */
+    public final TableField<ValuationFunctionRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.valuation_function.share_scope</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.valuation_function.archived</code>.
+     */
+    public final TableField<ValuationFunctionRecord, Short> ARCHIVED = createField(DSL.name("archived"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.valuation_function.discounted</code>.
+     */
+    public final TableField<ValuationFunctionRecord, String> DISCOUNTED = createField(DSL.name("discounted"), SQLDataType.CLOB, this, "");
+
     private ValuationFunction(Name alias, Table<ValuationFunctionRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -222,14 +266,5 @@ public class ValuationFunction extends TableImpl<ValuationFunctionRecord> {
     @Override
     public ValuationFunction rename(Name name) {
         return new ValuationFunction(name, null);
-    }
-
-    // -------------------------------------------------------------------------
-    // Row21 type methods
-    // -------------------------------------------------------------------------
-
-    @Override
-    public Row21<Integer, Integer, Integer, Integer, String, String, Integer, Integer, String, Double, String, String, Double, Double, Double, String, Double, String, Double, String, Boolean> fieldsRow() {
-        return (Row21) super.fieldsRow();
     }
 }

@@ -161,6 +161,25 @@ public class GridDefinitionApi {
 		return gridRecord;
 	}
 	
+		/**
+	 * 
+	 * @param gridId
+	 * @return the grid definition table name.
+	 */
+	public static String getGridDefinitionTableName(int gridId) {
+		Record1<String> g1 = DSL.using(JooqUtil.getJooqConfiguration())
+		.select(GRID_DEFINITION.TABLE_NAME)
+		.from(GRID_DEFINITION)
+		.where(GRID_DEFINITION.ID.eq(gridId))
+		.fetchOne();
+
+		if(g1 == null) {
+			return null;
+		}
+
+		return g1.value1();
+	}
+
 	/**
 	 * gets the row, column, geometries from the grids schema- might use later when maps are added to display grid definitions
 	 * @param request
@@ -527,7 +546,9 @@ public class GridDefinitionApi {
 		try {
 			create.dropTable(gridDefinitionResult.getTableName()).execute();
 		} catch (DataAccessException e) {
-			return CoreApi.getErrorResponse(request, response, 400, "Error dropping table");
+			//return CoreApi.getErrorResponse(request, response, 400, "Error dropping table");
+			// Do not return here. If something went wrong and the grid table was lost, the user needs some way to remove the reference records.
+			log.warn("Error dropping grid table", e);
 		}
 
 		// Finally, delete the grid definition from the grid definition table

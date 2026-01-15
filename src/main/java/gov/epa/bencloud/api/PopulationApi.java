@@ -37,7 +37,7 @@ public class PopulationApi {
 	 * @return a map of population entry groups, with key = grid cell id,
 	 * 			value = population records
 	 */
-	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig) {
+	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(HIFTaskConfig hifTaskConfig, String taskUuid) {
 
 		Integer aqGrid = AirQualityApi.getAirQualityLayerGridId(hifTaskConfig.aqBaselineId);
 		
@@ -83,23 +83,33 @@ public class PopulationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(hifTaskConfig.popId),aqGrid);
-		DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
-		dsl.execute("SET work_mem = '1GB'");
-		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
+
+		// Use .trasaction to ensure work_mem setting applies to the get_population transaction.
+		// Variables inside a lambda must be final or effectively final
+		Integer[] arrAgeRangeIdsFinal = arrAgeRangeIds;
+		boolean booGroupByRaceFinal = booGroupByRace;
+		boolean booGroupByEthnicityFinal = booGroupByEthnicity;
+		boolean booGroupByGenderFinal = booGroupByGender;
+		Map<Long, Result<GetPopulationRecord>> popRecords = DSL.using(JooqUtil.getJooqConfiguration(taskUuid))
+		.transactionResult(ctx -> {
+			DSLContext dsl = DSL.using(ctx);
+			dsl.execute("SET LOCAL work_mem = '2097151kB'");
+			return Routines.getPopulation(dsl.configuration(), 
 				hifTaskConfig.popId, 
 				hifTaskConfig.popYear,
 				null, //arrRaceIds, 
 				null, //arrEthnicityIds, 
 				null, //arrGenderIds, 
-				arrAgeRangeIds, 
-				booGroupByRace, 
-				booGroupByEthnicity, 
-				booGroupByGender, 
-				true, //YY: groupbyAgeRange
-				aqGrid //YY: outputGridDefinitionId
+				arrAgeRangeIdsFinal, 
+				booGroupByRaceFinal, 
+				booGroupByEthnicityFinal, 
+				booGroupByGenderFinal, 
+				true, //groupbyAgeRange
+				aqGrid //outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
-		dsl.execute("RESET work_mem"); 
+		});
 		return popRecords;
+		
 	}
 
 	/**
@@ -108,7 +118,7 @@ public class PopulationApi {
 	 * @return a map of population entry groups, with key = grid cell id,
 	 * 			value = population records
 	 */
-	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(ExposureTaskConfig exposureTaskConfig) {
+	public static Map<Long, Result<GetPopulationRecord>> getPopulationEntryGroups(ExposureTaskConfig exposureTaskConfig, String taskUuid) {
 
 		Integer aqGrid = AirQualityApi.getAirQualityLayerGridId(exposureTaskConfig.aqBaselineId);
 		
@@ -154,22 +164,31 @@ public class PopulationApi {
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(getPopulationGridDefinitionId(exposureTaskConfig.popId),aqGrid);
-        DSLContext dsl = DSL.using(JooqUtil.getJooqConfiguration());	
-		dsl.execute("SET work_mem = '1GB'");
-		Map<Long, Result<GetPopulationRecord>> popRecords = Routines.getPopulation(JooqUtil.getJooqConfiguration(), 
+
+		// Use .trasaction to ensure work_mem setting applies to the get_population transaction.
+		// Variables inside a lambda must be final or effectively final
+		Integer[] arrAgeRangeIdsFinal = arrAgeRangeIds;
+		boolean booGroupByRaceFinal = booGroupByRace;
+		boolean booGroupByEthnicityFinal = booGroupByEthnicity;
+		boolean booGroupByGenderFinal = booGroupByGender;
+		Map<Long, Result<GetPopulationRecord>> popRecords = DSL.using(JooqUtil.getJooqConfiguration(taskUuid))
+		.transactionResult(ctx -> {
+			DSLContext dsl = DSL.using(ctx);
+			dsl.execute("SET LOCAL work_mem = '2097151kB'");
+			return Routines.getPopulation(dsl.configuration(), 
 				exposureTaskConfig.popId, 
 				exposureTaskConfig.popYear,
 				null, //arrRaceIds, 
 				null, //arrEthnicityIds, 
 				null, //arrGenderIds, 
-				arrAgeRangeIds, 
-				booGroupByRace, 
-				booGroupByEthnicity, 
-				booGroupByGender, 
+				arrAgeRangeIdsFinal, 
+				booGroupByRaceFinal, 
+				booGroupByEthnicityFinal, 
+				booGroupByGenderFinal, 
 				true, //groupbyAgeRange
 				aqGrid //outputGridDefinitionId
 				).intoGroups(GET_POPULATION.GRID_CELL_ID);
-		dsl.execute("RESET work_mem"); 
+		});
 		return popRecords;
 	}
 

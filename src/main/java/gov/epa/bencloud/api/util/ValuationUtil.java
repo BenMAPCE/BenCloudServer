@@ -5,6 +5,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
@@ -28,6 +29,7 @@ import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ValuationResultRecord;
@@ -96,7 +98,7 @@ public class ValuationUtil {
 		Record record = create
 				.select(VALUATION_FUNCTION.asterisk()
 						,ENDPOINT_GROUP.NAME.as("endpoint_group_name")
-						,ENDPOINT.NAME.as("endpoint_name"))
+						,ENDPOINT.DISPLAY_NAME.as("endpoint_name"))
 				.from(VALUATION_FUNCTION)
 				.leftJoin(ENDPOINT_GROUP).on(ENDPOINT_GROUP.ID.eq(VALUATION_FUNCTION.ENDPOINT_GROUP_ID))
 				.leftJoin(ENDPOINT).on(ENDPOINT.ID.eq(VALUATION_FUNCTION.ENDPOINT_ID))
@@ -182,6 +184,21 @@ public class ValuationUtil {
 		.batchInsert(valuationResults)
 		.execute();	
 	}
+
+	/**
+	 * Stores aggregated valuation results to result_agg table.
+	 * @param task
+	 * @param grid_id
+	 */
+	public static void storeAggResults(Task task, int grid_id) {
+        // aggregate task's results to a grid and store in result_agg table
+        DSLContext create = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid()));
+		Integer vfResultDatasetId = create
+				.selectFrom(VALUATION_RESULT_DATASET)
+				.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(task.getUuid()))
+				.fetchOne(VALUATION_RESULT_DATASET.ID);
+		Routines.addValuationResultsAgg(create.configuration(), vfResultDatasetId, grid_id);
+    }
 	
 	/**
 	 * Stores a given valuation function task log in the database.
@@ -305,4 +322,84 @@ public class ValuationUtil {
 		}
 		
 	}
+
+	public static String validateModelColumnHeadings(int endpointIdx, int qualifierIdx, int referenceIdx, int startAgeIdx, int endAgeIdx, int functionIdx, int param1Idx, int param2Idx, int paramAIdx, int paramANameIdx, int paramBIdx, int paramBNameIdx, int distributionIdx, int discountedIdx) {
+		StringBuilder b = new StringBuilder();
+		if(endpointIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Health Effect Category");
+		}
+		if(qualifierIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Risk Model Details");
+		}
+		if(referenceIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Reference");
+		}
+        if(startAgeIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Start Age");
+		}
+		if(endAgeIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "End Age");
+		}
+        if(functionIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Function");
+		}
+        if(param1Idx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Standard Error");
+		}
+        if(param2Idx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Param 2 A");
+		}
+        if(paramAIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "A");
+		}
+        if(paramANameIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Name A");
+		}
+		if(paramBIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "B");
+		}
+        if(paramBNameIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Name B");
+		}
+		if(distributionIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Distribution");
+		}
+		if(discountedIdx == -999) {
+			b.append((b.length()==0 ? "" : ", ") + "Discounted");
+		}
+
+		return b.toString();
+	}
+
+	/**
+     * 
+     * @param endpointGroupId
+     * @return a mapping of endpoint names to endpoint ids for a given endpoint group Id
+     */
+    public static Map<String, Integer> getEndpointIdLookup(short endpointGroupId) {
+        Map<String, Integer> endpointMap = DSL.using(JooqUtil.getJooqConfiguration())
+            .select(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID)
+            .from(ENDPOINT)
+            .where(ENDPOINT.ENDPOINT_GROUP_ID.eq(endpointGroupId))
+            .fetchMap(DSL.lower(ENDPOINT.NAME), ENDPOINT.ID);
+        return endpointMap;
+	}
+    
+	/*
+    *    Check if any blank rows are present in a CSV upload
+    */
+    public static boolean isBlankRow(String[] record) {
+
+        if (record == null || record.length == 0) {
+            return true;
+        }
+
+        for (String field : record) {
+            if (field != null && !field.trim().isEmpty()) {
+                return false;
+            }
+        }
+		
+        return true;
+    }
 }

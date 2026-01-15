@@ -4,12 +4,17 @@
 package gov.epa.bencloud.server.database.jooq.data;
 
 
+import gov.epa.bencloud.server.database.jooq.data.routines.AddExposureResultsAgg;
+import gov.epa.bencloud.server.database.jooq.data.routines.AddHifResultsAgg;
+import gov.epa.bencloud.server.database.jooq.data.routines.AddValuationResultsAgg;
+import gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetPopulation;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetVariable;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetClipCrosswalkRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
@@ -27,6 +32,91 @@ import org.jooq.Result;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Routines {
+
+    /**
+     * Call <code>data.add_exposure_results_agg</code>
+     */
+    public static void addExposureResultsAgg(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer _OutputGridDefinitionId
+    ) {
+        AddExposureResultsAgg p = new AddExposureResultsAgg();
+        p.set_DatasetId(_DatasetId);
+        p.set_OutputGridDefinitionId(_OutputGridDefinitionId);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>data.add_hif_results_agg</code>
+     */
+    public static void addHifResultsAgg(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer _OutputGridDefinitionId
+    ) {
+        AddHifResultsAgg p = new AddHifResultsAgg();
+        p.set_DatasetId(_DatasetId);
+        p.set_OutputGridDefinitionId(_OutputGridDefinitionId);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>data.add_valuation_results_agg</code>
+     */
+    public static void addValuationResultsAgg(
+          Configuration configuration
+        , Integer _DatasetId
+        , Integer _OutputGridDefinitionId
+    ) {
+        AddValuationResultsAgg p = new AddValuationResultsAgg();
+        p.set_DatasetId(_DatasetId);
+        p.set_OutputGridDefinitionId(_OutputGridDefinitionId);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>data.get_clip_crosswalk</code>.
+     */
+    public static Result<GetClipCrosswalkRecord> getClipCrosswalk(
+          Configuration configuration
+        , String _ResultGridTable
+        , String _LimitGridTable
+    ) {
+        return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+              _ResultGridTable
+            , _LimitGridTable
+        )).fetch();
+    }
+
+    /**
+     * Get <code>data.get_clip_crosswalk</code> as a table.
+     */
+    public static GetClipCrosswalk getClipCrosswalk(
+          String _ResultGridTable
+        , String _LimitGridTable
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+            _ResultGridTable,
+            _LimitGridTable
+        );
+    }
+
+    /**
+     * Get <code>data.get_clip_crosswalk</code> as a table.
+     */
+    public static GetClipCrosswalk getClipCrosswalk(
+          Field<String> _ResultGridTable
+        , Field<String> _LimitGridTable
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+            _ResultGridTable,
+            _LimitGridTable
+        );
+    }
 
     /**
      * Call <code>data.get_exposure_results</code>.
@@ -82,11 +172,13 @@ public class Routines {
         , Integer _DatasetId
         , Integer[] _HifId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
               _DatasetId
             , _HifId
             , _OutputGridDefinitionId
+            , _LimitToGridId
         )).fetch();
     }
 
@@ -97,11 +189,13 @@ public class Routines {
           Integer _DatasetId
         , Integer[] _HifId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
             _DatasetId,
             _HifId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -112,11 +206,13 @@ public class Routines {
           Field<Integer> _DatasetId
         , Field<Integer[]> _HifId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
             _DatasetId,
             _HifId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -329,12 +425,14 @@ public class Routines {
         , Integer[] _HifId
         , Integer[] _VfId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
               _DatasetId
             , _HifId
             , _VfId
             , _OutputGridDefinitionId
+            , _LimitToGridId
         )).fetch();
     }
 
@@ -346,12 +444,14 @@ public class Routines {
         , Integer[] _HifId
         , Integer[] _VfId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
             _DatasetId,
             _HifId,
             _VfId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -363,12 +463,14 @@ public class Routines {
         , Field<Integer[]> _HifId
         , Field<Integer[]> _VfId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
             _DatasetId,
             _HifId,
             _VfId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 

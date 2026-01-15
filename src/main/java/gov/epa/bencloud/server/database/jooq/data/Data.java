@@ -19,10 +19,12 @@ import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionDataset
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureFunctionGroupMember;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ExposureResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.File;
 import gov.epa.bencloud.server.database.jooq.data.tables.Gender;
+import gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetExposureResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults;
 import gov.epa.bencloud.server.database.jooq.data.tables.GetIncidence;
@@ -35,6 +37,7 @@ import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionDat
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionGroup;
 import gov.epa.bencloud.server.database.jooq.data.tables.HealthImpactFunctionGroupMember;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.HifResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.HifResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.IncidenceDataset;
@@ -173,14 +176,17 @@ import gov.epa.bencloud.server.database.jooq.data.tables.TaskComplete;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskQueue;
 import gov.epa.bencloud.server.database.jooq.data.tables.TaskWorker;
+import gov.epa.bencloud.server.database.jooq.data.tables.TimingType;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunction;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationFunctionDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResult;
+import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultAgg;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.ValuationResultFunctionConfig;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableDataset;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableEntry;
 import gov.epa.bencloud.server.database.jooq.data.tables.VariableValue;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.GetClipCrosswalkRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
@@ -283,6 +289,11 @@ public class Data extends SchemaImpl {
     public final ExposureResult EXPOSURE_RESULT = ExposureResult.EXPOSURE_RESULT;
 
     /**
+     * The table <code>data.exposure_result_agg</code>.
+     */
+    public final ExposureResultAgg EXPOSURE_RESULT_AGG = ExposureResultAgg.EXPOSURE_RESULT_AGG;
+
+    /**
      * The table <code>data.exposure_result_dataset</code>.
      */
     public final ExposureResultDataset EXPOSURE_RESULT_DATASET = ExposureResultDataset.EXPOSURE_RESULT_DATASET;
@@ -301,6 +312,51 @@ public class Data extends SchemaImpl {
      * The table <code>data.gender</code>.
      */
     public final Gender GENDER = Gender.GENDER;
+
+    /**
+     * The table <code>data.get_clip_crosswalk</code>.
+     */
+    public final GetClipCrosswalk GET_CLIP_CROSSWALK = GetClipCrosswalk.GET_CLIP_CROSSWALK;
+
+    /**
+     * Call <code>data.get_clip_crosswalk</code>.
+     */
+    public static Result<GetClipCrosswalkRecord> GET_CLIP_CROSSWALK(
+          Configuration configuration
+        , String _ResultGridTable
+        , String _LimitGridTable
+    ) {
+        return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+              _ResultGridTable
+            , _LimitGridTable
+        )).fetch();
+    }
+
+    /**
+     * Get <code>data.get_clip_crosswalk</code> as a table.
+     */
+    public static GetClipCrosswalk GET_CLIP_CROSSWALK(
+          String _ResultGridTable
+        , String _LimitGridTable
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+            _ResultGridTable,
+            _LimitGridTable
+        );
+    }
+
+    /**
+     * Get <code>data.get_clip_crosswalk</code> as a table.
+     */
+    public static GetClipCrosswalk GET_CLIP_CROSSWALK(
+          Field<String> _ResultGridTable
+        , Field<String> _LimitGridTable
+    ) {
+        return gov.epa.bencloud.server.database.jooq.data.tables.GetClipCrosswalk.GET_CLIP_CROSSWALK.call(
+            _ResultGridTable,
+            _LimitGridTable
+        );
+    }
 
     /**
      * The table <code>data.get_exposure_results</code>.
@@ -366,11 +422,13 @@ public class Data extends SchemaImpl {
         , Integer _DatasetId
         , Integer[] _HifId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
               _DatasetId
             , _HifId
             , _OutputGridDefinitionId
+            , _LimitToGridId
         )).fetch();
     }
 
@@ -381,11 +439,13 @@ public class Data extends SchemaImpl {
           Integer _DatasetId
         , Integer[] _HifId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
             _DatasetId,
             _HifId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -396,11 +456,13 @@ public class Data extends SchemaImpl {
           Field<Integer> _DatasetId
         , Field<Integer[]> _HifId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetHifResults.GET_HIF_RESULTS.call(
             _DatasetId,
             _HifId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -628,12 +690,14 @@ public class Data extends SchemaImpl {
         , Integer[] _HifId
         , Integer[] _VfId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return configuration.dsl().selectFrom(gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
               _DatasetId
             , _HifId
             , _VfId
             , _OutputGridDefinitionId
+            , _LimitToGridId
         )).fetch();
     }
 
@@ -645,12 +709,14 @@ public class Data extends SchemaImpl {
         , Integer[] _HifId
         , Integer[] _VfId
         , Integer _OutputGridDefinitionId
+        , Integer _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
             _DatasetId,
             _HifId,
             _VfId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -662,12 +728,14 @@ public class Data extends SchemaImpl {
         , Field<Integer[]> _HifId
         , Field<Integer[]> _VfId
         , Field<Integer> _OutputGridDefinitionId
+        , Field<Integer> _LimitToGridId
     ) {
         return gov.epa.bencloud.server.database.jooq.data.tables.GetValuationResults.GET_VALUATION_RESULTS.call(
             _DatasetId,
             _HifId,
             _VfId,
-            _OutputGridDefinitionId
+            _OutputGridDefinitionId,
+            _LimitToGridId
         );
     }
 
@@ -751,6 +819,11 @@ public class Data extends SchemaImpl {
      * The table <code>data.hif_result</code>.
      */
     public final HifResult HIF_RESULT = HifResult.HIF_RESULT;
+
+    /**
+     * The table <code>data.hif_result_agg</code>.
+     */
+    public final HifResultAgg HIF_RESULT_AGG = HifResultAgg.HIF_RESULT_AGG;
 
     /**
      * The table <code>data.hif_result_dataset</code>.
@@ -1443,6 +1516,11 @@ public class Data extends SchemaImpl {
     public final TaskWorker TASK_WORKER = TaskWorker.TASK_WORKER;
 
     /**
+     * The table <code>data.timing_type</code>.
+     */
+    public final TimingType TIMING_TYPE = TimingType.TIMING_TYPE;
+
+    /**
      * The table <code>data.valuation_function</code>.
      */
     public final ValuationFunction VALUATION_FUNCTION = ValuationFunction.VALUATION_FUNCTION;
@@ -1456,6 +1534,11 @@ public class Data extends SchemaImpl {
      * The table <code>data.valuation_result</code>.
      */
     public final ValuationResult VALUATION_RESULT = ValuationResult.VALUATION_RESULT;
+
+    /**
+     * The table <code>data.valuation_result_agg</code>.
+     */
+    public final ValuationResultAgg VALUATION_RESULT_AGG = ValuationResultAgg.VALUATION_RESULT_AGG;
 
     /**
      * The table <code>data.valuation_result_dataset</code>.
@@ -1512,10 +1595,12 @@ public class Data extends SchemaImpl {
             ExposureFunctionGroup.EXPOSURE_FUNCTION_GROUP,
             ExposureFunctionGroupMember.EXPOSURE_FUNCTION_GROUP_MEMBER,
             ExposureResult.EXPOSURE_RESULT,
+            ExposureResultAgg.EXPOSURE_RESULT_AGG,
             ExposureResultDataset.EXPOSURE_RESULT_DATASET,
             ExposureResultFunctionConfig.EXPOSURE_RESULT_FUNCTION_CONFIG,
             File.FILE,
             Gender.GENDER,
+            GetClipCrosswalk.GET_CLIP_CROSSWALK,
             GetExposureResults.GET_EXPOSURE_RESULTS,
             GetHifResults.GET_HIF_RESULTS,
             GetIncidence.GET_INCIDENCE,
@@ -1528,6 +1613,7 @@ public class Data extends SchemaImpl {
             HealthImpactFunctionGroup.HEALTH_IMPACT_FUNCTION_GROUP,
             HealthImpactFunctionGroupMember.HEALTH_IMPACT_FUNCTION_GROUP_MEMBER,
             HifResult.HIF_RESULT,
+            HifResultAgg.HIF_RESULT_AGG,
             HifResultDataset.HIF_RESULT_DATASET,
             HifResultFunctionConfig.HIF_RESULT_FUNCTION_CONFIG,
             IncidenceDataset.INCIDENCE_DATASET,
@@ -1666,9 +1752,11 @@ public class Data extends SchemaImpl {
             TaskConfig.TASK_CONFIG,
             TaskQueue.TASK_QUEUE,
             TaskWorker.TASK_WORKER,
+            TimingType.TIMING_TYPE,
             ValuationFunction.VALUATION_FUNCTION,
             ValuationFunctionDataset.VALUATION_FUNCTION_DATASET,
             ValuationResult.VALUATION_RESULT,
+            ValuationResultAgg.VALUATION_RESULT_AGG,
             ValuationResultDataset.VALUATION_RESULT_DATASET,
             ValuationResultFunctionConfig.VALUATION_RESULT_FUNCTION_CONFIG,
             VariableDataset.VARIABLE_DATASET,

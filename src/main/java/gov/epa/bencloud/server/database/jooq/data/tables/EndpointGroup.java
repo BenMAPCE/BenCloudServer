@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row2;
+import org.jooq.Row4;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -54,6 +54,16 @@ public class EndpointGroup extends TableImpl<EndpointGroupRecord> {
      * The column <code>data.endpoint_group.name</code>.
      */
     public final TableField<EndpointGroupRecord, String> NAME = createField(DSL.name("name"), SQLDataType.CLOB.nullable(false), this, "");
+
+    /**
+     * The column <code>data.endpoint_group.user_id</code>.
+     */
+    public final TableField<EndpointGroupRecord, String> USER_ID = createField(DSL.name("user_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>data.endpoint_group.share_scope</code>.
+     */
+    public final TableField<EndpointGroupRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
 
     private EndpointGroup(Name alias, Table<EndpointGroupRecord> aliased) {
         this(alias, aliased, null);
@@ -130,11 +140,11 @@ public class EndpointGroup extends TableImpl<EndpointGroupRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row2 type methods
+    // Row4 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row2<Integer, String> fieldsRow() {
-        return (Row2) super.fieldsRow();
+    public Row4<Integer, String, String, Short> fieldsRow() {
+        return (Row4) super.fieldsRow();
     }
 }

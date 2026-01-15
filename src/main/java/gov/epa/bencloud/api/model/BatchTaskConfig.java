@@ -37,6 +37,7 @@ public class BatchTaskConfig {
 	private static final Logger log = LoggerFactory.getLogger(BatchTaskConfig.class);
 	
 	public String name;
+	public Integer limitToGridId = 0;
 	public Integer gridDefinitionId = 0;
 	public Integer aqBaselineId = 0;
 	public Integer popId = 0;
@@ -71,7 +72,13 @@ public class BatchTaskConfig {
 			this.name = params.get("name").asText();
 			this.pollutantName = config.get("pollutant").asText();
 			this.pollutantId = config.get("pollutant_id").asInt();
+
+			//The grid used to limit the overall scope of the analysis
+			this.limitToGridId = params.get("limit_to_grid_id").asInt();
+
+			//The grid the HIF results will be aggregated to before valuation is run
 			this.gridDefinitionId = params.get("valuation_grid").asInt();
+
 			this.aqBaselineId = config.get("pre_policy_aq_id").asInt();
 			this.popId = config.get("population_id").asInt();
 			this.incidenceId = config.get("incidence_id").asInt();
@@ -111,6 +118,14 @@ public class BatchTaskConfig {
 		
 		Record3<String, Integer, String> populationInfo = PopulationApi.getPopulationDatasetInfo(popId);
 		
+		b.append("SCOPE OF ANALYSIS\n\n");
+		if(limitToGridId == null || limitToGridId == 0) {
+			b.append("Full extent of baseline air quality surface\n");
+		} else {
+			Record3<String, Integer, Integer> gridDefinitionInfo = GridDefinitionApi.getGridDefinitionInfo(limitToGridId);
+			b.append("Full extent of: \"").append(gridDefinitionInfo.getValue(GRID_DEFINITION.NAME)).append("\" grid definition\n");
+		}
+
 		/*
 		 * Pollutant
 		 */

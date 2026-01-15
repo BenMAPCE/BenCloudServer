@@ -41,7 +41,7 @@ public class TaskUtil {
 					.execute();
 				} else if (hifResultDatasets.size() > 1) {
 					log.info("recieved more than 1 HIF Result Dataset record");
-				} else {
+				} else if (hifResultDatasets.size() == 1) {
 
 					Record hifResultDataset = hifResultDatasets.get(0);
 
@@ -52,6 +52,10 @@ public class TaskUtil {
 
 					DSL.using(ctx).deleteFrom(HIF_RESULT)
 					.where(HIF_RESULT.HIF_RESULT_DATASET_ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))
+					.execute();
+
+					DSL.using(ctx).deleteFrom(HIF_RESULT_AGG)
+					.where(HIF_RESULT_AGG.HIF_RESULT_DATASET_ID.eq(hifResultDataset.get(HIF_RESULT_DATASET.ID)))
 					.execute();
 					
 					DSL.using(ctx).deleteFrom(HIF_RESULT_DATASET)
@@ -66,9 +70,14 @@ public class TaskUtil {
 						DSL.using(ctx).deleteFrom(TASK_COMPLETE)
 						.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
 						.execute();
+					}					
+				}
+				else{
+					if(deleteTask) {
+						DSL.using(ctx).deleteFrom(TASK_COMPLETE)
+						.where(TASK_COMPLETE.TASK_UUID.eq(uuid))
+						.execute();
 					}
-
-					
 				}
 			});
 		} catch (Exception e) {
@@ -108,6 +117,10 @@ public class TaskUtil {
 
 					DSL.using(ctx).deleteFrom(VALUATION_RESULT)
 					.where(VALUATION_RESULT.VALUATION_RESULT_DATASET_ID.eq(valuationResultDataset.get(VALUATION_RESULT_DATASET.ID)))
+					.execute();
+
+					DSL.using(ctx).deleteFrom(VALUATION_RESULT_AGG)
+					.where(VALUATION_RESULT_AGG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDataset.get(VALUATION_RESULT_DATASET.ID)))
 					.execute();
 					
 					DSL.using(ctx).deleteFrom(VALUATION_RESULT_DATASET)
@@ -159,6 +172,10 @@ public class TaskUtil {
 
 					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT)
 					.where(EXPOSURE_RESULT.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDataset.get(EXPOSURE_RESULT_DATASET.ID)))
+					.execute();
+
+					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT_AGG)
+					.where(EXPOSURE_RESULT_AGG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDataset.get(EXPOSURE_RESULT_DATASET.ID)))
 					.execute();
 					
 					DSL.using(ctx).deleteFrom(EXPOSURE_RESULT_DATASET)

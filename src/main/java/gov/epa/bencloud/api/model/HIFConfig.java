@@ -34,6 +34,8 @@ public class HIFConfig {
 	public Integer metric = null;
 	public Integer seasonalMetric = null;
 	public Integer metricStatistic = null;
+	public Integer timing = null;
+	public Integer incPreEndpointId = null; //the endpoint id used for incidence/prevalence lookup (because it's not always the same as the hif endpoint id)
 	
 	//incidence and prevlance may use different race, ethnicity, and/or gender than 
 	//the functions configuration due to data availability
@@ -42,20 +44,24 @@ public class HIFConfig {
 	public Integer incidenceYear = null;
 	public Integer incidenceRace = null;
 	public Integer incidenceEthnicity = null;
-	public Integer incidenceGender = null;
+	public Integer incidenceGender = null;	
 	
 	public Integer prevalence = null;
 	public String prevalenceName = null;
 	public Integer prevalenceYear = null;
 	public Integer prevalenceRace = null;
 	public Integer prevalenceEthnicity = null;
-	public Integer prevalenceGender = null;
-	
+	public Integer prevalenceGender = null;	
+
 	public Integer variable = null;
 	public Integer startDay = null;
 	public Integer endDay = null;
 	public Integer totalDays = null;
 	public int arrayIdx = 0;
+
+	public Integer heroId = null;
+	public String epaHeroUrl = null;
+	public String accessUrl = null;
 	
 	public Map<String, Object> hifRecord = new HashMap<String, Object> (); //This map will contain the full HIF record from the db
 	
@@ -84,8 +90,10 @@ public class HIFConfig {
 		this.prevalenceEthnicity = JSONUtil.getInteger(function, "prevalence_ethnicity");
 		this.prevalenceGender = JSONUtil.getInteger(function, "prevalence_gender");
 		
-		this.variable = JSONUtil.getInteger(function, "variable");
+		this.variable = JSONUtil.getInteger(function, "variable");		
+		
 		//TODO: Add code to allow user to specify metric, seasonal metric, and metric statistic?
+		//this.timing = JSONUtil.getInteger(function, "timing_id"); //not in use for now
 	}
 	
 	/**
@@ -117,14 +125,20 @@ public class HIFConfig {
 		
 		b.append("Pollutant: ").append(hifRecord.getOrDefault("pollutant_friendly_name", hifRecord.getOrDefault("pollutant_name", "Null"))).append("\n");
 		b.append("Metric: ").append(hifRecord.getOrDefault("metric_name", "")).append("\n");
-		b.append("Seasonal Metric: ").append(hifRecord.get("seasonal_metric_name") == null ? "Null" : hifRecord.get("seasonal_metric_name")).append("\n"); 
-		b.append("Metric Statistic: ").append(hifRecord.getOrDefault("metric_statistic_name", "")).append("\n");
+		String tmpTiming = hifRecord.getOrDefault("timing_name", "").toString();
+		if(tmpTiming.isEmpty()){
+			b.append("Seasonal Metric: ").append(hifRecord.get("seasonal_metric_name") == null ? "Null" : hifRecord.get("seasonal_metric_name")).append("\n"); 
+			b.append("Metric Statistic: ").append(hifRecord.getOrDefault("metric_statistic_name", "")).append("\n");//keep for backward compatibility
+		}
+		else{
+			b.append("Timing: ").append(hifRecord.getOrDefault("timing_name", "")).append("\n");
+		}		
 		
 		if(hifRecord.get("other_pollutants") != null) {
 			b.append("Other Pollutants: ").append(hifRecord.get("other_pollutants")).append("\n");
 		}
 		if(hifRecord.get("qualifier") != null) {
-			b.append("Qualifier: ").append(hifRecord.get("qualifier")).append("\n");
+			b.append("Risk Model Details: ").append(hifRecord.get("qualifier")).append("\n");
 		}
 		if(hifRecord.get("reference") != null) {
 			b.append("Reference: ").append(hifRecord.get("reference")).append("\n");
@@ -167,6 +181,11 @@ public class HIFConfig {
 				b.append("Name C: ").append(hifRecord.get("name_c")).append("\n")
 				.append("Value C: ").append(hifRecord.getOrDefault("val_c", "")).append("\n");
 			}
+		}
+
+		if(hifRecord.get("hero_id") != null) {
+			b.append("HERO ID: ").append(hifRecord.get("hero_id")).append("\n")
+			.append("Access Url: ").append(hifRecord.getOrDefault("access_url", "")).append("\n");
 		}
 		
 		return b.toString();

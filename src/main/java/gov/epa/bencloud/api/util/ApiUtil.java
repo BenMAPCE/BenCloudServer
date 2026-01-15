@@ -63,6 +63,7 @@ import gov.epa.bencloud.server.tasks.TaskUtil;
 import gov.epa.bencloud.server.tasks.model.Task;
 import spark.Request;
 import spark.Response;
+import org.slf4j.Logger;
 
 /**
  * @author jimanderton
@@ -70,7 +71,7 @@ import spark.Response;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "1.0.0";
+	public static final String appVersion = "1.1.0";
 	public static final int minimumDbVersion = 40;
 	
 	/**
@@ -236,6 +237,9 @@ public class ApiUtil {
 
 			String childUuid = record.getValue(TASK_QUEUE.TASK_UUID);
 			
+			//cancel child queries
+			cancelQueriesByUuid(childUuid);
+
 			//remove from worker and update in_process = false
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(childUuid, null, false, "Parent task canceled");
 			
@@ -247,6 +251,9 @@ public class ApiUtil {
 			}			
 		}						
 		
+		//cancel parent query
+		cancelQueriesByUuid(uuid);
+
 		//remove (parent) task from worker and update in_process = false
 		TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
 
@@ -298,9 +305,11 @@ public class ApiUtil {
 		for (Record record : result) {			
 
 			String uuid = record.getValue(TASK_QUEUE.TASK_UUID);
-			
+			cancelQueriesByUuid(uuid);
+
 			//remove from worker and update in_process = false
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(uuid, null, false, "Task canceled");
+			
 			//remove hif and valuation results
 			if (record.get(TASK_QUEUE.TASK_TYPE).equals("HIF")) {
 				TaskUtil.deleteHifResults(uuid, false);
@@ -316,6 +325,30 @@ public class ApiUtil {
 		
 	}
 	
+	/**
+	 * @param taskUuid
+	 * @return
+	 * @throws Exception
+	 */
+	public static void cancelQueriesByUuid(String uuid) { 
+		try {
+			Result<Record1<Integer>> pidRecords = DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
+			.select(DSL.field("pid", Integer.class))
+			.from("pg_stat_activity")
+			.where(DSL.field("application_name").eq(uuid))
+			.and(DSL.field("leader_pid").isNull()) //only cancel leader queries
+			.and(DSL.field("state").eq("active"))
+			.fetch();
+
+			for (Record1<Integer> record : pidRecords) {
+				Integer pid = record.value1();
+				DSL.using(JooqUtil.getJooqConfiguration()).execute("SELECT pg_cancel_backend(?)", pid);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Error canceling queries for taskUuid: " + uuid);
+		}
+	}
 	
 
 	/**
@@ -641,13 +674,15 @@ public class ApiUtil {
 	 * @param sigFigs
 	 * @return string containing formatted point estimate and 95% confidence interval
 	 */
-	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs) {
+	public static String createFormattedResultsString(Double pointEstimate, Double p2_5, Double p97_5, int sigFigs, boolean showDollarSign) {
 		StringBuilder s = new StringBuilder();
-		s.append("$");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(pointEstimate, sigFigs));
-		s.append(" ($");
+		s.append(" (");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(p2_5, sigFigs));
-		s.append(" to $");
+		s.append(" to ");
+		if(showDollarSign) s.append("$");
 		s.append(getValueSigFigs(p97_5, sigFigs));
 		s.append(")");
 
