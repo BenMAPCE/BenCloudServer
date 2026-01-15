@@ -18,8 +18,8 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 ### Dataset Updates
 
 * Replaced age-stratified all race/ethnicity mortality incidence rates for year 2020-2060, health effect Mortality, All Cause and Mortality, Respiratory rates for all states. (BWD-209) 
-* Added Hawaii and Alaska data to most datasets. For datasets that do not include Hawaii and Alaska, “Contiguous U.S.” has been added to the dataset name. (e.g. “Contiguous US CMAQ 12km Nation - 2020”. (BWD-145, BWD-176, BWD-183, BWD-184, BWD-187, BWD-188) 
-* The following columns and corresponding data have been added to the valuation function template and database: access url, valuation type, multiyear, multiyear dr, and multiyear cost. (BWD-179, BWD-225) 
+* Added Hawaii and Alaska data to most datasets. For datasets that do not include Hawaii and Alaska, “Contiguous U.S.” has been added to the dataset name. (e.g. “Contiguous US CMAQ 12km Nation - 2020”). (BWD-145, BWD-176, BWD-183, BWD-184, BWD-187, BWD-188) 
+* The following columns and corresponding data have been added to the valuation function template and database: access url, valuation type, multiyear, multiyear dr, multiyear cost, and discounted. (BWD-179, BWD-225, BWD-254) 
 * In health impact functions, “Seasonal Metric” and “Metric Statistics” are now replaced by column “Timing”. Acceptable values are “Daily” and “Annual”. (BWD-174) 
 * Added the default function group “Chronic Effects - Primary” and assigned 21 functions to this group (BWD-205). 
 * Katsouyanni’s mortality HIFs are removed from “Premature Death – Primary” and added to “Premature Death – All” group. Their HERO IDs and reference URLs are also updated. (BWD-177) 
@@ -32,7 +32,10 @@ See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/ben
 
 * Removed unnecessary dollar sign ($) from formatted health results. Added formatted results to valuation results screen. Re-ordered columns in result screen (BWD-180, BWD-181) 
 * The result summary screen now shows the grid definition of air quality data under “Geography”. (BWD-178) 
-* Changed term “endpoint” to “health_effect” in exported csv, and function import template (BWD-190, BWD-173) 
+* Changed term “endpoint” to “health_effect” in exported csv, and function import template. (BWD-190, BWD-173) 
+* Changed term “qualifier” to “risk_model_details” in exported csv, and function import template. (BWD-173) 
+* Changed term “Endpoint Group” to “Health Effect Category” in user interface and function import template. (BWD-190, BWD-173) 
+* Changed term “Parameter 1 Beta” to “Standard Error” in user interface and function import template. (BWD-173) 
 * Handling of long-running tasks and task cancelation has been improved for performance and stability. (BWD-168)
 
 
