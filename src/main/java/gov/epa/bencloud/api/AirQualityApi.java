@@ -218,6 +218,12 @@ public class AirQualityApi {
 			filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
 		}
 
+		// This is a temporary restriction to enable version 1.1.0 to operate correctly
+		// The original AQ surfaces were removed and replaced by new ones with this release
+		// But, the missing surfaces were preventing analysis results from being viewed.
+		// We put them back with patch 94 and added the following line to supress them from display.
+		filterCondition = filterCondition.and(DSL.field(AIR_QUALITY_LAYER.ID.notIn(6,16,19,21,23,36)));
+
 		Integer filteredRecordsCount = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
 				.from(AIR_QUALITY_LAYER)

@@ -850,7 +850,8 @@ public class TaskApi {
 						data.put("valuation_grid_id", valuationGridId);
 						data.put("valuation_grid_name", GridDefinitionApi.getGridDefinitionName(valuationGridId));
 
-						Integer limitToGridId = batchParamsNode.get("limitToGridId").asInt();
+						//Integer limitToGridId = batchParamsNode.get("limitToGridId").asInt();
+						Integer limitToGridId = batchParamsNode.get("limitToGridId") != null ? batchParamsNode.get("limitToGridId").asInt() : 0;
 						if(limitToGridId != 0) {
 							data.put("limit_to_grid_name", GridDefinitionApi.getGridDefinitionName(limitToGridId));
 						}
