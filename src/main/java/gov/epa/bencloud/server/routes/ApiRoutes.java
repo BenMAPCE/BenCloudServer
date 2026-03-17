@@ -757,7 +757,13 @@ public class ApiRoutes extends RoutesBase {
 			return TaskApi.getExportFileID(request, response, getUserProfile(request, response));
 		});
 		
-		
+		/*
+		 * GET datasets for all users (admin only)
+		 */
+		service.get(apiPrefix + "/admin/data-export", (request, response) -> {
+			return CoreApi.getAllDatasets(request, response, getUserProfile(request, response));
+		});
+
 		
 
 	}
