@@ -1749,10 +1749,9 @@ public class ValuationApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 
-		//Nobody can archive shared VFs
 		//All users can archive their own VFs
-		//Admins can archive any non-shared VFs
-		if(vfResult.getShareScope() == Constants.SHARING_ALL || !(vfResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+		//Admins can archive any VFs
+		if((vfResult.getShareScope() == Constants.SHARING_ALL || !vfResult.getUserId().equalsIgnoreCase(userProfile.get().getId())) && !CoreApi.isAdmin(userProfile))  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 

@@ -2141,10 +2141,9 @@ public class HIFApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 
-		//Nobody can archive shared HIFs
 		//All users can archive their own HIFs
-		//Admins can archive any non-shared HIFs
-		if(hifResult.getShareScope() == Constants.SHARING_ALL || !(hifResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+		//Admins can archive any HIFs
+		if((hifResult.getShareScope() == Constants.SHARING_ALL || !hifResult.getUserId().equalsIgnoreCase(userProfile.get().getId())) && !CoreApi.isAdmin(userProfile))  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 
