@@ -4,6 +4,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_CELL
 import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER_METRICS;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_DATASET;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POLLUTANT;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POLLUTANT_METRIC;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.SEASONAL_METRIC;
@@ -79,6 +80,7 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -117,6 +119,8 @@ public class AirQualityApi {
 		String userId = userProfile.get().getId();
 
 		Condition filterCondition = AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId));
+
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short) 0));
 
 		if (pollutantId != 0) {
 			filterCondition = filterCondition.and(DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId));
@@ -198,6 +202,8 @@ public class AirQualityApi {
 		Condition filterCondition = DSL.trueCondition();
 		
 		Condition pollutantCondition = DSL.trueCondition();
+
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short) 0));
 
 		if (pollutantId != 0) {
 			pollutantCondition = DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId);
@@ -393,6 +399,8 @@ public class AirQualityApi {
 		Condition filterCondition = DSL.trueCondition();
 		
 		Condition pollutantCondition = DSL.trueCondition();
+
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short) 0));
 
 		if (pollutantId != 0) {
 			pollutantCondition = DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId);
@@ -1516,6 +1524,38 @@ public class AirQualityApi {
 			return response;
 		}
 	} 
+
+	public static Object archiveAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+	
+		ValidationMessage validationMsg = new ValidationMessage();
+		Integer id;
+
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		AirQualityLayerRecord airQualityResult = create.selectFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.ID.eq(id)).fetchAny();
+		if(airQualityResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Admins can archive any air quality layer
+		if(!CoreApi.isAdmin(userProfile))  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		airQualityResult.setArchived((short) 1);
+
+		airQualityResult.store();
+
+		response.type("application/json");
+		validationMsg.success = true;
+		return CoreApi.transformValMsgToJSON(validationMsg); 
+	}
 	
 	/**
 	 * 

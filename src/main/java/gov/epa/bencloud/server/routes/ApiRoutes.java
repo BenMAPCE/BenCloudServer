@@ -85,6 +85,15 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		/*
+		 * Archive a grid definition
+		 * PARAMETERS:
+		 * :id
+		 */
+		service.post(apiPrefix + "/grid-definitions/:id", (request, response) -> {
+			return GridDefinitionApi.archiveGridDefinition(request, response, getUserProfile(request, response));
+		});
+
+		/*
 		 * Rename a single grid definition
 		 * PARAMETERS:
 		 *  :id
@@ -186,6 +195,15 @@ public class ApiRoutes extends RoutesBase {
 
 			return AirQualityApi.deleteAirQualityLayerDefinition(request, response, getUserProfile(request, response));
 
+		});
+
+		/*
+		 * Archive an air quality surface definition
+		 * PARAMETERS:
+		 * :id
+		 */
+		service.post(apiPrefix + "/air-quality-data/:id", (request, response) -> {
+			return AirQualityApi.archiveAirQualityLayerDefinition(request, response, getUserProfile(request, response));
 		});
 		
 		/*
@@ -350,6 +368,16 @@ public class ApiRoutes extends RoutesBase {
 			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * Archive an incidence dataset
+		 * PARAMETERS:
+		 * :id
+		 */
+		service.post(apiPrefix + "/incidence/:id", (request, response) -> {
+			return IncidenceApi.archiveIncidenceDataset(request, response, getUserProfile(request, response));
+		});
+
 		/*
 		 * GET all the contents of an incidence dataset
 		 */

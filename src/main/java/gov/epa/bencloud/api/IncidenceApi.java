@@ -74,6 +74,7 @@ import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.Routines;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.EndpointRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetIncidenceRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.HealthImpactFunctionRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceEntryRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceValueRecord;
@@ -302,6 +303,8 @@ public class IncidenceApi {
 	
 		Condition filterCondition = DSL.trueCondition();
 		Condition userFilterCondition = DSL.trueCondition();
+
+		filterCondition = filterCondition.and(INCIDENCE_DATASET.ARCHIVED.eq((short) 0));
 
 		if(!showAll || !CoreApi.isAdmin(userProfile)) {
 			userFilterCondition = userFilterCondition.and(INCIDENCE_DATASET.USER_ID.eq(userId));
@@ -1541,6 +1544,38 @@ public class IncidenceApi {
 			return response;
 		}
 	} 
+
+	public static Object archiveIncidenceDataset(Request request, Response response, Optional<UserProfile> userProfile) {
+	
+		ValidationMessage validationMsg = new ValidationMessage();
+		Integer id;
+
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		IncidenceDatasetRecord incidenceResult = create.selectFrom(INCIDENCE_DATASET).where(INCIDENCE_DATASET.ID.eq(id)).fetchAny();
+		if(incidenceResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Admins can archive any incidence datasets
+		if(!CoreApi.isAdmin(userProfile))  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		incidenceResult.setArchived((short) 1);
+
+		incidenceResult.store();
+
+		response.type("application/json");
+		validationMsg.success = true;
+		return CoreApi.transformValMsgToJSON(validationMsg); 
+	}
 	
 
 	/**

@@ -49,6 +49,7 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GridDefinitionRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -597,6 +598,38 @@ public class GridDefinitionApi {
 		return response;
 
 	} 
+
+	public static Object archiveGridDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+	
+		ValidationMessage validationMsg = new ValidationMessage();
+		Integer id;
+
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		GridDefinitionRecord gridDefinitionResult = create.selectFrom(GRID_DEFINITION).where(GRID_DEFINITION.ID.eq(id)).fetchAny();
+		if(gridDefinitionResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Admins can archive any grid definitions
+		if(!CoreApi.isAdmin(userProfile))  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		gridDefinitionResult.setArchive((short) 1);
+
+		gridDefinitionResult.store();
+
+		response.type("application/json");
+		validationMsg.success = true;
+		return CoreApi.transformValMsgToJSON(validationMsg); 
+	}
 
 	/**
 	 * Renames a grid definition from the database (grid id is a request parameter).
