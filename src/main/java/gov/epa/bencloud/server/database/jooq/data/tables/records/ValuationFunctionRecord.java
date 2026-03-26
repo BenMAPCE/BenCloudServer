@@ -424,6 +424,20 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
         return (Short) get(28);
     }
 
+    /**
+     * Setter for <code>data.valuation_function.discounted</code>.
+     */
+    public void setDiscounted(String value) {
+        set(29, value);
+    }
+
+    /**
+     * Getter for <code>data.valuation_function.discounted</code>.
+     */
+    public String getDiscounted() {
+        return (String) get(29);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -447,7 +461,7 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
     /**
      * Create a detached, initialised ValuationFunctionRecord
      */
-    public ValuationFunctionRecord(Integer id, Integer valuationDatasetId, Integer endpointGroupId, Integer endpointId, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double valA, String nameA, String distA, Double p1a, Double p2a, Double valB, String nameB, Double valC, String nameC, Double valD, String nameD, Boolean epaStandard, String accessUrl, String valuationType, Boolean multiyear, Double multiyearDr, Double[] multiyearCosts, String userId, Short shareScope, Short archived) {
+    public ValuationFunctionRecord(Integer id, Integer valuationDatasetId, Integer endpointGroupId, Integer endpointId, String qualifier, String reference, Integer startAge, Integer endAge, String functionText, Double valA, String nameA, String distA, Double p1a, Double p2a, Double valB, String nameB, Double valC, String nameC, Double valD, String nameD, Boolean epaStandard, String accessUrl, String valuationType, Boolean multiyear, Double multiyearDr, Double[] multiyearCosts, String userId, Short shareScope, Short archived, String discounted) {
         super(ValuationFunction.VALUATION_FUNCTION);
 
         setId(id);
@@ -479,5 +493,6 @@ public class ValuationFunctionRecord extends UpdatableRecordImpl<ValuationFuncti
         setUserId(userId);
         setShareScope(shareScope);
         setArchived(archived);
+        setDiscounted(discounted);
     }
 }

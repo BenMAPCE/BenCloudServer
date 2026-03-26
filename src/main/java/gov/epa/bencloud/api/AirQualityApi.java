@@ -218,6 +218,12 @@ public class AirQualityApi {
 			filterCondition = filterCondition.and(AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId)));
 		}
 
+		// This is a temporary restriction to enable version 1.1.0 to operate correctly
+		// The original AQ surfaces were removed and replaced by new ones with this release
+		// But, the missing surfaces were preventing analysis results from being viewed.
+		// We put them back with patch 94 and added the following line to supress them from display.
+		filterCondition = filterCondition.and(DSL.field(AIR_QUALITY_LAYER.ID.notIn(6,16,19,21,23,36)));
+
 		Integer filteredRecordsCount = 
 				DSL.using(JooqUtil.getJooqConfiguration()).select(DSL.count())
 				.from(AIR_QUALITY_LAYER)
@@ -254,7 +260,7 @@ public class AirQualityApi {
 			create.select(
 						AIR_QUALITY_LAYER.ID, 
 						AIR_QUALITY_LAYER.NAME,
-						AIR_QUALITY_LAYER.GROUP_NAME,
+						DSL.coalesce(AIR_QUALITY_LAYER.GROUP_NAME, "").as("group_name"),
 						AIR_QUALITY_LAYER.USER_ID,
 						AIR_QUALITY_LAYER.SHARE_SCOPE,
 						AIR_QUALITY_LAYER.GRID_DEFINITION_ID,
@@ -938,7 +944,7 @@ public class AirQualityApi {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: groupName, pollutantId, gridId."));
+			validationMsg.messages.add(new ValidationMessage.Message("error","Missing one or more required parameters: pollutantId, gridId."));
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 
@@ -985,7 +991,7 @@ public class AirQualityApi {
 		} 
 
 		// Final validation that groupName was included if user is uploading multiple files
-		if(groupName.isEmpty() && fileCount > 1) {
+		if(fileCount > 1 && (groupName == null || groupName.isEmpty())) {
 			response.type("application/json");
 			response.status(400);
 			validationMsg.success=false;
@@ -1414,9 +1420,13 @@ public class AirQualityApi {
 		paramsNode.put("description", description);
 		paramsNode.put("gridId", gridId);
 		
+		String firstLayerName = null;
 		ArrayNode filesArray = mapper.createArrayNode();
 		for (Map.Entry<String, Integer> entry : csvFilestoreIds.entrySet()) {
 			ObjectNode file = mapper.createObjectNode();
+			if(firstLayerName == null) {
+				firstLayerName = entry.getKey();
+			}
 			file.put("layerName", entry.getKey());
 			file.put("filestoreId", entry.getValue());
 			filesArray.add(file);
@@ -1425,7 +1435,7 @@ public class AirQualityApi {
 		
 		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP Server"))
 		.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
-		.values("Air Quality import: " + groupName, paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
+		.values("Air Quality import: " + (groupName==null || groupName.isEmpty() ? firstLayerName : groupName), paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
 		.returning(TASK_BATCH.ID).fetchOne();
 		Integer batchTaskId = rec.getId();
 

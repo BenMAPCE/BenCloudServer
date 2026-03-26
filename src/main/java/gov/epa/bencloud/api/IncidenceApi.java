@@ -118,6 +118,8 @@ public class IncidenceApi {
 		
 		Integer incPrevId = isIncidence ? hifConfig.incidence : hifConfig.prevalence;
 		Integer incPrevYear = isIncidence ? hifConfig.incidenceYear : hifConfig.prevalenceYear;
+
+		Integer incPreEndpointId = hifConfig.incPreEndpointId;
 		
 		//Use the race, ethnicity, and gender selected earlier in order to look up the exact data this function needs
 		//If needed, convert the ALL entry to the Null entry to match incidence data
@@ -127,12 +129,13 @@ public class IncidenceApi {
 		ethnicityId = (ethnicityId == 3 ? 4 : ethnicityId);
 		Integer genderId = (isIncidence ? hifConfig.incidenceGender : hifConfig.prevalenceGender);
 		genderId = (genderId == 3 ? 4 : genderId);
-		
+
+
 
 		
 		//Build a unique cache key for this incidence/prevalence result set
 		String cacheKey = incPrevId + "~" + incPrevYear 
-				+ "~" + h.get("endpoint_id", Integer.class) 
+				+ "~" + incPreEndpointId 
 				+ "~" + hifAgeStart 
 				+ "~" + hifAgeEnd
 				+ "~" + raceId
@@ -178,7 +181,8 @@ public class IncidenceApi {
 		Map<Long, Result<GetIncidenceRecord>> incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
-				h.get("endpoint_id", Integer.class), 
+				//h.get("endpoint_id", Integer.class), 
+				incPreEndpointId,
 				arrRaceId, 
 				arrEthnicityId,
 				arrGenderId,
@@ -201,7 +205,8 @@ public class IncidenceApi {
 			incRecords = Routines.getIncidence(JooqUtil.getJooqConfiguration(), 
 				incPrevId,
 				incPrevYear,
-				h.get("endpoint_id", Integer.class), 
+				//h.get("endpoint_id", Integer.class), 
+				incPreEndpointId,
 				arrRaceId, 
 				arrEthnicityId,
 				arrGenderId,
