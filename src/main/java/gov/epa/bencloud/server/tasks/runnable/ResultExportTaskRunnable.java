@@ -40,10 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import java.util.Vector;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -51,18 +49,15 @@ import org.jooq.CSVFormat;
 import org.jooq.Configuration;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Record16;
-import org.jooq.Record3;
 import org.jooq.Result;
+import org.jooq.SQLDialect;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
-import org.mariuszgromada.math.mxparser.Expression;
-import org.mariuszgromada.math.mxparser.mXparser;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.Logger;
@@ -71,42 +66,30 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.epa.bencloud.Constants;
-import gov.epa.bencloud.api.AirQualityApi;
 import gov.epa.bencloud.api.CrosswalksApi;
 import gov.epa.bencloud.api.ExposureApi;
 import gov.epa.bencloud.api.GridDefinitionApi;
 import gov.epa.bencloud.api.HIFApi;
-import gov.epa.bencloud.api.PopulationApi;
 import gov.epa.bencloud.api.TaskApi;
 import gov.epa.bencloud.api.ValuationApi;
-import gov.epa.bencloud.api.function.EFunction;
-import gov.epa.bencloud.api.model.AirQualityCell;
-import gov.epa.bencloud.api.model.AirQualityCellMetric;
 import gov.epa.bencloud.api.model.BatchTaskConfig;
-import gov.epa.bencloud.api.model.ExposureConfig;
-import gov.epa.bencloud.api.model.ExposureTaskConfig;
 import gov.epa.bencloud.api.model.ExposureTaskLog;
 import gov.epa.bencloud.api.model.HIFTaskLog;
-import gov.epa.bencloud.api.model.PopulationCategoryKey;
 import gov.epa.bencloud.api.model.ResultExportTaskConfig;
 import gov.epa.bencloud.api.model.ResultExportTaskLog;
 import gov.epa.bencloud.api.model.ValuationConfig;
 import gov.epa.bencloud.api.model.ValuationTaskLog;
-import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.ExposureUtil;
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.PooledDataSource;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureResultRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.GetPopulationRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetValuationResultsRecord;
 import gov.epa.bencloud.server.tasks.TaskComplete;
 import gov.epa.bencloud.server.tasks.TaskQueue;
-import gov.epa.bencloud.server.tasks.TaskWorker;
 import gov.epa.bencloud.server.tasks.model.Task;
 import gov.epa.bencloud.server.tasks.model.TaskMessage;
 import gov.epa.bencloud.server.util.ApplicationUtil;
@@ -244,6 +227,7 @@ public class ResultExportTaskRunnable implements Runnable {
 		Task task = TaskQueue.getTaskFromQueueRecord(taskUuid);
 
 		ArrayList<TaskMessage> messages = new ArrayList<TaskMessage>();
+		File tmpZipFile = null;
 
 		try {
 			ResultExportTaskConfig resultExportTaskConfig = null;
@@ -300,22 +284,20 @@ public class ResultExportTaskRunnable implements Runnable {
 			}
 
 			// Get output stream
-			ZipOutputStream zipStream;
-			File tmpZipFile = null;
 			String tmpDirectoryPath = System.getProperty("java.io.tmpdir");
 
 			try {
 				File tmpDirectory = new File(tmpDirectoryPath);
 				tmpZipFile = File.createTempFile("resultExport",".zip", tmpDirectory);
-				FileOutputStream fos = new FileOutputStream(tmpZipFile);
-
-				// Stream .ZIP file to the temp file with buffering for write performance
-				zipStream = new ZipOutputStream(new BufferedOutputStream(fos, 65536));
 			} catch (java.io.IOException e1) {
 				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 				log.error("Error getting output stream", e1);
 				return;
 			}
+
+			// Use try-with-resources to ensure zipStream is always closed and temp file is cleaned up
+			try (FileOutputStream fos = new FileOutputStream(tmpZipFile);
+				 ZipOutputStream zipStream = new ZipOutputStream(new BufferedOutputStream(fos, 65536))) {
 			
 //			For now we we export EITHER exposure OR HIF/Valuation results. We may want to change the logic in the future.
 			if(includeExposure) {
@@ -815,39 +797,45 @@ public class ResultExportTaskRunnable implements Runnable {
 			// Add log file
 			try {
 				zipStream.putNextEntry(new ZipEntry(zipFileName + "_TaskLog.txt"));
-				
 				zipStream.write(batchTaskLog.toString().getBytes());
-				zipStream.closeEntry();			
-				zipStream.close();
-				
+				zipStream.closeEntry();
 			} catch (Exception e) {
-				log.error("Error writing task log, closing and flushing export", e);
+				log.error("Error writing task log", e);
 			}
-			
+
+			// zipStream is closed here by try-with-resources, flushing all buffered data to the temp file
+			}
+
+			// Upload the completed zip file to the file store
 			String fileMetadata = "{\"name\":\"" + zipFileName + ".zip\"}";
 			try (FileInputStream fis = new FileInputStream(tmpZipFile)) {
 				Integer fsid = FilestoreUtil.putFile(fis, zipFileName + ".zip", Constants.FILE_TYPE_RESULT_EXPORT, task.getUserIdentifier(), fileMetadata);
 				resultExportTaskConfig.filestoreId = fsid;
-			} // Ending try will close FileInputStream before delete
+			}
 
-			Files.delete(Paths.get(tmpZipFile.getPath()));
-			
 			TaskQueue.updateTaskParameters(task.getUuid(), mapper.writeValueAsString(resultExportTaskConfig));
-			
-			messages.get(messages.size()-1).setStatus("complete");			
 
-			Integer fileSize = 0;
-			String completeMessage = String.format("Exported results", fileSize);
+			messages.get(messages.size()-1).setStatus("complete");
+
+			String completeMessage = "Exported results";
 			resultExportTaskLog.addMessage(completeMessage);
 			resultExportTaskLog.setSuccess(true);
 			resultExportTaskLog.setDtEnd(LocalDateTime.now());
-			// ExposureUtil.storeTaskLog(resultExportTaskLog);
-			
+
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, taskSuccessful, completeMessage);
 
 		} catch (Exception e) {
 			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 			log.error("Task failed", e);
+		} finally {
+			// Always clean up the temp file
+			if (tmpZipFile != null) {
+				try {
+					Files.deleteIfExists(Paths.get(tmpZipFile.getPath()));
+				} catch (java.io.IOException e) {
+					log.error("Error deleting temp file: " + tmpZipFile.getPath(), e);
+				}
+			}
 		}
 		log.info("Result Export Task Complete: " + taskUuid);
 	}
