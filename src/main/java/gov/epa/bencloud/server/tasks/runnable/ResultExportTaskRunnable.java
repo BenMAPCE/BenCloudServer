@@ -24,12 +24,15 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_RESULT
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VALUATION_RESULT_FUNCTION_CONFIG;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.VARIABLE_ENTRY;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,8 +48,11 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jooq.CSVFormat;
+import org.jooq.Configuration;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Record16;
 import org.jooq.Record3;
@@ -54,6 +60,7 @@ import org.jooq.Result;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultConfiguration;
 import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
 import org.pac4j.core.profile.CommonProfile;
@@ -91,6 +98,7 @@ import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.api.util.HIFUtil;
 import gov.epa.bencloud.api.util.ValuationUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
+import gov.epa.bencloud.server.database.PooledDataSource;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.ExposureResultRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetExposureResultsRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.GetHifResultsRecord;
@@ -124,6 +132,110 @@ public class ResultExportTaskRunnable implements Runnable {
 	}
 
 	private boolean taskSuccessful = true;
+
+	/**
+	 * Creates a JOOQ Configuration with autocommit disabled on its connection.
+	 * PostgreSQL JDBC requires autocommit=false for server-side cursors (fetchLazy) to work.
+	 * The caller must close the returned connection when done.
+	 */
+	private static ConnectionAndConfig acquireNoAutoCommitConfig() throws SQLException {
+		Connection conn = PooledDataSource.getDataSource().getConnection();
+		conn.setAutoCommit(false);
+		Configuration config = new DefaultConfiguration()
+				.set(conn)
+				.set(SQLDialect.POSTGRES);
+		return new ConnectionAndConfig(conn, config);
+	}
+
+	private static class ConnectionAndConfig implements AutoCloseable {
+		final Connection connection;
+		final Configuration configuration;
+
+		ConnectionAndConfig(Connection connection, Configuration configuration) {
+			this.connection = connection;
+			this.configuration = configuration;
+		}
+
+		@Override
+		public void close() throws SQLException {
+			try {
+				connection.setAutoCommit(true);
+			} finally {
+				connection.close();
+			}
+		}
+	}
+
+	/**
+	 * Writes a batch of records as CSV to the output stream.
+	 * On the first batch, writes the header; on subsequent batches, omits it.
+	 */
+	private static void writeBatchCsv(Result<?> batch, OutputStream out, boolean includeHeader) {
+		if (includeHeader) {
+			batch.formatCSV(out);
+		} else {
+			batch.formatCSV(out, new CSVFormat().header(false));
+		}
+	}
+
+	/**
+	 * Writes selected fields from a batch of records as CSV, avoiding the memory copy that .into() creates.
+	 * @param batch the full batch of records
+	 * @param fieldIndices indices of fields to include in the CSV output
+	 * @param out the output stream to write to
+	 * @param includeHeader whether to write the CSV header row
+	 */
+	private static void writeBatchCsvFields(Result<Record> batch, int[] fieldIndices, OutputStream out, boolean includeHeader) {
+		try {
+			Field<?>[] allFields = batch.fields();
+			StringBuilder sb = new StringBuilder();
+
+			if (includeHeader) {
+				for (int k = 0; k < fieldIndices.length; k++) {
+					if (k > 0) sb.append(',');
+					String name = allFields[fieldIndices[k]].getName();
+					// Quote header if it contains comma, quote, or newline
+					if (name.indexOf(',') >= 0 || name.indexOf('"') >= 0 || name.indexOf('\n') >= 0) {
+						sb.append('"').append(name.replace("\"", "\"\"")).append('"');
+					} else {
+						sb.append(name);
+					}
+				}
+				sb.append('\n');
+				out.write(sb.toString().getBytes());
+				sb.setLength(0);
+			}
+
+			for (Record rec : batch) {
+				for (int k = 0; k < fieldIndices.length; k++) {
+					if (k > 0) sb.append(',');
+					Object val = rec.getValue(fieldIndices[k]);
+					if (val != null) {
+						String strVal = val.toString();
+						// Quote value if it contains comma, quote, or newline
+						if (strVal.indexOf(',') >= 0 || strVal.indexOf('"') >= 0 || strVal.indexOf('\n') >= 0) {
+							sb.append('"').append(strVal.replace("\"", "\"\"")).append('"');
+						} else {
+							sb.append(strVal);
+						}
+					}
+				}
+				sb.append('\n');
+
+				// Flush buffer periodically to avoid building a huge string
+				if (sb.length() > 32768) {
+					out.write(sb.toString().getBytes());
+					sb.setLength(0);
+				}
+			}
+
+			if (sb.length() > 0) {
+				out.write(sb.toString().getBytes());
+			}
+		} catch (java.io.IOException e) {
+			throw new RuntimeException("Error writing CSV", e);
+		}
+	}
 
 	public void run() {
 		
@@ -196,9 +308,9 @@ public class ResultExportTaskRunnable implements Runnable {
 				File tmpDirectory = new File(tmpDirectoryPath);
 				tmpZipFile = File.createTempFile("resultExport",".zip", tmpDirectory);
 				FileOutputStream fos = new FileOutputStream(tmpZipFile);
-				
-				// Stream .ZIP file to the temp file
-				zipStream = new ZipOutputStream(fos);
+
+				// Stream .ZIP file to the temp file with buffering for write performance
+				zipStream = new ZipOutputStream(new BufferedOutputStream(fos, 65536));
 			} catch (java.io.IOException e1) {
 				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 				log.error("Error getting output stream", e1);
@@ -262,46 +374,46 @@ public class ResultExportTaskRunnable implements Runnable {
 								.asTable("ef_result_records");
 
 							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-							CSVFormat csvFormatNoHeader = new CSVFormat().header(false);
 							boolean firstBatch = true;
-							try (Cursor<Record16<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> cursor = create.select(
-									efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
-									efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
-									EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
-									EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
-									EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
-									RACE.NAME.as("race"),
-									ETHNICITY.NAME.as("ethnicity"),
-									GENDER.NAME.as("gender"),
-									VARIABLE_ENTRY.NAME.as("variable"),
-									efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ),
-									efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ),
-									efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
-									DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
-									.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
-									efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
-									efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
-									DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
-									.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population")
-									)
-									.from(efResultRecords)
-									.leftJoin(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
-									.join(EXPOSURE_RESULT_FUNCTION_CONFIG)
-										.on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDatasetId)
-												.and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_INSTANCE_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_INSTANCE_ID))))
-									.leftJoin(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
-									.join(ETHNICITY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
-									.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
-									.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
-	                                .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
-									.fetchLazy()) {
-								while (cursor.hasNext()) {
-									Result<?> batch = cursor.fetchNext(5000);
-									if (firstBatch) {
-										batch.formatCSV(zipStream);
+							// Use a connection with autocommit=false so PostgreSQL JDBC enables server-side cursors
+							try (ConnectionAndConfig cac = acquireNoAutoCommitConfig()) {
+								DSLContext cursorCtx = DSL.using(cac.configuration);
+								try (Cursor<Record16<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> cursor = cursorCtx.select(
+										efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
+										efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
+										EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
+										EXPOSURE_RESULT_FUNCTION_CONFIG.START_AGE,
+										EXPOSURE_RESULT_FUNCTION_CONFIG.END_AGE,
+										RACE.NAME.as("race"),
+										ETHNICITY.NAME.as("ethnicity"),
+										GENDER.NAME.as("gender"),
+										VARIABLE_ENTRY.NAME.as("variable"),
+										efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ),
+										efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ),
+										efResultRecords.field(GET_EXPOSURE_RESULTS.SCENARIO_AQ),
+										DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ).eq(0.0), 0.0)
+										.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.DELTA_AQ).div(efResultRecords.field(GET_EXPOSURE_RESULTS.BASELINE_AQ)).times(100.0)).as("delta_aq_percent"),
+										efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION),
+										efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION),
+										DSL.when(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION).eq(0.0), 0.0)
+										.otherwise(efResultRecords.field(GET_EXPOSURE_RESULTS.SUBGROUP_POPULATION).div(efResultRecords.field(GET_EXPOSURE_RESULTS.ALL_POPULATION)).times(100.0)).as("percent_of_population")
+										)
+										.from(efResultRecords)
+										.leftJoin(EXPOSURE_FUNCTION).on(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_ID).eq(EXPOSURE_FUNCTION.ID))
+										.join(EXPOSURE_RESULT_FUNCTION_CONFIG)
+											.on(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_RESULT_DATASET_ID.eq(exposureResultDatasetId)
+													.and(EXPOSURE_RESULT_FUNCTION_CONFIG.EXPOSURE_FUNCTION_INSTANCE_ID.eq(efResultRecords.field(GET_EXPOSURE_RESULTS.EXPOSURE_FUNCTION_INSTANCE_ID))))
+										.leftJoin(RACE).on(EXPOSURE_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+										.join(ETHNICITY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+										.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+										.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
+		                                .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
+										.fetchSize(5000)
+										.fetchLazy()) {
+									while (cursor.hasNext()) {
+										Result<?> batch = cursor.fetchNext(5000);
+										writeBatchCsv(batch, zipStream, firstBatch);
 										firstBatch = false;
-									} else {
-										batch.formatCSV(zipStream, csvFormatNoHeader);
 									}
 								}
 							}
@@ -422,86 +534,85 @@ public class ResultExportTaskRunnable implements Runnable {
 								.asTable("hif_result_records");
 
 							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-							CSVFormat csvFormatNoHeader = new CSVFormat().header(false);
 							boolean firstBatch = true;
 							DescriptiveStatistics stats = new DescriptiveStatistics();
-							try (Cursor<Record> cursor = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
-									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
-									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
-									ENDPOINT.DISPLAY_NAME.as("health_effect"),
-									HEALTH_IMPACT_FUNCTION.AUTHOR,
-									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
-									HEALTH_IMPACT_FUNCTION.LOCATION,
-									HEALTH_IMPACT_FUNCTION.QUALIFIER.as("risk_model_details"),
-									HIF_RESULT_FUNCTION_CONFIG.START_AGE,
-									HIF_RESULT_FUNCTION_CONFIG.END_AGE,
-									HEALTH_IMPACT_FUNCTION.BETA,
-									RACE.NAME.as("race"),
-									ETHNICITY.NAME.as("ethnicity"),
-									GENDER.NAME.as("gender"),
-									POLLUTANT_METRIC.NAME.as("metric"),
-									SEASONAL_METRIC.NAME.as("seasonal_metric"),
-									STATISTIC_TYPE.NAME.as("metric_statistic"),
-									TIMING_TYPE.NAME.as("timing"),
-									hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
-									hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
-									hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
-									hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
-									hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
-									hifResultRecords.field(GET_HIF_RESULTS.MEAN),
-									hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
-									DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
-										.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE)).times(100.0)).as("percent_of_baseline"),
-									hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
-									hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
-									hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
-									hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
-									isAggregating ? hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) : null //Only include percentiles if we're aggregating
-									)
-									.from(hifResultRecords)
-									.leftJoin(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
-									.join(HIF_RESULT_FUNCTION_CONFIG)
-										.on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(hifResultDatasetId)
-												.and(HIF_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_INSTANCE_ID))))
-									.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
-									.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
-									.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
-									.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
-									.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-									.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-									.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-									.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
-									.fetchLazy()) {
-								while (cursor.hasNext()) {
-									Result<Record> batch = cursor.fetchNext(5000);
+							// Use a connection with autocommit=false so PostgreSQL JDBC enables server-side cursors
+							try (ConnectionAndConfig cac = acquireNoAutoCommitConfig()) {
+								DSLContext cursorCtx = DSL.using(cac.configuration);
+								try (Cursor<Record> cursor = cursorCtx.select(
+										hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
+										hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
+										ENDPOINT.DISPLAY_NAME.as("health_effect"),
+										HEALTH_IMPACT_FUNCTION.AUTHOR,
+										HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+										HEALTH_IMPACT_FUNCTION.LOCATION,
+										HEALTH_IMPACT_FUNCTION.QUALIFIER.as("risk_model_details"),
+										HIF_RESULT_FUNCTION_CONFIG.START_AGE,
+										HIF_RESULT_FUNCTION_CONFIG.END_AGE,
+										HEALTH_IMPACT_FUNCTION.BETA,
+										RACE.NAME.as("race"),
+										ETHNICITY.NAME.as("ethnicity"),
+										GENDER.NAME.as("gender"),
+										POLLUTANT_METRIC.NAME.as("metric"),
+										SEASONAL_METRIC.NAME.as("seasonal_metric"),
+										STATISTIC_TYPE.NAME.as("metric_statistic"),
+										TIMING_TYPE.NAME.as("timing"),
+										hifResultRecords.field(GET_HIF_RESULTS.POINT_ESTIMATE),
+										hifResultRecords.field(GET_HIF_RESULTS.POPULATION),
+										hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
+										hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
+										hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
+										hifResultRecords.field(GET_HIF_RESULTS.MEAN),
+										hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
+										DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
+											.otherwise(hifResultRecords.field(GET_HIF_RESULTS.MEAN).div(hifResultRecords.field(GET_HIF_RESULTS.BASELINE)).times(100.0)).as("percent_of_baseline"),
+										hifResultRecords.field(GET_HIF_RESULTS.STANDARD_DEV).as("standard_deviation"),
+										hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
+										hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
+										hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
+										isAggregating ? hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) : null //Only include percentiles if we're aggregating
+										)
+										.from(hifResultRecords)
+										.leftJoin(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+										.join(HIF_RESULT_FUNCTION_CONFIG)
+											.on(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(hifResultDatasetId)
+													.and(HIF_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(hifResultRecords.field(GET_HIF_RESULTS.HIF_INSTANCE_ID))))
+										.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+										.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+										.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+										.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+										.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+										.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+										.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+										.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
+										.fetchSize(5000)
+										.fetchLazy()) {
+									while (cursor.hasNext()) {
+										Result<Record> batch = cursor.fetchNext(5000);
 
-									//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
-									if (isAggregating) {
-										for (Record res : batch) {
-											stats.clear();
-											Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
-											for (int j = 0; j < pct.length; j++) {
-												stats.addValue(pct[j]);
+										//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
+										if (isAggregating) {
+											for (Record res : batch) {
+												stats.clear();
+												Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
+												for (int j = 0; j < pct.length; j++) {
+													stats.addValue(pct[j]);
+												}
+
+												res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
+
+												//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+												stats.addValue(res.getValue(GET_HIF_RESULTS.POINT_ESTIMATE));
+												res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
+												res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+
+												res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 											}
-
-											res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
-
-											//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
-											stats.addValue(res.getValue(GET_HIF_RESULTS.POINT_ESTIMATE));
-											res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
-											res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
-
-											res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
 										}
-									}
 
-									//Include columns that were visible in the UI results screen
-									Result<?> batchClean = batch.into(batch.fields(includedColumnsArray));
-									if (firstBatch) {
-										batchClean.formatCSV(zipStream);
+										//Include columns that were visible in the UI results screen — write directly without copying
+										writeBatchCsvFields(batch, includedColumnsArray, zipStream, firstBatch);
 										firstBatch = false;
-									} else {
-										batchClean.formatCSV(zipStream, csvFormatNoHeader);
 									}
 								}
 							}
@@ -596,92 +707,91 @@ public class ResultExportTaskRunnable implements Runnable {
 								.asTable("valuation_result_records");
 
 							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-							CSVFormat csvFormatNoHeader = new CSVFormat().header(false);
 							boolean firstBatch = true;
 							DescriptiveStatistics stats = new DescriptiveStatistics();
-							try (Cursor<Record> cursor = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
-									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
-									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
-									DSL.val(null, String.class).as("health_effect"),
-									DSL.val(null, String.class).as("name"),
-									HEALTH_IMPACT_FUNCTION.AUTHOR,
-									HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
-									HEALTH_IMPACT_FUNCTION.QUALIFIER.as("risk_model_details"),
-									RACE.NAME.as("race"),
-									ETHNICITY.NAME.as("ethnicity"),
-									GENDER.NAME.as("gender"),
-									POLLUTANT_METRIC.NAME.as("metric"),
-									SEASONAL_METRIC.NAME.as("seasonal_metric"),
-									STATISTIC_TYPE.NAME.as("metric_statistic"),
-									TIMING_TYPE.NAME.as("timing"),
-									HEALTH_IMPACT_FUNCTION.START_AGE,
-									HEALTH_IMPACT_FUNCTION.END_AGE,
-									VALUATION_FUNCTION.START_AGE.as("valuation_start_age"),
-									VALUATION_FUNCTION.END_AGE.as("valuation_end_age"),
-									vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
-									vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
-									vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
-									vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
-									vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
-									vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
-									isAggregating ? vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) : null, //Only include percentiles if we're aggregating
-									vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)
-									)
-									.from(vfResultRecords)
-									.join(VALUATION_RESULT_FUNCTION_CONFIG)
-										.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDatasetId)
-											.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_INSTANCE_ID)))
-											.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
-									.join(VALUATION_RESULT_DATASET)
-										.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
-									.join(HIF_RESULT_FUNCTION_CONFIG)
-										.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
-											.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
-									.join(VALUATION_FUNCTION).on((VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
-									.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
-									.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
-									.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
-									.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
-									.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
-									.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
-									.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
-									.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(TIMING_TYPE.ID))
-									.fetchLazy()) {
-								while (cursor.hasNext()) {
-									Result<Record> batch = cursor.fetchNext(5000);
+							// Use a connection with autocommit=false so PostgreSQL JDBC enables server-side cursors
+							try (ConnectionAndConfig cac = acquireNoAutoCommitConfig()) {
+								DSLContext cursorCtx = DSL.using(cac.configuration);
+								try (Cursor<Record> cursor = cursorCtx.select(
+										vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
+										vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
+										DSL.val(null, String.class).as("health_effect"),
+										DSL.val(null, String.class).as("name"),
+										HEALTH_IMPACT_FUNCTION.AUTHOR,
+										HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.as("year"),
+										HEALTH_IMPACT_FUNCTION.QUALIFIER.as("risk_model_details"),
+										RACE.NAME.as("race"),
+										ETHNICITY.NAME.as("ethnicity"),
+										GENDER.NAME.as("gender"),
+										POLLUTANT_METRIC.NAME.as("metric"),
+										SEASONAL_METRIC.NAME.as("seasonal_metric"),
+										STATISTIC_TYPE.NAME.as("metric_statistic"),
+										TIMING_TYPE.NAME.as("timing"),
+										HEALTH_IMPACT_FUNCTION.START_AGE,
+										HEALTH_IMPACT_FUNCTION.END_AGE,
+										VALUATION_FUNCTION.START_AGE.as("valuation_start_age"),
+										VALUATION_FUNCTION.END_AGE.as("valuation_end_age"),
+										vfResultRecords.field(GET_VALUATION_RESULTS.POINT_ESTIMATE),
+										vfResultRecords.field(GET_VALUATION_RESULTS.MEAN),
+										vfResultRecords.field(GET_VALUATION_RESULTS.STANDARD_DEV).as("standard_deviation"),
+										vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
+										vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
+										vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
+										isAggregating ? vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) : null, //Only include percentiles if we're aggregating
+										vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)
+										)
+										.from(vfResultRecords)
+										.join(VALUATION_RESULT_FUNCTION_CONFIG)
+											.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(valuationResultDatasetId)
+												.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_INSTANCE_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_INSTANCE_ID)))
+												.and(VALUATION_RESULT_FUNCTION_CONFIG.VF_ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
+										.join(VALUATION_RESULT_DATASET)
+											.on(VALUATION_RESULT_FUNCTION_CONFIG.VALUATION_RESULT_DATASET_ID.eq(VALUATION_RESULT_DATASET.ID))
+										.join(HIF_RESULT_FUNCTION_CONFIG)
+											.on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID)
+												.and(VALUATION_RESULT_FUNCTION_CONFIG.HIF_ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)))
+										.join(VALUATION_FUNCTION).on((VALUATION_FUNCTION.ID.eq(vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID))))
+										.join(HEALTH_IMPACT_FUNCTION).on(vfResultRecords.field(GET_VALUATION_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
+										.join(RACE).on(HIF_RESULT_FUNCTION_CONFIG.RACE_ID.eq(RACE.ID))
+										.join(ETHNICITY).on(HIF_RESULT_FUNCTION_CONFIG.ETHNICITY_ID.eq(ETHNICITY.ID))
+										.join(GENDER).on(HIF_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
+										.join(POLLUTANT_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_ID.eq(POLLUTANT_METRIC.ID))
+										.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
+										.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
+										.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(TIMING_TYPE.ID))
+										.fetchSize(5000)
+										.fetchLazy()) {
+									while (cursor.hasNext()) {
+										Result<Record> batch = cursor.fetchNext(5000);
 
-									// Inject valuation function name and health effect
-									for (Record res : batch) {
-										HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
-										res.setValue(DSL.field("name"), vfConfig.get("name"));
-										res.setValue(DSL.field("health_effect"), vfConfig.get("endpoint"));
-									}
-
-									//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
-									if (isAggregating) {
+										// Inject valuation function name and health effect
 										for (Record res : batch) {
-											stats.clear();
-											Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
-											for (int j = 0; j < pct.length; j++) {
-												stats.addValue(pct[j]);
-											}
-
-											res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
-
-											//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
-											stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
-											res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
-											res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+											HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
+											res.setValue(DSL.field("name"), vfConfig.get("name"));
+											res.setValue(DSL.field("health_effect"), vfConfig.get("endpoint"));
 										}
-									}
 
-									//Remove percentiles and VF_ID by keeping all other fields
-									Result<?> batchClean = batch.into(batch.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
-									if (firstBatch) {
-										batchClean.formatCSV(zipStream);
+										//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
+										if (isAggregating) {
+											for (Record res : batch) {
+												stats.clear();
+												Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
+												for (int j = 0; j < pct.length; j++) {
+													stats.addValue(pct[j]);
+												}
+
+												res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
+
+												//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+												stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
+												res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
+												res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+											}
+										}
+
+										//Remove percentiles and VF_ID by keeping all other fields — write directly without copying
+										writeBatchCsvFields(batch, new int[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23}, zipStream, firstBatch);
 										firstBatch = false;
-									} else {
-										batchClean.formatCSV(zipStream, csvFormatNoHeader);
 									}
 								}
 							}
