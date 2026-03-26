@@ -44,6 +44,8 @@ import java.util.Vector;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jooq.CSVFormat;
+import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Record16;
@@ -236,7 +238,6 @@ public class ResultExportTaskRunnable implements Runnable {
 					//csv file name
 					String taskFileName = ApplicationUtil.replaceNonValidCharacters(ExposureApi.getExposureTaskConfigFromDb(exposureResultDatasetId).name);
 					for(int i=0; i < gridIds.length; i++) {
-						Result<?> efRecordsClean = null;
 						try {
 							//If the crosswalk isn't there, create it now
 							if(!CrosswalksApi.ensureCrosswalkExists(batchTaskConfig.gridDefinitionId, gridIds[i])) {
@@ -252,15 +253,18 @@ public class ResultExportTaskRunnable implements Runnable {
 								log.error("Task failed");
 								return;
 							}
-							
+
 							Table<GetExposureResultsRecord> efResultRecords = create.selectFrom(
 									GET_EXPOSURE_RESULTS(
-										exposureResultDatasetId, 
+										exposureResultDatasetId,
 										null,
 										gridIds[i]))
 								.asTable("ef_result_records");
-							
-							Result<Record16<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> efRecords = create.select(
+
+							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+							CSVFormat csvFormatNoHeader = new CSVFormat().header(false);
+							boolean firstBatch = true;
+							try (Cursor<Record16<Integer, Integer, String, Integer, Integer, String, String, String, String, Double, Double, Double, Double, Double, Double, Double>> cursor = create.select(
 									efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).as("column"),
 									efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).as("row"),
 									EXPOSURE_RESULT_FUNCTION_CONFIG.POPULATION_GROUP,
@@ -290,26 +294,26 @@ public class ResultExportTaskRunnable implements Runnable {
 									.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
 									.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
 	                                .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
-									.fetch();
-							
-							efRecordsClean = efRecords;
+									.fetchLazy()) {
+								while (cursor.hasNext()) {
+									Result<?> batch = cursor.fetchNext(5000);
+									if (firstBatch) {
+										batch.formatCSV(zipStream);
+										firstBatch = false;
+									} else {
+										batch.formatCSV(zipStream, csvFormatNoHeader);
+									}
+								}
+							}
+							zipStream.closeEntry();
+							log.info(taskFileName + " added.");
 						} catch(DataAccessException e) {
 							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
 							return;
-						}	
-						try {						
-							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-							efRecordsClean.formatCSV(zipStream);
-							zipStream.closeEntry();
-							log.info(taskFileName + " added.");
-							} 
-						catch (Exception e) {
-								log.error("Error creating export file", e);
-							} 
-						finally {
-			
-							}
+						} catch (Exception e) {
+							log.error("Error creating export file", e);
+						}
 						ExposureTaskLog efTaskLog = ExposureUtil.getTaskLog(exposureResultDatasetId);
 						batchTaskLog.append(System.getProperty("line.separator"));
 						batchTaskLog.append(efTaskLog.toString(userProfile));
@@ -376,16 +380,22 @@ public class ResultExportTaskRunnable implements Runnable {
 				}
 				
 				
+				//Precompute included columns from visible columns (same for all HIF datasets/grids)
+				List<Integer> includedColumns = hifColumnsMap.entrySet()
+					.stream()
+					.filter(entry -> visibleColumns.contains(entry.getValue()))
+					.map(Map.Entry::getKey)
+					.collect(Collectors.toList());
+				int[] includedColumnsArray = includedColumns.stream().mapToInt(f -> f).toArray();
+
 				//Loop through each function and each grid definition
 				for(int hifResultDatasetId : hifResultDatasetIds) {
 					//csv file name
-					String taskFileName = ApplicationUtil.replaceNonValidCharacters(HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).name);
+					var hifTaskConfig = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId);
+					String taskFileName = ApplicationUtil.replaceNonValidCharacters(hifTaskConfig.name);
 					Integer baselineGridId = HIFApi.getBaselineGridForHifResults(hifResultDatasetId);
+					Integer limitToGridId = hifTaskConfig.limitToGridId;
 					for(int i=0; i < gridIds.length; i++) {
-						Result<?> hifRecordsClean = null;
-						//Move the following to HIFApi.java? 
-						//hifRecordsClean = HIFApi.getHifResultRecordsClean(gridIds[i], hifResultDatasetId) //use this instead?
-						
 						//If the crosswalk isn't there, create it now
 						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
 							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
@@ -400,19 +410,22 @@ public class ResultExportTaskRunnable implements Runnable {
 							log.error("Task failed");
 							return;
 						}
+						boolean isAggregating = !baselineGridId.equals(gridIds[i]);
 						try {
-							Integer limitToGridId = HIFApi.getHifTaskConfigFromDb(hifResultDatasetId).limitToGridId;
-							//log.info("LimitToGridId = " + limitToGridId);
 							Table<GetHifResultsRecord> hifResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 								GET_HIF_RESULTS(
-										hifResultDatasetId, 
-										null, 
+										hifResultDatasetId,
+										null,
 										gridIds[i],
 										limitToGridId)
 										)
-								.asTable("hif_result_records");			
+								.asTable("hif_result_records");
 
-							Result<Record> hifRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
+							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+							CSVFormat csvFormatNoHeader = new CSVFormat().header(false);
+							boolean firstBatch = true;
+							DescriptiveStatistics stats = new DescriptiveStatistics();
+							try (Cursor<Record> cursor = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_COL).as("column"),
 									hifResultRecords.field(GET_HIF_RESULTS.GRID_ROW).as("row"),
 									ENDPOINT.DISPLAY_NAME.as("health_effect"),
@@ -435,7 +448,6 @@ public class ResultExportTaskRunnable implements Runnable {
 									hifResultRecords.field(GET_HIF_RESULTS.DELTA_AQ),
 									hifResultRecords.field(GET_HIF_RESULTS.BASELINE_AQ),
 									hifResultRecords.field(GET_HIF_RESULTS.SCENARIO_AQ),
-									//hifResultRecords.field(GET_HIF_RESULTS.INCIDENCE),
 									hifResultRecords.field(GET_HIF_RESULTS.MEAN),
 									hifResultRecords.field(GET_HIF_RESULTS.BASELINE),
 									DSL.when(hifResultRecords.field(GET_HIF_RESULTS.BASELINE).eq(0.0), 0.0)
@@ -444,7 +456,7 @@ public class ResultExportTaskRunnable implements Runnable {
 									hifResultRecords.field(GET_HIF_RESULTS.VARIANCE).as("variance"),
 									hifResultRecords.field(GET_HIF_RESULTS.PCT_2_5),
 									hifResultRecords.field(GET_HIF_RESULTS.PCT_97_5),
-									HIFApi.getBaselineGridForHifResults(hifResultDatasetId) == gridIds[i] ? null : hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) //Only include percentiles if we're aggregating
+									isAggregating ? hifResultRecords.field(GET_HIF_RESULTS.PERCENTILES) : null //Only include percentiles if we're aggregating
 									)
 									.from(hifResultRecords)
 									.leftJoin(HEALTH_IMPACT_FUNCTION).on(hifResultRecords.field(GET_HIF_RESULTS.HIF_ID).eq(HEALTH_IMPACT_FUNCTION.ID))
@@ -459,59 +471,54 @@ public class ResultExportTaskRunnable implements Runnable {
 									.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 									.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 									.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
-									.fetch();
-							
-							//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
-							if(HIFApi.getBaselineGridForHifResults(hifResultDatasetId) != gridIds[i]) {
-								for(Record res : hifRecords) {
-									DescriptiveStatistics stats = new DescriptiveStatistics();
-									Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
-									for (int j = 0; j < pct.length; j++) {
-										stats.addValue(pct[j]);
+									.fetchLazy()) {
+								while (cursor.hasNext()) {
+									Result<Record> batch = cursor.fetchNext(5000);
+
+									//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
+									if (isAggregating) {
+										for (Record res : batch) {
+											stats.clear();
+											Double[] pct = res.getValue(GET_HIF_RESULTS.PERCENTILES);
+											for (int j = 0; j < pct.length; j++) {
+												stats.addValue(pct[j]);
+											}
+
+											res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
+
+											//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+											stats.addValue(res.getValue(GET_HIF_RESULTS.POINT_ESTIMATE));
+											res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
+											res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+
+											res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
+										}
 									}
-									
-									res.setValue(GET_HIF_RESULTS.MEAN, stats.getMean());
-									
-									//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
-									stats.addValue(res.getValue(GET_HIF_RESULTS.POINT_ESTIMATE));
-									res.setValue(GET_HIF_RESULTS.VARIANCE, stats.getVariance());
-									res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
-									
-									res.setValue(DSL.field("percent_of_baseline", Double.class), stats.getMean() / res.getValue(GET_HIF_RESULTS.BASELINE) * 100.0);
+
+									//Include columns that were visible in the UI results screen
+									Result<?> batchClean = batch.into(batch.fields(includedColumnsArray));
+									if (firstBatch) {
+										batchClean.formatCSV(zipStream);
+										firstBatch = false;
+									} else {
+										batchClean.formatCSV(zipStream, csvFormatNoHeader);
+									}
 								}
 							}
-
-							//Include columns that were visible in the UI results screen
-							List<Integer> includedColumns = hifColumnsMap.entrySet()
-								.stream()
-								.filter(entry -> visibleColumns.contains(entry.getValue()))
-								.map(Map.Entry::getKey)
-								.collect(Collectors.toList());
-
-							int[] includedColumnsArray = includedColumns.stream().mapToInt(f -> f).toArray();
-							hifRecordsClean = hifRecords.into(hifRecords.fields(includedColumnsArray));
+							zipStream.closeEntry();
+							log.info(taskFileName + " added.");
 						} catch(DataAccessException e) {
 							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
 							return;
-						}	
-						try {						
-							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-							hifRecordsClean.formatCSV(zipStream);
-							zipStream.closeEntry();
-							log.info(taskFileName + " added.");
-							} 
-						catch (Exception e) {
-								log.error("Error creating export file", e);
-							} 
-						finally {
-			
-							}
+						} catch (Exception e) {
+							log.error("Error creating export file", e);
+						}
 						HIFTaskLog hifTaskLog = HIFUtil.getTaskLog(hifResultDatasetId);
 						batchTaskLog.append(System.getProperty("line.separator"));
 						batchTaskLog.append(hifTaskLog.toString(userProfile));
-					}				
-				}					
+					}
+				}
 			}
 			if(includeValuation) {
 				//Valuation results
@@ -545,13 +552,24 @@ public class ResultExportTaskRunnable implements Runnable {
 				//Loop through each function and each grid definition
 				for(int valuationResultDatasetId : valuationResultDatasetIds) {
 					//csv file name
-					String taskFileName = ApplicationUtil.replaceNonValidCharacters(ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).name);
-					Integer baselineGridId = ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId);				
+					var vfTaskConfig = ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId);
+					String taskFileName = ApplicationUtil.replaceNonValidCharacters(vfTaskConfig.name);
+					Integer baselineGridId = ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId);
+					Integer limitToGridId = vfTaskConfig.limitToGridId;
+
+					// Build valuation function info lookup (same for all grids)
+					ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(valuationResultDatasetId);
+					HashMap<Integer, HashMap<String, String>> vfConfigs = new HashMap<Integer, HashMap<String, String>>();
+					for (ValuationConfig vf : vfTaskLog.getVfTaskConfig().valuationFunctions) {
+						if(! vfConfigs.containsKey(vf.vfId)) {
+							HashMap<String, String> vfInfo = new HashMap<String, String>();
+							vfInfo.put("name", vf.vfRecord.get("qualifier").toString());
+							vfInfo.put("endpoint", vf.vfRecord.get("endpoint_name").toString());
+							vfConfigs.put(vf.vfId, vfInfo);
+						}
+					}
+
 					for(int i=0; i < gridIds.length; i++) {
-						Result<?> vfRecordsClean = null;
-						//Move the following to ValuationApi.java? 
-						//valuationRecordsClean = ValuationApi.getValuationResultRecordsClean(gridIds[i], valuationResultDatasetId) //use this instead?
-						
 						//If the crosswalk isn't there, create it now
 						if(!CrosswalksApi.ensureCrosswalkExists(baselineGridId, gridIds[i])) {
 							List<Integer> gridDefinitionIds = Arrays.asList(baselineGridId, gridIds[i]);
@@ -566,18 +584,22 @@ public class ResultExportTaskRunnable implements Runnable {
 							log.error("Task failed");
 							return;
 						}
+						boolean isAggregating = !baselineGridId.equals(gridIds[i]);
 						try {
-							Integer limitToGridId = ValuationApi.getValuationTaskConfigFromDb(valuationResultDatasetId).limitToGridId;
 							Table<GetValuationResultsRecord> vfResultRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).selectFrom(
 									GET_VALUATION_RESULTS(
-										valuationResultDatasetId, 
-										null, 
+										valuationResultDatasetId,
+										null,
 										null,
 										gridIds[i],
 										limitToGridId))
 								.asTable("valuation_result_records");
-							Result<Record> vfRecords;
-							vfRecords = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
+
+							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+							CSVFormat csvFormatNoHeader = new CSVFormat().header(false);
+							boolean firstBatch = true;
+							DescriptiveStatistics stats = new DescriptiveStatistics();
+							try (Cursor<Record> cursor = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select(
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_COL).as("column"),
 									vfResultRecords.field(GET_VALUATION_RESULTS.GRID_ROW).as("row"),
 									DSL.val(null, String.class).as("health_effect"),
@@ -602,7 +624,7 @@ public class ResultExportTaskRunnable implements Runnable {
 									vfResultRecords.field(GET_VALUATION_RESULTS.VARIANCE).as("variance"),
 									vfResultRecords.field(GET_VALUATION_RESULTS.PCT_2_5),
 									vfResultRecords.field(GET_VALUATION_RESULTS.PCT_97_5),
-									ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) == gridIds[i] ? null : vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES), //Only include percentiles if we're aggregating
+									isAggregating ? vfResultRecords.field(GET_VALUATION_RESULTS.PERCENTILES) : null, //Only include percentiles if we're aggregating
 									vfResultRecords.field(GET_VALUATION_RESULTS.VF_ID)
 									)
 									.from(vfResultRecords)
@@ -624,69 +646,59 @@ public class ResultExportTaskRunnable implements Runnable {
 									.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 									.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 									.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(TIMING_TYPE.ID))
-									.fetch();
-							
-							// Add in valuation function information
-							ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(valuationResultDatasetId);
-							HashMap<Integer, HashMap<String, String>> vfConfigs = new HashMap<Integer, HashMap<String, String>>();
-							
-							for (ValuationConfig vf : vfTaskLog.getVfTaskConfig().valuationFunctions) {
-								if(! vfConfigs.containsKey(vf.vfId)) {
-									HashMap<String, String> vfInfo = new HashMap<String, String>();
-									vfInfo.put("name", vf.vfRecord.get("qualifier").toString());
-									vfInfo.put("endpoint", vf.vfRecord.get("endpoint_name").toString());
-									vfConfigs.put(vf.vfId, vfInfo);
-								}
-							}
+									.fetchLazy()) {
+								while (cursor.hasNext()) {
+									Result<Record> batch = cursor.fetchNext(5000);
 
-							for(Record res : vfRecords) {
-								HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
-								res.setValue(DSL.field("name"), vfConfig.get("name"));
-								res.setValue(DSL.field("health_effect"), vfConfig.get("endpoint"));	
-							}
-							
-							//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
-							if(ValuationApi.getBaselineGridForValuationResults(valuationResultDatasetId) != gridIds[i]) {
-								for(Record res : vfRecords) {
-									DescriptiveStatistics stats = new DescriptiveStatistics();
-									Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
-									for (int j = 0; j < pct.length; j++) {
-										stats.addValue(pct[j]);
+									// Inject valuation function name and health effect
+									for (Record res : batch) {
+										HashMap<String, String> vfConfig = vfConfigs.get(res.getValue(GET_VALUATION_RESULTS.VF_ID));
+										res.setValue(DSL.field("name"), vfConfig.get("name"));
+										res.setValue(DSL.field("health_effect"), vfConfig.get("endpoint"));
 									}
-									
-									res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
-									
-									//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
-									stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
-									res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
-									res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+
+									//If results are being aggregated, recalc mean, variance, std deviation, and percent of baseline
+									if (isAggregating) {
+										for (Record res : batch) {
+											stats.clear();
+											Double[] pct = res.getValue(GET_VALUATION_RESULTS.PERCENTILES);
+											for (int j = 0; j < pct.length; j++) {
+												stats.addValue(pct[j]);
+											}
+
+											res.setValue(GET_VALUATION_RESULTS.MEAN, stats.getMean());
+
+											//Add point estimate to the list before calculating variance and standard deviation to match approach of desktop
+											stats.addValue(res.getValue(GET_VALUATION_RESULTS.POINT_ESTIMATE));
+											res.setValue(GET_VALUATION_RESULTS.VARIANCE, stats.getVariance());
+											res.setValue(DSL.field("standard_deviation", Double.class), stats.getStandardDeviation());
+										}
+									}
+
+									//Remove percentiles and VF_ID by keeping all other fields
+									Result<?> batchClean = batch.into(batch.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
+									if (firstBatch) {
+										batchClean.formatCSV(zipStream);
+										firstBatch = false;
+									} else {
+										batchClean.formatCSV(zipStream, csvFormatNoHeader);
+									}
 								}
 							}
-							//Remove percentiles by keeping all other fields
-							vfRecordsClean = vfRecords.into(vfRecords.fields(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
+							zipStream.closeEntry();
+							log.info(taskFileName + " added.");
 						} catch(DataAccessException e) {
 							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 							log.error("Task failed", e);
 							return;
-						}	
-						try {						
-							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
-							vfRecordsClean.formatCSV(zipStream);
-							zipStream.closeEntry();
-							log.info(taskFileName + " added.");
-							} 
-						catch (Exception e) {
-								log.error("Error creating export file", e);
-							} 
-						finally {
-			
-							}
-						ValuationTaskLog vfTaskLog = ValuationUtil.getTaskLog(valuationResultDatasetId);
+						} catch (Exception e) {
+							log.error("Error creating export file", e);
+						}
 						batchTaskLog.append(System.getProperty("line.separator"));
 						batchTaskLog.append(vfTaskLog.toString());
-					}				
-				}					
-			
+					}
+				}
+
 			}
 			
 			
