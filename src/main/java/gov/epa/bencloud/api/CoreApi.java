@@ -3,21 +3,19 @@ package gov.epa.bencloud.api;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.*;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
-
-import javax.servlet.MultipartConfigElement;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.jooq.DSLContext;
-import org.jooq.JSON;
 import org.jooq.JSONFormat;
-import org.jooq.Result;
 import org.jooq.JSONFormat.RecordFormat;
 import org.jooq.Record;
-import org.jooq.Record1;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
 import org.slf4j.LoggerFactory;
@@ -27,7 +25,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -36,10 +33,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.epa.bencloud.Constants;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.SettingsRecord;
-import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskConfigRecord;
 import gov.epa.bencloud.api.model.ValidationMessage;
 import gov.epa.bencloud.api.util.ApiUtil;
-
 import spark.Request;
 import spark.Response;
 
@@ -352,4 +347,85 @@ public class CoreApi {
 		return recordsJSON;
 		
 	}
+
+
+	/*
+	 * Return info for all user datasets
+	 * Requires admin access
+	*/
+	public static Object getAllDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
+
+		if(!isAdmin(userProfile)) {
+			return getErrorResponseInvalidId(request, response);
+		}
+
+		// Get response output stream
+		OutputStream responseOutputStream;
+		ZipOutputStream zos;
+
+		try {
+			responseOutputStream = response.raw().getOutputStream();
+			
+			// Stream .ZIP file to response
+			zos = new ZipOutputStream(responseOutputStream);
+		} catch (java.io.IOException e1) {
+			return CoreApi.getErrorResponse(request, response, 400, "Error getting output stream");
+		}
+
+		response.type("application/zip");
+		response.header("Content-Disposition", "attachment; filename=BenMAP_Datasets.zip");
+		response.header("Access-Control-Expose-Headers", "Content-Disposition");
+
+		try {
+
+			zos.putNextEntry(new ZipEntry("air_quality_layer.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(AIR_QUALITY_LAYER).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("grid_definition.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(GRID_DEFINITION).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("incidence_dataset.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(INCIDENCE_DATASET).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("population_dataset.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(POPULATION_DATASET).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("endpoint.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(ENDPOINT).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("endpoint_group.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(ENDPOINT_GROUP).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("health_impact_function.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(HEALTH_IMPACT_FUNCTION).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("health_impact_function_group.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(HEALTH_IMPACT_FUNCTION_GROUP).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("valuation_function.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(VALUATION_FUNCTION).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry("exposure_function.csv"));
+			DSL.using(JooqUtil.getJooqConfiguration()).selectFrom(EXPOSURE_FUNCTION).fetch().formatCSV(zos);
+			zos.closeEntry();
+
+			zos.close();
+			responseOutputStream.flush();
+			return null;
+		} catch (IOException e) {
+			log.error("Error writing export zip", e);
+			return getErrorResponseInvalidId(request, response);
+		}
+	
+	}
+	
 }

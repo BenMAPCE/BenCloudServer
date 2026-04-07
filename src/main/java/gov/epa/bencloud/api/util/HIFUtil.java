@@ -511,8 +511,9 @@ public class HIFUtil {
 				Result<Record1<Integer>> records = DSL.using(JooqUtil.getJooqConfiguration())
 						.select(INCIDENCE_DATASET.ID)
 						.from(INCIDENCE_DATASET)
-						.where(INCIDENCE_DATASET.USER_ID.isNull()
+						.where((INCIDENCE_DATASET.USER_ID.isNull()
 								.or(INCIDENCE_DATASET.USER_ID.eq("")))
+								.and(INCIDENCE_DATASET.ARCHIVED.eq((short) 0)))
 						.fetch();
 				for (Record1<Integer> record : records) {
 					incidenceOptions.add(record.get(INCIDENCE_DATASET.ID));
@@ -526,7 +527,8 @@ public class HIFUtil {
 						.select(INCIDENCE_DATASET.ID)
 						.from(INCIDENCE_DATASET)
 						.where(INCIDENCE_DATASET.SHARE_SCOPE.eq((short) 0)
-								.and(INCIDENCE_DATASET.USER_ID.eq(userProfile.get().getId())))
+								.and(INCIDENCE_DATASET.USER_ID.eq(userProfile.get().getId()))
+								.and(INCIDENCE_DATASET.ARCHIVED.eq((short) 0)))
 						.fetch();
 				for (Record1<Integer> record : records) {
 					incidenceOptions.add(record.get(INCIDENCE_DATASET.ID));

@@ -42,6 +42,7 @@ public class AirQualityImportTaskConfig {
 	public String name;
 	public Integer pollutantId;
 	public String userId;
+	public Short shareScope;
 	public Integer aqYear;
 	public String source;
 	public String dataType;

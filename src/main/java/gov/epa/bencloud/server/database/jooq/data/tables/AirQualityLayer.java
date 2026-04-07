@@ -18,7 +18,7 @@ import org.jooq.Identity;
 import org.jooq.JSON;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row14;
+import org.jooq.Row15;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -120,6 +120,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
      */
     public final TableField<AirQualityLayerRecord, String> GROUP_NAME = createField(DSL.name("group_name"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>data.air_quality_layer.archived</code>.
+     */
+    public final TableField<AirQualityLayerRecord, Short> ARCHIVED = createField(DSL.name("archived"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
     private AirQualityLayer(Name alias, Table<AirQualityLayerRecord> aliased) {
         this(alias, aliased, null);
     }
@@ -217,11 +222,11 @@ public class AirQualityLayer extends TableImpl<AirQualityLayerRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row14 type methods
+    // Row15 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row14<Integer, String, Integer, Integer, String, Short, String, String, String, String, String, LocalDateTime, JSON, String> fieldsRow() {
-        return (Row14) super.fieldsRow();
+    public Row15<Integer, String, Integer, Integer, String, Short, String, String, String, String, String, LocalDateTime, JSON, String, Short> fieldsRow() {
+        return (Row15) super.fieldsRow();
     }
 }
