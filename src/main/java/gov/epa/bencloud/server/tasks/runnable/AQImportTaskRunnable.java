@@ -276,7 +276,7 @@ public class AQImportTaskRunnable implements Runnable {
 					aqImportTaskConfig.pollutantId,
 					aqImportTaskConfig.gridId,
 					aqImportTaskConfig.userId,
-					Constants.SHARING_NONE,
+					aqImportTaskConfig.shareScope != null ? aqImportTaskConfig.shareScope : Constants.SHARING_NONE,
 					aqImportTaskConfig.aqYear.toString(),
 					aqImportTaskConfig.description,
 					aqImportTaskConfig.source,

@@ -722,14 +722,53 @@ public class IncidenceApi {
 
 		String userId = userProfile.get().getId();
 
+		// Determine if this is an admin-shared upload
+		Short shareScope = Constants.SHARING_NONE;
+		String shareScopeStr = ApiUtil.getMultipartFormParameterAsString(request, "shareScope");
+		if (shareScopeStr != null && !shareScopeStr.isEmpty()) {
+			try {
+				shareScope = Short.parseShort(shareScopeStr);
+			} catch (NumberFormatException e) {
+				shareScope = Constants.SHARING_NONE;
+			}
+		}
+		if (shareScope.equals(Constants.SHARING_ALL) && !CoreApi.isAdmin(userProfile)) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+		// Shared records use null user_id 
+		// private records use the submitter's id.
+		String effectiveUserId = shareScope.equals(Constants.SHARING_ALL) ? null : userId;
+
 		// //step 0: make sure incidenceName is not the same as any existing ones
-		
-		List<String>incidenceNames = getAllIncidencePrevalenceDatasetNamesByUser(userId);
-		if (incidenceNames.contains(incidenceName.toLowerCase())) {
-			validationMsg.success = false;
-			validationMsg.messages.add(new ValidationMessage.Message("error","An incidence dataset " + incidenceName + " already exists. Please enter a different name."));
-			response.type("application/json");
-			return transformValMsgToJSON(validationMsg);
+		if (shareScope.equals(Constants.SHARING_ALL)) {
+			// Admin shared upload: check all non-archived records for name conflict
+			var conflictRecord = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(INCIDENCE_DATASET.USER_ID, INCIDENCE_DATASET.SHARE_SCOPE)
+				.from(INCIDENCE_DATASET)
+				.where(DSL.lower(INCIDENCE_DATASET.NAME).eq(incidenceName.toLowerCase()))
+				.and(INCIDENCE_DATASET.ARCHIVED.eq((short)0))
+				.fetchAny();
+			if (conflictRecord != null) {
+				String conflictOwner = conflictRecord.get(INCIDENCE_DATASET.USER_ID);
+				String msg;
+				if (conflictOwner == null || conflictRecord.get(INCIDENCE_DATASET.SHARE_SCOPE).equals(Constants.SHARING_ALL)) {
+					msg = "A shared incidence dataset named \"" + incidenceName + "\" already exists.";
+				} else {
+					msg = "The name \"" + incidenceName + "\" is already used by a private record belonging to user '" + conflictOwner + "'. Choose a different name.";
+				}
+				validationMsg.success = false;
+				validationMsg.messages.add(new ValidationMessage.Message("error", msg));
+				response.type("application/json");
+				return transformValMsgToJSON(validationMsg);
+			}
+		} else {
+			List<String> incidenceNames = getAllIncidencePrevalenceDatasetNamesByUser(userId);
+			if (incidenceNames.contains(incidenceName.toLowerCase())) {
+				validationMsg.success = false;
+				validationMsg.messages.add(new ValidationMessage.Message("error", "An incidence dataset " + incidenceName + " already exists. Please enter a different name."));
+				response.type("application/json");
+				return transformValMsgToJSON(validationMsg);
+			}
 		}
 		
 		IncidenceDatasetRecord incRecord=null;
@@ -1250,7 +1289,7 @@ public class IncidenceApi {
 					, INCIDENCE_DATASET.FILENAME
 					, INCIDENCE_DATASET.UPLOAD_DATE
 					)
-			.values(incidenceName,  gridId, userId, Constants.SHARING_NONE, filename, uploadDate)
+			.values(incidenceName,  gridId, effectiveUserId, shareScope, filename, uploadDate)
 			.returning(INCIDENCE_DATASET.ID, INCIDENCE_DATASET.NAME,INCIDENCE_DATASET.GRID_DEFINITION_ID)
 			.fetchOne();
 

@@ -246,27 +246,70 @@ public class GridDefinitionApi {
 			return CoreApi.getErrorResponseInvalidId(request, response);
 		}
 
+		// Determine if this is an admin-shared upload
+		Short shareScope = Constants.SHARING_NONE;
+		String shareScopeStr = ApiUtil.getMultipartFormParameterAsString(request, "shareScope");
+		if (shareScopeStr != null && !shareScopeStr.isEmpty()) {
+			try {
+				shareScope = Short.parseShort(shareScopeStr);
+			} catch (NumberFormatException e) {
+				shareScope = Constants.SHARING_NONE;
+			}
+		}
+		if (shareScope.equals(Constants.SHARING_ALL) && !CoreApi.isAdmin(userProfile)) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+		// Shared records use null user_id 
+		// private records use the submitter's id.
+		String effectiveUserId = shareScope.equals(Constants.SHARING_ALL) ? null : userProfile.get().getId();
+
 		// Make sure the name is unique among this user's grid definitions and shared ones
-		List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration())
-			.select(GRID_DEFINITION.NAME)
-			.from(GRID_DEFINITION)
-			.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
-			.or(GRID_DEFINITION.SHARE_SCOPE.eq(Constants.SHARING_ALL))
-			.orderBy(GRID_DEFINITION.USER_ID)
-			.fetch(GRID_DEFINITION.NAME);
-		if (gridDefinitionNames.contains(gridName)) {
-			log.error("A grid definition named " + gridName + " already exists.");
-			response.type("application/json");
-			validationMsg.success=false;
-			validationMsg.messages.add(new ValidationMessage.Message("error", "A grid definition named " + gridName + " already exists. Please enter a different name."));
-			return CoreApi.transformValMsgToJSON(validationMsg);
-		}	
+		if (shareScope.equals(Constants.SHARING_ALL)) {
+			// Admin shared upload: check all non-archived records for name conflict
+			var conflictRecord = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(GRID_DEFINITION.USER_ID, GRID_DEFINITION.SHARE_SCOPE)
+				.from(GRID_DEFINITION)
+				.where(DSL.lower(GRID_DEFINITION.NAME).eq(gridName.toLowerCase()))
+				.and(GRID_DEFINITION.ARCHIVE.eq((short)0))
+				.fetchAny();
+			if (conflictRecord != null) {
+				String conflictOwner = conflictRecord.get(GRID_DEFINITION.USER_ID);
+				String errorMsg;
+				if (conflictOwner == null || conflictRecord.get(GRID_DEFINITION.SHARE_SCOPE).equals(Constants.SHARING_ALL)) {
+					errorMsg = "A shared grid definition named \"" + gridName + "\" already exists.";
+				} else {
+					errorMsg = "The name \"" + gridName + "\" is already used by a private record belonging to user '" + conflictOwner + "'. Choose a different name.";
+				}
+				log.error(errorMsg);
+				response.type("application/json");
+				validationMsg.success = false;
+				validationMsg.messages.add(new ValidationMessage.Message("error", errorMsg));
+				return CoreApi.transformValMsgToJSON(validationMsg);
+			}
+		} else {
+			// Regular user upload: check user's records + all shared records
+			List<String> gridDefinitionNames = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(GRID_DEFINITION.NAME)
+				.from(GRID_DEFINITION)
+				.where(GRID_DEFINITION.USER_ID.eq(userProfile.get().getId()))
+				.or(GRID_DEFINITION.SHARE_SCOPE.eq(Constants.SHARING_ALL))
+				.orderBy(GRID_DEFINITION.USER_ID)
+				.fetch(GRID_DEFINITION.NAME);
+			if (gridDefinitionNames.contains(gridName)) {
+				log.error("A grid definition named " + gridName + " already exists.");
+				response.type("application/json");
+				validationMsg.success = false;
+				validationMsg.messages.add(new ValidationMessage.Message("error", "A grid definition named " + gridName + " already exists. Please enter a different name."));
+				return CoreApi.transformValMsgToJSON(validationMsg);
+			}
+		}
 
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode paramsNode = mapper.createObjectNode();
 
 		paramsNode.put("name", gridName);
-		paramsNode.put("userId", userProfile.get().getId());
+		if (effectiveUserId != null) { paramsNode.put("userId", effectiveUserId); } else { paramsNode.putNull("userId"); }
+		paramsNode.put("shareScope", shareScope);
 		
 		// Store file in Filestore
 		try (InputStream is = request.raw().getPart("file").getInputStream()) {
@@ -436,7 +479,7 @@ public class GridDefinitionApi {
 		// Add records to task_batch and task_queue to import the new grid
 		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration())
 				.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
-				.values("Grid import: " + filename, paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
+				.values("Grid import: " + filename, paramsNode.toString(), effectiveUserId, shareScope)
 				.returning(TASK_BATCH.ID).fetchOne();
 		Integer batchTaskId = rec.getId();
 

@@ -170,7 +170,7 @@ public class GridImportTaskRunnable implements Runnable {
 					gridStats.get(0, Integer.class),
 					gridStats.get(1, Integer.class),
 					gridImportTaskConfig.userId, 
-					Constants.SHARING_NONE)
+					gridImportTaskConfig.shareScope != null ? gridImportTaskConfig.shareScope : Constants.SHARING_NONE)
 			.returning(GRID_DEFINITION.ID)
 			.fetchOne();
 			

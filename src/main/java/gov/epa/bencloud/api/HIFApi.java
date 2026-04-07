@@ -836,7 +836,24 @@ public class HIFApi {
 		}
 
 		String userId = userProfile.get().getId();
-		
+
+		// Determine if this is an admin-shared upload
+		Short shareScope = Constants.SHARING_NONE;
+		String shareScopeStr = ApiUtil.getMultipartFormParameterAsString(request, "shareScope");
+		if (shareScopeStr != null && !shareScopeStr.isEmpty()) {
+			try {
+				shareScope = Short.parseShort(shareScopeStr);
+			} catch (NumberFormatException e) {
+				shareScope = Constants.SHARING_NONE;
+			}
+		}
+		if (shareScope.equals(Constants.SHARING_ALL) && !CoreApi.isAdmin(userProfile)) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+		// Shared records use null user_id 
+		// private records use the submitter's id.
+		String effectiveUserId = shareScope.equals(Constants.SHARING_ALL) ? null : userId;
+
 		HealthImpactFunctionGroupRecord hifGroupRecord=null;
 		HealthImpactFunctionRecord hifRecord=null;
 		EndpointGroupRecord heGroupRecord=null;
@@ -888,35 +905,70 @@ public class HIFApi {
 		Map<String, Integer> timingIdLookup = new HashMap<>();
 
 		int hifGroupId = 0;
-		Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
 		List<Integer> newHifGroupIds = new ArrayList<Integer>();
 
-		if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
-			if(newGroup) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "A Health Impact Function Group called '" + hifGroupName + "' already exists. "
-					+ "Please enter a different name, or select the 'Append to an existing health impact function group' option.";
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
+		if (shareScope.equals(Constants.SHARING_ALL)) {
+			// Admin shared upload: look for any group with this name
+			var existingGroup = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(HEALTH_IMPACT_FUNCTION_GROUP.ID, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE)
+				.from(HEALTH_IMPACT_FUNCTION_GROUP)
+				.where(DSL.lower(HEALTH_IMPACT_FUNCTION_GROUP.NAME).eq(hifGroupName.toLowerCase()))
+				.fetchAny();
+			if (existingGroup != null) {
+				if (existingGroup.get(HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE).equals(Constants.SHARING_ALL)) {
+					// Existing shared group - append to it
+					hifGroupId = existingGroup.get(HEALTH_IMPACT_FUNCTION_GROUP.ID);
+				} else {
+					// Private group exists with this name - conflict
+					String conflictOwner = existingGroup.get(HEALTH_IMPACT_FUNCTION_GROUP.USER_ID);
+					String errMsg = "The HIF group name \"" + hifGroupName + "\" is already used by a private group belonging to user '" + conflictOwner + "'. Choose a different name.";
+					validationMsg.success = false;
+					validationMsg.messages.add(new ValidationMessage.Message("error", errMsg));
+					return CoreApi.transformValMsgToJSON(validationMsg);
+				}
+			} else {
+				// No group found - create new shared group
+				hifGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(HEALTH_IMPACT_FUNCTION_GROUP
+							, HEALTH_IMPACT_FUNCTION_GROUP.NAME
+							, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
+							, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID
+							, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
+							)
+					.values(hifGroupName, description, effectiveUserId, shareScope)
+					.returning(HEALTH_IMPACT_FUNCTION_GROUP.ID)
+					.fetchOne();
+				hifGroupId = hifGroupRecord.value1();
+				newHifGroupIds.add(hifGroupId);
 			}
-			hifGroupId = hifGroupNameMap.get(hifGroupName.toLowerCase());
 		} else {
-
-			hifGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
-				.insertInto(HEALTH_IMPACT_FUNCTION_GROUP
-						, HEALTH_IMPACT_FUNCTION_GROUP.NAME
-						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
-						, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID
-						, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
-						)
-				.values(hifGroupName, description, userId, Constants.SHARING_NONE)
-				.returning(HEALTH_IMPACT_FUNCTION_GROUP.ID)
-				.fetchOne();
-
-			hifGroupId = hifGroupRecord.value1();
-			newHifGroupIds.add(hifGroupId);
+			// Regular user path
+			Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
+			if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
+				if(newGroup) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "A Health Impact Function Group called '" + hifGroupName + "' already exists. "
+						+ "Please enter a different name, or select the 'Append to an existing health impact function group' option.";
+					msg.message = strRecord + "";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				hifGroupId = hifGroupNameMap.get(hifGroupName.toLowerCase());
+			} else {
+				hifGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(HEALTH_IMPACT_FUNCTION_GROUP
+							, HEALTH_IMPACT_FUNCTION_GROUP.NAME
+							, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
+							, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID
+							, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
+							)
+					.values(hifGroupName, description, userId, Constants.SHARING_NONE)
+					.returning(HEALTH_IMPACT_FUNCTION_GROUP.ID)
+					.fetchOne();
+				hifGroupId = hifGroupRecord.value1();
+				newHifGroupIds.add(hifGroupId);
+			}
 		}
 
 		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
@@ -1209,7 +1261,7 @@ public class HIFApi {
 									, ENDPOINT_GROUP.USER_ID
 									, ENDPOINT_GROUP.SHARE_SCOPE
 									)
-							.values(record[endpointGroupIdx].strip(), userId, Constants.SHARING_NONE)
+							.values(record[endpointGroupIdx].strip(), effectiveUserId, shareScope)
 							.returning(ENDPOINT_GROUP.ID)
 							.fetchOne();
 
@@ -2083,7 +2135,7 @@ public class HIFApi {
 				functionText, beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
 				startDay, endDay, geogArea, geogAreaFeature, (heroId != -1 ? heroId : null), heroUrl, accessUrl, 
-				userId, Constants.SHARING_NONE)
+				effectiveUserId, shareScope)
 				.returning(HEALTH_IMPACT_FUNCTION.ID)
 				.fetchOne();
 
