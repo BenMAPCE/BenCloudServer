@@ -4,6 +4,7 @@ import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_CELL
 import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.AIR_QUALITY_LAYER_METRICS;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.GRID_DEFINITION;
+import static gov.epa.bencloud.server.database.jooq.data.Tables.INCIDENCE_DATASET;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POLLUTANT;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.POLLUTANT_METRIC;
 import static gov.epa.bencloud.server.database.jooq.data.Tables.SEASONAL_METRIC;
@@ -79,6 +80,7 @@ import gov.epa.bencloud.api.util.ApiUtil;
 import gov.epa.bencloud.api.util.FilestoreUtil;
 import gov.epa.bencloud.server.database.JooqUtil;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.AirQualityLayerRecord;
+import gov.epa.bencloud.server.database.jooq.data.tables.records.IncidenceDatasetRecord;
 import gov.epa.bencloud.server.database.jooq.data.tables.records.TaskBatchRecord;
 import gov.epa.bencloud.server.tasks.TaskQueue;
 import gov.epa.bencloud.server.tasks.model.Task;
@@ -117,6 +119,8 @@ public class AirQualityApi {
 		String userId = userProfile.get().getId();
 
 		Condition filterCondition = AIR_QUALITY_LAYER.SHARE_SCOPE.eq(Constants.SHARING_ALL).or(AIR_QUALITY_LAYER.USER_ID.eq(userId));
+
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short) 0));
 
 		if (pollutantId != 0) {
 			filterCondition = filterCondition.and(DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId));
@@ -198,6 +202,8 @@ public class AirQualityApi {
 		Condition filterCondition = DSL.trueCondition();
 		
 		Condition pollutantCondition = DSL.trueCondition();
+
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short) 0));
 
 		if (pollutantId != 0) {
 			pollutantCondition = DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId);
@@ -393,6 +399,8 @@ public class AirQualityApi {
 		Condition filterCondition = DSL.trueCondition();
 		
 		Condition pollutantCondition = DSL.trueCondition();
+
+		filterCondition = filterCondition.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short) 0));
 
 		if (pollutantId != 0) {
 			pollutantCondition = DSL.field(AIR_QUALITY_LAYER.POLLUTANT_ID).eq(pollutantId);
@@ -948,11 +956,30 @@ public class AirQualityApi {
 			return CoreApi.transformValMsgToJSON(validationMsg);
 		}
 
+		// Determine if this is an admin-shared upload
+		Short shareScope = Constants.SHARING_NONE;
+		String shareScopeStr = ApiUtil.getMultipartFormParameterAsString(request, "shareScope");
+		if (shareScopeStr != null && !shareScopeStr.isEmpty()) {
+			try {
+				shareScope = Short.parseShort(shareScopeStr);
+			} catch (NumberFormatException e) {
+				shareScope = Constants.SHARING_NONE;
+			}
+		}
+		if (shareScope.equals(Constants.SHARING_ALL) && !CoreApi.isAdmin(userProfile)) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+		// Shared records use null user_id 
+		// private records use the submitter's id.
+		String effectiveUserId = shareScope.equals(Constants.SHARING_ALL) ? null : userProfile.get().getId();
+
 		//check file types are csv. Make sure layer names do not already exist in the database
 		String filename = "";
 		int fileCount = 0;
 
-		List<String>layerNames = AirQualityUtil.getExistingLayerNamesByUser(pollutantId,userProfile.get().getId());
+		List<String> layerNames = shareScope.equals(Constants.SHARING_ALL)
+			? AirQualityUtil.getExistingLayerNamesForPollutant(pollutantId)
+			: AirQualityUtil.getExistingLayerNamesByUser(pollutantId, userProfile.get().getId());
 		try {
 			for(Part part : request.raw().getParts()){
 				//Files parts will be named file0, file1, and so on.
@@ -961,13 +988,25 @@ public class AirQualityApi {
 					//check layer name
 					String layerName = userLayerName;
 					filename = part.getSubmittedFileName();
-					if(layerName.isEmpty())layerName = filename;								
+					if(layerName.isEmpty())layerName = filename;
 					if (layerNames.contains(layerName.toLowerCase())) {
 						validationMsg.success = false;
-						validationMsg.messages.add(new ValidationMessage.Message("error","A layer named " + layerName + " already exists. Please use a different name."));
+						if (shareScope.equals(Constants.SHARING_ALL)) {
+							var conflictRecord = AirQualityUtil.getLayerConflictRecord(pollutantId, layerName);
+							String conflictOwner = conflictRecord != null ? conflictRecord.get(AIR_QUALITY_LAYER.USER_ID) : null;
+							String errorMsg;
+							if (conflictOwner == null || conflictRecord.get(AIR_QUALITY_LAYER.SHARE_SCOPE).equals(Constants.SHARING_ALL)) {
+								errorMsg = "A shared layer named \"" + layerName + "\" already exists.";
+							} else {
+								errorMsg = "The name \"" + layerName + "\" is already used by a private record belonging to user '" + conflictOwner + "'. Choose a different name.";
+							}
+							validationMsg.messages.add(new ValidationMessage.Message("error", errorMsg));
+						} else {
+							validationMsg.messages.add(new ValidationMessage.Message("error", "A layer named " + layerName + " already exists. Please use a different name."));
+						}
 						response.type("application/json");
 						return CoreApi.transformValMsgToJSON(validationMsg);
-					}	
+					}
 					//check file type
 					String contentType = part.getContentType();	
 					if (contentType != null && contentType.contains("/")) {
@@ -1018,7 +1057,8 @@ public class AirQualityApi {
 					paramsNode.put("groupName", groupName);
 					paramsNode.put("filename", filename);
 					paramsNode.put("layerName", layerName);
-					paramsNode.put("userId", userProfile.get().getId());
+					if (effectiveUserId != null) { paramsNode.put("userId", effectiveUserId); } else { paramsNode.putNull("userId"); }
+					paramsNode.put("shareScope", shareScope);
 					Integer filestoreId = 0;
 					filestoreId = FilestoreUtil.putFile(is, filename, Constants.FILE_TYPE_AQ, userProfile.get().getId(), paramsNode.toString());
 					if (csvFilestoreIds !=null && csvFilestoreIds.containsKey(layerName)){
@@ -1412,7 +1452,8 @@ public class AirQualityApi {
 		ObjectNode paramsNode = mapper.createObjectNode();				
 
 		paramsNode.put("groupName", groupName);
-		paramsNode.put("userId", userProfile.get().getId());
+		if (effectiveUserId != null) { paramsNode.put("userId", effectiveUserId); } else { paramsNode.putNull("userId"); }
+		paramsNode.put("shareScope", shareScope);
 		paramsNode.put("pollutantId", pollutantId);
 		paramsNode.put("aqYear", aqYear);
 		paramsNode.put("source", source);
@@ -1435,7 +1476,7 @@ public class AirQualityApi {
 		
 		TaskBatchRecord rec = DSL.using(JooqUtil.getJooqConfiguration("BenMAP Server"))
 		.insertInto(TASK_BATCH, TASK_BATCH.NAME, TASK_BATCH.PARAMETERS, TASK_BATCH.USER_ID, TASK_BATCH.SHARING_SCOPE)
-		.values("Air Quality import: " + (groupName==null || groupName.isEmpty() ? firstLayerName : groupName), paramsNode.toString(), userProfile.get().getId(), Constants.SHARING_NONE)
+		.values("Air Quality import: " + (groupName==null || groupName.isEmpty() ? firstLayerName : groupName), paramsNode.toString(), effectiveUserId, shareScope)
 		.returning(TASK_BATCH.ID).fetchOne();
 		Integer batchTaskId = rec.getId();
 
@@ -1516,6 +1557,38 @@ public class AirQualityApi {
 			return response;
 		}
 	} 
+
+	public static Object archiveAirQualityLayerDefinition(Request request, Response response, Optional<UserProfile> userProfile) {
+	
+		ValidationMessage validationMsg = new ValidationMessage();
+		Integer id;
+
+		try {
+			id = Integer.valueOf(request.params("id"));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		} 
+		DSLContext create = DSL.using(JooqUtil.getJooqConfigurationUnquoted());
+		
+		AirQualityLayerRecord airQualityResult = create.selectFrom(AIR_QUALITY_LAYER).where(AIR_QUALITY_LAYER.ID.eq(id)).fetchAny();
+		if(airQualityResult == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		//Admins can archive any air quality layer
+		if(!CoreApi.isAdmin(userProfile))  {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+
+		airQualityResult.setArchived((short) 1);
+
+		airQualityResult.store();
+
+		response.type("application/json");
+		validationMsg.success = true;
+		return CoreApi.transformValMsgToJSON(validationMsg); 
+	}
 	
 	/**
 	 * 

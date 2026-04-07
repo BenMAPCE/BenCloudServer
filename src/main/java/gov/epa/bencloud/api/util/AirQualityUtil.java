@@ -188,12 +188,44 @@ public class AirQualityUtil {
 	public static List<String> getExistingLayerNamesByUser(Integer id, String userId) {
 		List<String> layerNames = new ArrayList<String>();
 
-		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());		
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
 		layerNames = create.select(DSL.lower(AIR_QUALITY_LAYER.NAME)).from(AIR_QUALITY_LAYER)
 				.where(AIR_QUALITY_LAYER.SHARE_SCOPE.equal((short) 1).or(AIR_QUALITY_LAYER.POLLUTANT_ID.eq(id).and(AIR_QUALITY_LAYER.USER_ID.eq(userId))))
 				.fetch(DSL.lower(AIR_QUALITY_LAYER.NAME));
 
 		return layerNames;
+	}
+
+	/**
+	 * Returns all non-archived air quality layer names (lower-cased) for a given pollutant, regardless of user or scope.
+	 * Used for admin conflict detection when creating shared layers.
+	 * @param pollutantId
+	 * @return list of lower-cased layer names
+	 */
+	public static List<String> getExistingLayerNamesForPollutant(Integer pollutantId) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		return create.select(DSL.lower(AIR_QUALITY_LAYER.NAME))
+				.from(AIR_QUALITY_LAYER)
+				.where(AIR_QUALITY_LAYER.POLLUTANT_ID.eq(pollutantId))
+				.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short)0))
+				.fetch(DSL.lower(AIR_QUALITY_LAYER.NAME));
+	}
+
+	/**
+	 * Returns the user_id and share_scope of the first non-archived air quality layer with the given name for a pollutant.
+	 * Used to build a conflict error message for admin shared uploads.
+	 * @param pollutantId
+	 * @param layerName
+	 * @return record with USER_ID and SHARE_SCOPE, or null if no conflict
+	 */
+	public static org.jooq.Record2<String, Short> getLayerConflictRecord(Integer pollutantId, String layerName) {
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		return create.select(AIR_QUALITY_LAYER.USER_ID, AIR_QUALITY_LAYER.SHARE_SCOPE)
+				.from(AIR_QUALITY_LAYER)
+				.where(AIR_QUALITY_LAYER.POLLUTANT_ID.eq(pollutantId))
+				.and(DSL.lower(AIR_QUALITY_LAYER.NAME).eq(layerName.toLowerCase()))
+				.and(AIR_QUALITY_LAYER.ARCHIVED.eq((short)0))
+				.fetchAny();
 	}
 
 		public static void storeTaskLog(AirQualityImportTaskLog aqImportTaskLog) {
