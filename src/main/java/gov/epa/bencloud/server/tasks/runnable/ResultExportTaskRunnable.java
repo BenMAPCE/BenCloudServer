@@ -98,6 +98,7 @@ import gov.epa.bencloud.server.util.ApplicationUtil;
  * Process an result export request.
  */
 public class ResultExportTaskRunnable implements Runnable {
+	private static final int dbFetchSize =50000;
 	private static final Logger log = LoggerFactory.getLogger(ResultExportTaskRunnable.class);
     protected static ObjectMapper objectMapper = new ObjectMapper();
     
@@ -253,7 +254,7 @@ public class ResultExportTaskRunnable implements Runnable {
 			Boolean includeHealthImpact = resultExportTaskConfig.includeHealthImpact;
 			Boolean includeValuation = resultExportTaskConfig.includeValuation;
 			Boolean includeExposure = resultExportTaskConfig.includeExposure;
-			String taskUuid = resultExportTaskConfig.taskUuid;
+			String sourceTaskUuid = resultExportTaskConfig.taskUuid;
 			String uuidType = resultExportTaskConfig.uuidType;
 			String visibleColumnsString = resultExportTaskConfig.visibleColumns;
 			String[] visibleColumnsArray = visibleColumnsString == null ? new String[0] : visibleColumnsString.split(",");
@@ -312,10 +313,10 @@ public class ResultExportTaskRunnable implements Runnable {
 				List<Integer> exposureResultDatasetIds;
 				if(uuidType.equals("E")) {
 					//export current scenario
-					exposureResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(taskUuid)).select()
+					exposureResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(sourceTaskUuid)).select()
 							.from(EXPOSURE_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.where(TASK_COMPLETE.TASK_UUID.eq(taskUuid))
+							.where(TASK_COMPLETE.TASK_UUID.eq(sourceTaskUuid))
 							.fetch(EXPOSURE_RESULT_DATASET.ID);
 				}
 				else {
@@ -355,7 +356,12 @@ public class ResultExportTaskRunnable implements Runnable {
 										gridIds[i]))
 								.asTable("ef_result_records");
 
-							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+							String csvFileName = taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv";
+							messages.get(messages.size()-1).setStatus("complete");
+							messages.add(new TaskMessage("active", "Creating " + csvFileName));
+							TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+
+							zipStream.putNextEntry(new ZipEntry(csvFileName));
 							boolean firstBatch = true;
 							// Use a connection with autocommit=false so PostgreSQL JDBC enables server-side cursors
 							try (ConnectionAndConfig cac = acquireNoAutoCommitConfig()) {
@@ -390,10 +396,10 @@ public class ResultExportTaskRunnable implements Runnable {
 										.join(GENDER).on(EXPOSURE_RESULT_FUNCTION_CONFIG.GENDER_ID.eq(GENDER.ID))
 										.leftJoin(VARIABLE_ENTRY).on(EXPOSURE_RESULT_FUNCTION_CONFIG.VARIABLE_ID.eq(VARIABLE_ENTRY.ID))
 		                                .orderBy(efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_COL).asc(), efResultRecords.field(GET_EXPOSURE_RESULTS.GRID_ROW).asc(), EXPOSURE_RESULT_FUNCTION_CONFIG.HIDDEN_SORT_ORDER.asc())
-										.fetchSize(5000)
+										.fetchSize(dbFetchSize)
 										.fetchLazy()) {
 									while (cursor.hasNext()) {
-										Result<?> batch = cursor.fetchNext(5000);
+										Result<?> batch = cursor.fetchNext(dbFetchSize);
 										writeBatchCsv(batch, zipStream, firstBatch);
 										firstBatch = false;
 									}
@@ -402,8 +408,13 @@ public class ResultExportTaskRunnable implements Runnable {
 							zipStream.closeEntry();
 							log.info(taskFileName + " added.");
 						} catch(DataAccessException e) {
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
-							log.error("Task failed", e);
+							String errorMsg = "Export failed: " + e.getMessage();
+							log.error(errorMsg, e);
+							try {
+								TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMsg);
+							} catch (Exception e2) {
+								log.error("Error marking task as failed", e2);
+							}
 							return;
 						} catch (Exception e) {
 							log.error("Error creating export file", e);
@@ -454,7 +465,7 @@ public class ResultExportTaskRunnable implements Runnable {
 					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.and(HIF_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+							.and(HIF_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
 							.fetch(HIF_RESULT_DATASET.ID);
 				}
 				else if(uuidType.equals("V")) {
@@ -462,7 +473,7 @@ public class ResultExportTaskRunnable implements Runnable {
 							.from(HIF_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.join(VALUATION_RESULT_DATASET).on(HIF_RESULT_DATASET.ID.eq(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID))
-							.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+							.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
 							.fetch(HIF_RESULT_DATASET.ID);
 				}
 				else {
@@ -515,7 +526,12 @@ public class ResultExportTaskRunnable implements Runnable {
 										)
 								.asTable("hif_result_records");
 
-							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+							String csvFileName = taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv";
+							messages.get(messages.size()-1).setStatus("complete");
+							messages.add(new TaskMessage("active", "Creating " + csvFileName));
+							TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+
+							zipStream.putNextEntry(new ZipEntry(csvFileName));
 							boolean firstBatch = true;
 							DescriptiveStatistics stats = new DescriptiveStatistics();
 							// Use a connection with autocommit=false so PostgreSQL JDBC enables server-side cursors
@@ -567,10 +583,10 @@ public class ResultExportTaskRunnable implements Runnable {
 										.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 										.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 										.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.TIMING_ID.eq(TIMING_TYPE.ID))
-										.fetchSize(5000)
+										.fetchSize(dbFetchSize)
 										.fetchLazy()) {
 									while (cursor.hasNext()) {
-										Result<Record> batch = cursor.fetchNext(5000);
+										Result<Record> batch = cursor.fetchNext(dbFetchSize);
 
 										//If results are being aggregated, recalculate mean, variance, std deviation, and percent of baseline
 										if (isAggregating) {
@@ -601,8 +617,13 @@ public class ResultExportTaskRunnable implements Runnable {
 							zipStream.closeEntry();
 							log.info(taskFileName + " added.");
 						} catch(DataAccessException e) {
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
-							log.error("Task failed", e);
+							String errorMsg = "Export failed: " + e.getMessage();
+							log.error(errorMsg, e);
+							try {
+								TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMsg);
+							} catch (Exception e2) {
+								log.error("Error marking task as failed", e2);
+							}
 							return;
 						} catch (Exception e) {
 							log.error("Error creating export file", e);
@@ -624,14 +645,14 @@ public class ResultExportTaskRunnable implements Runnable {
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
-							.where(HIF_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+							.where(HIF_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
 							.fetch(VALUATION_RESULT_DATASET.ID);
 				}
 				else if(uuidType.equals("V")) {
 					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
 							.from(VALUATION_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.and(VALUATION_RESULT_DATASET.TASK_UUID.eq(taskUuid))
+							.and(VALUATION_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
 							.fetch(VALUATION_RESULT_DATASET.ID);
 				}
 				else {
@@ -688,7 +709,12 @@ public class ResultExportTaskRunnable implements Runnable {
 										limitToGridId))
 								.asTable("valuation_result_records");
 
-							zipStream.putNextEntry(new ZipEntry(taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv"));
+							String csvFileName = taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv";
+							messages.get(messages.size()-1).setStatus("complete");
+							messages.add(new TaskMessage("active", "Creating " + csvFileName));
+							TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+
+							zipStream.putNextEntry(new ZipEntry(csvFileName));
 							boolean firstBatch = true;
 							DescriptiveStatistics stats = new DescriptiveStatistics();
 							// Use a connection with autocommit=false so PostgreSQL JDBC enables server-side cursors
@@ -741,10 +767,10 @@ public class ResultExportTaskRunnable implements Runnable {
 										.leftJoin(SEASONAL_METRIC).on(HIF_RESULT_FUNCTION_CONFIG.SEASONAL_METRIC_ID.eq(SEASONAL_METRIC.ID))
 										.join(STATISTIC_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(STATISTIC_TYPE.ID))
 										.leftJoin(TIMING_TYPE).on(HIF_RESULT_FUNCTION_CONFIG.METRIC_STATISTIC.eq(TIMING_TYPE.ID))
-										.fetchSize(5000)
+										.fetchSize(dbFetchSize)
 										.fetchLazy()) {
 									while (cursor.hasNext()) {
-										Result<Record> batch = cursor.fetchNext(5000);
+										Result<Record> batch = cursor.fetchNext(dbFetchSize);
 
 										// Inject valuation function name and health effect
 										for (Record res : batch) {
@@ -780,8 +806,13 @@ public class ResultExportTaskRunnable implements Runnable {
 							zipStream.closeEntry();
 							log.info(taskFileName + " added.");
 						} catch(DataAccessException e) {
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
-							log.error("Task failed", e);
+							String errorMsg = "Export failed: " + e.getMessage();
+							log.error(errorMsg, e);
+							try {
+								TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMsg);
+							} catch (Exception e2) {
+								log.error("Error marking task as failed", e2);
+							}
 							return;
 						} catch (Exception e) {
 							log.error("Error creating export file", e);
@@ -807,6 +838,10 @@ public class ResultExportTaskRunnable implements Runnable {
 			}
 
 			// Upload the completed zip file to the file store
+			messages.get(messages.size()-1).setStatus("complete");
+			messages.add(new TaskMessage("active", "Uploading export file"));
+			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+
 			String fileMetadata = "{\"name\":\"" + zipFileName + ".zip\"}";
 			try (FileInputStream fis = new FileInputStream(tmpZipFile)) {
 				Integer fsid = FilestoreUtil.putFile(fis, zipFileName + ".zip", Constants.FILE_TYPE_RESULT_EXPORT, task.getUserIdentifier(), fileMetadata);
@@ -822,11 +857,25 @@ public class ResultExportTaskRunnable implements Runnable {
 			resultExportTaskLog.setSuccess(true);
 			resultExportTaskLog.setDtEnd(LocalDateTime.now());
 
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, taskSuccessful, completeMessage);
+			try {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, taskSuccessful, completeMessage);
+			} catch (Exception e) {
+				log.error("Error completing task", e);
+				try {
+					TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed during completion: " + e.getMessage());
+				} catch (Exception e2) {
+					log.error("Error marking task as failed", e2);
+				}
+			}
 
 		} catch (Exception e) {
-			TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
-			log.error("Task failed", e);
+			String errorMsg = "Task failed: " + e.getMessage();
+			log.error(errorMsg, e);
+			try {
+				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMsg);
+			} catch (Exception e2) {
+				log.error("Error marking task as failed", e2);
+			}
 		} finally {
 			// Always clean up the temp file
 			if (tmpZipFile != null) {
