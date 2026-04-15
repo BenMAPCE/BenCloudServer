@@ -98,7 +98,7 @@ import gov.epa.bencloud.server.util.ApplicationUtil;
  * Process an result export request.
  */
 public class ResultExportTaskRunnable implements Runnable {
-	private static final int dbFetchSize =50000;
+	private static final int dbFetchSize =5000;
 	private static final Logger log = LoggerFactory.getLogger(ResultExportTaskRunnable.class);
     protected static ObjectMapper objectMapper = new ObjectMapper();
     
@@ -239,7 +239,7 @@ public class ResultExportTaskRunnable implements Runnable {
 			resultExportTaskLog.setDtStart(LocalDateTime.now());
 			
 			resultExportTaskLog.addMessage("Starting result export");
-			messages.add(new TaskMessage("active", "Loading results"));
+			messages.add(new TaskMessage("active", "Preparing to process export request"));
 			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
 			
 			/*
@@ -291,8 +291,12 @@ public class ResultExportTaskRunnable implements Runnable {
 				File tmpDirectory = new File(tmpDirectoryPath);
 				tmpZipFile = File.createTempFile("resultExport",".zip", tmpDirectory);
 			} catch (java.io.IOException e1) {
-				TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed");
 				log.error("Error getting output stream", e1);
+				try {
+					TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, "Task failed: " + e1.getMessage());
+				} catch (Exception e2) {
+					log.error("Error marking task as failed", e2);
+				}
 				return;
 			}
 
@@ -305,14 +309,15 @@ public class ResultExportTaskRunnable implements Runnable {
 				includeHealthImpact=false;
 				includeValuation=false;
 			}
-			
+
+			// Pre-query dataset IDs to calculate total files for progress tracking
+			DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+			List<Integer> exposureResultDatasetIds = new ArrayList<>();
+			List<Integer> hifResultDatasetIds = new ArrayList<>();
+			List<Integer> valuationResultDatasetIds = new ArrayList<>();
+
 			if(includeExposure) {
-				//Exposure results
-				DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-				//get valuation task ids 
-				List<Integer> exposureResultDatasetIds;
 				if(uuidType.equals("E")) {
-					//export current scenario
 					exposureResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(sourceTaskUuid)).select()
 							.from(EXPOSURE_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
@@ -320,14 +325,66 @@ public class ResultExportTaskRunnable implements Runnable {
 							.fetch(EXPOSURE_RESULT_DATASET.ID);
 				}
 				else {
-					//export all scenarios in this batch task
 					exposureResultDatasetIds = create.select()
 							.from(EXPOSURE_RESULT_DATASET)
 							.join(TASK_COMPLETE).on(EXPOSURE_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
 							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
 							.fetch(EXPOSURE_RESULT_DATASET.ID);
-				}		
-				
+				}
+			}
+			if(includeHealthImpact) {
+				if(uuidType.equals("H")) {
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
+							.from(HIF_RESULT_DATASET)
+							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+							.and(HIF_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
+							.fetch(HIF_RESULT_DATASET.ID);
+				}
+				else if(uuidType.equals("V")) {
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
+							.from(HIF_RESULT_DATASET)
+							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+							.join(VALUATION_RESULT_DATASET).on(HIF_RESULT_DATASET.ID.eq(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID))
+							.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
+							.fetch(HIF_RESULT_DATASET.ID);
+				}
+				else {
+					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
+							.from(HIF_RESULT_DATASET)
+							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+							.fetch(HIF_RESULT_DATASET.ID);
+				}
+			}
+			if(includeValuation) {
+				if(uuidType.equals("H")) {
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
+							.from(VALUATION_RESULT_DATASET)
+							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+							.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
+							.where(HIF_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
+							.fetch(VALUATION_RESULT_DATASET.ID);
+				}
+				else if(uuidType.equals("V")) {
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
+							.from(VALUATION_RESULT_DATASET)
+							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+							.and(VALUATION_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
+							.fetch(VALUATION_RESULT_DATASET.ID);
+				}
+				else {
+					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
+							.from(VALUATION_RESULT_DATASET)
+							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
+							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
+							.fetch(VALUATION_RESULT_DATASET.ID);
+				}
+			}
+
+			int totalFiles = (exposureResultDatasetIds.size() + hifResultDatasetIds.size() + valuationResultDatasetIds.size()) * gridIds.length;
+			int filesProcessed = 0;
+
+			if(includeExposure) {
 				//Loop through each function and each grid definition
 				for(int exposureResultDatasetId : exposureResultDatasetIds) {
 					//csv file name
@@ -344,8 +401,12 @@ public class ResultExportTaskRunnable implements Runnable {
 										.orderBy(GRID_DEFINITION.ID.sortAsc(gridDefinitionIds))
 										.fetch(GRID_DEFINITION.NAME);
 								String errorMessage = "Could not convert from grid \"" + gridDefinitionNames.get(0) + "\" to \"" + gridDefinitionNames.get(1) + "\"";
-								TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
-								log.error("Task failed");
+								log.error(errorMessage);
+								try {
+									TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
+								} catch (Exception e2) {
+									log.error("Error marking task as failed", e2);
+								}
 								return;
 							}
 
@@ -357,9 +418,11 @@ public class ResultExportTaskRunnable implements Runnable {
 								.asTable("ef_result_records");
 
 							String csvFileName = taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv";
+							filesProcessed++;
+							int currentPct = totalFiles > 0 ? Math.round(filesProcessed * 100f / totalFiles) : 1;
 							messages.get(messages.size()-1).setStatus("complete");
-							messages.add(new TaskMessage("active", "Creating " + csvFileName));
-							TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+							messages.add(new TaskMessage("active", "Creating " + csvFileName + " (" + filesProcessed + " of " + totalFiles + ")"));
+							TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 
 							zipStream.putNextEntry(new ZipEntry(csvFileName));
 							boolean firstBatch = true;
@@ -457,34 +520,7 @@ public class ResultExportTaskRunnable implements Runnable {
 				hifColumnsMap.put(26, "variance");
 				hifColumnsMap.put(27, "pct_2_5");
 				hifColumnsMap.put(28, "pct_97_5");
-				DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-				//get hif task ids
-				List<Integer> hifResultDatasetIds;
-				if(uuidType.equals("H")) {
-					//export all hif results from the same senario as taskUuid.
-					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
-							.from(HIF_RESULT_DATASET)
-							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.and(HIF_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
-							.fetch(HIF_RESULT_DATASET.ID);
-				}
-				else if(uuidType.equals("V")) {
-					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
-							.from(HIF_RESULT_DATASET)
-							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.join(VALUATION_RESULT_DATASET).on(HIF_RESULT_DATASET.ID.eq(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID))
-							.where(VALUATION_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
-							.fetch(HIF_RESULT_DATASET.ID);
-				}
-				else {
-					hifResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
-							.from(HIF_RESULT_DATASET)
-							.join(TASK_COMPLETE).on(HIF_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
-							.fetch(HIF_RESULT_DATASET.ID);
-				}
-				
-				
+
 				//Precompute included columns from visible columns (same for all HIF datasets/grids)
 				List<Integer> includedColumns = hifColumnsMap.entrySet()
 					.stream()
@@ -511,8 +547,12 @@ public class ResultExportTaskRunnable implements Runnable {
 									.orderBy(GRID_DEFINITION.ID.sortAsc(gridDefinitionIds))
 									.fetch(GRID_DEFINITION.NAME);
 							String errorMessage = "Could not convert from grid \"" + gridDefinitionNames.get(0) + "\" to \"" + gridDefinitionNames.get(1) + "\"";
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
-							log.error("Task failed");
+							log.error(errorMessage);
+							try {
+								TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
+							} catch (Exception e2) {
+								log.error("Error marking task as failed", e2);
+							}
 							return;
 						}
 						boolean isAggregating = !baselineGridId.equals(gridIds[i]);
@@ -527,9 +567,11 @@ public class ResultExportTaskRunnable implements Runnable {
 								.asTable("hif_result_records");
 
 							String csvFileName = taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv";
+							filesProcessed++;
+							int currentPct = totalFiles > 0 ? Math.round(filesProcessed * 100f / totalFiles) : 1;
 							messages.get(messages.size()-1).setStatus("complete");
-							messages.add(new TaskMessage("active", "Creating " + csvFileName));
-							TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+							messages.add(new TaskMessage("active", "Creating " + csvFileName + " (" + filesProcessed + " of " + totalFiles + ")"));
+							TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 
 							zipStream.putNextEntry(new ZipEntry(csvFileName));
 							boolean firstBatch = true;
@@ -635,34 +677,6 @@ public class ResultExportTaskRunnable implements Runnable {
 				}
 			}
 			if(includeValuation) {
-				//Valuation results
-				DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
-				//get valuation task ids
-				List<Integer> valuationResultDatasetIds;
-				if(uuidType.equals("H")) {
-					//export all val results from the same scenario as hif taskUuid.
-					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
-							.from(VALUATION_RESULT_DATASET)
-							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.join(HIF_RESULT_DATASET).on(VALUATION_RESULT_DATASET.HIF_RESULT_DATASET_ID.eq(HIF_RESULT_DATASET.ID))
-							.where(HIF_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
-							.fetch(VALUATION_RESULT_DATASET.ID);
-				}
-				else if(uuidType.equals("V")) {
-					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
-							.from(VALUATION_RESULT_DATASET)
-							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.and(VALUATION_RESULT_DATASET.TASK_UUID.eq(sourceTaskUuid))
-							.fetch(VALUATION_RESULT_DATASET.ID);
-				}
-				else {
-					valuationResultDatasetIds = DSL.using(JooqUtil.getJooqConfiguration(task.getUuid())).select()
-							.from(VALUATION_RESULT_DATASET)
-							.join(TASK_COMPLETE).on(VALUATION_RESULT_DATASET.TASK_UUID.eq(TASK_COMPLETE.TASK_UUID))
-							.where(TASK_COMPLETE.TASK_BATCH_ID.eq(batchId))
-							.fetch(VALUATION_RESULT_DATASET.ID);
-				}
-				
 				//Loop through each function and each grid definition
 				for(int valuationResultDatasetId : valuationResultDatasetIds) {
 					//csv file name
@@ -694,8 +708,12 @@ public class ResultExportTaskRunnable implements Runnable {
 									.orderBy(GRID_DEFINITION.ID.sortAsc(gridDefinitionIds))
 									.fetch(GRID_DEFINITION.NAME);
 							String errorMessage = "Could not convert from grid \"" + gridDefinitionNames.get(0) + "\" to \"" + gridDefinitionNames.get(1) + "\"";
-							TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
-							log.error("Task failed");
+							log.error(errorMessage);
+							try {
+								TaskComplete.addTaskToCompleteAndRemoveTaskFromQueue(task.getUuid(), taskWorkerUuid, false, errorMessage);
+							} catch (Exception e2) {
+								log.error("Error marking task as failed", e2);
+							}
 							return;
 						}
 						boolean isAggregating = !baselineGridId.equals(gridIds[i]);
@@ -710,9 +728,11 @@ public class ResultExportTaskRunnable implements Runnable {
 								.asTable("valuation_result_records");
 
 							String csvFileName = taskFileName + "_" + ApplicationUtil.replaceNonValidCharacters(GridDefinitionApi.getGridDefinitionName(gridIds[i])) + ".csv";
+							filesProcessed++;
+							int currentPct = totalFiles > 0 ? Math.round(filesProcessed * 100f / totalFiles) : 1;
 							messages.get(messages.size()-1).setStatus("complete");
-							messages.add(new TaskMessage("active", "Creating " + csvFileName));
-							TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+							messages.add(new TaskMessage("active", "Creating " + csvFileName + " (" + filesProcessed + " of " + totalFiles + ")"));
+							TaskQueue.updateTaskPercentage(taskUuid, currentPct, mapper.writeValueAsString(messages));
 
 							zipStream.putNextEntry(new ZipEntry(csvFileName));
 							boolean firstBatch = true;
@@ -840,7 +860,7 @@ public class ResultExportTaskRunnable implements Runnable {
 			// Upload the completed zip file to the file store
 			messages.get(messages.size()-1).setStatus("complete");
 			messages.add(new TaskMessage("active", "Uploading export file"));
-			TaskQueue.updateTaskPercentage(taskUuid, 1, mapper.writeValueAsString(messages));
+			TaskQueue.updateTaskPercentage(taskUuid, 100, mapper.writeValueAsString(messages));
 
 			String fileMetadata = "{\"name\":\"" + zipFileName + ".zip\"}";
 			try (FileInputStream fis = new FileInputStream(tmpZipFile)) {
