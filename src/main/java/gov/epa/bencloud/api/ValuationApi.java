@@ -1105,18 +1105,18 @@ public class ValuationApi {
 					countAgeRangeError++;
 				}
 
-				//EPA standard is optional, should be true or false
+				//EPA standard is optional, should be yes or no
 				if(epaStandardIdx != -999) {
 					str = record[epaStandardIdx].strip();
-					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+					if(str != null && !(str.toLowerCase().equals("yes") || str.toLowerCase().equals("no"))) {
 						countEpaStandardTypeError++;
 					}
 				}
 
-				//Multiyear is optional, should be true or false
+				//Multiyear is optional, should be yes or no
 				if(multiyearIdx != -999) {
 					str = record[multiyearIdx].strip();
-					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+					if(str != null && !(str.toLowerCase().equals("yes") || str.toLowerCase().equals("no"))) {
 						countMultiyearTypeError++;
 					}	
 				}
@@ -1281,10 +1281,10 @@ public class ValuationApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countDiscountedError == 1) {
-					strRecord = String.valueOf(countDiscountedError) + " record has an invalid Discounted value. Valid options include: true, false, or unknown";
+					strRecord = String.valueOf(countDiscountedError) + " record has an invalid Discounted value. Valid options include: yes, no, or unknown.";
 				}
 				else {
-					strRecord = String.valueOf(countDiscountedError) + " records have invalid Discounted values. Valid options include: true, false, or unknown";
+					strRecord = String.valueOf(countDiscountedError) + " records have invalid Discounted values. Valid options include: yes, no, or unknown.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1401,10 +1401,10 @@ public class ValuationApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countEpaStandardTypeError == 1) {
-					strRecord = String.valueOf(countEpaStandardTypeError) + " record has an invalid EPA Standard value.";
+					strRecord = String.valueOf(countEpaStandardTypeError) + " record has an invalid EPA Standard value. Valid options include: yes or no";
 				}
 				else {
-					strRecord = String.valueOf(countEpaStandardTypeError) + " records have invalid EPA Standard values.";
+					strRecord = String.valueOf(countEpaStandardTypeError) + " records have invalid EPA Standard values. Valid options include: yes or no";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1416,10 +1416,10 @@ public class ValuationApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMultiyearTypeError == 1) {
-					strRecord = String.valueOf(countMultiyearTypeError) + " record has an invalid Multiyear value.";
+					strRecord = String.valueOf(countMultiyearTypeError) + " record has an invalid Multiyear value. Valid options include: yes or no";
 				}
 				else {
-					strRecord = String.valueOf(countMultiyearTypeError) + " records have invalid Multiyear values.";
+					strRecord = String.valueOf(countMultiyearTypeError) + " records have invalid Multiyear values. Valid options include: yes or no";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1584,10 +1584,12 @@ public class ValuationApi {
 				}
 
 				boolean epaStandardValue = false;
-				if(epaStandardIdx != -999) {
-					String epaStandard = record[epaStandardIdx].strip();
+				if(epaStandardIdx != -999 && CoreApi.isAdmin(userProfile) && shareScope == 1) {
+					String epaStandard = record[epaStandardIdx].strip().toLowerCase();
 					if(epaStandard != null && !epaStandard.equals("")) {
-						epaStandardValue = Boolean.valueOf(epaStandard);
+						if(epaStandard.equals("yes")) {
+							epaStandardValue = true;
+						}
 					}
 				}	
 
