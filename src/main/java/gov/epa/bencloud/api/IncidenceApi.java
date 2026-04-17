@@ -45,6 +45,7 @@ import org.jooq.Record1;
 import org.jooq.Record16;
 import org.jooq.Record3;
 import org.jooq.Record8;
+import org.jooq.Record9;
 import org.jooq.Result;
 import org.jooq.SortOrder;
 import org.jooq.exception.DataAccessException;
@@ -312,13 +313,14 @@ public class IncidenceApi {
 			filterCondition = filterCondition.and(userFilterCondition);
 		}
 
-		Result<Record8<String, Integer, Integer, Integer[], String, Short, String, LocalDateTime >> records = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record9<String, Integer, Integer, Integer[], String, Short, Boolean, String, LocalDateTime >> records = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(INCIDENCE_DATASET.NAME,
 						INCIDENCE_DATASET.ID,
 						INCIDENCE_DATASET.GRID_DEFINITION_ID,
 						DSL.arrayAggDistinct(INCIDENCE_ENTRY.YEAR).orderBy(INCIDENCE_ENTRY.YEAR).as("years"),
 						INCIDENCE_DATASET.USER_ID,
 						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.EPA_STANDARD,
 						INCIDENCE_DATASET.FILENAME,
 						INCIDENCE_DATASET.UPLOAD_DATE
 						)
@@ -330,6 +332,7 @@ public class IncidenceApi {
 						INCIDENCE_DATASET.GRID_DEFINITION_ID,
 						INCIDENCE_DATASET.USER_ID,
 						INCIDENCE_DATASET.SHARE_SCOPE,
+						INCIDENCE_DATASET.EPA_STANDARD,
 						INCIDENCE_DATASET.FILENAME,
 						INCIDENCE_DATASET.UPLOAD_DATE
 						)
@@ -769,6 +772,15 @@ public class IncidenceApi {
 				response.type("application/json");
 				return transformValMsgToJSON(validationMsg);
 			}
+		}
+
+		Boolean isEpaStandard = false;
+		String epaStandardStr = ApiUtil.getMultipartFormParameterAsString(request, "epaStandard");
+		if (epaStandardStr != null && !epaStandardStr.isEmpty()) {
+			isEpaStandard = Boolean.parseBoolean(epaStandardStr);
+		}
+		if (isEpaStandard && (!CoreApi.isAdmin(userProfile) || !shareScope.equals(Constants.SHARING_ALL))) {
+			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 		
 		IncidenceDatasetRecord incRecord=null;
@@ -1288,8 +1300,9 @@ public class IncidenceApi {
 					, INCIDENCE_DATASET.SHARE_SCOPE
 					, INCIDENCE_DATASET.FILENAME
 					, INCIDENCE_DATASET.UPLOAD_DATE
+					, INCIDENCE_DATASET.EPA_STANDARD
 					)
-			.values(incidenceName,  gridId, effectiveUserId, shareScope, filename, uploadDate)
+			.values(incidenceName,  gridId, effectiveUserId, shareScope, filename, uploadDate, isEpaStandard)
 			.returning(INCIDENCE_DATASET.ID, INCIDENCE_DATASET.NAME,INCIDENCE_DATASET.GRID_DEFINITION_ID)
 			.fetchOne();
 
