@@ -770,6 +770,15 @@ public class IncidenceApi {
 				return transformValMsgToJSON(validationMsg);
 			}
 		}
+
+		Boolean isEpaStandard = false;
+		String epaStandardStr = ApiUtil.getMultipartFormParameterAsString(request, "epaStandard");
+		if (epaStandardStr != null && !epaStandardStr.isEmpty()) {
+			isEpaStandard = Boolean.parseBoolean(epaStandardStr);
+		}
+		if (isEpaStandard && (!CoreApi.isAdmin(userProfile) || !shareScope.equals(Constants.SHARING_ALL))) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
 		
 		IncidenceDatasetRecord incRecord=null;
 		IncidenceEntryRecord entryRecord=null;
@@ -1288,8 +1297,9 @@ public class IncidenceApi {
 					, INCIDENCE_DATASET.SHARE_SCOPE
 					, INCIDENCE_DATASET.FILENAME
 					, INCIDENCE_DATASET.UPLOAD_DATE
+					, INCIDENCE_DATASET.EPA_STANDARD
 					)
-			.values(incidenceName,  gridId, effectiveUserId, shareScope, filename, uploadDate)
+			.values(incidenceName,  gridId, effectiveUserId, shareScope, filename, uploadDate, isEpaStandard)
 			.returning(INCIDENCE_DATASET.ID, INCIDENCE_DATASET.NAME,INCIDENCE_DATASET.GRID_DEFINITION_ID)
 			.fetchOne();
 
