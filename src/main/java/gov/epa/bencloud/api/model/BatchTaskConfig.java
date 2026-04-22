@@ -237,7 +237,7 @@ public class BatchTaskConfig {
 		 * Health Impact Groups
 		 */
 		b.append("HEALTH IMPACT GROUPS\n\n");
-		b.append("Health Effect Groups Analyzed:\n");
+		b.append("Health Effect Categories Analyzed:\n");
 
 		for(BatchHIFGroup batchHifGroup : batchHifGroups) {
 			b.append(batchHifGroup.toString(userProfile));

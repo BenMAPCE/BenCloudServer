@@ -688,7 +688,7 @@ public class ValuationApi {
 
 	/*
 	 * @param userProfile
-	 * @return JSON representation of all health effect groups for a given user.
+	 * @return JSON representation of all health effect categories for a given user.
 	 */
 	public static Map<String, Integer> getAllHealthEffectGroupsByUser(String userId) {
 			
@@ -791,7 +791,7 @@ public class ValuationApi {
 		int heGroupId = 0;
 
 		if (shareScope.equals(Constants.SHARING_ALL)) {
-			// Admin shared upload: look for any health effect group with this name
+			// Admin shared upload: look for any health effect category with this name
 			var existingGroup = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(ENDPOINT_GROUP.ID, ENDPOINT_GROUP.USER_ID, ENDPOINT_GROUP.SHARE_SCOPE)
 				.from(ENDPOINT_GROUP)
@@ -1896,7 +1896,7 @@ public class ValuationApi {
 	 * @param request
 	 * @param response
 	 * @param userProfile
-	 * @return JSON representation of all health effect groups
+	 * @return JSON representation of all health effect categories
 	 */
 	public static Object getAllHealthEffectGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 

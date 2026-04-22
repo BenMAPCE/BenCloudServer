@@ -214,7 +214,7 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		/*
-		 * GET array of all health effect group definitions
+		 * GET array of all health effect category definitions
 		 */
 		service.get(apiPrefix + "/health-effect-groups", (request, response) -> {
 			return ValuationApi.getAllHealthEffectGroups(request, response, getUserProfile(request, response));
