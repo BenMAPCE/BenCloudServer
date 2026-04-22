@@ -43,7 +43,7 @@ public class ValuationConfig {
 		if(vfRecord.get("qualifier") != null) {
 			b.append("Risk Model Details: ").append(vfRecord.get("qualifier")).append("\n");
 		}
-		b.append("Health Effect Group: ").append(vfRecord.get("endpoint_group_name")).append("\n");
+		b.append("Health Effect Category: ").append(vfRecord.get("endpoint_group_name")).append("\n");
 		b.append("Health Effect: ").append(vfRecord.get("endpoint_name")).append("\n");		
 		b.append("Start Age: ").append(vfRecord.get("start_age")).append("\n");
 		b.append("End Age: ").append(vfRecord.get("end_age")).append("\n");

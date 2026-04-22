@@ -582,7 +582,7 @@ public class IncidenceApi {
 						INCIDENCE_VALUE.GRID_COL.as("Column"),
 						INCIDENCE_VALUE.GRID_ROW.as("Row"),
 						ENDPOINT.DISPLAY_NAME.as("Health Effect"),
-						ENDPOINT_GROUP.NAME.as("Health Effect Group"),
+						ENDPOINT_GROUP.NAME.as("Health Effect Category"),
 						RACE.NAME.as("Race"),
 						GENDER.NAME.as("Gender"),
 						ETHNICITY.NAME.as("Ethnicity"),

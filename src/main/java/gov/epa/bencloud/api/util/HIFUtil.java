@@ -1406,7 +1406,7 @@ public class HIFUtil {
 	/**
 	 * 
 	 * @param hifs
-	 * @return a unique, sorted list of health effect groups included in a list of
+	 * @return a unique, sorted list of health effect categories included in a list of
 	 *         hifs along with a count.
 	 */
 	public static String getHealthEffectGroupsListFromHifs(List<HIFConfig> hifs) {
