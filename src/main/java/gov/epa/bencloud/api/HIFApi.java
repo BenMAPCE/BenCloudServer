@@ -104,16 +104,21 @@ public class HIFApi {
 	 * @param userProfile
 	 */
 	public static void getHifResultContents(Request request, Response response, Optional<UserProfile> userProfile) {
-		
+
 		 //*  :id (health impact function results dataset id (can also support task id))
 		 //*  gridId= (aggregate the results to another grid definition)
 		 //*  hifId= (filter results to those from one or more functions via comma delimited list)
+		 //*  hifEndpoint= (filter by endpoint display name)
+		 //*  startAge= (filter by start age)
+		 //*  endAge= (filter by end age)
+		 //*  author= (filter by function author)
+		 //*  year= (filter by function year)
 		 //*  page=
 		 //*  rowsPerPage=
 		 //*  sortBy=
 		 //*  descending=
 		 //*  filter=
-		
+
 		// TODO: Add user security enforcement
 		//TODO: Implement sortBy, descending, and filter
 
@@ -133,7 +138,7 @@ public class HIFApi {
 			CoreApi.getErrorResponseInvalidId(request, response);
 			return;
 		}
-			
+
 		String hifIdsParam;
 		int gridId;
 		int page;
@@ -141,6 +146,11 @@ public class HIFApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+		String hifEndpoint;
+		String author;
+		Integer startAge;
+		Integer endAge;
+		Integer year;
 
 		try {
 			hifIdsParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifId"), "");
@@ -150,6 +160,14 @@ public class HIFApi {
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			hifEndpoint = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifEndpoint"), "");
+			author = ParameterUtil.getParameterValueAsString(request.raw().getParameter("author"), "");
+			String startAgeParam = request.raw().getParameter("startAge");
+			String endAgeParam = request.raw().getParameter("endAge");
+			String yearParam = request.raw().getParameter("year");
+			startAge = (startAgeParam != null && !startAgeParam.isEmpty()) ? Integer.valueOf(startAgeParam) : null;
+			endAge = (endAgeParam != null && !endAgeParam.isEmpty()) ? Integer.valueOf(endAgeParam) : null;
+			year = (yearParam != null && !yearParam.isEmpty()) ? Integer.valueOf(yearParam) : null;
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			CoreApi.getErrorResponseInvalidId(request, response);
@@ -160,9 +178,47 @@ public class HIFApi {
 			return;
 		}
 		List<Integer> hifIds = (hifIdsParam == null || hifIdsParam.equals("")) ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
-		
-		
+
+
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		// If endpoint/age/author/year filters are provided, resolve them to a list of hif_ids
+		// within this result dataset, then intersect with any explicitly provided hifIds.
+		boolean hasAttributeFilters = !hifEndpoint.isEmpty() || !author.isEmpty()
+				|| startAge != null || endAge != null || year != null;
+		if (hasAttributeFilters) {
+			Condition attributeCondition = HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(id);
+			if (!hifEndpoint.isEmpty()) {
+				attributeCondition = attributeCondition.and(ENDPOINT.DISPLAY_NAME.eq(hifEndpoint));
+			}
+			if (!author.isEmpty()) {
+				attributeCondition = attributeCondition.and(HEALTH_IMPACT_FUNCTION.AUTHOR.eq(author));
+			}
+			if (startAge != null) {
+				attributeCondition = attributeCondition.and(HIF_RESULT_FUNCTION_CONFIG.START_AGE.eq(startAge));
+			}
+			if (endAge != null) {
+				attributeCondition = attributeCondition.and(HIF_RESULT_FUNCTION_CONFIG.END_AGE.eq(endAge));
+			}
+			if (year != null) {
+				attributeCondition = attributeCondition.and(HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.eq(year));
+			}
+
+			List<Integer> filteredHifIds = create
+					.selectDistinct(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)
+					.from(HIF_RESULT_FUNCTION_CONFIG)
+					.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID))
+					.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+					.where(attributeCondition)
+					.fetch(HIF_RESULT_FUNCTION_CONFIG.HIF_ID);
+
+			if (hifIds == null) {
+				hifIds = filteredHifIds;
+			} else {
+				// Intersect: keep only IDs present in both lists
+				hifIds.retainAll(filteredHifIds);
+			}
+		}
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), gridId);
@@ -2528,6 +2584,32 @@ public class HIFApi {
 	 * @param userProfile
 	 * @return a JSON representation of the functions in a given hif result dataset.
 	 */
+	public static Object getHifResultGridInfo(Request request, Response response, Optional<UserProfile> userProfile) {
+		String idParam;
+		Integer id;
+		try {
+			idParam = String.valueOf(request.params("id"));
+			id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
+		} catch (IllegalArgumentException e) {
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		Record2<Integer, String> gridInfo = create
+				.select(GRID_DEFINITION.ID, GRID_DEFINITION.TABLE_NAME)
+				.from(HIF_RESULT_DATASET)
+				.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(HIF_RESULT_DATASET.GRID_DEFINITION_ID))
+				.where(HIF_RESULT_DATASET.ID.eq(id))
+				.fetchOne();
+
+		if (gridInfo == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		response.type("application/json");
+		return "{\"grid_id\":" + gridInfo.value1() + ",\"grid_table_name\":\"" + gridInfo.value2() + "\"}";
+	}
+
 	public static Object getHifResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		String idParam;
 		Integer id;
