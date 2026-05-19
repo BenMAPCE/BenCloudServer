@@ -44,7 +44,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
-import org.jooq.Record4;
+import org.jooq.Record6;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
@@ -760,10 +760,12 @@ public class HIFApi {
 
 
 
-		Result<Record4<String, Integer, String, Integer[]>> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record6<String, Integer, String, Short, Boolean, Integer[]>> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION_GROUP.NAME
 						, HEALTH_IMPACT_FUNCTION_GROUP.ID
 						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
+						, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
+						, HEALTH_IMPACT_FUNCTION_GROUP.EPA_STANDARD
 						, DSL.arrayAggDistinct(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID).as("functions")
 						)
 				.from(HEALTH_IMPACT_FUNCTION_GROUP)
@@ -801,10 +803,14 @@ public class HIFApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 
-		//Nobody can delete shared health impact function groups
-		//All users can delete their own health impact function groups
-		//Admins can delete any non-shared health impact function groups
-		if(hifGroupResult.getShareScope() == Constants.SHARING_ALL || !(hifGroupResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+		//Nobody can delete EPA standard health impact function groups
+		//All users can delete their own non-shared health impact function groups
+		//Admins can delete any non-EPA-standard health impact function groups (including shared)
+		boolean isAdmin = CoreApi.isAdmin(userProfile);
+		boolean isOwner = hifGroupResult.getUserId() != null && hifGroupResult.getUserId().equalsIgnoreCase(userProfile.get().getId());
+		boolean isShared = hifGroupResult.getShareScope() == Constants.SHARING_ALL;
+		boolean isEpaStandard = Boolean.TRUE.equals(hifGroupResult.getEpaStandard());
+		if (isEpaStandard || (!isAdmin && (isShared || !isOwner))) {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 

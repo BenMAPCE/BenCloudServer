@@ -13,7 +13,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row5;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -69,6 +69,11 @@ public class HealthImpactFunctionGroup extends TableImpl<HealthImpactFunctionGro
      * The column <code>data.health_impact_function_group.share_scope</code>.
      */
     public final TableField<HealthImpactFunctionGroupRecord, Short> SHARE_SCOPE = createField(DSL.name("share_scope"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.health_impact_function_group.epa_standard</code>.
+     */
+    public final TableField<HealthImpactFunctionGroupRecord, Boolean> EPA_STANDARD = createField(DSL.name("epa_standard"), SQLDataType.BOOLEAN.defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
 
     private HealthImpactFunctionGroup(Name alias, Table<HealthImpactFunctionGroupRecord> aliased) {
         this(alias, aliased, null);
@@ -147,11 +152,11 @@ public class HealthImpactFunctionGroup extends TableImpl<HealthImpactFunctionGro
     }
 
     // -------------------------------------------------------------------------
-    // Row5 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Integer, String, String, String, Short> fieldsRow() {
-        return (Row5) super.fieldsRow();
+    public Row6<Integer, String, String, String, Short, Boolean> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

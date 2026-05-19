@@ -71,7 +71,7 @@ import org.slf4j.Logger;
  */
 public class ApiUtil {
 
-	public static final String appVersion = "1.1.0";
+	public static final String appVersion = "1.2.0";
 	public static final int minimumDbVersion = 40;
 	
 	/**
