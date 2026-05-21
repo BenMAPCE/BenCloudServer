@@ -137,7 +137,7 @@ public class TaskWorker {
 			
 			// If running in the cloud, start task as k8s job
 			if(! ApplicationUtil.usingLocalProperties()) {
-				KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
+				KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid, task.getType());
 				return;
 			}
 
