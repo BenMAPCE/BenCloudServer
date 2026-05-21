@@ -52,8 +52,11 @@ public final class TaskResources {
 		DEFAULTS.put(Constants.TASK_TYPE_VALUATION,  new ResourceSpec("4", "16G", "16G"));
 		DEFAULTS.put(Constants.TASK_TYPE_GRID_IMPORT,new ResourceSpec("4", "16G", "16G"));
 		DEFAULTS.put(Constants.TASK_TYPE_AQ_IMPORT,  new ResourceSpec("2", "8G",  "8G"));
-		// Result Export now streams via JOOQ cursor — small footprint.
-		DEFAULTS.put(Constants.TASK_TYPE_RESULT_EXPORT, new ResourceSpec("2", "8G", "8G"));
+		// Result Export streams via JOOQ cursor, but the container also has to fit the JVM
+		// (-XX:MaxRAMPercentage=75 ⇒ ~12G heap at 16G), Defender tracer overhead, metaspace
+		// (up to 1G), native GeoTools/PostGIS, and direct buffers. 8G turned out to be too
+		// tight on large exports (OOMKill at peak); 16G leaves real headroom.
+		DEFAULTS.put(Constants.TASK_TYPE_RESULT_EXPORT, new ResourceSpec("2", "16G", "16G"));
 	}
 
 	private TaskResources() {}
