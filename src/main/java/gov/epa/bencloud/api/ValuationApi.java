@@ -1774,12 +1774,20 @@ public class ValuationApi {
 	 * @return a JSON representation of all valuation result datasets.
 	 */
 	public static Object getValuationResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
+		String userId = userProfile.get().getId();
+		Condition filterCondition = DSL.noCondition();
+		if (!CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(VALUATION_RESULT_DATASET.SHARING_SCOPE.eq(Constants.SHARING_ALL)
+					.or(VALUATION_RESULT_DATASET.USER_ID.eq(userId)));
+		}
+
 		Result<Record> valuationDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(VALUATION_RESULT_DATASET.asterisk())
 				.from(VALUATION_RESULT_DATASET)
+				.where(filterCondition)
 				.orderBy(VALUATION_RESULT_DATASET.NAME)
 				.fetch();
-		
+
 		response.type("application/json");
 		return valuationDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
