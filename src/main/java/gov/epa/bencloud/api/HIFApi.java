@@ -2574,12 +2574,20 @@ public class HIFApi {
 	 * @return a JSON representation of all hif result datasets.
 	 */
 	public static Object getHifResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
+		String userId = userProfile.get().getId();
+		Condition filterCondition = DSL.noCondition();
+		if (!CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(HIF_RESULT_DATASET.SHARING_SCOPE.eq(Constants.SHARING_ALL)
+					.or(HIF_RESULT_DATASET.USER_ID.eq(userId)));
+		}
+
 		Result<Record> hifDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HIF_RESULT_DATASET.asterisk())
 				.from(HIF_RESULT_DATASET)
+				.where(filterCondition)
 				.orderBy(HIF_RESULT_DATASET.NAME)
 				.fetch();
-		
+
 		response.type("application/json");
 		return hifDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
