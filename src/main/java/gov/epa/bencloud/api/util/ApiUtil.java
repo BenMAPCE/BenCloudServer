@@ -690,15 +690,40 @@ public class ApiUtil {
 	}
 	
     public static void unzip(String zipFile, String destFolder) throws IOException {
+        File destDir = new File(destFolder);
+        if (!destDir.exists() && !destDir.mkdirs()) {
+            throw new IOException("Could not create destination directory: " + destFolder);
+        }
+        // Canonicalize once so symlinks in the parent chain are resolved before we compare entry paths.
+        String destCanonical = destDir.getCanonicalPath();
+
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             byte[] buffer = new byte[1024];
             while ((entry = zis.getNextEntry()) != null) {
-                File newFile = new File(destFolder + File.separator + entry.getName());
+                String entryName = entry.getName();
+                // Zip spec uses forward slashes; absolute entries are always malicious intent.
+                // Java's File(File, String) would silently rewrite e.g. "/etc/passwd" under destDir,
+                // so reject up-front for a clear error and to prevent surprise file placement.
+                if (Paths.get(entryName).isAbsolute() || entryName.startsWith("/") || entryName.startsWith("\\")) {
+                    throw new IOException("Zip entry escapes destination: " + entryName);
+                }
+                File newFile = new File(destDir, entryName);
+                // Zip-Slip guard: any entry whose resolved path falls outside destDir is malicious.
+                String newFileCanonical = newFile.getCanonicalPath();
+                if (!newFileCanonical.equals(destCanonical)
+                        && !newFileCanonical.startsWith(destCanonical + File.separator)) {
+                    throw new IOException("Zip entry escapes destination: " + entryName);
+                }
                 if (entry.isDirectory()) {
-                    newFile.mkdirs();
+                    if (!newFile.exists() && !newFile.mkdirs()) {
+                        throw new IOException("Could not create directory: " + newFileCanonical);
+                    }
                 } else {
-                    new File(newFile.getParent()).mkdirs();
+                    File parent = newFile.getParentFile();
+                    if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                        throw new IOException("Could not create parent directory: " + parent);
+                    }
                     try (FileOutputStream fos = new FileOutputStream(newFile)) {
                         int length;
                         while ((length = zis.read(buffer)) > 0) {
