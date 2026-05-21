@@ -440,6 +440,13 @@ public class ApiRoutes extends RoutesBase {
 		});
 		
 		/*
+		 * GET grid info (id and table_name) for a hif result dataset
+		 */
+		service.get(apiPrefix + "/health-impact-result-datasets/:id/grid-info", (request, response) -> {
+			return HIFApi.getHifResultGridInfo(request, response, getUserProfile(request, response));
+		});
+
+		/*
 		 * GET health impact function results from an analysis
 		 * PARAMETERS:
 		 *  :id (health impact function results dataset id or task UUID)
