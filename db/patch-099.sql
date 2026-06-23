@@ -68,15 +68,15 @@ UPDATE data.health_impact_function SET access_url = 'https://pmc.ncbi.nlm.nih.go
 
 -- Group 37: ehp.niehs.nih.gov -> PMC (Pope et al. 2019, EHP)
 UPDATE data.health_impact_function SET access_url = 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6792459/'
-  WHERE id IN (1012, 1013, 1014, 1015, 1016, 1017);
+  WHERE id IN (1080, 1081, 1082, 1083, 1084, 1085);
 
 -- Group 38: atsjournals.org -> Oxford Academic (Turner et al. 2016, AJRCCM)
 UPDATE data.health_impact_function SET access_url = 'https://academic.oup.com/ajrccm/article/193/10/1134/8508927'
-  WHERE id IN (896, 978, 993, 890, 897, 898);
+  WHERE id IN (1067, 1071, 1053, 1093, 1095, 1096);
 
 -- Group 39: ehp.niehs.nih.gov -> PMC (Woodruff et al. 2008, EHP)
 UPDATE data.health_impact_function SET access_url = 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2199284/'
-  WHERE id = 977;
+  WHERE id = 1066;
 
 -- Group 41: BioMedCentral -> PMC (Zanobetti & Schwartz 2008, Environ Health - ozone mortality)
 UPDATE data.health_impact_function SET access_url = 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2429903/'
