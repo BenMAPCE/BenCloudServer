@@ -85,6 +85,15 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		/*
+		 * Archive a grid definition
+		 * PARAMETERS:
+		 * :id
+		 */
+		service.post(apiPrefix + "/grid-definitions/:id", (request, response) -> {
+			return GridDefinitionApi.archiveGridDefinition(request, response, getUserProfile(request, response));
+		});
+
+		/*
 		 * Rename a single grid definition
 		 * PARAMETERS:
 		 *  :id
@@ -187,6 +196,15 @@ public class ApiRoutes extends RoutesBase {
 			return AirQualityApi.deleteAirQualityLayerDefinition(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * Archive an air quality surface definition
+		 * PARAMETERS:
+		 * :id
+		 */
+		service.post(apiPrefix + "/air-quality-data/:id", (request, response) -> {
+			return AirQualityApi.archiveAirQualityLayerDefinition(request, response, getUserProfile(request, response));
+		});
 		
 		/*
 		 * GET array of all population dataset definitions
@@ -196,7 +214,7 @@ public class ApiRoutes extends RoutesBase {
 		});
 
 		/*
-		 * GET array of all health effect group definitions
+		 * GET array of all health effect category definitions
 		 */
 		service.get(apiPrefix + "/health-effect-groups", (request, response) -> {
 			return ValuationApi.getAllHealthEffectGroups(request, response, getUserProfile(request, response));
@@ -350,6 +368,16 @@ public class ApiRoutes extends RoutesBase {
 			return IncidenceApi.deleteIncidenceDataset(request, response, getUserProfile(request, response));
 
 		});
+
+		/*
+		 * Archive an incidence dataset
+		 * PARAMETERS:
+		 * :id
+		 */
+		service.post(apiPrefix + "/incidence/:id", (request, response) -> {
+			return IncidenceApi.archiveIncidenceDataset(request, response, getUserProfile(request, response));
+		});
+
 		/*
 		 * GET all the contents of an incidence dataset
 		 */
@@ -411,6 +439,13 @@ public class ApiRoutes extends RoutesBase {
 
 		});
 		
+		/*
+		 * GET grid info (id and table_name) for a hif result dataset
+		 */
+		service.get(apiPrefix + "/health-impact-result-datasets/:id/grid-info", (request, response) -> {
+			return HIFApi.getHifResultGridInfo(request, response, getUserProfile(request, response));
+		});
+
 		/*
 		 * GET health impact function results from an analysis
 		 * PARAMETERS:
@@ -757,7 +792,13 @@ public class ApiRoutes extends RoutesBase {
 			return TaskApi.getExportFileID(request, response, getUserProfile(request, response));
 		});
 		
-		
+		/*
+		 * GET datasets for all users (admin only)
+		 */
+		service.get(apiPrefix + "/admin/data-export", (request, response) -> {
+			return CoreApi.getAllDatasets(request, response, getUserProfile(request, response));
+		});
+
 		
 
 	}

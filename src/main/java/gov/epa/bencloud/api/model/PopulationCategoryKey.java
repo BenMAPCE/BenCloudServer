@@ -24,7 +24,10 @@ public class PopulationCategoryKey{
         if (o == null || getClass() != o.getClass())
             return false;
         PopulationCategoryKey that = (PopulationCategoryKey) o;
-        return hashcode == that.hashCode();
+        return Objects.equals(ageRangeId, that.ageRangeId)
+                && Objects.equals(raceId, that.raceId)
+                && Objects.equals(ethnicityId, that.ethnicityId)
+                && Objects.equals(genderId, that.genderId);
     }
 
     @Override

@@ -36,7 +36,7 @@ public class TaskWorker {
 
 	public static int maxTaskWorkers = 0;
 
-	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 120; 
+	private static final int UNRESPONSIVE_TASK_WORKER_TIME_IN_MINUTES = 480; 
 
 	static {
 		maxTaskWorkers = Integer.parseInt(ApplicationUtil.getProperty("max.task.workers"));
@@ -137,7 +137,7 @@ public class TaskWorker {
 			
 			// If running in the cloud, start task as k8s job
 			if(! ApplicationUtil.usingLocalProperties()) {
-				KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid);
+				KubernetesUtil.runTaskAsJob(task.getUuid(), taskWorkerUuid, task.getType());
 				return;
 			}
 

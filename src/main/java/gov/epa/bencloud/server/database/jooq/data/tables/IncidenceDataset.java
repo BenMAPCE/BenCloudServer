@@ -17,7 +17,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row7;
+import org.jooq.Row9;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -83,6 +83,16 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
      * The column <code>data.incidence_dataset.upload_date</code>.
      */
     public final TableField<IncidenceDatasetRecord, LocalDateTime> UPLOAD_DATE = createField(DSL.name("upload_date"), SQLDataType.LOCALDATETIME(6), this, "");
+
+    /**
+     * The column <code>data.incidence_dataset.archived</code>.
+     */
+    public final TableField<IncidenceDatasetRecord, Short> ARCHIVED = createField(DSL.name("archived"), SQLDataType.SMALLINT.defaultValue(DSL.field("0", SQLDataType.SMALLINT)), this, "");
+
+    /**
+     * The column <code>data.incidence_dataset.epa_standard</code>.
+     */
+    public final TableField<IncidenceDatasetRecord, Boolean> EPA_STANDARD = createField(DSL.name("epa_standard"), SQLDataType.BOOLEAN.defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
 
     private IncidenceDataset(Name alias, Table<IncidenceDatasetRecord> aliased) {
         this(alias, aliased, null);
@@ -173,11 +183,11 @@ public class IncidenceDataset extends TableImpl<IncidenceDatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row7 type methods
+    // Row9 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Integer, String, Integer, String, Short, String, LocalDateTime> fieldsRow() {
-        return (Row7) super.fieldsRow();
+    public Row9<Integer, String, Integer, String, Short, String, LocalDateTime, Short, Boolean> fieldsRow() {
+        return (Row9) super.fieldsRow();
     }
 }

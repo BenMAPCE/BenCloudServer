@@ -272,12 +272,12 @@ public class ExposureTaskRunnable implements Runnable {
 					
 					//TODO: This temporary code is always selecting the first metric we have for this cell
 					// Need to update to use metric, seasonal metric, and statistic
-					Map<Integer, AirQualityCellMetric> baselineCellFirstMetric = baselineCellMetrics.get(baselineCellMetrics.keySet().toArray()[0]);
-					Map<Integer, AirQualityCellMetric> scenarioCellFirstMetric = scenarioCellMetrics.get(scenarioCellMetrics.keySet().toArray()[0]);
-					
-					 
-					double baselineValue = baselineCellFirstMetric.get(baselineCellFirstMetric.keySet().toArray()[0]).getValue();
-					double scenarioValue = scenarioCellFirstMetric.get(scenarioCellFirstMetric.keySet().toArray()[0]).getValue();
+					Map<Integer, AirQualityCellMetric> baselineCellFirstMetric = baselineCellMetrics.values().iterator().next();
+					Map<Integer, AirQualityCellMetric> scenarioCellFirstMetric = scenarioCellMetrics.values().iterator().next();
+
+
+					double baselineValue = baselineCellFirstMetric.values().iterator().next().getValue();
+					double scenarioValue = scenarioCellFirstMetric.values().iterator().next().getValue();
 					
 					double seasonalScalar = 1.0;
 //					if((int)efRecord.get("metric_statistic") == 0) { // NONE

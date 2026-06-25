@@ -2,7 +2,6 @@ package gov.epa.bencloud.server.jobs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -14,16 +13,10 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.apis.CoreV1Api.APIcreateNamespacedPersistentVolumeClaimRequest;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobBuilder;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimBuilder;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
-import io.kubernetes.client.openapi.models.V1VolumeMount;
-import io.kubernetes.client.openapi.models.V1VolumeMountBuilder;
-import io.kubernetes.client.proto.V1.PersistentVolumeClaim;
 import io.kubernetes.client.util.ClientBuilder;
 
 /*
@@ -32,8 +25,12 @@ import io.kubernetes.client.util.ClientBuilder;
 public class KubernetesUtil {
     private static final Logger logger = LoggerFactory.getLogger(KubernetesUtil.class);
 
-	public static boolean runTaskAsJob(String taskUuid, String taskRunnerUuid) {
+	public static boolean runTaskAsJob(String taskUuid, String taskRunnerUuid, String taskType) {
 		try {
+			TaskResources.ResourceSpec resources = TaskResources.forType(taskType);
+			logger.info("Launching task pod for type '{}' with cpu={}, memory={} (limit={})",
+					taskType, resources.cpu, resources.memory, resources.memoryLimit);
+
 			ApiClient client = ClientBuilder.cluster().build();
 
 			Configuration.setDefaultApiClient(client);
@@ -103,8 +100,13 @@ public class KubernetesUtil {
 									.endVolumeMount()
 									.withNewResources()
 										.withRequests(
-												Map.of("memory", new Quantity("24G"),
-														"cpu", new Quantity("8")))
+												Map.of("memory", new Quantity(resources.memory),
+														"cpu", new Quantity(resources.cpu)))
+										// Memory-only limit. We intentionally do NOT set a CPU limit:
+										// CPU throttling interacts poorly with parallelStream (threads exist
+										// but get starved), whereas a memory ceiling makes pod sizing predictable.
+										.withLimits(
+												Map.of("memory", new Quantity(resources.memoryLimit)))
 									.endResources()
 									.withEnv(envVariables)
 								.endContainer()

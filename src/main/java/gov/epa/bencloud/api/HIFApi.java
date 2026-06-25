@@ -44,7 +44,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
-import org.jooq.Record4;
+import org.jooq.Record6;
 import org.jooq.Record7;
 import org.jooq.impl.DSL;
 import org.pac4j.core.profile.UserProfile;
@@ -104,16 +104,21 @@ public class HIFApi {
 	 * @param userProfile
 	 */
 	public static void getHifResultContents(Request request, Response response, Optional<UserProfile> userProfile) {
-		
+
 		 //*  :id (health impact function results dataset id (can also support task id))
 		 //*  gridId= (aggregate the results to another grid definition)
 		 //*  hifId= (filter results to those from one or more functions via comma delimited list)
+		 //*  hifEndpoint= (filter by endpoint display name)
+		 //*  startAge= (filter by start age)
+		 //*  endAge= (filter by end age)
+		 //*  author= (filter by function author)
+		 //*  year= (filter by function year)
 		 //*  page=
 		 //*  rowsPerPage=
 		 //*  sortBy=
 		 //*  descending=
 		 //*  filter=
-		
+
 		// TODO: Add user security enforcement
 		//TODO: Implement sortBy, descending, and filter
 
@@ -133,7 +138,7 @@ public class HIFApi {
 			CoreApi.getErrorResponseInvalidId(request, response);
 			return;
 		}
-			
+
 		String hifIdsParam;
 		int gridId;
 		int page;
@@ -141,6 +146,11 @@ public class HIFApi {
 		String sortBy;
 		boolean descending;
 		String filter;
+		String hifEndpoint;
+		String author;
+		Integer startAge;
+		Integer endAge;
+		Integer year;
 
 		try {
 			hifIdsParam = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifId"), "");
@@ -150,6 +160,14 @@ public class HIFApi {
 			sortBy = ParameterUtil.getParameterValueAsString(request.raw().getParameter("sortBy"), "");
 			descending = ParameterUtil.getParameterValueAsBoolean(request.raw().getParameter("descending"), false);
 			filter = ParameterUtil.getParameterValueAsString(request.raw().getParameter("filter"), "");
+			hifEndpoint = ParameterUtil.getParameterValueAsString(request.raw().getParameter("hifEndpoint"), "");
+			author = ParameterUtil.getParameterValueAsString(request.raw().getParameter("author"), "");
+			String startAgeParam = request.raw().getParameter("startAge");
+			String endAgeParam = request.raw().getParameter("endAge");
+			String yearParam = request.raw().getParameter("year");
+			startAge = (startAgeParam != null && !startAgeParam.isEmpty()) ? Integer.valueOf(startAgeParam) : null;
+			endAge = (endAgeParam != null && !endAgeParam.isEmpty()) ? Integer.valueOf(endAgeParam) : null;
+			year = (yearParam != null && !yearParam.isEmpty()) ? Integer.valueOf(yearParam) : null;
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			CoreApi.getErrorResponseInvalidId(request, response);
@@ -160,9 +178,47 @@ public class HIFApi {
 			return;
 		}
 		List<Integer> hifIds = (hifIdsParam == null || hifIdsParam.equals("")) ? null : Stream.of(hifIdsParam.split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
-		
-		
+
+
 		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+
+		// If endpoint/age/author/year filters are provided, resolve them to a list of hif_ids
+		// within this result dataset, then intersect with any explicitly provided hifIds.
+		boolean hasAttributeFilters = !hifEndpoint.isEmpty() || !author.isEmpty()
+				|| startAge != null || endAge != null || year != null;
+		if (hasAttributeFilters) {
+			Condition attributeCondition = HIF_RESULT_FUNCTION_CONFIG.HIF_RESULT_DATASET_ID.eq(id);
+			if (!hifEndpoint.isEmpty()) {
+				attributeCondition = attributeCondition.and(ENDPOINT.DISPLAY_NAME.eq(hifEndpoint));
+			}
+			if (!author.isEmpty()) {
+				attributeCondition = attributeCondition.and(HEALTH_IMPACT_FUNCTION.AUTHOR.eq(author));
+			}
+			if (startAge != null) {
+				attributeCondition = attributeCondition.and(HIF_RESULT_FUNCTION_CONFIG.START_AGE.eq(startAge));
+			}
+			if (endAge != null) {
+				attributeCondition = attributeCondition.and(HIF_RESULT_FUNCTION_CONFIG.END_AGE.eq(endAge));
+			}
+			if (year != null) {
+				attributeCondition = attributeCondition.and(HEALTH_IMPACT_FUNCTION.FUNCTION_YEAR.eq(year));
+			}
+
+			List<Integer> filteredHifIds = create
+					.selectDistinct(HIF_RESULT_FUNCTION_CONFIG.HIF_ID)
+					.from(HIF_RESULT_FUNCTION_CONFIG)
+					.join(HEALTH_IMPACT_FUNCTION).on(HEALTH_IMPACT_FUNCTION.ID.eq(HIF_RESULT_FUNCTION_CONFIG.HIF_ID))
+					.join(ENDPOINT).on(ENDPOINT.ID.eq(HEALTH_IMPACT_FUNCTION.ENDPOINT_ID))
+					.where(attributeCondition)
+					.fetch(HIF_RESULT_FUNCTION_CONFIG.HIF_ID);
+
+			if (hifIds == null) {
+				hifIds = filteredHifIds;
+			} else {
+				// Intersect: keep only IDs present in both lists
+				hifIds.retainAll(filteredHifIds);
+			}
+		}
 
 		//If the crosswalk isn't there, create it now
 		CrosswalksApi.ensureCrosswalkExists(HIFApi.getBaselineGridForHifResults(id), gridId);
@@ -704,10 +760,12 @@ public class HIFApi {
 
 
 
-		Result<Record4<String, Integer, String, Integer[]>> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
+		Result<Record6<String, Integer, String, Short, Boolean, Integer[]>> hifGroupRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HEALTH_IMPACT_FUNCTION_GROUP.NAME
 						, HEALTH_IMPACT_FUNCTION_GROUP.ID
 						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
+						, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
+						, HEALTH_IMPACT_FUNCTION_GROUP.EPA_STANDARD
 						, DSL.arrayAggDistinct(HEALTH_IMPACT_FUNCTION_GROUP_MEMBER.HEALTH_IMPACT_FUNCTION_ID).as("functions")
 						)
 				.from(HEALTH_IMPACT_FUNCTION_GROUP)
@@ -745,10 +803,14 @@ public class HIFApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 
-		//Nobody can delete shared health impact function groups
-		//All users can delete their own health impact function groups
-		//Admins can delete any non-shared health impact function groups
-		if(hifGroupResult.getShareScope() == Constants.SHARING_ALL || !(hifGroupResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+		//Nobody can delete EPA standard health impact function groups
+		//All users can delete their own non-shared health impact function groups
+		//Admins can delete any non-EPA-standard health impact function groups (including shared)
+		boolean isAdmin = CoreApi.isAdmin(userProfile);
+		boolean isOwner = hifGroupResult.getUserId() != null && hifGroupResult.getUserId().equalsIgnoreCase(userProfile.get().getId());
+		boolean isShared = hifGroupResult.getShareScope() == Constants.SHARING_ALL;
+		boolean isEpaStandard = Boolean.TRUE.equals(hifGroupResult.getEpaStandard());
+		if (isEpaStandard || (!isAdmin && (isShared || !isOwner))) {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 
@@ -836,7 +898,24 @@ public class HIFApi {
 		}
 
 		String userId = userProfile.get().getId();
-		
+
+		// Determine if this is an admin-shared upload
+		Short shareScope = Constants.SHARING_NONE;
+		String shareScopeStr = ApiUtil.getMultipartFormParameterAsString(request, "shareScope");
+		if (shareScopeStr != null && !shareScopeStr.isEmpty()) {
+			try {
+				shareScope = Short.parseShort(shareScopeStr);
+			} catch (NumberFormatException e) {
+				shareScope = Constants.SHARING_NONE;
+			}
+		}
+		if (shareScope.equals(Constants.SHARING_ALL) && !CoreApi.isAdmin(userProfile)) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+		// Shared records use null user_id 
+		// private records use the submitter's id.
+		String effectiveUserId = shareScope.equals(Constants.SHARING_ALL) ? null : userId;
+
 		HealthImpactFunctionGroupRecord hifGroupRecord=null;
 		HealthImpactFunctionRecord hifRecord=null;
 		EndpointGroupRecord heGroupRecord=null;
@@ -888,35 +967,70 @@ public class HIFApi {
 		Map<String, Integer> timingIdLookup = new HashMap<>();
 
 		int hifGroupId = 0;
-		Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
 		List<Integer> newHifGroupIds = new ArrayList<Integer>();
 
-		if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
-			if(newGroup) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "A Health Impact Function Group called '" + hifGroupName + "' already exists. "
-					+ "Please enter a different name, or select the 'Append to an existing health impact function group' option.";
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
+		if (shareScope.equals(Constants.SHARING_ALL)) {
+			// Admin shared upload: look for any group with this name
+			var existingGroup = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(HEALTH_IMPACT_FUNCTION_GROUP.ID, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE)
+				.from(HEALTH_IMPACT_FUNCTION_GROUP)
+				.where(DSL.lower(HEALTH_IMPACT_FUNCTION_GROUP.NAME).eq(hifGroupName.toLowerCase()))
+				.fetchAny();
+			if (existingGroup != null) {
+				if (existingGroup.get(HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE).equals(Constants.SHARING_ALL)) {
+					// Existing shared group - append to it
+					hifGroupId = existingGroup.get(HEALTH_IMPACT_FUNCTION_GROUP.ID);
+				} else {
+					// Private group exists with this name - conflict
+					String conflictOwner = existingGroup.get(HEALTH_IMPACT_FUNCTION_GROUP.USER_ID);
+					String errMsg = "The HIF group name \"" + hifGroupName + "\" is already used by a private group belonging to user '" + conflictOwner + "'. Choose a different name.";
+					validationMsg.success = false;
+					validationMsg.messages.add(new ValidationMessage.Message("error", errMsg));
+					return CoreApi.transformValMsgToJSON(validationMsg);
+				}
+			} else {
+				// No group found - create new shared group
+				hifGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(HEALTH_IMPACT_FUNCTION_GROUP
+							, HEALTH_IMPACT_FUNCTION_GROUP.NAME
+							, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
+							, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID
+							, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
+							)
+					.values(hifGroupName, description, effectiveUserId, shareScope)
+					.returning(HEALTH_IMPACT_FUNCTION_GROUP.ID)
+					.fetchOne();
+				hifGroupId = hifGroupRecord.value1();
+				newHifGroupIds.add(hifGroupId);
 			}
-			hifGroupId = hifGroupNameMap.get(hifGroupName.toLowerCase());
 		} else {
-
-			hifGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
-				.insertInto(HEALTH_IMPACT_FUNCTION_GROUP
-						, HEALTH_IMPACT_FUNCTION_GROUP.NAME
-						, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
-						, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID
-						, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
-						)
-				.values(hifGroupName, description, userId, Constants.SHARING_NONE)
-				.returning(HEALTH_IMPACT_FUNCTION_GROUP.ID)
-				.fetchOne();
-
-			hifGroupId = hifGroupRecord.value1();
-			newHifGroupIds.add(hifGroupId);
+			// Regular user path
+			Map<String, Integer> hifGroupNameMap = getAllHifGroupsByUser(userId);
+			if(hifGroupNameMap.containsKey(hifGroupName.toLowerCase())) {
+				if(newGroup) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "A Health Impact Function Group called '" + hifGroupName + "' already exists. "
+						+ "Please enter a different name, or select the 'Append to an existing health impact function group' option.";
+					msg.message = strRecord + "";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				hifGroupId = hifGroupNameMap.get(hifGroupName.toLowerCase());
+			} else {
+				hifGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(HEALTH_IMPACT_FUNCTION_GROUP
+							, HEALTH_IMPACT_FUNCTION_GROUP.NAME
+							, HEALTH_IMPACT_FUNCTION_GROUP.HELP_TEXT
+							, HEALTH_IMPACT_FUNCTION_GROUP.USER_ID
+							, HEALTH_IMPACT_FUNCTION_GROUP.SHARE_SCOPE
+							)
+					.values(hifGroupName, description, userId, Constants.SHARING_NONE)
+					.returning(HEALTH_IMPACT_FUNCTION_GROUP.ID)
+					.fetchOne();
+				hifGroupId = hifGroupRecord.value1();
+				newHifGroupIds.add(hifGroupId);
+			}
 		}
 
 		List<Integer> newHealthEffectGroups = new ArrayList<Integer>();
@@ -1209,7 +1323,7 @@ public class HIFApi {
 									, ENDPOINT_GROUP.USER_ID
 									, ENDPOINT_GROUP.SHARE_SCOPE
 									)
-							.values(record[endpointGroupIdx].strip(), userId, Constants.SHARING_NONE)
+							.values(record[endpointGroupIdx].strip(), effectiveUserId, shareScope)
 							.returning(ENDPOINT_GROUP.ID)
 							.fetchOne();
 
@@ -2083,7 +2197,7 @@ public class HIFApi {
 				functionText, beta, record[distBetaIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], record[baselineFunctionIdx].strip(), raceId, genderId, ethnicityId, 
 				startDay, endDay, geogArea, geogAreaFeature, (heroId != -1 ? heroId : null), heroUrl, accessUrl, 
-				userId, Constants.SHARING_NONE)
+				effectiveUserId, shareScope)
 				.returning(HEALTH_IMPACT_FUNCTION.ID)
 				.fetchOne();
 
@@ -2141,10 +2255,9 @@ public class HIFApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 
-		//Nobody can archive shared HIFs
 		//All users can archive their own HIFs
-		//Admins can archive any non-shared HIFs
-		if(hifResult.getShareScope() == Constants.SHARING_ALL || !(hifResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+		//Admins can archive any HIFs
+		if((hifResult.getShareScope() == Constants.SHARING_ALL || !hifResult.getUserId().equalsIgnoreCase(userProfile.get().getId())) && !CoreApi.isAdmin(userProfile))  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 
@@ -2461,12 +2574,20 @@ public class HIFApi {
 	 * @return a JSON representation of all hif result datasets.
 	 */
 	public static Object getHifResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
+		String userId = userProfile.get().getId();
+		Condition filterCondition = DSL.noCondition();
+		if (!CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(HIF_RESULT_DATASET.SHARING_SCOPE.eq(Constants.SHARING_ALL)
+					.or(HIF_RESULT_DATASET.USER_ID.eq(userId)));
+		}
+
 		Result<Record> hifDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(HIF_RESULT_DATASET.asterisk())
 				.from(HIF_RESULT_DATASET)
+				.where(filterCondition)
 				.orderBy(HIF_RESULT_DATASET.NAME)
 				.fetch();
-		
+
 		response.type("application/json");
 		return hifDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
@@ -2477,6 +2598,32 @@ public class HIFApi {
 	 * @param userProfile
 	 * @return a JSON representation of the functions in a given hif result dataset.
 	 */
+	public static Object getHifResultGridInfo(Request request, Response response, Optional<UserProfile> userProfile) {
+		String idParam;
+		Integer id;
+		try {
+			idParam = String.valueOf(request.params("id"));
+			id = idParam.length() == 36 ? HIFApi.getHIFResultDatasetId(idParam) : Integer.valueOf(idParam);
+		} catch (IllegalArgumentException e) {
+			return CoreApi.getErrorResponseInvalidId(request, response);
+		}
+
+		DSLContext create = DSL.using(JooqUtil.getJooqConfiguration());
+		Record2<Integer, String> gridInfo = create
+				.select(GRID_DEFINITION.ID, GRID_DEFINITION.TABLE_NAME)
+				.from(HIF_RESULT_DATASET)
+				.join(GRID_DEFINITION).on(GRID_DEFINITION.ID.eq(HIF_RESULT_DATASET.GRID_DEFINITION_ID))
+				.where(HIF_RESULT_DATASET.ID.eq(id))
+				.fetchOne();
+
+		if (gridInfo == null) {
+			return CoreApi.getErrorResponseNotFound(request, response);
+		}
+
+		response.type("application/json");
+		return "{\"grid_id\":" + gridInfo.value1() + ",\"grid_table_name\":\"" + gridInfo.value2() + "\"}";
+	}
+
 	public static Object getHifResultDatasetFunctions(Request request, Response response, Optional<UserProfile> userProfile) {
 		String idParam;
 		Integer id;

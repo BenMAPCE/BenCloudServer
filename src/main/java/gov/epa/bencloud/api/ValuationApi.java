@@ -688,7 +688,7 @@ public class ValuationApi {
 
 	/*
 	 * @param userProfile
-	 * @return JSON representation of all health effect groups for a given user.
+	 * @return JSON representation of all health effect categories for a given user.
 	 */
 	public static Map<String, Integer> getAllHealthEffectGroupsByUser(String userId) {
 			
@@ -738,7 +738,24 @@ public class ValuationApi {
 		}
 
 		String userId = userProfile.get().getId();
-		
+
+		// Determine if this is an admin-shared upload
+		Short shareScope = Constants.SHARING_NONE;
+		String shareScopeStr = ApiUtil.getMultipartFormParameterAsString(request, "shareScope");
+		if (shareScopeStr != null && !shareScopeStr.isEmpty()) {
+			try {
+				shareScope = Short.parseShort(shareScopeStr);
+			} catch (NumberFormatException e) {
+				shareScope = Constants.SHARING_NONE;
+			}
+		}
+		if (shareScope.equals(Constants.SHARING_ALL) && !CoreApi.isAdmin(userProfile)) {
+			return CoreApi.getErrorResponseForbidden(request, response);
+		}
+		// Shared records use null user_id
+		// private records use the submitter's id.
+		String effectiveUserId = shareScope.equals(Constants.SHARING_ALL) ? null : userId;
+
 		EndpointGroupRecord heGroupRecord=null;
 		ValuationFunctionRecord vfRecord=null;
 		int endpointIdx=-999;
@@ -772,33 +789,67 @@ public class ValuationApi {
 		Map<String,Integer> endpointIdLookup = new HashMap<String,Integer>();
 
 		int heGroupId = 0;
-		Map<String, Integer> heGroupNameMap = getAllHealthEffectGroupsByUser(userId);
 
-		if(heGroupNameMap.containsKey(healthEffectGroupName.toLowerCase())) {
-			if(newCategory) {
-				validationMsg.success = false;
-				ValidationMessage.Message msg = new ValidationMessage.Message();
-				String strRecord = "A Health Effect Category called '" + healthEffectGroupName + "' already exists. "
-					+ "Please enter a different name, or select the 'Append to an existing health effect category' option.";
-				msg.message = strRecord + "";
-				msg.type = "error";
-				validationMsg.messages.add(msg);
+		if (shareScope.equals(Constants.SHARING_ALL)) {
+			// Admin shared upload: look for any health effect category with this name
+			var existingGroup = DSL.using(JooqUtil.getJooqConfiguration())
+				.select(ENDPOINT_GROUP.ID, ENDPOINT_GROUP.USER_ID, ENDPOINT_GROUP.SHARE_SCOPE)
+				.from(ENDPOINT_GROUP)
+				.where(DSL.lower(ENDPOINT_GROUP.NAME).eq(healthEffectGroupName.toLowerCase()))
+				.fetchAny();
+			if (existingGroup != null) {
+				if (existingGroup.get(ENDPOINT_GROUP.SHARE_SCOPE).equals(Constants.SHARING_ALL)) {
+					// Existing shared group - append to it
+					heGroupId = existingGroup.get(ENDPOINT_GROUP.ID);
+				} else {
+					// Private group exists with this name - conflict
+					String conflictOwner = existingGroup.get(ENDPOINT_GROUP.USER_ID);
+					String errMsg = "The health effect category name \"" + healthEffectGroupName + "\" is already used by a private category belonging to user '" + conflictOwner + "'. Choose a different name.";
+					validationMsg.success = false;
+					validationMsg.messages.add(new ValidationMessage.Message("error", errMsg));
+					return CoreApi.transformValMsgToJSON(validationMsg);
+				}
+			} else {
+				// No group found - create new shared group
+				heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(ENDPOINT_GROUP
+							, ENDPOINT_GROUP.NAME
+							, ENDPOINT_GROUP.USER_ID
+							, ENDPOINT_GROUP.SHARE_SCOPE
+							)
+					.values(healthEffectGroupName, effectiveUserId, shareScope)
+					.returning(ENDPOINT_GROUP.ID)
+					.fetchOne();
+				heGroupId = heGroupRecord.value1();
+				newHealthEffectGroups.add(heGroupId);
 			}
-			heGroupId = heGroupNameMap.get(healthEffectGroupName.toLowerCase());
 		} else {
-			heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
-				.insertInto(ENDPOINT_GROUP
-						, ENDPOINT_GROUP.NAME
-						, ENDPOINT_GROUP.USER_ID
-						, ENDPOINT_GROUP.SHARE_SCOPE
-						)
-				.values(healthEffectGroupName, userId, Constants.SHARING_NONE)
-				.returning(ENDPOINT_GROUP.ID)
-				.fetchOne();
-
-			heGroupId = heGroupRecord.value1();
-
-			newHealthEffectGroups.add(heGroupId);
+			// Regular user path
+			Map<String, Integer> heGroupNameMap = getAllHealthEffectGroupsByUser(userId);
+			if(heGroupNameMap.containsKey(healthEffectGroupName.toLowerCase())) {
+				if(newCategory) {
+					validationMsg.success = false;
+					ValidationMessage.Message msg = new ValidationMessage.Message();
+					String strRecord = "A Health Effect Category called '" + healthEffectGroupName + "' already exists. "
+						+ "Please enter a different name, or select the 'Append to an existing health effect category' option.";
+					msg.message = strRecord + "";
+					msg.type = "error";
+					validationMsg.messages.add(msg);
+				}
+				heGroupId = heGroupNameMap.get(healthEffectGroupName.toLowerCase());
+			} else {
+				heGroupRecord = DSL.using(JooqUtil.getJooqConfiguration())
+					.insertInto(ENDPOINT_GROUP
+							, ENDPOINT_GROUP.NAME
+							, ENDPOINT_GROUP.USER_ID
+							, ENDPOINT_GROUP.SHARE_SCOPE
+							)
+					.values(healthEffectGroupName, userId, Constants.SHARING_NONE)
+					.returning(ENDPOINT_GROUP.ID)
+					.fetchOne();
+				heGroupId = heGroupRecord.value1();
+				newHealthEffectGroups.add(heGroupId);
+			}
 		}
 		
 		//remove built in tokens (e, beta)
@@ -1054,18 +1105,18 @@ public class ValuationApi {
 					countAgeRangeError++;
 				}
 
-				//EPA standard is optional, should be true or false
+				//EPA standard is optional, should be yes or no
 				if(epaStandardIdx != -999) {
 					str = record[epaStandardIdx].strip();
-					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+					if(str != null && !(str.toLowerCase().equals("yes") || str.toLowerCase().equals("no"))) {
 						countEpaStandardTypeError++;
 					}
 				}
 
-				//Multiyear is optional, should be true or false
+				//Multiyear is optional, should be yes or no
 				if(multiyearIdx != -999) {
 					str = record[multiyearIdx].strip();
-					if(str != null && !(str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+					if(str != null && !(str.toLowerCase().equals("yes") || str.toLowerCase().equals("no"))) {
 						countMultiyearTypeError++;
 					}	
 				}
@@ -1230,10 +1281,10 @@ public class ValuationApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countDiscountedError == 1) {
-					strRecord = String.valueOf(countDiscountedError) + " record has an invalid Discounted value. Valid options include: true, false, or unknown";
+					strRecord = String.valueOf(countDiscountedError) + " record has an invalid Discounted value. Valid options include: yes, no, or unknown.";
 				}
 				else {
-					strRecord = String.valueOf(countDiscountedError) + " records have invalid Discounted values. Valid options include: true, false, or unknown";
+					strRecord = String.valueOf(countDiscountedError) + " records have invalid Discounted values. Valid options include: yes, no, or unknown.";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1350,10 +1401,10 @@ public class ValuationApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countEpaStandardTypeError == 1) {
-					strRecord = String.valueOf(countEpaStandardTypeError) + " record has an invalid EPA Standard value.";
+					strRecord = String.valueOf(countEpaStandardTypeError) + " record has an invalid EPA Standard value. Valid options include: yes or no";
 				}
 				else {
-					strRecord = String.valueOf(countEpaStandardTypeError) + " records have invalid EPA Standard values.";
+					strRecord = String.valueOf(countEpaStandardTypeError) + " records have invalid EPA Standard values. Valid options include: yes or no";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1365,10 +1416,10 @@ public class ValuationApi {
 				ValidationMessage.Message msg = new ValidationMessage.Message();
 				String strRecord = "";
 				if(countMultiyearTypeError == 1) {
-					strRecord = String.valueOf(countMultiyearTypeError) + " record has an invalid Multiyear value.";
+					strRecord = String.valueOf(countMultiyearTypeError) + " record has an invalid Multiyear value. Valid options include: yes or no";
 				}
 				else {
-					strRecord = String.valueOf(countMultiyearTypeError) + " records have invalid Multiyear values.";
+					strRecord = String.valueOf(countMultiyearTypeError) + " records have invalid Multiyear values. Valid options include: yes or no";
 				}
 				msg.message = strRecord + "";
 				msg.type = "error";
@@ -1533,10 +1584,12 @@ public class ValuationApi {
 				}
 
 				boolean epaStandardValue = false;
-				if(epaStandardIdx != -999) {
-					String epaStandard = record[epaStandardIdx].strip();
+				if(epaStandardIdx != -999 && CoreApi.isAdmin(userProfile) && shareScope == 1) {
+					String epaStandard = record[epaStandardIdx].strip().toLowerCase();
 					if(epaStandard != null && !epaStandard.equals("")) {
-						epaStandardValue = Boolean.valueOf(epaStandard);
+						if(epaStandard.equals("yes")) {
+							epaStandardValue = true;
+						}
 					}
 				}	
 
@@ -1644,7 +1697,7 @@ public class ValuationApi {
 				.values(1, heGroupId, endpointId, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
 				functionText, record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 				record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
-				valuationType, multiyearValue, multiyearDr, discounted, userId, Constants.SHARING_NONE)
+				valuationType, multiyearValue, multiyearDr, discounted, effectiveUserId, shareScope)
 				.returning(VALUATION_FUNCTION.ID)
 				.fetchOne();
 
@@ -1684,7 +1737,7 @@ public class ValuationApi {
 					.values(1, heGroupId, endpointId2, record[qualifierIdx], record[referenceIdx], startAge, endAge, 
 					functionText, record[distributionIdx].strip(), p1beta, p2beta, valA, record[paramANameIdx], valB, 
 					record[paramBNameIdx], valC, record[paramCNameIdx], valD, record[paramDNameIdx], epaStandardValue, accessUrl,
-					valuationType, multiyearValue, multiyearDr, discounted, userId, Constants.SHARING_NONE)
+					valuationType, multiyearValue, multiyearDr, discounted, effectiveUserId, shareScope)
 					.returning(VALUATION_FUNCTION.ID)
 					.fetchOne();
 				}
@@ -1721,12 +1774,20 @@ public class ValuationApi {
 	 * @return a JSON representation of all valuation result datasets.
 	 */
 	public static Object getValuationResultDatasets(Request request, Response response, Optional<UserProfile> userProfile) {
+		String userId = userProfile.get().getId();
+		Condition filterCondition = DSL.noCondition();
+		if (!CoreApi.isAdmin(userProfile)) {
+			filterCondition = filterCondition.and(VALUATION_RESULT_DATASET.SHARING_SCOPE.eq(Constants.SHARING_ALL)
+					.or(VALUATION_RESULT_DATASET.USER_ID.eq(userId)));
+		}
+
 		Result<Record> valuationDatasetRecords = DSL.using(JooqUtil.getJooqConfiguration())
 				.select(VALUATION_RESULT_DATASET.asterisk())
 				.from(VALUATION_RESULT_DATASET)
+				.where(filterCondition)
 				.orderBy(VALUATION_RESULT_DATASET.NAME)
 				.fetch();
-		
+
 		response.type("application/json");
 		return valuationDatasetRecords.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 	}
@@ -1749,10 +1810,9 @@ public class ValuationApi {
 			return CoreApi.getErrorResponseNotFound(request, response);
 		}
 
-		//Nobody can archive shared VFs
 		//All users can archive their own VFs
-		//Admins can archive any non-shared VFs
-		if(vfResult.getShareScope() == Constants.SHARING_ALL || !(vfResult.getUserId().equalsIgnoreCase(userProfile.get().getId()) || CoreApi.isAdmin(userProfile)) )  {
+		//Admins can archive any VFs
+		if((vfResult.getShareScope() == Constants.SHARING_ALL || !vfResult.getUserId().equalsIgnoreCase(userProfile.get().getId())) && !CoreApi.isAdmin(userProfile))  {
 			return CoreApi.getErrorResponseForbidden(request, response);
 		}
 
@@ -1844,7 +1904,7 @@ public class ValuationApi {
 	 * @param request
 	 * @param response
 	 * @param userProfile
-	 * @return JSON representation of all health effect groups
+	 * @return JSON representation of all health effect categories
 	 */
 	public static Object getAllHealthEffectGroups(Request request, Response response, Optional<UserProfile> userProfile) {
 

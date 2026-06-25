@@ -1762,7 +1762,7 @@ public class TaskApi {
 
 		TaskBatchRecord batchTaskRecord = null;
 		
-		if(resultType.toLowerCase()=="hif"){
+		if(resultType.toLowerCase().equals("hif")){
 			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 			.selectFrom(TASK_BATCH)
 			.where(TASK_BATCH.ID.in(
@@ -1774,7 +1774,7 @@ public class TaskApi {
 			))
 			.fetchOne();
 		}
-		else if (resultType.toLowerCase()=="valuation"){
+		else if (resultType.toLowerCase().equals("valuation")){
 			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 			.selectFrom(TASK_BATCH)
 			.where(TASK_BATCH.ID.in(
@@ -1786,7 +1786,7 @@ public class TaskApi {
 			))
 			.fetchOne();
 		}
-		else if (resultType.toLowerCase()=="exposure"){
+		else if (resultType.toLowerCase().equals("exposure")){
 			batchTaskRecord= DSL.using(JooqUtil.getJooqConfiguration("BenMAP JDBC"))
 			.selectFrom(TASK_BATCH)
 			.where(TASK_BATCH.ID.in(

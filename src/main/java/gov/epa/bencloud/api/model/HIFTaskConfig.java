@@ -238,7 +238,7 @@ public class HIFTaskConfig {
 		 * Health Impact Functions
 		 */
 		b.append("HEALTH IMPACT FUNCTIONS\n\n");
-		b.append("Health Effect Groups Analyzed:\n")
+		b.append("Health Effect Categories Analyzed:\n")
 		.append(HIFUtil.getHealthEffectGroupsListFromHifs(hifs))
 		.append("\n");
 		
