@@ -5,10 +5,12 @@ package gov.epa.bencloud.api;
 
 import static gov.epa.bencloud.server.database.jooq.data.Tables.FILE;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,32 +85,28 @@ public class FilestoreApi {
 		response.type("application/octet-stream");
         response.header("Content-Disposition", "attachment; filename=\"" + record.value1() + "\"");
 		response.header("Access-Control-Expose-Headers", "Content-Disposition");
+		// Set Content-Length so the response is sent without chunked transfer encoding.
+		// This avoids per-chunk framing overhead and lets clients/proxies show download progress.
+		response.header("Content-Length", String.valueOf(file.length()));
 
-		OutputStream responseOutputStream;
-		try {
-			responseOutputStream = response.raw().getOutputStream();
-		} catch (IOException e) {
-			log.error("Error getting output stream", e);
-			return CoreApi.getErrorResponse(request,response,500,"Error getting output stream.");
-		}
-
-		FileInputStream fileInputStream;
-		try {
-			fileInputStream = new FileInputStream(file);
+		// Stream the file using a 64KB buffer and buffered input to minimize read/write syscalls
+		// on large downloads. try-with-resources guarantees the input stream is closed.
+		try (InputStream in = new BufferedInputStream(new FileInputStream(file), 65536)) {
+			OutputStream responseOutputStream = response.raw().getOutputStream();
+			IOUtils.copyLarge(in, responseOutputStream, new byte[65536]);
+			responseOutputStream.flush();
 		} catch (FileNotFoundException e) {
 			log.error("File not found", e);
 			return CoreApi.getErrorResponseNotFound(request,response);
-		}
-
-		try{
-			IOUtils.copy(fileInputStream,responseOutputStream);
 		} catch (IOException e) {
 			log.error("Error copying file input to result output.",e);
 			response.status(500);
 			return CoreApi.getErrorResponse(request,response,500,"Error copying file input to result output.");
 		}
 
-		return CoreApi.getSuccessResponse(request,response,200,"File Found");
+		// The file bytes have already been written directly to the raw output stream.
+		// Return the raw response so Spark does not serialize and append anything to the body.
+		return response.raw();
 	}
 
 /*
