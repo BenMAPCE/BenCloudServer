@@ -1,9 +1,33 @@
 # BenMAP Cloud - Release Notes
 See additional BenMAP Cloud information on [www.epa.gov](https://www.epa.gov/benmap/benmap-cloud).
 
-## In Development 2026-??-?? | [API v1.2.0 and DB ??](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.2.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
+## In Development 2026-??-?? | [API v1.2.0 and DB 99](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.2.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
-* pending...
+### New Features and Improvements
+
+* Health impact analysis results can now be viewed on an interactive map, with a configurable color scale and legend and optional state and county boundary overlays. (BWD-277)
+* Administrators can now create new shared datasets directly in the Data Center, including grid definitions, incidence datasets, health impact functions, and valuation functions. (BWD-262)
+* Shared incidence datasets can now be flagged as “EPA standard” to distinguish default datasets from other shared data. The incidence selection logic now uses this distinction. (BWD-262, BWD-275)
+* Administrators can now archive shared air quality layers, grid definitions, incidence datasets, health impact functions, and valuation functions, and can delete shared health impact function groups that are not designated as EPA standard. A confirmation prompt is shown before archiving shared data or deleting a shared function group. (BWD-262, BWD-274, BWD-275)
+* Administrators can now download all dataset metadata. (BWD-251)
+* Memory and CPU are now allocated dynamically based on the type of task being run, improving performance and stability for large analyses and exports. (BWD-276)
+* Improved the performance and memory usage of health impact analyses, exposure analyses, and result exports, along with clearer progress messaging during long-running tasks. (BWD-260)
+* Increased the timeout before a task is considered unresponsive from 2 to 8 hours so that long-running analyses and exports are no longer cancelled prematurely.
+
+### Dataset Updates
+
+* Marked EPA’s default shared incidence datasets, grid definitions, and health impact function groups as “EPA standard”. (BWD-262, BWD-275)
+* Removed the legacy 2010 incidence dataset options from incidence selection. (BWD-262)
+* Updated broken study and reference URLs for many health impact functions so that the links now point to working, stable pages. (BWD-282)
+* Renamed the archived, unclipped CMAQ 12km Nation grid definition to “CMAQ 12km Nation (unclipped)” to distinguish it from the current shoreline-clipped version. (BWD-281)
+
+### Cosmetic Changes and Bug Fixes
+
+* Completed the renaming of “Health Effect Group” to “Health Effect Category” across the remaining areas of the user interface and function import templates. (BWD-268)
+* Added the grid definition to the “Input file characteristics” table on the air quality selection screen so it is clear which grid an air quality surface uses. (BWD-281)
+* Temporarily hid unused incidence fields on the Data Center page. (BWD-265)
+* Hardened upload security by validating file paths inside uploaded zip files and adding authorization checks to API methods that were missing them. (BWD-279)
+* Fixed a database join issue affecting incidence data, along with related lookup and comparison fixes.
 
 ## Production 2026-02-04 | [API v1.1.0 and DB 94](https://github.com/BenMAPCE/BenCloudServer/tree/develop) | [UI v1.1.0](https://github.com/BenMAPCE/BenCloudApp/tree/develop)
 
